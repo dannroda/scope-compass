@@ -3,7 +3,7 @@
 > Copia local del tablero https://claude.ai/artifact/JAiu8ZznTSLcDk8EzU3Zaj. El tablero es la fuente de verdad; este archivo se regenera desde ahí.
 > Generado: 2026-09-29
 
-## M0 — Fundaciones del repo  (5/6)
+## M0 — Fundaciones del repo  (6/6)
 
 Repo inicializado con el spec ordenado, las decisiones registradas, los schemas, el tablero propio y la estructura base. Se abre en Godot.
 
@@ -60,14 +60,16 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 **Referencias:** `docs/spec.md#decisiones-abiertas`
 
-### 0.5 Abrir el repo en Godot · En curso
+### 0.5 Abrir el repo en Godot · Hecho
 
-- [ ] Abre en Godot 4.8 sin errores
-- [ ] El addon `scope_compass` se activa
-- [ ] Editor Settings › Docks › FileSystem › TextFile Extensions: agregar `js,html,css` (`md` y `json` vienen por defecto)
-- [ ] `compass/` no aparece en el FileSystem (`.gdignore`)
+- [x] Abre en Godot 4.8 sin errores
+- [x] El addon `scope_compass` se activa
+- [x] Editor Settings › Docks › FileSystem › TextFile Extensions: agregar `js,html,css` (`md` y `json` vienen por defecto)
+- [x] `compass/` no aparece en el FileSystem (`.gdignore`)
 
 **Prueba:** Abrir `../scope-compass` en Godot 4.8, activar el addon y editar `hub/README.md` desde el editor.
+
+**Notas:** Probado con Godot 4.8-dev6 (`.godot-version`). El addon queda activado en `project.godot`; `compass/` no aparece en la caché del FileSystem.
 
 **Referencias:** `docs/spec.md#godot`
 
