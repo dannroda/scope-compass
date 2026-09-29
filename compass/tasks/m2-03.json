@@ -1,26 +1,26 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "`fs.watch` recursivo sobre `compass/` con debounce"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Ignora los temporales de `writeAtomic`"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Distingue escrituras propias de externas (sin eventos duplicados)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Archivo inválido → aviso, no se cae el servidor"
     }
   ],
   "code": "2.3",
   "created_at": "2026-09-29T20:28:48.309Z",
   "milestone": "m02",
-  "notes": "",
+  "notes": "`hub/src/watcher.js` + bus `app.events` en el servidor (`watch: true` en `serve`). Etag conocido por documento: sin duplicados por escrituras propias ni por reformateos. Tests con disco real, estables en 10 corridas seguidas.",
   "order": 3,
   "refs": [
     {
@@ -32,8 +32,8 @@
       "section": "validacion"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "Editar un JSON a mano con el hub corriendo emite el cambio en menos de 1 s; un JSON roto emite un aviso.",
   "title": "Watcher de cambios externos",
-  "updated_at": "2026-09-29T20:28:48.309Z"
+  "updated_at": "2026-09-29T21:11:02.378Z"
 }

@@ -28,7 +28,9 @@ function body(req) {
 
 const send = (reply, r, code = 200) => reply.code(code).header('etag', quote(r.etag)).send(flat(r.id, r.doc, r.etag));
 
-export function registerApi(app, { store, projectDir }) {
+export function registerApi(app, { store, projectDir, publish }) {
+  const wrote = (collection, r) => { publish.upsert(collection, r); return r; };
+
   app.get('/api/milestones', async () => {
     const { items, warnings } = await store.list('milestones');
     return { milestones: listMilestones(items.map((m) => [m.id, m.doc])), warnings };
@@ -37,10 +39,11 @@ export function registerApi(app, { store, projectDir }) {
   app.get('/api/milestones/:id', async (req, reply) => send(reply, await store.get('milestones', req.params.id)));
 
   app.put('/api/milestones/:id', async (req, reply) =>
-    send(reply, await store.put('milestones', req.params.id, body(req), preconditions(req))));
+    send(reply, wrote('milestones', await store.put('milestones', req.params.id, body(req), preconditions(req)))));
 
   app.delete('/api/milestones/:id', async (req, reply) => {
     await store.delete('milestones', req.params.id, preconditions(req));
+    publish.delete('milestones', req.params.id);
     return reply.code(204).send();
   });
 
@@ -54,19 +57,20 @@ export function registerApi(app, { store, projectDir }) {
   app.get('/api/tasks/:id', async (req, reply) => send(reply, await store.get('tasks', req.params.id)));
 
   app.post('/api/tasks', async (req, reply) => {
-    const r = await store.create('tasks', body(req));
+    const r = wrote('tasks', await store.create('tasks', body(req)));
     return send(reply.header('location', `/api/tasks/${r.id}`), r, 201);
   });
 
   app.put('/api/tasks/:id', async (req, reply) =>
-    send(reply, await store.put('tasks', req.params.id, body(req), preconditions(req))));
+    send(reply, wrote('tasks', await store.put('tasks', req.params.id, body(req), preconditions(req)))));
 
   // Merge de primer nivel: los arrays se reemplazan enteros y null borra el campo.
   app.patch('/api/tasks/:id', async (req, reply) =>
-    send(reply, await store.patch('tasks', req.params.id, body(req), preconditions(req))));
+    send(reply, wrote('tasks', await store.patch('tasks', req.params.id, body(req), preconditions(req)))));
 
   app.delete('/api/tasks/:id', async (req, reply) => {
     await store.delete('tasks', req.params.id, preconditions(req));
+    publish.delete('tasks', req.params.id);
     return reply.code(204).send();
   });
 

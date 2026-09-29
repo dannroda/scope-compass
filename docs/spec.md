@@ -247,6 +247,10 @@ Las respuestas de error usan el formato `{error: {code, message}}` con los códi
 
 Git pull, edición a mano o la CLI con el servidor corriendo: un watcher sobre `compass/` recarga el documento, lo valida y emite el evento por WebSocket. Así la UI refleja cualquier cambio sin recargar la página.
 
+- `fs.watch` recursivo con debounce por archivo (50 ms); los temporales de la escritura atómica se ignoran. Si el evento no trae el nombre del archivo, se rescanea todo.
+- El hub guarda el etag conocido de cada documento y solo emite si cambió: reformatear sin cambiar contenido no emite, y las escrituras del propio hub (que se publican al instante) no se repiten cuando llega el evento del disco.
+- Un archivo que pasa a inválido emite un solo `warning`; cuando se corrige, un `upsert`.
+
 ### 5.5 Protocolo WebSocket
 <!-- id: websocket -->
 

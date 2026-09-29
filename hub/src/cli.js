@@ -115,7 +115,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       showWarnings(all.warnings);
       const port = Number(o.port ?? all.config?.port ?? 4711);
       if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`puerto inválido: ${o.port}`);
-      const app = createServer({ projectDir: project, store });
+      const app = createServer({ projectDir: project, store, validators, watch: true });
+      if (!o.json) app.events.on('event', (e) => { if (e.type === 'warning') warn(`aviso [${e.code}] ${e.path}: ${e.message}`); });
       let addr;
       try {
         addr = await listen(app, port);

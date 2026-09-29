@@ -180,7 +180,7 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-## M2 — Hub: API REST + WebSocket  (2/8)
+## M2 — Hub: API REST + WebSocket  (3/8)
 
 Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de §5.5 y el watcher de cambios externos.
 
@@ -219,14 +219,16 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 **Referencias:** `docs/spec.md#api-rest`, `docs/spec.md#concurrencia`
 
-### 2.3 Watcher de cambios externos · Pendiente
+### 2.3 Watcher de cambios externos · Hecho
 
-- [ ] `fs.watch` recursivo sobre `compass/` con debounce
-- [ ] Ignora los temporales de `writeAtomic`
-- [ ] Distingue escrituras propias de externas (sin eventos duplicados)
-- [ ] Archivo inválido → aviso, no se cae el servidor
+- [x] `fs.watch` recursivo sobre `compass/` con debounce
+- [x] Ignora los temporales de `writeAtomic`
+- [x] Distingue escrituras propias de externas (sin eventos duplicados)
+- [x] Archivo inválido → aviso, no se cae el servidor
 
 **Prueba:** Editar un JSON a mano con el hub corriendo emite el cambio en menos de 1 s; un JSON roto emite un aviso.
+
+**Notas:** `hub/src/watcher.js` + bus `app.events` en el servidor (`watch: true` en `serve`). Etag conocido por documento: sin duplicados por escrituras propias ni por reformateos. Tests con disco real, estables en 10 corridas seguidas.
 
 **Referencias:** `docs/spec.md#cambios-externos`, `docs/spec.md#validacion`
 

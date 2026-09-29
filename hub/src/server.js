@@ -1,11 +1,14 @@
 // Hub de Scope Compass (spec §5): Fastify sobre el store json-files de un proyecto.
 // createServer arma la app sin escuchar (los tests usan inject); listen la abre solo en 127.0.0.1.
+import { EventEmitter } from 'node:events';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import { registerApi } from './api.js';
 import { StoreError } from './store/json-files.js';
+import { createWatcher } from './watcher.js';
+import { flat } from './views.js';
 
 export const VERSION = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8')).version;
 export const HOST = '127.0.0.1';
@@ -13,8 +16,29 @@ export const HOST = '127.0.0.1';
 const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, invalid_file: 409, io_error: 500 };
 
 // token: si se pasa, cada request tiene que traer `Authorization: Bearer <token>` (hosting, §12). En local no se usa.
-export function createServer({ projectDir, store, token = null, logger = false }) {
+// watch: mira compass/ y publica los cambios externos (necesita validators).
+// app.events emite 'event' con los mensajes del protocolo WebSocket (§5.5): upsert, delete, warning.
+export function createServer({ projectDir, store, validators, watch = false, token = null, logger = false }) {
   const app = Fastify({ logger });
+  app.decorate('events', new EventEmitter());
+  const emit = (evt) => app.events.emit('event', evt);
+
+  const watcher = watch ? createWatcher(join(projectDir, 'compass'), { validators, emit }) : null;
+  if (watcher) {
+    app.addHook('onReady', () => watcher.start());
+    app.addHook('onClose', async () => watcher.close());
+  }
+  // Escrituras del hub: se publican enseguida y el watcher no las repite.
+  const publish = {
+    upsert(collection, r) {
+      watcher?.note(collection, r.id, r.etag);
+      emit({ type: 'upsert', collection, id: r.id, doc: flat(r.id, r.doc, r.etag) });
+    },
+    delete(collection, id) {
+      watcher?.note(collection, id, null);
+      emit({ type: 'delete', collection, id });
+    }
+  };
 
   if (token) {
     app.addHook('onRequest', async (req, reply) => {
@@ -43,7 +67,7 @@ export function createServer({ projectDir, store, token = null, logger = false }
     reply.code(404).send({ error: { code: 'not_found', message: `no existe ${req.method} ${req.url}` } }));
 
   app.get('/api/health', async () => ({ ok: true, name: 'scope-compass', version: VERSION, project: projectDir }));
-  registerApi(app, { store, projectDir });
+  registerApi(app, { store, projectDir, publish });
 
   // La UI llega en M3.
   app.get('/', async (req, reply) => reply.type('text/plain; charset=utf-8')
