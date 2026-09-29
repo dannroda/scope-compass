@@ -1,0 +1,35 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Aplicar `upsert` y `delete` sobre el estado"
+    },
+    {
+      "done": false,
+      "text": "Reconexión con espera creciente; al reconectar, recarga completa"
+    },
+    {
+      "done": false,
+      "text": "Indicador discreto de \"sin conexión con el hub\""
+    }
+  ],
+  "code": "3.3",
+  "created_at": "2026-09-29T22:25:12.717Z",
+  "milestone": "m03",
+  "notes": "",
+  "order": 3,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "websocket"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "frontend"
+    }
+  ],
+  "status": "todo",
+  "test": "Dos pestañas: mover una tarjeta en una se ve en la otra en menos de 1 s; al reiniciar el hub, la UI se reconecta sola.",
+  "title": "WebSocket con reconexión",
+  "updated_at": "2026-09-29T22:25:12.717Z"
+}

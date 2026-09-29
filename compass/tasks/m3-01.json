@@ -1,0 +1,39 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Separar `docs/reference/tablero-artifact.html` en `web/index.html`, `app.css` y `app.js` sin build step"
+    },
+    {
+      "done": false,
+      "text": "El hub sirve `web/` en `/` (handler propio, sin dependencia nueva)"
+    },
+    {
+      "done": false,
+      "text": "`GET /api/config` con el nombre del proyecto para el título"
+    },
+    {
+      "done": false,
+      "text": "Mismo aspecto que el artifact en claro y oscuro"
+    }
+  ],
+  "code": "3.1",
+  "created_at": "2026-09-29T22:25:12.349Z",
+  "milestone": "m03",
+  "notes": "",
+  "order": 1,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "frontend"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "v1-paridad"
+    }
+  ],
+  "status": "todo",
+  "test": "`scompass serve --open` muestra el tablero con el aspecto del artifact.",
+  "title": "Estructura de `web/` servida por el hub",
+  "updated_at": "2026-09-29T22:25:12.349Z"
+}

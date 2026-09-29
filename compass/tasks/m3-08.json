@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Playwright como devDependency (D18)"
+    },
+    {
+      "done": false,
+      "text": "Criterios de §14 con UI: paridad, dos pestañas, 409, JSON inválido, sin internet"
+    },
+    {
+      "done": false,
+      "text": "Claro, oscuro y pantalla angosta"
+    }
+  ],
+  "code": "3.8",
+  "created_at": "2026-09-29T22:25:13.569Z",
+  "milestone": "m03",
+  "notes": "",
+  "order": 8,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "criterios-v1"
+    }
+  ],
+  "status": "todo",
+  "test": "`npm test` en `hub/` corre también los tests de navegador.",
+  "title": "Tests de M3 (Playwright)",
+  "updated_at": "2026-09-29T22:25:13.569Z"
+}

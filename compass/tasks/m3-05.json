@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Mostrar los `warnings` de la carga y los eventos `warning`"
+    },
+    {
+      "done": false,
+      "text": "El aviso desaparece cuando el archivo se corrige"
+    }
+  ],
+  "code": "3.5",
+  "created_at": "2026-09-29T22:25:13.062Z",
+  "milestone": "m03",
+  "notes": "",
+  "order": 5,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "validacion"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "cambios-externos"
+    }
+  ],
+  "status": "todo",
+  "test": "Romper un JSON a mano con la UI abierta muestra un aviso; arreglarlo lo quita y la tarea vuelve.",
+  "title": "Avisos de archivos inválidos",
+  "updated_at": "2026-09-29T22:25:13.062Z"
+}

@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "No perder el texto sin guardar de \"Notas\" y \"Cómo probarlo\" cuando llega un evento"
+    },
+    {
+      "done": false,
+      "text": "Reordenar tarjetas dentro de una columna al arrastrar (`order`)"
+    },
+    {
+      "done": false,
+      "text": "Atajos: `N` nueva tarea, `1`–`4` estado de la tarea abierta, `Esc` cierra"
+    }
+  ],
+  "code": "3.7",
+  "created_at": "2026-09-29T22:25:13.396Z",
+  "milestone": "m03",
+  "notes": "",
+  "order": 7,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "frontend"
+    }
+  ],
+  "status": "todo",
+  "test": "Escribir notas mientras otra pestaña mueve la misma tarea no pierde lo escrito.",
+  "title": "Mejoras chicas del port",
+  "updated_at": "2026-09-29T22:25:13.396Z"
+}

@@ -138,3 +138,10 @@ Migrado con `scompass import artifact` desde el último export del artifact: 8 h
 - **Por qué:** Fastify valida y serializa rápido, tiene `inject` para testear sin abrir puertos, y `@fastify/websocket` comparte el mismo servidor y puerto para `/ws`. Lo proponía D4.
 - **Descartado:** `node:http` a mano (router, errores y WebSocket propios) y Express (sin `inject`, WebSocket aparte).
 - **Detalle:** el hub escucha siempre en `127.0.0.1`; `createServer` acepta un `token` para el hosting (§12), que en local no se usa.
+
+## D18 · Tests de la UI con Playwright
+**2026-09-29 · vigente** · spec §14 · `hub/package.json › devDependencies`
+
+- **Por qué:** los criterios de v1 que faltan son de navegador: dos pestañas sincronizadas en menos de 1 s, arrastrar tarjetas, claro y oscuro, pantalla angosta y sin internet. Con un navegador real se prueban tal como están escritos.
+- **Costo aceptado:** Chromium sin ventana (unos 150 MB, se descarga una vez). Es solo de desarrollo; quien usa la app no lo necesita.
+- **Descartado:** testear solo la lógica en Node y lo visual a mano. Es más liviano, pero deja sin probar justo lo que falta.

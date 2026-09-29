@@ -293,7 +293,7 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 **Referencias:** `docs/spec.md#cli`
 
-## M3 — UI web (port del artifact)
+## M3 — UI web (port del artifact)  (0/8)
 
 La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexión, fuentes locales y las mejoras chicas de §7.
 
@@ -301,6 +301,84 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 - Paridad con el artifact (§2) en claro, oscuro y pantalla angosta.
 - Dos pestañas abiertas se sincronizan en menos de 1 s.
 - Funciona sin conexión a internet.
+
+### 3.1 Estructura de `web/` servida por el hub · Pendiente
+
+- [ ] Separar `docs/reference/tablero-artifact.html` en `web/index.html`, `app.css` y `app.js` sin build step
+- [ ] El hub sirve `web/` en `/` (handler propio, sin dependencia nueva)
+- [ ] `GET /api/config` con el nombre del proyecto para el título
+- [ ] Mismo aspecto que el artifact en claro y oscuro
+
+**Prueba:** `scompass serve --open` muestra el tablero con el aspecto del artifact.
+
+**Referencias:** `docs/spec.md#frontend`, `docs/spec.md#v1-paridad`
+
+### 3.2 Cliente de la API y carga inicial · Pendiente
+
+- [ ] Reemplazar `claude.use("db")` por un cliente de `/api`
+- [ ] Carga inicial de hitos y tareas
+- [ ] Crear, mover, editar y borrar tareas por la API
+
+**Prueba:** Crear, mover, tildar pasos y borrar desde la UI cambia los JSON de `compass/`.
+
+**Referencias:** `docs/spec.md#frontend`, `docs/spec.md#api-rest`
+
+### 3.3 WebSocket con reconexión · Pendiente
+
+- [ ] Aplicar `upsert` y `delete` sobre el estado
+- [ ] Reconexión con espera creciente; al reconectar, recarga completa
+- [ ] Indicador discreto de "sin conexión con el hub"
+
+**Prueba:** Dos pestañas: mover una tarjeta en una se ve en la otra en menos de 1 s; al reiniciar el hub, la UI se reconecta sola.
+
+**Referencias:** `docs/spec.md#websocket`, `docs/spec.md#frontend`
+
+### 3.4 Escrituras con etag y 409 · Pendiente
+
+- [ ] Cada escritura manda el etag que la UI tiene en memoria
+- [ ] Ante `409`: tomar el documento actual y avisar "otra pestaña cambió esta tarea"
+
+**Prueba:** Escritura con etag viejo desde una pestaña: la UI muestra el aviso y queda con el documento actual.
+
+**Referencias:** `docs/spec.md#concurrencia`, `docs/spec.md#frontend`
+
+### 3.5 Avisos de archivos inválidos · Pendiente
+
+- [ ] Mostrar los `warnings` de la carga y los eventos `warning`
+- [ ] El aviso desaparece cuando el archivo se corrige
+
+**Prueba:** Romper un JSON a mano con la UI abierta muestra un aviso; arreglarlo lo quita y la tarea vuelve.
+
+**Referencias:** `docs/spec.md#validacion`, `docs/spec.md#cambios-externos`
+
+### 3.6 Fuentes locales · Pendiente
+
+- [ ] Cinzel, Alegreya Sans y JetBrains Mono en `web/fonts/` (OFL, con sus licencias)
+- [ ] Sin requests a Google Fonts ni a ningún otro host
+
+**Prueba:** Con la red cortada, la UI carga con las mismas tipografías.
+
+**Referencias:** `docs/spec.md#frontend`
+
+### 3.7 Mejoras chicas del port · Pendiente
+
+- [ ] No perder el texto sin guardar de "Notas" y "Cómo probarlo" cuando llega un evento
+- [ ] Reordenar tarjetas dentro de una columna al arrastrar (`order`)
+- [ ] Atajos: `N` nueva tarea, `1`–`4` estado de la tarea abierta, `Esc` cierra
+
+**Prueba:** Escribir notas mientras otra pestaña mueve la misma tarea no pierde lo escrito.
+
+**Referencias:** `docs/spec.md#frontend`
+
+### 3.8 Tests de M3 (Playwright) · Pendiente
+
+- [ ] Playwright como devDependency (D18)
+- [ ] Criterios de §14 con UI: paridad, dos pestañas, 409, JSON inválido, sin internet
+- [ ] Claro, oscuro y pantalla angosta
+
+**Prueba:** `npm test` en `hub/` corre también los tests de navegador.
+
+**Referencias:** `docs/spec.md#criterios-v1`
 
 ## M4 — Adopción en Project Epiphany
 
