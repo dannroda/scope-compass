@@ -1,0 +1,27 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "\"Iniciar hub\" con `OS.create_process` (ruta a `scompass` configurable)"
+    },
+    {
+      "done": false,
+      "text": "Cerrarlo al salir del editor solo si lo abrió el dock"
+    }
+  ],
+  "code": "5.5",
+  "created_at": "2026-09-29T23:49:27.541Z",
+  "milestone": "m05",
+  "notes": "",
+  "order": 5,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "godot"
+    }
+  ],
+  "status": "todo",
+  "test": "Sin hub, \"Iniciar hub\" lo levanta y el dock pasa a edición; al cerrar el editor, el hub se cierra.",
+  "title": "Iniciar el hub desde el dock",
+  "updated_at": "2026-09-29T23:49:27.541Z"
+}

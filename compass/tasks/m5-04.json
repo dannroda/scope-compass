@@ -1,0 +1,35 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Cambiar el estado y tildar pasos"
+    },
+    {
+      "done": false,
+      "text": "Etag y 409 (en fila por tarea, como la UI web)"
+    },
+    {
+      "done": false,
+      "text": "\"Nueva tarea\" y abrir el tablero en el navegador"
+    }
+  ],
+  "code": "5.4",
+  "created_at": "2026-09-29T23:49:27.357Z",
+  "milestone": "m05",
+  "notes": "",
+  "order": 4,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "godot"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "concurrencia"
+    }
+  ],
+  "status": "todo",
+  "test": "Mover una tarea desde el dock se ve en la UI web al instante.",
+  "title": "Editar desde el dock",
+  "updated_at": "2026-09-29T23:49:27.357Z"
+}

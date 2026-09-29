@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Dock con `EditorDock` + `add_dock` (API de 4.8, D19)"
+    },
+    {
+      "done": false,
+      "text": "Vista del dock como `Control` aparte, testeable sin el editor"
+    },
+    {
+      "done": false,
+      "text": "Se agrega y se quita limpio al activar y desactivar el plugin"
+    }
+  ],
+  "code": "5.1",
+  "created_at": "2026-09-29T23:49:26.783Z",
+  "milestone": "m05",
+  "notes": "API verificada en 4.8-dev6 con un proyecto descartable.",
+  "order": 1,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "godot"
+    }
+  ],
+  "status": "todo",
+  "test": "Activar el plugin muestra el dock \"Tablero\"; desactivarlo lo quita sin errores.",
+  "title": "Estructura del addon con `EditorDock`",
+  "updated_at": "2026-09-29T23:49:26.783Z"
+}

@@ -1,0 +1,35 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Detectar el hub por `/api/health` del mismo proyecto"
+    },
+    {
+      "done": false,
+      "text": "Carga por HTTP y cambios por `WebSocketPeer` con reconexión"
+    },
+    {
+      "done": false,
+      "text": "Pasar de solo lectura a edición (y al revés) según haya hub"
+    }
+  ],
+  "code": "5.3",
+  "created_at": "2026-09-29T23:49:27.167Z",
+  "milestone": "m05",
+  "notes": "",
+  "order": 3,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "godot"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "websocket"
+    }
+  ],
+  "status": "todo",
+  "test": "Con el hub corriendo, un cambio desde la UI web se ve en el dock al instante.",
+  "title": "Cliente del hub",
+  "updated_at": "2026-09-29T23:49:27.167Z"
+}

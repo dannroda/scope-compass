@@ -145,3 +145,12 @@ Migrado con `scompass import artifact` desde el último export del artifact: 8 h
 - **Por qué:** los criterios de v1 que faltan son de navegador: dos pestañas sincronizadas en menos de 1 s, arrastrar tarjetas, claro y oscuro, pantalla angosta y sin internet. Con un navegador real se prueban tal como están escritos.
 - **Costo aceptado:** Chromium sin ventana (unos 150 MB, se descarga una vez). Es solo de desarrollo; quien usa la app no lo necesita.
 - **Descartado:** testear solo la lógica en Node y lo visual a mano. Es más liviano, pero deja sin probar justo lo que falta.
+
+## D19 · El dock usa `EditorDock` (API de docks de Godot 4.8)
+**2026-09-29 · vigente** · spec §11.1 · `addons/scope_compass/`
+
+Godot 4.8 agrega la clase `EditorDock` con `EditorPlugin.add_dock()` / `remove_dock()`; `add_control_to_dock()` sigue existiendo. El dock usa la API nueva.
+
+- **Por qué:** es la API de docks de la versión que usa el proyecto (4.8-dev6) y trae título, ícono, ranura por defecto y layout guardado. Se verificó con un proyecto descartable en el editor sin ventana: el dock queda en el panel lateral y se quita limpio.
+- **Riesgo:** 4.8 todavía es dev; si la API cambia antes de la versión estable, el cambio queda en `scope_compass.gd`. La vista del dock es un `Control` aparte que no depende de `EditorDock`.
+- **Descartado:** `add_control_to_dock()`, la API vieja.

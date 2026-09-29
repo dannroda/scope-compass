@@ -1,0 +1,43 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Leer hitos y tareas con `FileAccess`/`JSON`, mismo orden que la CLI; los inválidos se avisan"
+    },
+    {
+      "done": false,
+      "text": "Selector de hito (por defecto el primero sin terminar; se recuerda por proyecto)"
+    },
+    {
+      "done": false,
+      "text": "Tareas agrupadas por estado, plegables, con código, título y pasos"
+    },
+    {
+      "done": false,
+      "text": "Aviso de solo lectura, \"Reintentar\" y \"Abrir compass/tasks\""
+    },
+    {
+      "done": false,
+      "text": "Pie con \"N sin commitear\" (`git status`)"
+    }
+  ],
+  "code": "5.2",
+  "created_at": "2026-09-29T23:49:26.974Z",
+  "milestone": "m05",
+  "notes": "",
+  "order": 2,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "godot"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "sin-app"
+    }
+  ],
+  "status": "todo",
+  "test": "Sin hub, el dock muestra las tareas del hito y un aviso de solo lectura.",
+  "title": "Modo sin hub: leer `compass/`",
+  "updated_at": "2026-09-29T23:49:26.974Z"
+}

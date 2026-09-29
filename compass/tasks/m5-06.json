@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Godot sin ventana lanzado desde `npm test` (se saltea si no hay `godot`)"
+    },
+    {
+      "done": false,
+      "text": "Dock ↔ UI web en los dos sentidos; modo sin hub"
+    }
+  ],
+  "code": "5.6",
+  "created_at": "2026-09-29T23:49:27.717Z",
+  "milestone": "m05",
+  "notes": "",
+  "order": 6,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "criterios-v1"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "godot"
+    }
+  ],
+  "status": "todo",
+  "test": "`npm test` en `hub/` corre también los tests de Godot.",
+  "title": "Tests de M5",
+  "updated_at": "2026-09-29T23:49:27.717Z"
+}
