@@ -81,7 +81,7 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 **Notas:** Mientras no exista la app, el tablero vive en el artifact y `compass/` es su copia en git.
 
-## M1 — Store + CLI (sin servidor)  (2/7)
+## M1 — Store + CLI (sin servidor)  (3/7)
 
 Leer y escribir `compass/` con validación, formato canónico y ETag, desde la CLI `scompass`, sin hub corriendo.
 
@@ -116,15 +116,17 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#validacion`, `docs/spec.md#git-merges`
 
-### 1.3 Store json-files + ETag · Pendiente
+### 1.3 Store json-files + ETag · Hecho
 
-- [ ] Interfaz `Store` (list, get, put, patch, delete)
-- [ ] Implementación `json-files` sobre `compass/`
-- [ ] ETag = hash del contenido canónico; conflicto con el documento actual
-- [ ] Ids nuevos: 8 caracteres base36
-- [ ] Escribir sobre un archivo inválido o con conflicto se rechaza (no se pisa)
+- [x] Interfaz `Store` (list, get, put, patch, delete)
+- [x] Implementación `json-files` sobre `compass/`
+- [x] ETag = hash del contenido canónico; conflicto con el documento actual
+- [x] Ids nuevos: 8 caracteres base36
+- [x] Escribir sobre un archivo inválido o con conflicto se rechaza (no se pisa)
 
 **Prueba:** Dos escrituras con el mismo ETag: la segunda falla con conflicto y devuelve el documento actual.
+
+**Notas:** `hub/src/store/json-files.js`. Sin caché: cada operación lee el disco. Las operaciones del proceso se encolan; entre procesos protege el ETag (16 hex de sha256 del canónico). `patch`: merge de primer nivel, `null` borra el campo. Errores `StoreError` con `invalid_argument`, `not_found`, `conflict` (trae `current`), `invalid_file`, `io_error`.
 
 **Referencias:** `docs/spec.md#modelo`, `docs/spec.md#concurrencia`, `docs/spec.md#arquitectura`
 
