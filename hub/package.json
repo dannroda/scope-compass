@@ -11,5 +11,9 @@
     "postinstall": "node -e \"require('node:fs').writeFileSync('node_modules/.gdignore', '')\"",
     "test": "node --test"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
 }

@@ -81,7 +81,7 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 **Notas:** Mientras no exista la app, el tablero vive en el artifact y `compass/` es su copia en git.
 
-## M1 — Store + CLI (sin servidor)  (1/7)
+## M1 — Store + CLI (sin servidor)  (2/7)
 
 Leer y escribir `compass/` con validación, formato canónico y ETag, desde la CLI `scompass`, sin hub corriendo.
 
@@ -103,16 +103,16 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#sin-app`, `docs/spec.md#concurrencia`
 
-### 1.2 Validación · Pendiente
+### 1.2 Validación · Hecho
 
-- [ ] Cargar los schemas de `schema/`
-- [ ] Elegir validador de JSON Schema
-- [ ] Archivo inválido → aviso, no se carga ni se sobrescribe
-- [ ] Detectar marcadores de conflicto de git
+- [x] Cargar los schemas de `schema/`
+- [x] Elegir validador de JSON Schema: ajv (D14)
+- [x] Archivo inválido → aviso, no se carga y la carga no lo toca
+- [x] Detectar marcadores de conflicto de git
 
 **Prueba:** Un archivo con un campo desconocido o con `<<<<<<<` se reporta y queda sin tocar.
 
-**Notas:** El validador (por ejemplo ajv) es una dependencia nueva: anotarla en `docs/decisiones.md`.
+**Notas:** ajv + ajv-formats (D14). `hub/src/schema.js` (`loadValidators`, `parseDoc`) y `hub/src/store/load.js` (`loadCompass`, solo lectura). Avisos con código: `invalid_json`, `invalid_schema`, `conflict_markers`, `unknown_milestone`, `missing_config`. Que una escritura no pise un archivo inválido queda en 1.3.
 
 **Referencias:** `docs/spec.md#validacion`, `docs/spec.md#git-merges`
 
@@ -122,6 +122,7 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 - [ ] Implementación `json-files` sobre `compass/`
 - [ ] ETag = hash del contenido canónico; conflicto con el documento actual
 - [ ] Ids nuevos: 8 caracteres base36
+- [ ] Escribir sobre un archivo inválido o con conflicto se rechaza (no se pisa)
 
 **Prueba:** Dos escrituras con el mismo ETag: la segunda falla con conflicto y devuelve el documento actual.
 

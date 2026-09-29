@@ -104,3 +104,12 @@ Después de cada escritura, desde la CLI o desde el hub, se regenera `export_md`
 - **Por qué:** `docs/tareas.md` nunca queda desfasado respecto de `compass/`, y quien lea el repo sin la app ve el estado real.
 - **Costo aceptado:** cada cambio también toca `docs/tareas.md` en el diff.
 - **Descartado:** solo a pedido (`scompass export md`), porque es fácil olvidarlo.
+
+## D14 · Validación con ajv
+**2026-09-29 · vigente** · spec §4.3 · `hub/src/schema.js`
+
+`ajv` (draft 2020-12) + `ajv-formats` para `date-time` y `uri`. Son las primeras dependencias del hub.
+
+- **Por qué:** es el validador de JSON Schema de referencia en Node, soporta 2020-12 completo y compila cada schema una sola vez. `strict: true` hace que un error en los propios schemas se note al arrancar.
+- **Descartado:** validar a mano, porque duplicaría los schemas en código y se desincronizaría, y otras librerías más chicas con soporte parcial de 2020-12.
+- **Detalle:** `npm install <paquete>` no corre el `postinstall` del proyecto. Después de agregar una dependencia hay que correr `npm install` sin argumentos para que se cree `node_modules/.gdignore`.

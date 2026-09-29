@@ -2,7 +2,7 @@
 
 Paquete Node de Scope Compass: el servidor (API REST + WebSocket + UI web) y la CLI `scompass`.
 
-Todavía no hay código: el diseño está en `../docs/spec.md` (§3, §5, §6, §9) y el plan en el tablero del repo (hitos M1 y M2).
+El diseño está en `../docs/spec.md` (§3, §5, §6, §9) y el plan en el tablero del repo (hitos M1 y M2).
 
 Estructura prevista:
 
@@ -17,4 +17,4 @@ src/import-artifact.js  port de ../tools/artifact_to_tablero.py
 test/                node:test
 ```
 
-`npm install` crea `node_modules/.gdignore` (script `postinstall`) para que Godot no escanee las dependencias.
+`npm install` crea `node_modules/.gdignore` (script `postinstall`) para que Godot no escanee las dependencias. `npm install <paquete>` no lo corre: después de agregar una dependencia, correr `npm install` sin argumentos.
