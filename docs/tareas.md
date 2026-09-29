@@ -81,7 +81,7 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 **Notas:** Mientras no exista la app, el tablero vive en el artifact y `compass/` es su copia en git.
 
-## M1 — Store + CLI (sin servidor)  (6/7)
+## M1 — Store + CLI (sin servidor)  (7/7)
 
 Leer y escribir `compass/` con validación, formato canónico y ETag, desde la CLI `scompass`, sin hub corriendo.
 
@@ -169,12 +169,14 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#migracion`
 
-### 1.7 Tests de M1 · Pendiente
+### 1.7 Tests de M1 · Hecho
 
-- [ ] Criterios de §14 que no necesitan servidor
-- [ ] Mover una tarjeta cambia exactamente un archivo y una línea (más `updated_at`)
+- [x] Criterios de §14 que no necesitan servidor
+- [x] Mover una tarjeta cambia exactamente un archivo y una línea (más `updated_at`)
 
 **Prueba:** `npm test` en `hub/` pasa.
+
+**Notas:** `hub/test/m1-criteria.test.js`: criterios de §14 sin hub, probados como los describe el spec (con git real para el de `git status`). El criterio de "un archivo" se reescribió por D13: también cambia `docs/tareas.md`. Quedan para M2/M3 las partes con servidor, y Windows sin probar (conviene CI con matriz Linux/Windows).
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
