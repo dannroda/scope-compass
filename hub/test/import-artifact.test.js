@@ -10,6 +10,7 @@ import { canonical } from '../src/store/canonical.js';
 import { run } from '../src/cli.js';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const FIXTURE = join(REPO, 'hub', 'test', 'fixtures', 'compass');
 const V = loadValidators();
 let dir, exp;
 
@@ -30,7 +31,7 @@ const quiet = { out: { write() {} }, err: { write() {} } };
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'scompass-'));
   exp = join(dir, 'export');
-  await makeExport(join(REPO, 'compass'), exp);
+  await makeExport(FIXTURE, exp);
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
 
@@ -42,7 +43,7 @@ test('import en un compass/ vacío: canónico, sin version, created_at = updated
   assert.deepEqual(r.warnings, []);
   for (const id of r.tasks.created) {
     const t = await read('tasks', id, target);
-    const orig = await read('tasks', id, join(REPO, 'compass'));
+    const orig = await read('tasks', id, FIXTURE);
     assert.ok(!('version' in t) && !('id' in t));
     assert.equal(t.created_at, t.updated_at);
     assert.deepEqual({ ...t, created_at: orig.created_at }, orig);
@@ -52,7 +53,7 @@ test('import en un compass/ vacío: canónico, sin version, created_at = updated
 });
 
 test('reimportar los mismos datos: todo sin cambios y se conserva created_at', async () => {
-  await cp(join(REPO, 'compass'), join(dir, 'compass'), { recursive: true });
+  await cp(FIXTURE, join(dir, 'compass'), { recursive: true });
   const r = await importArtifact(exp, join(dir, 'compass'), { validators: V });
   assert.equal(r.milestones.unchanged.length, 8);
   assert.equal(r.tasks.unchanged.length, 13);
@@ -60,7 +61,7 @@ test('reimportar los mismos datos: todo sin cambios y se conserva created_at', a
 });
 
 test('un documento distinto no se pisa sin overwrite; con overwrite se actualiza', async () => {
-  await cp(join(REPO, 'compass'), join(dir, 'compass'), { recursive: true });
+  await cp(FIXTURE, join(dir, 'compass'), { recursive: true });
   const t = JSON.parse(await readFile(join(exp, 'tasks', 'm1-07.json'), 'utf8'));
   await writeFile(join(exp, 'tasks', 'm1-07.json'), JSON.stringify({ ...t, status: 'review' }));
   const before = await read('tasks', 'm1-07');
@@ -81,7 +82,7 @@ test('un documento distinto no se pisa sin overwrite; con overwrite se actualiza
 });
 
 test('documentos inválidos, destino con conflicto y hito inexistente se reportan', async () => {
-  await cp(join(REPO, 'compass'), join(dir, 'compass'), { recursive: true });
+  await cp(FIXTURE, join(dir, 'compass'), { recursive: true });
   await writeFile(join(exp, 'tasks', 'mala.json'), JSON.stringify({ milestone: 'm00', title: 'x', status: 'wip' }));
   await writeFile(join(exp, 'tasks', 'rota.json'), '{');
   await writeFile(join(exp, 'tasks', 'huerfana.json'), JSON.stringify({ milestone: 'm99', title: 'x', status: 'todo' }));

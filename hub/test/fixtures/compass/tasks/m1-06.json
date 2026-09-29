@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": true,
+      "text": "Port de `tools/artifact_to_tablero.py`"
+    },
+    {
+      "done": true,
+      "text": "Descarta `version`; `created_at` = `updated_at` si existe"
+    },
+    {
+      "done": true,
+      "text": "Reporte de conteos"
+    }
+  ],
+  "code": "1.6",
+  "created_at": "2026-09-29T20:00:00Z",
+  "milestone": "m01",
+  "notes": "`hub/src/import-artifact.js` + `scompass import artifact <carpeta> [--dry-run] [--overwrite]`. Export real de Epiphany: 11 hitos y 10 tareas sin cambios contra `project-epiphany/compass/`, e import en limpio idéntico a `tools/artifact_to_tablero.py`. Si el documento ya existe conserva su `created_at`. La detección de notas \"gdd.md §N.N\" → `refs` (spec §8, notas) queda para M6.",
+  "order": 6,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "migracion"
+    }
+  ],
+  "status": "done",
+  "test": "Importar el export de Epiphany: 11 hitos y 10 tareas, sin diferencias con `project-epiphany/compass/`.",
+  "title": "Import desde el artifact",
+  "updated_at": "2026-09-30T02:30:00Z"
+}

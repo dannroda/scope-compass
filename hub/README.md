@@ -29,3 +29,7 @@ scompass --dir ../project-epiphany list --json
 ```
 
 Sin `npm link`: `node hub/bin/scompass.js …`. Por ahora escribe siempre directo en `compass/`; cuando exista el hub (M2), usará la API si está corriendo.
+
+## Tests
+
+`npm test` en `hub/`. Los tests que escriben usan `test/fixtures/compass/`, una copia congelada del tablero, para no depender del estado real de `compass/`. Los que comprueban propiedades de los datos reales (formato canónico, carga sin avisos, export idéntico a `tools/`) leen `../compass/` y `../../project-epiphany/compass/` si existe.

@@ -12,6 +12,7 @@ import { renderMarkdown } from '../src/export-md.js';
 import { run } from '../src/cli.js';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const FIXTURE = join(REPO, 'hub', 'test', 'fixtures', 'compass');
 const V = loadValidators();
 const quiet = { out: { write() {} }, err: { write() {} } };
 
@@ -59,7 +60,7 @@ test('orden: por order y después code como texto, como en Python', () => {
 test('CLI: export md y export automático al escribir, salvo auto_export_md: false', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'scompass-'));
   try {
-    await cp(join(REPO, 'compass'), join(dir, 'compass'), { recursive: true });
+    await cp(FIXTURE, join(dir, 'compass'), { recursive: true });
     const md = join(dir, 'docs', 'tareas.md');
     assert.equal(await run(['export', 'md'], { cwd: dir, ...quiet }), 0);
     assert.match(await readFile(md, 'utf8'), /^# Tareas — Scope Compass\n/);

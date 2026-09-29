@@ -9,6 +9,7 @@ import { loadCompass } from '../src/store/load.js';
 import { canonical } from '../src/store/canonical.js';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const FIXTURE = join(REPO, 'hub', 'test', 'fixtures', 'compass');
 const V = loadValidators();
 const task = { milestone: 'm00', title: 'x', status: 'todo' };
 
@@ -52,7 +53,7 @@ test('un archivo inválido se reporta, no se carga y queda sin tocar', async () 
   const dir = await mkdtemp(join(tmpdir(), 'scompass-'));
   try {
     const compass = join(dir, 'compass');
-    await cp(join(REPO, 'compass'), compass, { recursive: true });
+    await cp(FIXTURE, compass, { recursive: true });
     const bad = join(compass, 'tasks', 'm0-01.json');
     const conflict = join(compass, 'tasks', 'm0-02.json');
     const orphan = join(compass, 'tasks', 'zz.json');

@@ -1,0 +1,11 @@
+{
+  "code": "M7",
+  "done_when": [
+    "Desde el teléfono se ve y se edita el tablero (PWA).",
+    "Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.",
+    "El hub pide token y no queda expuesto a internet sin login."
+  ],
+  "goal": "El mismo hub en un servidor privado para usarlo desde el teléfono, con git como almacenamiento (§12).",
+  "order": 7,
+  "title": "Hosting privado"
+}

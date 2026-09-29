@@ -12,6 +12,7 @@ import { canonical } from '../src/store/canonical.js';
 import { run } from '../src/cli.js';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const FIXTURE = join(REPO, 'hub', 'test', 'fixtures', 'compass');
 const EPIPHANY = join(REPO, '..', 'project-epiphany', 'compass');
 const hasGit = (() => { try { execFileSync('git', ['--version']); return true; } catch { return false; } })();
 let dir;
@@ -25,7 +26,7 @@ const git = (...args) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.e
 
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'scompass-'));
-  await cp(join(REPO, 'compass'), join(dir, 'compass'), { recursive: true });
+  await cp(FIXTURE, join(dir, 'compass'), { recursive: true });
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
 
@@ -65,14 +66,16 @@ test('§14: mover una tarjeta cambia un archivo de compass/ y el diff es status 
   git('init', '-q');
   git('add', '-A');
   git('commit', '-qm', 'base');
-  assert.equal((await cli(['move', 'm1-07', 'doing'])).code, 0);
+  const from = JSON.parse(await readFile(join(dir, 'compass', 'tasks', 'm1-07.json'), 'utf8')).status;
+  const to = from === 'doing' ? 'review' : 'doing';
+  assert.equal((await cli(['move', 'm1-07', to])).code, 0);
   assert.equal(git('ls-files', '--others', '--exclude-standard'), '');
   const changed = git('diff', '--name-only').trim().split('\n').sort();
   // D13: el export markdown se regenera en la misma escritura.
   assert.deepEqual(changed, ['compass/tasks/m1-07.json', 'docs/tareas.md']);
   const diff = git('diff', '-U0', '--', 'compass/tasks/m1-07.json').split('\n').filter((l) => /^[-+] /.test(l));
   assert.equal(diff.length, 4);
-  assert.deepEqual(diff.filter((l) => l.includes('"status"')), ['-  "status": "todo",', '+  "status": "doing",']);
+  assert.deepEqual(diff.filter((l) => l.includes('"status"')), [`-  "status": "${from}",`, `+  "status": "${to}",`]);
   assert.equal(diff.filter((l) => l.includes('"updated_at"')).length, 2);
 });
 

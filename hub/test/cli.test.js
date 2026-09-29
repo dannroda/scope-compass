@@ -8,12 +8,13 @@ import { fileURLToPath } from 'node:url';
 import { findProject, run } from '../src/cli.js';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const FIXTURE = join(REPO, 'hub', 'test', 'fixtures', 'compass');
 const NOW = '2026-10-01T12:00:00.000Z';
 let dir;
 
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'scompass-'));
-  await cp(join(REPO, 'compass'), join(dir, 'compass'), { recursive: true });
+  await cp(FIXTURE, join(dir, 'compass'), { recursive: true });
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
 

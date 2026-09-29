@@ -9,6 +9,7 @@ import { canonical } from '../src/store/canonical.js';
 import { createJsonFilesStore, etagOf, randomId } from '../src/store/json-files.js';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const FIXTURE = join(REPO, 'hub', 'test', 'fixtures', 'compass');
 const V = loadValidators();
 const NOW = '2026-10-01T12:00:00.000Z';
 let dir, compass, store;
@@ -16,7 +17,7 @@ let dir, compass, store;
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'scompass-'));
   compass = join(dir, 'compass');
-  await cp(join(REPO, 'compass'), compass, { recursive: true });
+  await cp(FIXTURE, compass, { recursive: true });
   store = createJsonFilesStore(compass, { validators: V, now: () => NOW });
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
@@ -48,7 +49,9 @@ test('dos escrituras con el mismo etag: la segunda falla con conflicto y el docu
 test('mover una tarjeta cambia un solo archivo: status y updated_at', async () => {
   const before = Object.fromEntries(await Promise.all((await readdir(join(compass, 'tasks'))).map(async (n) =>
     [n, await readFile(join(compass, 'tasks', n), 'utf8')])));
-  await store.patch('tasks', 'm1-07', { status: 'doing' });
+  const from = (await store.get('tasks', 'm1-07')).doc.status;
+  const to = from === 'doing' ? 'review' : 'doing';
+  await store.patch('tasks', 'm1-07', { status: to });
   const changed = [];
   for (const [n, text] of Object.entries(before)) {
     const now = await readFile(join(compass, 'tasks', n), 'utf8');
@@ -59,7 +62,7 @@ test('mover una tarjeta cambia un solo archivo: status y updated_at', async () =
   assert.equal(name, 'm1-07.json');
   const diff = a.map((line, i) => [line, b[i]]).filter(([x, y]) => x !== y);
   assert.deepEqual(diff, [
-    ['  "status": "todo",', '  "status": "doing",'],
+    [`  "status": "${from}",`, `  "status": "${to}",`],
     [a.find((l) => l.includes('"updated_at"')), `  "updated_at": "${NOW}"`]
   ]);
   assert.deepEqual(await readdir(join(compass, 'tasks')), Object.keys(before).sort());

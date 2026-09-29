@@ -1,0 +1,16 @@
+{
+  "board_url": "https://claude.ai/artifact/JAiu8ZznTSLcDk8EzU3Zaj",
+  "docs": [
+    {
+      "alias": "spec",
+      "path": "docs/spec.md"
+    },
+    {
+      "alias": "decisiones",
+      "path": "docs/decisiones.md"
+    }
+  ],
+  "export_md": "docs/tareas.md",
+  "port": 4711,
+  "project": "Scope Compass"
+}
