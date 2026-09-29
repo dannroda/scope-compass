@@ -108,6 +108,9 @@ main.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); ga
 @media (max-width: 560px) { main.board { grid-template-columns: minmax(0, 1fr); } .wrap { padding-inline: 16px; } }
 @media (prefers-reduced-motion: no-preference) { .card, .chip, .btn { transition: border-color .15s, background-color .15s; } }
 
+/* Indicador de conexión con el hub (3.3). */
+.conn { font-family: var(--font-mono); font-size: 12px; color: var(--danger); border: 1px dashed var(--danger); border-radius: 999px; padding: 4px 10px; margin-left: auto; margin-right: 12px; }
+
 /* Lo que antes ponía el contenedor del artifact. */
 body { margin: 0; }
 img { max-width: 100%; }

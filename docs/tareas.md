@@ -293,7 +293,7 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 **Referencias:** `docs/spec.md#cli`
 
-## M3 — UI web (port del artifact)  (2/8)
+## M3 — UI web (port del artifact)  (4/8)
 
 La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexión, fuentes locales y las mejoras chicas de §7.
 
@@ -327,22 +327,26 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 **Referencias:** `docs/spec.md#frontend`, `docs/spec.md#api-rest`
 
-### 3.3 WebSocket con reconexión · Pendiente
+### 3.3 WebSocket con reconexión · Hecho
 
-- [ ] Aplicar `upsert` y `delete` sobre el estado
-- [ ] Reconexión con espera creciente; al reconectar, recarga completa
-- [ ] Indicador discreto de "sin conexión con el hub"
+- [x] Aplicar `upsert` y `delete` sobre el estado
+- [x] Reconexión con espera creciente; al reconectar, recarga completa
+- [x] Indicador discreto de "sin conexión con el hub"
 
 **Prueba:** Dos pestañas: mover una tarjeta en una se ve en la otra en menos de 1 s; al reiniciar el hub, la UI se reconecta sola.
 
+**Notas:** WebSocket en `app.js`: carga completa en cada `hello` (también al reconectar) y se repite si llegan eventos durante la carga. Reconexión de 0,5 s a 10 s con aviso en la cabecera. Tests de navegador en `hub/test/ui.test.js`: dos pestañas en menos de 1 s, cambios de la CLI y a mano, hub caído y vuelta.
+
 **Referencias:** `docs/spec.md#websocket`, `docs/spec.md#frontend`
 
-### 3.4 Escrituras con etag y 409 · Pendiente
+### 3.4 Escrituras con etag y 409 · Hecho
 
-- [ ] Cada escritura manda el etag que la UI tiene en memoria
-- [ ] Ante `409`: tomar el documento actual y avisar "otra pestaña cambió esta tarea"
+- [x] Cada escritura manda el etag que la UI tiene en memoria
+- [x] Ante `409`: tomar el documento actual y avisar "otra pestaña cambió esta tarea"
 
 **Prueba:** Escritura con etag viejo desde una pestaña: la UI muestra el aviso y queda con el documento actual.
+
+**Notas:** Cada escritura manda `If-Match`. Ante `409` la UI toma el documento actual y avisa. Escrituras de una tarea en fila, con el cambio calculado al enviarlo: tildar varios pasos seguidos no da 409 ni pisa. Test con una pestaña que no recibe eventos (`routeWebSocket`) para forzar el 409.
 
 **Referencias:** `docs/spec.md#concurrencia`, `docs/spec.md#frontend`
 
@@ -383,6 +387,8 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 - [ ] Claro, oscuro y pantalla angosta
 
 **Prueba:** `npm test` en `hub/` corre también los tests de navegador.
+
+**Notas:** Adelantado en 3.3/3.4: `hub/test/ui.test.js` con Playwright dentro de `node:test` (dos pestañas, CLI y edición a mano, 409, pasos seguidos, reconexión).
 
 **Referencias:** `docs/spec.md#criterios-v1`
 

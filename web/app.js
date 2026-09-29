@@ -7,7 +7,7 @@
     { id: 'review', label: 'Revisión', color: 'var(--s-review)' },
     { id: 'done', label: 'Hecho', color: 'var(--s-done)' }
   ];
-  const S = { project: '', milestones: [], tasks: [], warnings: [], filter: pref('filter') || 'all', openId: null, confirmDelete: false, loaded: false, offline: false };
+  const S = { project: '', milestones: [], tasks: [], warnings: [], filter: pref('filter') || 'all', openId: null, confirmDelete: false, loaded: false, offline: false, connected: false };
 
   // Cliente de la API (spec §5.2). Los errores llegan como { code, message } del hub.
   class ApiError extends Error {
@@ -18,12 +18,15 @@
       this.current = body?.error?.current;
     }
   }
-  async function call(method, path, body) {
+  async function call(method, path, body, etag) {
+    const headers = {};
+    if (body !== undefined) headers['content-type'] = 'application/json';
+    if (etag) headers['if-match'] = '"' + etag + '"';
     let r;
     try {
       r = await fetch(path, {
         method,
-        headers: body === undefined ? {} : { 'content-type': 'application/json' },
+        headers,
         body: body === undefined ? undefined : JSON.stringify(body)
       });
     } catch (e) {
@@ -39,8 +42,8 @@
     milestones: () => call('GET', '/api/milestones'),
     tasks: () => call('GET', '/api/tasks'),
     create: (doc) => call('POST', '/api/tasks', doc),
-    update: (id, patch) => call('PATCH', '/api/tasks/' + encodeURIComponent(id), patch),
-    remove: (id) => call('DELETE', '/api/tasks/' + encodeURIComponent(id))
+    update: (id, patch, etag) => call('PATCH', '/api/tasks/' + encodeURIComponent(id), patch, etag),
+    remove: (id, etag) => call('DELETE', '/api/tasks/' + encodeURIComponent(id), undefined, etag)
   };
 
   function pref(k, v) {
@@ -94,14 +97,18 @@
   }
 
   // Aplica al estado un documento que devolvió el hub (o lo quita si doc es null).
-  function applyTask(id, doc) {
-    const i = S.tasks.findIndex((t) => t.id === id);
-    if (doc === null) { if (i >= 0) S.tasks.splice(i, 1); }
-    else if (i >= 0) S.tasks[i] = doc;
-    else S.tasks.push(doc);
+  function apply(collection, id, doc) {
+    const list = collection === 'milestones' ? S.milestones : S.tasks;
+    const i = list.findIndex((t) => t.id === id);
+    if (doc === null) { if (i >= 0) list.splice(i, 1); }
+    else if (i >= 0) list[i] = doc;
+    else list.push(doc);
+    if (collection === 'milestones') list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     if (S.openId && !S.tasks.some((t) => t.id === S.openId)) S.openId = null;
+    if (S.filter !== 'all' && !S.milestones.some((m) => m.id === S.filter)) S.filter = 'all';
     render();
   }
+  const applyTask = (id, doc) => apply('tasks', id, doc);
 
   const MESSAGES = {
     offline: 'Sin conexión con el hub: el cambio no se guardó.',
@@ -110,9 +117,35 @@
   };
   async function write(fn, okMsg) {
     try { await fn(); if (okMsg) toast(okMsg); }
-    catch (e) { toast(MESSAGES[e.code] || 'No se pudo guardar (' + (e.message || e.code) + ').'); }
+    catch (e) {
+      // 409 por etag: alguien cambió la tarea. Se toma la versión actual y se avisa (spec §5.3).
+      if (e.code === 'conflict' && e.current) {
+        applyTask(e.current.id, { id: e.current.id, etag: e.current.etag, ...e.current.doc });
+        toast('Otra pestaña o la CLI cambió esta tarea; se actualizó. Revisá y volvé a aplicar tu cambio.');
+        return;
+      }
+      if (e.code === 'not_found') { applyTask(e.id, null); }
+      toast(MESSAGES[e.code] || 'No se pudo guardar (' + (e.message || e.code) + ').');
+    }
   }
-  const updateTask = (id, patch) => write(async () => applyTask(id, await api.update(id, patch)));
+  // Escrituras de una misma tarea, en fila. El cambio se calcula al enviarlo, sobre el estado más
+  // reciente y con su etag: tildar dos pasos seguidos no da 409 ni pisa el primero.
+  const queues = new Map();
+  function updateTask(id, patch) {
+    const run = () => write(async () => {
+      const t = S.tasks.find((x) => x.id === id);
+      if (!t) return;
+      const body = typeof patch === 'function' ? patch(t) : patch;
+      if (!body) return;
+      try { applyTask(id, await api.update(id, body, t.etag)); }
+      catch (e) { e.id = id; throw e; }
+    });
+    const next = (queues.get(id) || Promise.resolve()).then(run);
+    queues.set(id, next);
+    next.finally(() => { if (queues.get(id) === next) queues.delete(id); });
+    return next;
+  }
+  const checklistOf = (t) => (Array.isArray(t.checklist) ? t.checklist : []);
 
   function renderMiles() {
     const nav = document.getElementById('miles');
@@ -221,11 +254,11 @@
         cl.length ? h('ul', { class: 'checklist' }, cl.map((c, i) => {
           const id = 'cl-' + t.id + '-' + i;
           return h('li', { class: c.done ? 'done' : '' },
-            h('input', { type: 'checkbox', id, checked: !!c.done, onchange: (e) => { const next = cl.map((x, j) => j === i ? { ...x, done: e.target.checked } : x); updateTask(t.id, { checklist: next }); } }),
+            h('input', { type: 'checkbox', id, checked: !!c.done, onchange: (e) => { const done = e.target.checked; updateTask(t.id, (cur) => ({ checklist: checklistOf(cur).map((x, j) => j === i ? { ...x, done } : x) })); } }),
             h('label', { for: id }, rich(c.text)),
-            h('button', { class: 'rm', type: 'button', 'aria-label': 'Quitar paso', onclick: () => updateTask(t.id, { checklist: cl.filter((_, j) => j !== i) }) }, '×'));
+            h('button', { class: 'rm', type: 'button', 'aria-label': 'Quitar paso', onclick: () => updateTask(t.id, (cur) => ({ checklist: checklistOf(cur).filter((_, j) => j !== i) })) }, '×'));
         })) : h('p', { style: 'margin:0;color:var(--muted);font-size:14px' }, 'Sin pasos todavía.'),
-        h('form', { class: 'addcl', onsubmit: (e) => { e.preventDefault(); const inp = e.target.querySelector('input'); const v = inp.value.trim(); if (!v) return; inp.value = ''; updateTask(t.id, { checklist: [...cl, { text: v, done: false }] }); } },
+        h('form', { class: 'addcl', onsubmit: (e) => { e.preventDefault(); const inp = e.target.querySelector('input'); const v = inp.value.trim(); if (!v) return; inp.value = ''; updateTask(t.id, (cur) => ({ checklist: [...checklistOf(cur), { text: v, done: false }] })); } },
           h('label', { for: 'd-addcl', class: 'sr' }, 'Nuevo paso'),
           h('input', { id: 'd-addcl', placeholder: 'Agregar paso', autocomplete: 'off' }),
           h('button', { class: 'btn', type: 'submit' }, 'Agregar'))),
@@ -239,14 +272,14 @@
         h('span', null, t.updated_at ? 'Actualizada ' + new Date(t.updated_at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : ''),
         S.confirmDelete
           ? h('span', { class: 'confirm' }, '¿Borrar la tarea?',
-              h('button', { class: 'btn danger', type: 'button', onclick: () => { const id = t.id; closeTask(); write(async () => { await api.remove(id); applyTask(id, null); }, 'Tarea borrada'); } }, 'Sí, borrar'),
+              h('button', { class: 'btn danger', type: 'button', onclick: () => { const id = t.id; closeTask(); const etag = t.etag; write(async () => { try { await api.remove(id, etag); } catch (e) { e.id = id; throw e; } applyTask(id, null); }, 'Tarea borrada'); } }, 'Sí, borrar'),
               h('button', { class: 'btn', type: 'button', onclick: () => { S.confirmDelete = false; renderDetail(); } }, 'No'))
           : h('button', { class: 'btn ghost danger', type: 'button', onclick: () => { S.confirmDelete = true; renderDetail(); } }, 'Borrar tarea')));
     box.hidden = false;
     if (keepFocus) { const el = document.getElementById(keepFocus); if (el) el.focus(); }
   }
 
-  function render() { renderMiles(); renderSummary(); renderBoard(); renderDetail(); }
+  function render() { renderMiles(); renderSummary(); renderBoard(); renderDetail(); renderConn(); }
 
   function setFilter(id) { S.filter = id; pref('filter', id); render(); }
   function openTask(id) { S.openId = id; S.confirmDelete = false; render(); const el = document.getElementById('d-title'); if (el) el.focus(); }
@@ -276,26 +309,65 @@
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.openId && !e.defaultPrevented) closeTask(); });
 
-  // Carga inicial desde el hub.
+  // Carga completa desde el hub. Si llegan eventos mientras carga, se repite: un evento viejo nunca pisa datos nuevos.
+  let loading = false, eventsDuringLoad = false;
   async function load() {
-    try {
-      const [config, m, t] = await Promise.all([api.config(), api.milestones(), api.tasks()]);
-      S.project = config.project || '';
-      S.milestones = m.milestones;
-      S.tasks = t.tasks;
-      S.warnings = [...m.warnings, ...t.warnings];
-      S.offline = false;
-      document.getElementById('project').textContent = S.project || 'Scope Compass';
-      document.title = S.project && S.project !== 'Scope Compass' ? S.project + ' · Scope Compass' : 'Scope Compass';
-      if (S.filter !== 'all' && !S.milestones.some((x) => x.id === S.filter)) S.filter = 'all';
-      if (S.openId && !S.tasks.some((x) => x.id === S.openId)) S.openId = null;
-    } catch (e) {
-      S.offline = true;
-    }
+    if (loading) { eventsDuringLoad = true; return; }
+    loading = true;
+    do {
+      eventsDuringLoad = false;
+      try {
+        const [config, m, t] = await Promise.all([api.config(), api.milestones(), api.tasks()]);
+        S.project = config.project || '';
+        S.milestones = m.milestones;
+        S.tasks = t.tasks;
+        S.warnings = [...m.warnings, ...t.warnings];
+        S.offline = false;
+      } catch (e) {
+        S.offline = true;
+        break;
+      }
+    } while (eventsDuringLoad);
+    loading = false;
+    document.getElementById('project').textContent = S.project || 'Scope Compass';
+    document.title = S.project && S.project !== 'Scope Compass' ? S.project + ' · Scope Compass' : 'Scope Compass';
+    if (S.filter !== 'all' && !S.milestones.some((x) => x.id === S.filter)) S.filter = 'all';
+    if (S.openId && !S.tasks.some((x) => x.id === S.openId)) S.openId = null;
     S.loaded = true;
     render();
   }
 
+  // Eventos del hub (spec §5.5). El hello llega al abrir y en cada reconexión: dispara una carga completa.
+  function onEvent(m) {
+    if (m.type === 'hello') { load(); return; }
+    if (loading) { eventsDuringLoad = true; return; }
+    if (m.type === 'upsert') apply(m.collection, m.id, m.doc);
+    else if (m.type === 'delete') apply(m.collection, m.id, null);
+    else if (m.type === 'warning') { S.warnings.push(m); render(); }
+  }
+
+  // WebSocket con reconexión: espera creciente de 0,5 s a 10 s, y vuelve a 0,5 s al conectar.
+  let retry = 500;
+  function connect() {
+    const ws = new WebSocket(new URL('/ws', location.href.replace(/^http/, 'ws')));
+    // El handler se registra ya: el hello llega apenas se abre la conexión (spec §5.5).
+    ws.onmessage = (e) => { try { onEvent(JSON.parse(e.data)); } catch (err) { console.error(err); } };
+    ws.onopen = () => { retry = 500; S.connected = true; renderConn(); };
+    ws.onclose = () => {
+      S.connected = false;
+      renderConn();
+      setTimeout(connect, retry);
+      retry = Math.min(retry * 2, 10000);
+    };
+  }
+  function renderConn() {
+    const el = document.getElementById('conn');
+    // Sin mostrarlo en el primer instante de la carga: solo si se perdió o nunca llegó.
+    el.hidden = S.connected || !S.loaded;
+  }
+
   render();
-  load();
+  connect();
+  // Si el WebSocket no conecta, igual se intenta la carga (muestra el aviso de hub caído).
+  setTimeout(() => { if (!S.loaded) load(); }, 1500);
 })();

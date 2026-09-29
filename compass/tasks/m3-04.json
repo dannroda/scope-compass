@@ -1,18 +1,18 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Cada escritura manda el etag que la UI tiene en memoria"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Ante `409`: tomar el documento actual y avisar \"otra pestaña cambió esta tarea\""
     }
   ],
   "code": "3.4",
   "created_at": "2026-09-29T22:25:12.887Z",
   "milestone": "m03",
-  "notes": "",
+  "notes": "Cada escritura manda `If-Match`. Ante `409` la UI toma el documento actual y avisa. Escrituras de una tarea en fila, con el cambio calculado al enviarlo: tildar varios pasos seguidos no da 409 ni pisa. Test con una pestaña que no recibe eventos (`routeWebSocket`) para forzar el 409.",
   "order": 4,
   "refs": [
     {
@@ -24,8 +24,8 @@
       "section": "frontend"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "Escritura con etag viejo desde una pestaña: la UI muestra el aviso y queda con el documento actual.",
   "title": "Escrituras con etag y 409",
-  "updated_at": "2026-09-29T22:25:12.887Z"
+  "updated_at": "2026-09-29T22:58:07.896Z"
 }
