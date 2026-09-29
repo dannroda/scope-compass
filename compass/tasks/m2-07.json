@@ -1,22 +1,22 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Criterios de §14 que necesitan servidor (sin UI)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Escritura concurrente con ETag viejo → `409`"
     },
     {
-      "done": false,
+      "done": true,
       "text": "JSON inválido con el hub corriendo → aviso, el servidor sigue"
     }
   ],
   "code": "2.7",
   "created_at": "2026-09-29T20:28:48.774Z",
   "milestone": "m02",
-  "notes": "",
+  "notes": "`hub/test/m2-criteria.test.js`: JSON inválido con hub (avisa y sigue respondiendo), CLI con hub incluido `export md`, edición con la app apagada vista al levantarla, conflicto sin sobrescribir por API/CLI/WebSocket, y escrituras concurrentes contra el hub real. Criterios de §14 con UI quedan para M3. Límite conocido: dos `add` simultáneos pueden repetir `order` (se leen antes de escribir); no pierde datos.",
   "order": 7,
   "refs": [
     {
@@ -24,8 +24,8 @@
       "section": "criterios-v1"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "`npm test` en `hub/` pasa, incluidos los tests con servidor.",
   "title": "Tests de M2",
-  "updated_at": "2026-09-29T20:28:48.774Z"
+  "updated_at": "2026-09-29T21:52:42.796Z"
 }

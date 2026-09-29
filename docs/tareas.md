@@ -180,7 +180,7 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-## M2 — Hub: API REST + WebSocket  (6/8)
+## M2 — Hub: API REST + WebSocket  (7/8)
 
 Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de §5.5 y el watcher de cambios externos.
 
@@ -268,13 +268,15 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 **Referencias:** `docs/spec.md#cli`
 
-### 2.7 Tests de M2 · Pendiente
+### 2.7 Tests de M2 · Hecho
 
-- [ ] Criterios de §14 que necesitan servidor (sin UI)
-- [ ] Escritura concurrente con ETag viejo → `409`
-- [ ] JSON inválido con el hub corriendo → aviso, el servidor sigue
+- [x] Criterios de §14 que necesitan servidor (sin UI)
+- [x] Escritura concurrente con ETag viejo → `409`
+- [x] JSON inválido con el hub corriendo → aviso, el servidor sigue
 
 **Prueba:** `npm test` en `hub/` pasa, incluidos los tests con servidor.
+
+**Notas:** `hub/test/m2-criteria.test.js`: JSON inválido con hub (avisa y sigue respondiendo), CLI con hub incluido `export md`, edición con la app apagada vista al levantarla, conflicto sin sobrescribir por API/CLI/WebSocket, y escrituras concurrentes contra el hub real. Criterios de §14 con UI quedan para M3. Límite conocido: dos `add` simultáneos pueden repetir `order` (se leen antes de escribir); no pierde datos.
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
