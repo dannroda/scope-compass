@@ -5,6 +5,7 @@ import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { exportMarkdown } from './export-md.js';
 import { KINDS, loadValidators, parseDoc, SCHEMA_DIR } from './schema.js';
 import { canonical } from './store/canonical.js';
 import { createJsonFilesStore, etagOf, StoreError } from './store/json-files.js';
@@ -22,6 +23,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   check <id> <n> [--undo]                   tilda el paso n (desde 1)
   set <id> --file task.json                 reemplazo completo (--file - lee stdin)
   milestone list | show <id> | set <id> --file m.json
+  export md [--out docs/tareas.md]          regenera el markdown (también se hace solo al escribir)
 
   --json      salida JSON en lecturas y escrituras
   --etag <e>  en escrituras: falla con conflicto si el documento cambió
@@ -32,7 +34,7 @@ class UsageError extends Error {}
 const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
-  file: { type: 'string' }, undo: { type: 'boolean' }, project: { type: 'string' },
+  file: { type: 'string' }, out: { type: 'string' }, undo: { type: 'boolean' }, project: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
 
@@ -77,6 +79,12 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     try { return JSON.parse(text); } catch (e) { throw new StoreError('invalid_argument', `${path}: JSON inválido: ${e.message}`); }
   };
   const done = (r, msg) => { o.json ? print(JSON.stringify(r)) : print(msg); return 0; };
+  // D13: después de cada escritura se regenera el export, salvo auto_export_md: false.
+  const written = async (r, msg) => {
+    const all = await store.loadAll();
+    if (all.config?.export_md && all.config.auto_export_md !== false) await exportMarkdown(project, all);
+    return done(r, msg);
+  };
 
   const commands = {
     async init() {
@@ -134,6 +142,14 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       return 0;
     },
 
+    async export() {
+      if (rest[0] !== 'md') throw new UsageError(`formato de export desconocido: ${rest[0] ?? ''} (md)`);
+      const all = await store.loadAll();
+      showWarnings(all.warnings);
+      const path = await exportMarkdown(project, all, { out: o.out && resolve(cwd, o.out) });
+      return done({ path }, `Exportado ${path}`);
+    },
+
     async add() {
       const title = need(rest[0], 'el título');
       const milestone = need(o.milestone, '--milestone');
@@ -143,14 +159,14 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const r = await store.create('tasks', {
         milestone, title, code: o.code ?? '', status: o.status ?? 'todo', order, checklist: [], test: '', notes: '', refs: []
       });
-      return done({ id: r.id, etag: r.etag, ...r.doc }, `Creada ${r.id}: ${title}`);
+      return written({ id: r.id, etag: r.etag, ...r.doc }, `Creada ${r.id}: ${title}`);
     },
 
     async move() {
       const [id, status] = [need(rest[0], 'el id'), need(rest[1], 'el estado')];
       if (!STATUS[status]) throw new UsageError(`estado inválido: ${status} (todo, doing, review, done)`);
       const r = await store.patch('tasks', id, { status }, ifMatch);
-      return done({ id: r.id, etag: r.etag, ...r.doc }, `${id} → ${STATUS[status]}`);
+      return written({ id: r.id, etag: r.etag, ...r.doc }, `${id} → ${STATUS[status]}`);
     },
 
     async check() {
@@ -163,13 +179,13 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       const next = cl.map((c, i) => (i === n - 1 ? { ...c, done: !o.undo } : c));
       const r = await store.patch('tasks', id, { checklist: next }, { ifMatch: o.etag ?? cur.etag });
-      return done({ id: r.id, etag: r.etag, ...r.doc }, `${id} paso ${n} ${o.undo ? 'desmarcado' : 'hecho'}: ${cl[n - 1].text}`);
+      return written({ id: r.id, etag: r.etag, ...r.doc }, `${id} paso ${n} ${o.undo ? 'desmarcado' : 'hecho'}: ${cl[n - 1].text}`);
     },
 
     async set() {
       const id = need(rest[0], 'el id');
       const r = await store.put('tasks', id, await readJsonFile(need(o.file, '--file')), ifMatch);
-      return done({ id: r.id, etag: r.etag, ...r.doc }, `Guardada ${id}`);
+      return written({ id: r.id, etag: r.etag, ...r.doc }, `Guardada ${id}`);
     },
 
     async milestone() {
@@ -192,12 +208,12 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       if (sub === 'set') {
         const r = await store.put('milestones', need(id, 'el id'), await readJsonFile(need(o.file, '--file')), ifMatch);
-        return done({ id: r.id, etag: r.etag, ...r.doc }, `Guardado ${r.id}`);
+        return written({ id: r.id, etag: r.etag, ...r.doc }, `Guardado ${r.id}`);
       }
       throw new UsageError(`subcomando desconocido: milestone ${sub ?? ''}`);
     }
   };
-  for (const later of ['serve', 'export', 'import']) {
+  for (const later of ['serve', 'import']) {
     commands[later] = async () => { throw new StoreError('invalid_argument', `\`scompass ${later}\` todavía no está disponible`); };
   }
 

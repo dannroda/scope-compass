@@ -81,7 +81,7 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 **Notas:** Mientras no exista la app, el tablero vive en el artifact y `compass/` es su copia en git.
 
-## M1 — Store + CLI (sin servidor)  (4/7)
+## M1 — Store + CLI (sin servidor)  (5/7)
 
 Leer y escribir `compass/` con validación, formato canónico y ETag, desde la CLI `scompass`, sin hub corriendo.
 
@@ -144,14 +144,16 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#cli`
 
-### 1.5 Export markdown · Pendiente
+### 1.5 Export markdown · Hecho
 
-- [ ] Port de `tools/artifact_to_md.py`
-- [ ] `scompass export md [--out]`
-- [ ] Título y URL del tablero desde `config.json`
-- [ ] Regenerar después de cada escritura de la CLI si `auto_export_md` no es `false` (D13)
+- [x] Port de `tools/artifact_to_md.py`
+- [x] `scompass export md [--out]`
+- [x] Título y URL del tablero desde `config.json`
+- [x] Regenerar después de cada escritura de la CLI si `auto_export_md` no es `false` (D13)
 
 **Prueba:** Para los mismos datos, la salida es idéntica a `tools/artifact_to_md.py` (salvo la fecha).
+
+**Notas:** `hub/src/export-md.js`. Test contra `tools/artifact_to_md.py` con los datos de los dos proyectos: salida idéntica. Con `board_url` en la config el encabezado cita el artifact como fuente de verdad; sin él, dice que la fuente es `compass/` (se quita al migrar).
 
 **Referencias:** `docs/spec.md#cli`
 
