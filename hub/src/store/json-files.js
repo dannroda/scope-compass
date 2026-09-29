@@ -97,12 +97,18 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
       return cur;
     }),
 
-    // Crea con id nuevo (tareas) o con el id dado; falla si ya existe.
+    // Crea con id nuevo (tareas) o con el id dado; falla si ya existe. Una tarea sin order va al final de su hito.
     create: (collection, doc, id) => serial(async () => {
       if (id === undefined) {
         do id = randomId(); while (await readCurrent(collection, id).catch(() => true));
       } else if (await readCurrent(collection, id).catch(() => true)) {
         throw new StoreError('conflict', `ya existe ${collection}/${id}`);
+      }
+      // Sin order, la tarea va al final de su hito. Se calcula dentro de la cola: dos altas a la vez no lo repiten.
+      if (collection === 'tasks' && doc.order === undefined) {
+        const { docs } = await loadCollection(compassDir, 'tasks', validators);
+        const orders = [...docs.values()].filter((t) => t.milestone === doc.milestone).map((t) => t.order ?? 0);
+        doc = { ...doc, order: Math.max(0, ...orders) + 1 };
       }
       return write(collection, id, doc, null);
     }),

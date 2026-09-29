@@ -180,7 +180,7 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-## M2 — Hub: API REST + WebSocket  (7/8)
+## M2 — Hub: API REST + WebSocket  (8/8)
 
 Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de §5.5 y el watcher de cambios externos.
 
@@ -280,14 +280,16 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-### 2.8 `--etag` que exija que el documento no exista · Pendiente
+### 2.8 Detalles de la CLI: `--etag none`, editar campos, `order` al crear · Hecho
 
-- [ ] Valor especial (por ejemplo `--etag none`) que mapee a `ifMatch: null`
-- [ ] Documentarlo en `--help` y en el spec §6
+- [x] `--etag none` mapea a `ifMatch: null` (que no exista)
+- [x] `set <id> --title/--notes/--test/--code/--milestone/--status` sin `--file`: patch de esos campos
+- [x] `order` al crear lo calcula el store dentro de su cola (no la CLI): sin repetidos en `add` simultáneos
+- [x] Documentarlo en `--help` y en el spec §6
 
-**Prueba:** `scompass set x --file t.json --etag none` falla con `conflict` si `x` ya existe.
+**Prueba:** `scompass set x --file t.json --etag none` falla con `conflict` si `x` existe; `scompass set m2-08 --notes ...` cambia solo las notas; dos `add` simultáneos por el hub dan `order` distintos.
 
-**Notas:** Salió al cargar M2: `--etag ''` no expresaba "que no exista".
+**Notas:** CLI: `--etag none`, `set` con campos sueltos (patch) y `order` calculado por el store dentro de su cola. Con hub, 6 `add` simultáneos dan order 1..6. Cerrada con `scompass set --status --notes`, lo que agrega esta misma tarea.
 
 **Referencias:** `docs/spec.md#cli`
 

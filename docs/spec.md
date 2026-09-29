@@ -293,6 +293,7 @@ scompass add "<título>" --milestone m00 [--code 0.11]
 scompass move <id> <todo|doing|review|done>
 scompass check <id> <n> [--undo]             # n desde 1, como lo muestra `show`
 scompass set <id> --file task.json          # reemplazo completo, para cargas grandes
+scompass set <id> [--title] [--notes] [--test] [--code] [--milestone] [--status]   # solo esos campos
 scompass milestone list | show <id> | set <id> --file m.json
 scompass export md [--out docs/tareas.md]
 scompass import artifact <carpeta-export>   # §8
@@ -300,7 +301,8 @@ scompass import artifact <carpeta-export>   # §8
 
 - Si hay un servidor corriendo, la CLI **llama a la API**, que emite los eventos a la UI. Si no hay servidor, escribe los archivos directamente, con la misma validación y la misma escritura atómica. Para decidir, pide `GET /api/health` en el puerto de `config.json` (300 ms) y usa el hub solo si es del **mismo proyecto**. La salida, `--json` y los códigos de salida son iguales en los dos modos. `--direct` fuerza el disco.
 - `--json` en todas las lecturas y escrituras, para que los agentes parseen sin adivinar. Cada documento sale con su `etag`.
-- `--etag <e>` en las escrituras: falla con `conflict` (y el documento actual) si alguien lo cambió desde que se leyó.
+- `--etag <e>` en las escrituras: falla con `conflict` (y el documento actual) si alguien lo cambió desde que se leyó. `--etag none` exige que el documento no exista.
+- `add` no calcula el `order`: lo pone el store al crear, al final del hito, dentro de su cola de escritura. Con hub, dos `add` a la vez no repiten `order`.
 - `--dir <proyecto>`; sin él, busca `compass/config.json` subiendo desde la carpeta actual. `--file -` lee de stdin.
 - Después de cada escritura se regenera el markdown. Se desactiva con `config.json › auto_export_md: false` (D13). Sin hub lo hace la CLI; con hub lo hace el hub, tras cualquier cambio (API, CLI o externo) con un debounce de 200 ms, y relee la config en cada export.
 

@@ -120,3 +120,23 @@ test('init crea un compass/ válido y no pisa uno existente', async () => {
   assert.equal((await cli(['list', '--json'], { cwd: p })).json().tasks.length, 0);
   assert.equal((await cli(['--dir', p, 'init'])).code, 1);
 });
+
+test('--etag none: set crea solo si no existe', async () => {
+  await writeFile(join(dir, 't.json'), JSON.stringify({ milestone: 'm02', title: 'Nueva', status: 'todo' }));
+  assert.equal((await cli(['set', 'm2-99', '--file', 't.json', '--etag', 'none'])).code, 0);
+  const again = await cli(['set', 'm2-99', '--file', 't.json', '--etag', 'none']);
+  assert.equal(again.code, 1);
+  assert.match(again.err, /conflict/);
+});
+
+test('set con campos sueltos cambia solo esos campos', async () => {
+  const before = await task('m1-07');
+  const r = await cli(['set', 'm1-07', '--notes', 'nota nueva', '--title', 'Otro título', '--json']);
+  assert.equal(r.code, 0, r.err);
+  const after = await task('m1-07');
+  assert.deepEqual({ ...after, updated_at: 0 }, { ...before, notes: 'nota nueva', title: 'Otro título', updated_at: 0 });
+  assert.equal((await cli(['set', 'm1-07', '--status', 'wip'])).code, 2);
+  assert.equal((await cli(['set', 'm1-07'])).code, 2, 'sin --file ni campos');
+  assert.equal((await cli(['set', 'm1-07', '--file', 'x.json', '--notes', 'n'])).code, 2, 'no se combinan');
+  assert.equal((await cli(['set', 'nada', '--notes', 'n'])).code, 1);
+});

@@ -113,3 +113,22 @@ test('si el hub se cerró, la CLI vuelve a escribir al disco', async () => {
   assert.equal(r.code, 0, r.err);
   assert.equal(JSON.parse(await readFile(join(hubDir, 'compass', 'tasks', 'm1-04.json'), 'utf8')).status, 'doing');
 });
+
+test('add simultáneos por el hub: order distintos y consecutivos', async () => {
+  const outs = await Promise.all(Array.from({ length: 6 }, (_, i) => cli(hubDir, ['add', `Tarea ${i}`, '--milestone', 'm02', '--json'])));
+  assert.ok(outs.every((o) => o.code === 0));
+  const orders = outs.map((o) => JSON.parse(o.out).order).sort((a, b) => a - b);
+  assert.deepEqual(orders, [1, 2, 3, 4, 5, 6]);
+});
+
+test('--etag none y campos sueltos dan lo mismo con y sin hub', async () => {
+  const t = join(root, 't.json');
+  await writeFile(t, JSON.stringify({ milestone: 'm02', title: 'X', status: 'todo' }));
+  for (const cwd of [disk, hubDir]) {
+    assert.equal((await cli(cwd, ['set', 'm2-99', '--file', t, '--etag', 'none'])).code, 0);
+    assert.equal((await cli(cwd, ['set', 'm2-99', '--file', t, '--etag', 'none'])).code, 1);
+    assert.equal((await cli(cwd, ['set', 'm2-99', '--notes', 'n'])).code, 0);
+  }
+  assert.equal(await readFile(join(hubDir, 'compass', 'tasks', 'm2-99.json'), 'utf8'),
+    await readFile(join(disk, 'compass', 'tasks', 'm2-99.json'), 'utf8'));
+});

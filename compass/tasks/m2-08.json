@@ -1,18 +1,26 @@
 {
   "checklist": [
     {
-      "done": false,
-      "text": "Valor especial (por ejemplo `--etag none`) que mapee a `ifMatch: null`"
+      "done": true,
+      "text": "`--etag none` mapea a `ifMatch: null` (que no exista)"
     },
     {
-      "done": false,
+      "done": true,
+      "text": "`set <id> --title/--notes/--test/--code/--milestone/--status` sin `--file`: patch de esos campos"
+    },
+    {
+      "done": true,
+      "text": "`order` al crear lo calcula el store dentro de su cola (no la CLI): sin repetidos en `add` simultáneos"
+    },
+    {
+      "done": true,
       "text": "Documentarlo en `--help` y en el spec §6"
     }
   ],
   "code": "2.8",
   "created_at": "2026-09-29T20:28:48.890Z",
   "milestone": "m02",
-  "notes": "Salió al cargar M2: `--etag ''` no expresaba \"que no exista\".",
+  "notes": "CLI: `--etag none`, `set` con campos sueltos (patch) y `order` calculado por el store dentro de su cola. Con hub, 6 `add` simultáneos dan order 1..6. Cerrada con `scompass set --status --notes`, lo que agrega esta misma tarea.",
   "order": 8,
   "refs": [
     {
@@ -20,8 +28,8 @@
       "section": "cli"
     }
   ],
-  "status": "todo",
-  "test": "`scompass set x --file t.json --etag none` falla con `conflict` si `x` ya existe.",
-  "title": "`--etag` que exija que el documento no exista",
-  "updated_at": "2026-09-29T20:28:48.890Z"
+  "status": "done",
+  "test": "`scompass set x --file t.json --etag none` falla con `conflict` si `x` existe; `scompass set m2-08 --notes ...` cambia solo las notas; dos `add` simultáneos por el hub dan `order` distintos.",
+  "title": "Detalles de la CLI: `--etag none`, editar campos, `order` al crear",
+  "updated_at": "2026-09-29T22:10:47.449Z"
 }

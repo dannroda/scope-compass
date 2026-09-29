@@ -28,13 +28,15 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   move <id> <todo|doing|review|done>
   check <id> <n> [--undo]                   tilda el paso n (desde 1)
   set <id> --file task.json                 reemplazo completo (--file - lee stdin)
+  set <id> [--title t] [--notes n] [--test p] [--code c] [--milestone m] [--status s]
+                                            cambia solo esos campos
   milestone list | show <id> | set <id> --file m.json
   export md [--out docs/tareas.md]          regenera el markdown (también se hace solo al escribir)
   import artifact <carpeta> [--dry-run] [--overwrite]
                                             migra el export de ArtifactData (milestones/, tasks/)
 
   --json      salida JSON en lecturas y escrituras
-  --etag <e>  en escrituras: falla con conflicto si el documento cambió
+  --etag <e>  en escrituras: falla con conflicto si el documento cambió (none: si ya existe)
   --dir <p>   raíz del proyecto (por defecto: la carpeta con compass/ más cercana hacia arriba)
   --direct    escribir directo en compass/ aunque haya un hub corriendo
 
@@ -42,11 +44,15 @@ Si hay un hub de este proyecto en el puerto de config.json, las lecturas y escri
 
 class UsageError extends Error {}
 
+// Campos de una tarea que `set` edita sin --file.
+const FIELDS = ['title', 'notes', 'test', 'code', 'milestone', 'status'];
+
 const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
   port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' },
+  title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
 
@@ -87,7 +93,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     const hub = await detectHub(project, cfg?.port);
     if (hub) store = createHttpStore(hub, compass, { validators });
   }
-  const ifMatch = o.etag === undefined ? {} : { ifMatch: o.etag };
+  // --etag none: el documento no tiene que existir.
+  const ifMatch = o.etag === undefined ? {} : { ifMatch: o.etag === 'none' ? null : o.etag };
   const showWarnings = (ws) => { for (const w of ws) warn(`aviso [${w.code}] ${w.path}: ${w.message}`); };
   const need = (v, what) => { if (v === undefined || v === '') throw new UsageError(`falta ${what}`); return v; };
 
@@ -228,10 +235,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const title = need(rest[0], 'el título');
       const milestone = need(o.milestone, '--milestone');
       await store.get('milestones', milestone);
-      const { items } = await store.list('tasks');
-      const order = Math.max(0, ...items.filter((t) => t.doc.milestone === milestone).map((t) => t.doc.order ?? 0)) + 1;
       const r = await store.create('tasks', {
-        milestone, title, code: o.code ?? '', status: o.status ?? 'todo', order, checklist: [], test: '', notes: '', refs: []
+        milestone, title, code: o.code ?? '', status: o.status ?? 'todo', checklist: [], test: '', notes: '', refs: []
       });
       return written({ id: r.id, etag: r.etag, ...r.doc }, `Creada ${r.id}: ${title}`);
     },
@@ -258,7 +263,13 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
 
     async set() {
       const id = need(rest[0], 'el id');
-      const r = await store.put('tasks', id, await readJsonFile(need(o.file, '--file')), ifMatch);
+      const fields = Object.fromEntries(FIELDS.filter((f) => o[f] !== undefined).map((f) => [f, o[f]]));
+      if (o.file !== undefined && Object.keys(fields).length) throw new UsageError('--file reemplaza la tarea entera: no se combina con campos sueltos');
+      if (o.file === undefined && !Object.keys(fields).length) throw new UsageError(`falta --file o algún campo (${FIELDS.map((f) => '--' + f).join(', ')})`);
+      if (fields.status && !STATUS[fields.status]) throw new UsageError(`estado inválido: ${fields.status} (todo, doing, review, done)`);
+      const r = o.file !== undefined
+        ? await store.put('tasks', id, await readJsonFile(o.file), ifMatch)
+        : await store.patch('tasks', id, fields, ifMatch);
       return written({ id: r.id, etag: r.etag, ...r.doc }, `Guardada ${id}`);
     },
 
