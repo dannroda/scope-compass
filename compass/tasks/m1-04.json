@@ -1,0 +1,39 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "`init`: crea `compass/` con schemas, README, `.gdignore` y `config.json`"
+    },
+    {
+      "done": false,
+      "text": "`list` y `show` con `--json`"
+    },
+    {
+      "done": false,
+      "text": "`add`, `move`, `check`"
+    },
+    {
+      "done": false,
+      "text": "`set` y `milestone set` con `--file`"
+    },
+    {
+      "done": false,
+      "text": "`--dir` para apuntar a otro proyecto"
+    }
+  ],
+  "code": "1.4",
+  "created_at": "2026-09-29T20:00:00Z",
+  "milestone": "m01",
+  "notes": "",
+  "order": 4,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "cli"
+    }
+  ],
+  "status": "todo",
+  "test": "`scompass --dir ../project-epiphany list --json` lista las tareas de Epiphany.",
+  "title": "CLI básica",
+  "updated_at": "2026-09-29T20:00:00Z"
+}

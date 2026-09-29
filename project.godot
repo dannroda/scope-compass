@@ -1,0 +1,9 @@
+; Scope Compass se abre como proyecto de Godot para editar todo desde el editor
+; y para desarrollar el addon (addons/scope_compass). No es un juego.
+
+config_version=5
+
+[application]
+
+config/name="Scope Compass"
+config/features=PackedStringArray("4.8")

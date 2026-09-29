@@ -1,0 +1,77 @@
+# Decisiones
+
+Registro de las decisiones de diseño de Scope Compass: qué se decidió, por qué y qué se descartó. El detalle técnico está en `spec.md`; acá queda el razonamiento para no volver a discutir lo mismo.
+
+Formato: una entrada por decisión, la más reciente al final. Si una decisión cambia, se agrega una entrada nueva que la reemplaza (no se edita la vieja).
+
+---
+
+## D1 · Los datos viven en git; la app es opcional
+**2026-09-29 · vigente** · spec §1, §4.4
+
+Las tareas son archivos dentro del repo del proyecto. Si la app no existe, está rota o no está instalada, todo se puede leer, editar y versionar con git y un editor de texto.
+
+- **Por qué:** el tablero no puede ser la única copia de nada, y el historial lo da git gratis.
+- **Descartado:** base de datos (SQLite o similar). Sería una copia que git no ve bien, y en modo hosteado podría quedar como única copia.
+
+## D2 · Un archivo JSON por hito y por tarea, en formato canónico
+**2026-09-29 · vigente** · spec §4.1
+
+2 espacios, claves ordenadas, UTF-8, salto de línea final. La app reescribe en ese formato sin cambiar el contenido.
+
+- **Por qué:** mover una tarjeta cambia un solo archivo y el diff es mínimo; dos ramas que tocan tareas distintas no chocan.
+- **Descartado:** un único archivo con todo el tablero (conflictos de merge constantes).
+
+## D3 · Concurrencia por ETag (hash del contenido), sin número de versión en los archivos
+**2026-09-29 · vigente** · spec §4.2, §5.3
+
+- **Por qué:** una edición a mano o un merge de git no tienen que acordarse de incrementar un campo, y ese campo no genera conflictos en cada cambio.
+- **Descartado:** `version` entero guardado en el archivo (era el diseño inicial, copiado del artifact).
+
+## D4 · Stack: Node (Fastify) + UI web sin build step
+**2026-09-29 · vigente** · spec §1.1, §3
+
+Hub en Node con API REST y WebSocket; la UI es el código del artifact portado; la CLI `scompass` es la interfaz para agentes y scripts.
+
+- **Por qué:** la UI del artifact ya existe y funciona en el navegador; el teléfono es requisito (§12) y una web liviana carga bien ahí; el markdown del GDD tiene librerías maduras.
+- **Mantenimiento desde Godot:** el repo es un proyecto de Godot (D9) y los `.js`, `.html` y `.css` se editan como texto desde el editor.
+- **Descartado por ahora: todo en Godot.** Un addon `core` en GDScript (modelo, store, parser de markdown), un hub con `TCPServer` + `WebSocketPeer.accept_stream()`, y las mismas escenas de UI en el dock, en una app de escritorio y en un export web. Tiene a favor una sola herramienta y lenguaje, y la integración con el editor como centro. En contra:
+  - el export web pesa decenas de MB y carga lento en el teléfono;
+  - el texto lo dibuja el engine: no se selecciona ni se busca como en un navegador, y la accesibilidad es peor;
+  - el visor de markdown hay que construirlo (BBCode en `RichTextLabel`, `CodeEdit` para bloques de código, y `GDScriptSyntaxHighlighter` solo existe en el editor);
+  - una web publicada conectándose a `ws://127.0.0.1` depende de permisos del navegador (Chrome está sumando un permiso de acceso a la red local), sin verificar.
+- **Se reabre si** el teléfono deja de ser requisito.
+
+## D5 · WebSocket para tiempo real (no SSE)
+**2026-09-29 · vigente** · spec §5.5
+
+- **Por qué:** lo hablan igual el navegador y Godot (`WebSocketPeer`). SSE es más simple para el navegador, pero en Godot habría que parsear el stream a mano con `HTTPClient`.
+
+## D6 · Carpeta de datos `compass/`, visible, con `.gdignore`
+**2026-09-29 · vigente** · spec §4.1
+
+- **Por qué:** se ve en el explorador y en git sin configurar nada; el `.gdignore` evita que Godot la escanee.
+- **Reemplaza:** `.tablero/` (carpeta oculta), el nombre provisorio de la primera versión del spec.
+- **Consecuencia:** el dock de Godot la lee por ruta con `FileAccess`, no desde el FileSystem del editor.
+
+## D7 · Referencias a documentos por id estable de sección
+**2026-09-29 · vigente** · spec §10.1
+
+Cada sección referenciable lleva `<!-- id: nombre -->` debajo del título. Las tareas guardan `refs: [{doc, section}]`.
+
+- **Por qué:** "§11.3" cambia al insertar una sección y el título se renombra; el comentario es invisible en cualquier visor.
+- **Estado:** `project-epiphany/gdd.md` ya tiene sus 28 ids estampados, y sus tareas de M0 ya tienen `refs`.
+
+## D8 · Orden: v1 local → v1.5 dock de Godot → v2 documentos → hosting
+**2026-09-29 · vigente** · spec §2, §11, §12
+
+- **Por qué:** el valor inmediato es dejar de depender del artifact; el dock pone las tareas donde se trabaja; los documentos y el hosting suman menos y cuestan más.
+- **Regla:** ningún módulo de la visión (§11) entra antes de que v1 se use a diario.
+
+## D9 · Repo propio, hermano de los proyectos, abrible en Godot
+**2026-09-29 · vigente** · spec §9
+
+`dannroda/scope-compass`, clonado en `../scope-compass`. Tiene `project.godot` para editarlo desde el editor y desarrollar el addon ahí mismo.
+
+- **Nombre:** Scope Compass (CLI `scompass`). Reemplaza el provisorio "tablero".
+- **Consecuencia:** `hub/node_modules` necesita `.gdignore` (lo crea el `postinstall`).

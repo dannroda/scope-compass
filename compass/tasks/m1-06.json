@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Port de `tools/artifact_to_tablero.py`"
+    },
+    {
+      "done": false,
+      "text": "Descarta `version`; `created_at` = `updated_at` si existe"
+    },
+    {
+      "done": false,
+      "text": "Reporte de conteos"
+    }
+  ],
+  "code": "1.6",
+  "created_at": "2026-09-29T20:00:00Z",
+  "milestone": "m01",
+  "notes": "",
+  "order": 6,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "migracion"
+    }
+  ],
+  "status": "todo",
+  "test": "Importar el export de Epiphany: 11 hitos y 10 tareas, sin diferencias con `project-epiphany/compass/`.",
+  "title": "Import desde el artifact",
+  "updated_at": "2026-09-29T20:00:00Z"
+}

@@ -1,0 +1,35 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Abre en Godot 4.8 sin errores"
+    },
+    {
+      "done": false,
+      "text": "El addon `scope_compass` se activa"
+    },
+    {
+      "done": false,
+      "text": "Editor Settings › TextFile Extensions incluye `js,html,css,json,md`"
+    },
+    {
+      "done": false,
+      "text": "`compass/` no aparece en el FileSystem (`.gdignore`)"
+    }
+  ],
+  "code": "0.5",
+  "created_at": "2026-09-29T20:00:00Z",
+  "milestone": "m00",
+  "notes": "",
+  "order": 5,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "godot"
+    }
+  ],
+  "status": "todo",
+  "test": "Abrir `../scope-compass` en Godot 4.8, activar el addon y editar `hub/README.md` desde el editor.",
+  "title": "Abrir el repo en Godot",
+  "updated_at": "2026-09-29T20:00:00Z"
+}

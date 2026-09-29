@@ -1,0 +1,12 @@
+{
+  "name": "scope-compass",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Hub y CLI de Scope Compass: tablero de tareas por hito con los datos en git.",
+  "type": "module",
+  "scripts": {
+    "postinstall": "node -e \"require('node:fs').writeFileSync('node_modules/.gdignore', '')\"",
+    "test": "node --test"
+  },
+  "license": "UNLICENSED"
+}

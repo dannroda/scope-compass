@@ -1,0 +1,530 @@
+# Spec — Scope Compass
+
+Organizador de proyectos de videojuegos: tablero de tareas por hito, con los datos en git, una app local (CLI + hub + UI web) y un dock para el editor de Godot.
+
+**Estado:** en diseño. Plan de implementación en el tablero del repo (`compass/`, ver `README.md`). Prioridad actual: que funcione **local**.
+**Nombre:** Scope Compass. CLI: `scompass`. Carpeta de datos en cada proyecto: `compass/`.
+**Origen:** el tablero en artifact de Project Epiphany, https://claude.ai/artifact/DPeQdjQUUsQv7zCz7Tu5aY (creado el 2026-09-29). Primer proyecto usuario: `../project-epiphany`.
+**Referencias en este repo:**
+- `docs/reference/tablero-artifact.html`: el código fuente completo del artifact (UI + lógica), base del port de §7.
+- `tools/artifact_to_md.py`: prototipo del export a markdown (§6, `export md`).
+- `tools/artifact_to_tablero.py`: prototipo del import desde el artifact (§8).
+- `docs/decisiones.md`: registro de las decisiones tomadas y por qué.
+- Mockups de la app web, el teléfono y el dock de Godot: https://claude.ai/artifact/6QSijARPwJtsRd1t6wJGJ9
+
+---
+
+## 1. Objetivo
+<!-- id: objetivo -->
+
+Recrear el tablero del artifact como **app local propia**: un servidor Node que corre en la máquina, sirve la misma UI en el navegador y guarda los datos **dentro del proyecto**, versionables con git. Sin depender de claude.ai.
+
+**Principio no negociable: los datos viven en git, la app es opcional.** Si la app no está disponible (no instalada, rota, sin el servidor o sin el hosting), las tareas se tienen que poder leer, editar y versionar solo con git y un editor de texto. La app es una forma cómoda de manejar esos archivos, nunca el único lugar donde existen. Esto vale también cuando esté hosteada (§12).
+
+**Requisitos que vienen de cómo se trabaja en este proyecto:**
+- El trabajo es dentro del editor de Godot, sin IDE externo. La app tiene que abrirse y usarse sin tocar código.
+- Tiene que existir una **copia legible local** de las tareas (hoy `docs/tareas.md`).
+- Claude Code tiene que poder **leer y escribir tareas** desde la terminal, igual que hoy con el artifact.
+- **Interoperabilidad con Godot:** el editor se conecta a la app (dock con tareas y secciones del GDD). Ver §11.1.
+- A futuro, la base para una herramienta de organización de proyectos de videojuegos (ver §11).
+
+### 1.1 Arquitectura: local primero, hosteable después
+<!-- id: arquitectura -->
+
+```
+            ┌──────────── Hub (Node, en tu máquina) ────────────┐
+            │  API REST + WebSocket · datos en compass/ (JSON)  │
+            │  sirve la UI web · lee los docs (GDD) del proyecto │
+            └──────▲───────────────▲───────────────▲─────────────┘
+                   │ http/ws       │ ws            │ http
+              Navegador         Plugin Godot     CLI (Claude Code,
+              (UI del tablero)  (dock, v1.5)     scripts)
+```
+
+- **Ahora (v1):** todo corre en la máquina. El hub escucha en `127.0.0.1`, sin autenticación, y guarda los datos en el repo.
+- **Después (§12):** el mismo hub se puede hostear en un servidor privado para verlo desde el teléfono. Para que eso no obligue a reescribir nada, v1 respeta cuatro reglas desde el principio:
+  1. El acceso a datos pasa por una interfaz `Store`. Hay una sola implementación, archivos JSON en `compass/`, en local y hosteado. No hay base de datos que pueda quedar como única copia.
+  2. Los docs del proyecto pasan por una interfaz `DocSource` (v1: leer del disco; hosteado: los sube el plugin de Godot).
+  3. La UI usa URLs relativas y no asume que el hub está en `localhost`.
+  4. El servidor tiene un punto de enganche para autenticación por token, apagado en local.
+
+**Alternativas descartadas (por ahora):**
+- **Todo en Godot** (hub headless + UI exportada, también a web): una sola herramienta y lenguaje, pero el export web pesa decenas de MB, carga lento en el teléfono, el texto no se selecciona ni se busca como en un navegador y el visor de markdown habría que construirlo. Se retoma si el teléfono deja de ser requisito.
+- **Hosteado desde el día uno:** suma infraestructura (servidor, red privada, tokens) antes de que la app exista. Queda para §12.
+
+**Mantenimiento desde Godot:** la parte Node/HTML/JS se puede editar desde el editor de Godot como texto, agregando `js,html,css` en *Editor Settings › Docks › FileSystem › TextFile Extensions*. El plugin de Godot (v1.5) es GDScript.
+
+## 2. Alcance
+<!-- id: alcance -->
+
+### v1: paridad con el artifact
+<!-- id: v1-paridad -->
+
+- Hitos como pestañas, con objetivo, criterio de "Hecho cuando" y progreso (tareas hechas / total).
+- Vista "Todos" con conteo por estado.
+- Tablero de 4 columnas: Pendiente, En curso, Revisión, Hecho.
+- Tarjetas con código, título, hito (en vista "Todos") y progreso de pasos.
+- Arrastrar tarjetas entre columnas; también cambiar estado desde el detalle.
+- Panel de detalle: título editable, estado, hito, pasos (tildar, agregar, quitar), "Cómo probarlo", notas, fecha de última actualización, borrar con confirmación.
+- Crear tareas (título + hito).
+- `` `código` `` en los textos se muestra como código.
+- Tema claro y oscuro según el sistema; usable en pantalla angosta.
+- Varias pestañas abiertas se mantienen sincronizadas en vivo.
+
+### v1: además
+<!-- id: v1-ademas -->
+
+- **Exportar a markdown** (`docs/tareas.md`) desde la app y desde la CLI, con el mismo formato que genera hoy `tools/artifact_to_md.py`.
+- **Importar** el export del artifact (§8), para migrar sin perder nada.
+- **CLI** para Claude Code y scripts (§6).
+
+### Fuera de v1
+<!-- id: fuera-v1 -->
+
+Usuarios y permisos, sincronización entre máquinas (eso lo hace git), adjuntos, comentarios, fechas límite, prioridades, etiquetas, filtros avanzados, historial de cambios dentro de la app (lo da git), editar los hitos desde la UI (se editan con la CLI o a mano en v1).
+
+### v1.5: dock de Godot
+<!-- id: v1-5-dock -->
+
+Plugin `addons/scopecompass/` conectado al hub por WebSocket. Ver §11.1. Es el primer paso de interoperabilidad y se hace apenas v1 esté en uso.
+
+### v2: documentos del proyecto
+<!-- id: v2-docs -->
+
+Visor de documentos (GDD y demás) y referencias entre tareas y secciones. Ver §10. v1 ya guarda el campo `refs` para no tener que migrar datos después.
+
+## 3. Stack
+<!-- id: stack -->
+
+| Pieza | Elección | Por qué |
+|---|---|---|
+| Runtime | Node LTS | Lo que se pidió; corre igual en Linux y Windows. |
+| Servidor | Fastify | Liviano, validación de payloads por JSON Schema, archivos estáticos y WebSocket (`@fastify/websocket`) sin armar todo a mano. |
+| Datos | Archivos JSON (§4) | Diffs legibles en git, se inspeccionan a mano, cero setup. El volumen es chico (decenas o cientos de tareas). |
+| Tiempo real | WebSocket | Lo hablan igual el navegador y Godot (`WebSocketPeer`). SSE sería más simple para el navegador, pero en Godot habría que parsear el stream a mano con `HTTPClient`. |
+| Frontend | HTML + CSS + JS sin framework | Es el código del artifact casi tal cual (§7). Sin build step. |
+| Tests | `node:test` | Viene con Node. |
+
+Dependencias previstas: `fastify`, `@fastify/static`, `@fastify/websocket`, y un watcher de archivos si `fs.watch` resulta poco confiable (por ejemplo `chokidar`). Nada más.
+
+## 4. Datos
+<!-- id: datos -->
+
+### 4.1 Dónde se guardan
+<!-- id: datos-ubicacion -->
+
+Dentro del proyecto que se organiza, en la carpeta `compass/`:
+
+```
+<proyecto>/
+  compass/
+    .gdignore              # Godot ignora la carpeta
+    README.md              # cómo editar los datos a mano, sin la app (§4.4)
+    schema/                # JSON Schema de milestone y task, para validar sin la app
+    config.json            # nombre del proyecto, puerto, ruta del export md
+    milestones/m00.json
+    milestones/m01.json
+    tasks/m0-01.json
+    tasks/<id>.json
+  docs/tareas.md           # export legible (generado)
+```
+
+- **Un archivo por documento:** mover una tarjeta cambia un solo archivo y el diff en git queda mínimo.
+- JSON con indentación de 2 espacios y **claves ordenadas**, para que los diffs sean estables.
+- **No es una carpeta oculta,** a propósito: se ve en el explorador de archivos y en git sin configurar nada. El `.gdignore` evita que Godot la escanee o la importe. Consecuencia: el dock de Godot no la ve en su FileSystem, y la lee con `FileAccess` por ruta (§11.1).
+
+### 4.2 Modelo
+<!-- id: modelo -->
+
+Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un número de versión:** el control de concurrencia usa un hash del contenido (§5.3). Así una edición a mano o un merge de git no tienen que acordarse de incrementar nada, y no hay un campo que genere conflictos de merge en cada cambio.
+
+**Milestone** (`milestones/<id>.json`)
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `code` | string | `"M0"` |
+| `order` | number | Orden de las pestañas |
+| `title` | string | |
+| `goal` | string | Admite `` `código` `` |
+| `done_when` | string[] | Criterios de hecho |
+
+**Task** (`tasks/<id>.json`)
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `milestone` | string | Id del hito (`"m00"`) |
+| `code` | string | `"0.3"`; puede estar vacío |
+| `order` | number | Orden dentro de la columna |
+| `title` | string | |
+| `status` | `"todo" \| "doing" \| "review" \| "done"` | |
+| `checklist` | `{ text: string, done: boolean }[]` | |
+| `test` | string | "Cómo probarlo" |
+| `notes` | string | |
+| `refs` | `{ doc: string, section: string }[]` | Opcional. Referencias a secciones de documentos (§10). v1 las guarda y las muestra como texto; v2 las resuelve. |
+| `created_at` / `updated_at` | ISO 8601 | `updated_at` es opcional en ediciones a mano; la app lo completa en su próxima escritura |
+
+**Ids:** los hitos usan `m00`…`m99`. Las tareas importadas conservan su id (`m0-01`). Las tareas nuevas usan un id corto aleatorio (por ejemplo 8 caracteres base36), válido como nombre de archivo en Windows y Linux.
+
+### 4.3 Validación
+<!-- id: validacion -->
+
+Un JSON Schema por tipo, guardado también en `compass/schema/` para poder validar sin la app. El servidor valida en cada escritura y al cargar desde disco. Un archivo inválido (por ejemplo, editado a mano con un error, o con marcadores de conflicto de git) **no tira el servidor**: se reporta en consola y en un aviso de la UI, y ese documento se ignora hasta que se corrija.
+
+### 4.4 Manejo sin la app
+<!-- id: sin-app -->
+
+`compass/README.md` documenta esto para quien abra el repo sin la app:
+
+| Quiero… | Sin la app |
+|---|---|
+| Ver las tareas | Abrir `docs/tareas.md` (último export) o los JSON de `compass/tasks/` |
+| Mover una tarjeta | Cambiar `"status"` en `compass/tasks/<id>.json` a `todo`, `doing`, `review` o `done` |
+| Tildar un paso | Cambiar `"done": false` a `true` en el `checklist` |
+| Crear una tarea | Copiar un JSON existente con otro nombre de archivo (el nombre es el id) y editarlo |
+| Borrar una tarea | Borrar el archivo |
+| Ver el historial | `git log -p compass/tasks/<id>.json` |
+| Recuperar algo borrado | `git checkout <commit> -- compass/tasks/<id>.json` |
+
+Reglas que hacen esto posible:
+- **Formato canónico:** 2 espacios, claves ordenadas, un salto de línea al final, UTF-8. La app reescribe cualquier archivo editado a mano en ese formato la próxima vez que lo guarda, sin cambiar el contenido.
+- **Sin estado oculto:** todo lo que la app muestra sale de estos archivos, más `gdd.md` y `config.json`. No hay caché que sea la única copia de nada.
+- **El markdown es solo lectura:** `docs/tareas.md` es un export; editarlo no cambia las tareas. Lo dice su encabezado.
+
+### 4.5 Git: merges y conflictos
+<!-- id: git-merges -->
+
+- **Un archivo por tarea** hace que dos ramas que tocan tareas distintas nunca choquen.
+- Si dos ramas cambian la misma tarea, el conflicto es de git y se resuelve como cualquier otro. Mientras el archivo tenga marcadores de conflicto, la app lo marca como inválido (§4.3) y no lo pisa.
+- La app **nunca hace commits por su cuenta en local**: los cambios quedan en el working tree y se commitean cuando vos decidís, junto con el código si corresponde.
+
+## 5. Servidor
+<!-- id: servidor -->
+
+### 5.1 Arranque
+<!-- id: arranque -->
+
+```
+npx scompass serve [--dir <proyecto>] [--port 4711] [--open]
+```
+
+- Escucha **solo en `127.0.0.1`**. No hay autenticación porque no sale de la máquina.
+- `--open` abre el navegador por defecto.
+- Si `compass/` no existe, ofrece crearla (`scompass init`).
+
+### 5.2 API REST
+<!-- id: api-rest -->
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/milestones` | Lista ordenada por `order` |
+| `PUT` | `/api/milestones/:id` | Crea o reemplaza |
+| `DELETE` | `/api/milestones/:id` | Borra; rechaza con `409` si tiene tareas |
+| `GET` | `/api/tasks?milestone=&status=` | Lista, con filtros opcionales |
+| `POST` | `/api/tasks` | Crea; devuelve el documento con `id` y su `ETag` |
+| `PATCH` | `/api/tasks/:id` | Merge de campos (los arrays se reemplazan enteros, igual que en el artifact) |
+| `DELETE` | `/api/tasks/:id` | Borra |
+| `GET` | `/ws` | WebSocket de eventos (§5.5) |
+| `POST` | `/api/export/markdown` | Regenera `docs/tareas.md` |
+
+Las respuestas de error usan el formato `{error: {code, message}}` con los códigos `invalid_argument`, `not_found`, `conflict` e `io_error`.
+
+### 5.3 Concurrencia
+<!-- id: concurrencia -->
+
+- Cada documento tiene un `ETag`: un hash de su contenido canónico, calculado por el servidor, que no se guarda en el archivo.
+- `PATCH`, `PUT` y `DELETE` aceptan `If-Match: <etag>`. Si no coincide (otra pestaña, la CLI, una edición a mano o un `git pull` lo cambiaron), se responde `409 conflict` con el documento actual.
+- La UI siempre manda `If-Match`. Ante un `409`, recarga el documento y muestra un aviso ("Otra pestaña cambió esta tarea; se actualizó").
+- Escritura atómica: se escribe un archivo temporal y después se renombra, así un corte a mitad de la escritura no deja JSON roto.
+
+### 5.4 Cambios hechos fuera de la app
+<!-- id: cambios-externos -->
+
+Git pull, edición a mano o la CLI con el servidor corriendo: un watcher sobre `compass/` recarga el documento, lo valida y emite el evento por WebSocket. Así la UI refleja cualquier cambio sin recargar la página.
+
+### 5.5 Protocolo WebSocket
+<!-- id: websocket -->
+
+Mensajes JSON, un objeto por mensaje. Lo usan la UI web y el plugin de Godot.
+
+Servidor → cliente:
+```json
+{"type": "hello", "server_version": "1.0.0"}
+{"type": "upsert", "collection": "tasks", "id": "m0-03", "doc": { "...": "..." }}
+{"type": "delete", "collection": "tasks", "id": "m0-03"}
+{"type": "doc_changed", "alias": "gdd"}
+{"type": "warning", "code": "invalid_file", "path": "compass/tasks/x.json", "message": "..."}
+```
+
+Cliente → servidor (opcional; las escrituras también se pueden hacer por REST):
+```json
+{"type": "update", "req": 7, "collection": "tasks", "id": "m0-03", "etag": "9f2c…", "patch": {"status": "doing"}}
+```
+Respuesta: `{"type": "ack", "req": 7, "doc": {...}}` o `{"type": "error", "req": 7, "code": "conflict", "doc": {...}}`.
+
+- Al conectar, el cliente carga el estado inicial por REST y después aplica eventos.
+- Reconexión con backoff; al reconectar, recarga el estado completo (es chico).
+- Se valida con los mismos JSON Schema que la API REST.
+
+## 6. CLI
+<!-- id: cli -->
+
+La usa Claude Code en lugar del `ArtifactData` de hoy, y sirve para scripts:
+
+```
+scompass init
+scompass serve [--port] [--open]
+scompass list [--milestone m00] [--status doing] [--json]
+scompass show <id> [--json]
+scompass add "<título>" --milestone m00 [--code 0.11]
+scompass move <id> <todo|doing|review|done>
+scompass check <id> <índice> [--undo]
+scompass set <id> --file task.json          # reemplazo completo, para cargas grandes
+scompass milestone set <id> --file m.json
+scompass export md [--out docs/tareas.md]
+scompass import artifact <carpeta-export>   # §8
+```
+
+- Si hay un servidor corriendo, la CLI **llama a la API**, que emite los eventos a la UI. Si no hay servidor, escribe los archivos directamente, con la misma validación y la misma escritura atómica.
+- `--json` en todas las lecturas, para que los agentes parseen sin adivinar.
+- Opcional: después de cada escritura desde la CLI se regenera el markdown (`config.json › autoExportMarkdown`).
+
+## 7. Frontend: portar el artifact
+<!-- id: frontend -->
+
+La UI actual (`docs/reference/tablero-artifact.html`) ya separa el render de los datos. El port consiste en:
+
+1. **Sacar la capa `claude.use("db")`** y reemplazarla por un cliente chico:
+   ```js
+   const api = {
+     list: (col) => fetch(`/api/${col}`).then(r => r.json()),
+     create: (doc) => post('/api/tasks', doc),
+     update: (id, patch, etag) => patch(`/api/tasks/${id}`, patch, { 'If-Match': etag }),
+     remove: (id, etag) => del(`/api/tasks/${id}`, { 'If-Match': etag }),
+     subscribe: (onEvent) => { const ws = new WebSocket(new URL('/ws', location.href.replace(/^http/, 'ws'))); ws.onmessage = e => onEvent(JSON.parse(e.data)); return () => ws.close(); },
+   };
+   ```
+2. Las funciones `onSnapshot` que hoy llenan `S.milestones` y `S.tasks` pasan a hacer una carga inicial más la aplicación de eventos del WebSocket (upsert o delete sobre el array), con reconexión.
+3. `updateTask` manda el `etag` que tiene la tarea en memoria y maneja el `409`.
+4. Se mantienen tal cual: tokens de color (claro y oscuro), tipografías (Cinzel, Alegreya Sans, JetBrains Mono), `h()`, `rich()`, arrastrar y soltar, panel de detalle, confirmación de borrado y filtro recordado en `localStorage`.
+5. Separar en `index.html`, `app.css` y `app.js` sin build step.
+6. **Fuentes locales:** empaquetar las tres tipografías en `public/fonts/` para que la app funcione sin internet (el artifact las carga de Google Fonts).
+
+**Mejoras chicas que conviene hacer en el port:**
+- Mantener el texto sin guardar de "Notas" y "Cómo probarlo" cuando llega un evento de otra pestaña. Hoy el panel se re-renderiza y puede perder lo escrito si llega un cambio mientras escribís.
+- Reordenar tarjetas dentro de una columna al arrastrar (el campo `order` ya existe).
+- Atajos: `N` para nueva tarea, `Esc` para cerrar el detalle (ya existe), `1`–`4` para cambiar el estado de la tarea abierta.
+
+## 8. Migración desde el artifact
+<!-- id: migracion -->
+
+1. Exportar los datos con `ArtifactData`, action `list` sobre `milestones` y `tasks`, con `out_dir`. Genera un JSON por documento.
+2. `scompass import artifact <out_dir>` copia cada documento a `compass/` en formato canónico, descarta el campo `version` del artifact, agrega `created_at` (igual a `updated_at` si existe) y valida.
+3. Comparar conteos: hitos y tareas importados contra los listados.
+4. Regenerar `docs/tareas.md` y comparar con el existente. Solo debería cambiar la fecha.
+5. Dejar el artifact como archivo de solo lectura. No hay sincronización bidireccional.
+
+## 9. Estructura del repo
+<!-- id: estructura-repo -->
+
+Repo propio: `git@github.com:dannroda/scope-compass.git`, clonado como carpeta hermana de los proyectos que organiza (`../scope-compass`). Se apunta al proyecto con `--dir`.
+
+```
+scope-compass/
+  project.godot           # el repo se abre en Godot: editar todo desde el editor y probar el addon
+  README.md
+  docs/
+    spec.md               # este documento
+    decisiones.md         # registro de decisiones
+    tareas.md             # export legible del tablero propio (generado)
+    reference/            # código del artifact original
+  schema/                 # JSON Schemas fuente (milestone, task); `scompass init` los copia a <proyecto>/compass/schema/
+  hub/                    # paquete Node: servidor + CLI
+    package.json          # "bin": { "scompass": "bin/scompass.js" }
+    bin/scompass.js       # CLI
+    src/
+      server.js           # Fastify: API REST, WebSocket, estáticos (sirve web/)
+      store/              # interfaz Store + json-files.js (única implementación) + git-sync.js (hosteado, §12.1)
+      docs/               # interfaz DocSource + disk.js (v2); upload.js (hosteado)
+      schema.js           # carga los schemas de ../schema
+      export-md.js        # port de tools/artifact_to_md.py
+      import-artifact.js  # port de tools/artifact_to_tablero.py
+    test/                 # node:test
+  web/                    # UI sin build step: index.html, app.css, app.js, fonts/
+  addons/scope_compass/   # plugin de Godot (dock, v1.5)
+  tools/                  # prototipos en Python que el hub reemplaza
+  compass/                # el tablero de Scope Compass mismo (se usa a sí mismo)
+```
+
+**Godot y `node_modules`:** como el repo es un proyecto de Godot, el editor escanearía `hub/node_modules`. El `postinstall` de `hub/package.json` crea `node_modules/.gdignore` después de cada `npm install`.
+
+## 10. v2: documentos del proyecto y referencias
+<!-- id: documentos -->
+
+**Problema:** varias tareas dicen "ver `gdd.md` §11.3". Hoy eso obliga a abrir el GDD aparte, y desde Godot el markdown no se puede leer. La numeración además se rompe: si se inserta una sección, §11.3 pasa a ser §11.4 y la nota queda apuntando a otra cosa.
+
+**Qué resuelve v2:**
+1. La app es **el visor de los documentos del proyecto**. El GDD se lee formateado, con índice y snippets resaltados, en el mismo lugar que las tareas.
+2. Las tareas **referencian secciones** con un id estable, y el detalle de la tarea muestra la sección ahí mismo.
+3. Cada sección muestra **qué tareas la referencian** (backlinks). Así se ve qué parte del diseño ya está planificada y cuál no.
+
+### 10.1 Ids estables de sección
+<!-- id: ids-seccion -->
+
+La referencia no puede depender del número (`11.3`) ni del texto del título (se renombra). Cada sección referenciable lleva un id explícito en un comentario HTML justo debajo del título:
+
+```markdown
+#### Ventanas de ataque: `AttackData` + `AttackRunner`
+<!-- id: ventanas-ataque -->
+```
+
+- El comentario es invisible en cualquier visor de markdown (GitHub, VS Code, el propio tablero).
+- Sin id explícito, la sección se puede referenciar igual por el slug del título. La app lo marca como "referencia frágil" y ofrece estampar el id (`scompass doc stamp-ids gdd.md`).
+- **Una sección** es su título más todo el contenido hasta el próximo título de nivel igual o superior.
+
+### 10.2 Cómo se referencia
+<!-- id: referencias -->
+
+- **Campo estructurado** `refs` en la tarea: `[{ doc: "gdd.md", section: "ventanas-ataque" }]`. Se edita desde el detalle con un buscador de secciones (título + documento).
+- **Enlaces en línea** dentro de `notes`, `test` y los pasos: `[[gdd#ventanas-ataque]]`. Se muestran como un enlace con el título actual de la sección. `gdd` es el alias del documento definido en `config.json`.
+
+### 10.3 UI
+<!-- id: documentos-ui -->
+
+- **Detalle de la tarea:** una sección "Referencias" con cada sección referenciada plegable, renderizada en el lugar y con un botón "Abrir en el documento".
+- **Vista Documentos:** una pestaña al lado de los hitos. Lista los documentos configurados; cada uno se abre con índice lateral, contenido renderizado y, junto a cada título, un contador de tareas que lo referencian ("3 tareas") que despliega la lista.
+- **Tarjetas:** un indicador chico si la tarea tiene referencias, y una advertencia si alguna está rota.
+- **Referencias rotas** (el id ya no existe): advertencia en la tarjeta y en el detalle, con la opción de buscar la sección nueva.
+
+### 10.4 Servidor y datos
+<!-- id: documentos-servidor -->
+
+- `config.json` declara los documentos: `"docs": [{ "alias": "gdd", "path": "gdd.md" }]`, o un patrón como `docs/**/*.md`.
+- El servidor parsea cada documento en un índice de secciones `{id, title, level, start, end}` y lo recalcula cuando el archivo cambia (el mismo watcher de §5.4). La UI recibe `doc_changed` por WebSocket y se actualiza.
+- Los documentos son **de solo lectura** desde la app en v2. Se siguen editando donde se editan hoy.
+- Render de markdown con una librería empaquetada localmente (por ejemplo markdown-it) y resaltado de sintaxis que cubra GDScript. Hay que verificar que la librería elegida lo soporte.
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/docs` | Documentos configurados con su índice de secciones |
+| `GET` | `/api/docs/:alias` | Documento completo renderizado |
+| `GET` | `/api/docs/:alias/sections/:id` | Una sección renderizada + tareas que la referencian |
+| `GET` | `/api/refs/broken` | Referencias que no resuelven |
+
+CLI:
+
+```
+scompass doc list
+scompass doc show gdd#ventanas-ataque [--raw]
+scompass doc stamp-ids gdd.md               # agrega <!-- id: ... --> a las secciones que no lo tienen
+scompass refs check                         # lista referencias rotas; exit code != 0 si hay
+scompass ref add <task-id> gdd#ventanas-ataque
+```
+
+`doc show --raw` le sirve a Claude Code para traer al contexto justo la sección que necesita, en lugar del GDD entero.
+
+### 10.5 Migración de las notas actuales
+<!-- id: migracion-notas -->
+
+Las notas de hoy tienen la forma "Ver `gdd.md` §4.3". `scompass import artifact` las detecta con un patrón (`gdd.md` + `§N.N`) y propone la referencia estructurada equivalente. Para eso el GDD tiene que tener sus ids estampados antes de importar. La propuesta se revisa a mano: no se aplica sola.
+
+### 10.6 Criterios de aceptación de v2
+<!-- id: criterios-v2 -->
+
+- [ ] Una tarea con `refs` muestra la sección renderizada en su detalle, con snippets de GDScript resaltados.
+- [ ] Renombrar o renumerar una sección con id explícito no rompe ninguna referencia.
+- [ ] Borrar una sección referenciada marca la tarea con una advertencia, y `scompass refs check` la lista.
+- [ ] La vista Documentos muestra los backlinks correctos por sección.
+- [ ] Editar `gdd.md` con la app abierta actualiza la vista en menos de 1 s.
+
+## 11. Visión: organizador de proyectos de videojuegos
+<!-- id: vision -->
+
+Tareas + documentos es la base de una herramienta más grande para organizar un proyecto de videojuegos. Los mismos principios siguen sirviendo: datos en archivos dentro del repo, versionados con git, y accesibles para personas (UI), agentes (CLI) y el editor (API).
+
+Módulos posibles, en el orden en que tendrían sentido para este proyecto:
+
+| Módulo | Qué agrega | Por qué encaja |
+|---|---|---|
+| **Decisiones** | Las "decisiones abiertas" del GDD como entidades con estado (abierta, decidida), opciones, la decisión tomada y las tareas afectadas | Hoy son checkboxes sueltos al final del GDD |
+| **Dock de Godot** | Ya planificado como v1.5 (§11.1) | Trabajar sin salir del editor, que es donde está el foco |
+| **Referencias a `res://`** | Vincular tareas con escenas, scripts y recursos; desde el dock, abrir el archivo | Cierra el ciclo tarea ↔ código |
+| **Bugs y playtests** | Reportes de playtest con build, pasos, gravedad; se convierten en tareas | Llega en M10, cuando haya playtesters |
+| **Assets** | Qué arte, audio y animaciones hacen falta, de dónde salen (KayKit, propio) y su estado | El proyecto mezcla packs y assets propios |
+| **Builds** | Qué build tiene qué tareas cerradas; notas de versión generadas | Útil desde que haya exports para terceros |
+
+### 11.1 Integración con Godot
+<!-- id: godot -->
+
+Un plugin de editor (`addons/scopecompass/`, GDScript) con tres niveles de integración, de menor a mayor esfuerzo:
+
+1. **Leer y escribir los archivos directamente.** Como los datos son JSON dentro del proyecto, el plugin los puede leer con `FileAccess`/`JSON` aunque el servidor no esté corriendo. Como `compass/` tiene `.gdignore`, no aparece en el FileSystem del editor: el plugin la lee por ruta (`ProjectSettings.globalize_path("res://compass")` + `DirAccess`/`FileAccess`). Sirve para mostrar tareas. Para escribir conviene pasar por el hub (o respetar las mismas reglas de ETag y escritura atómica).
+2. **Cliente del hub.** `HTTPRequest` para la carga inicial y las escrituras, y `WebSocketPeer` (con `poll()` en `_process`) para los cambios en vivo, con el protocolo de §5.5. **Esto es v1.5.**
+3. **Integración con el editor:**
+   - **Dock** con las tareas del hito actual (un `Tree` con columnas por estado, o una lista filtrada).
+   - **Secciones del GDD dentro del editor:** `RichTextLabel` no entiende markdown pero sí BBCode, así que el servidor expone `GET /api/docs/:alias/sections/:id?format=bbcode` y el dock muestra la sección referenciada sin salir de Godot.
+   - **Tareas del script abierto:** con la señal `editor_script_changed` del `ScriptEditor`, el dock muestra las tareas vinculadas a ese archivo (requiere las referencias a `res://` del módulo de la tabla).
+   - **Abrir desde la tarea:** `EditorInterface.edit_script(script, línea)` o `EditorInterface.open_scene_from_path(path)` para saltar al archivo vinculado.
+   - **Levantar el servidor desde el plugin:** `OS.create_process("node", [...])` al activar el plugin y `OS.kill(pid)` al desactivarlo, así no hace falta abrir una terminal.
+
+**Desde el juego (debug):** en builds de debug, un atajo en el juego puede mandar un reporte a `POST /api/tasks` con captura de pantalla, escena y posición del player. Es la base del módulo de bugs y playtests.
+
+**Riesgo conocido:** Godot 4.8 cambió el sistema de pantallas del editor (por eso hubo que parchear la UI de LimboAI). Hay que verificar que la API de docks funcione en la versión del proyecto antes de diseñar la UI del plugin, y preferir un dock a una pestaña de main screen.
+
+**Regla para no desbordar el alcance:** cada módulo entra solo cuando el proyecto lo necesita de verdad, y después de que v1 esté en uso diario. Primero v1, después v2 (documentos). El resto queda como dirección, no como plan.
+
+## 12. Hosting privado (más adelante)
+<!-- id: hosting -->
+
+**Objetivo:** ver y editar el tablero desde el teléfono sin tener la PC encendida, en un servidor privado.
+
+- **Mismo hub, otro lugar:** una imagen Docker del mismo código, con `DocSource` en modo upload. **El `Store` sigue siendo archivos JSON**, dentro de un clon del repo en el servidor (§12.1).
+- **Privacidad:** preferentemente sin exponerlo a internet, dentro de una red privada tipo Tailscale (teléfono y PC en la misma red). Alternativa: túnel con login delante (por ejemplo Cloudflare Tunnel + Access).
+- **Autenticación:** se activa el token del hub. El plugin de Godot y la CLI lo mandan en cada request y al abrir el WebSocket (`wss://`).
+- **Teléfono:** la misma UI web como PWA instalable, con caché del último estado para leer sin conexión.
+- **Docs:** el plugin de Godot sube `gdd.md` al hub cada vez que se guarda.
+- **Migración local → hosteado:** no hay migración de datos: el servidor clona el repo.
+
+### 12.1 Sincronización con git en modo hosteado
+<!-- id: git-sync -->
+
+Para respetar el principio de §1 también hosteado, **git sigue siendo el almacenamiento**:
+- El servidor trabaja sobre un clon del repo (hace falta un remoto privado: hoy el repo no tiene ninguno).
+- Los cambios hechos desde el teléfono se escriben en `compass/` y se commitean solos, agrupados (por ejemplo, 30 s sin cambios → un commit `compass: m0-03 → doing, 2 pasos tildados`), y se hace push.
+- El servidor hace `pull` periódico y antes de cada push. Si hay conflicto, **no hace push**: muestra un aviso en la UI y queda esperando a que se resuelva a mano. Nunca fuerza nada.
+- En la PC, un `git pull` trae los cambios del teléfono; el hub local o el plugin los ven con el watcher.
+- Si el servidor muere, no se pierde nada salvo lo que no llegó a pushear. El aviso de "cambios sin sincronizar" en la UI hace visible ese riesgo.
+- Los commits automáticos del servidor van solo sobre `compass/` y con un autor propio (`scompass-bot`), para distinguirlos en el historial.
+
+## 13. Futuro chico (sin módulo propio)
+<!-- id: futuro -->
+
+- Plantillas de hito.
+- Métricas simples: tareas cerradas por semana.
+
+## 14. Criterios de aceptación de v1
+<!-- id: criterios-v1 -->
+
+- [ ] `scompass import artifact` migra los 11 hitos y las 10 tareas de M0 sin diferencias de contenido.
+- [ ] La UI hace todo lo de §2 (paridad) con el mismo aspecto que el artifact, en claro y oscuro, en escritorio y en pantalla angosta.
+- [ ] Dos pestañas abiertas: mover una tarjeta en una se refleja en la otra en menos de 1 s.
+- [ ] Editar a mano `compass/tasks/<id>.json` con el servidor corriendo se refleja en la UI. Un JSON inválido muestra un aviso y no rompe el servidor.
+- [ ] Escritura concurrente con un ETag viejo devuelve `409` y la UI se recupera sola.
+- [ ] `scompass move`, `check`, `add` y `export md` funcionan con y sin servidor corriendo.
+- [ ] `docs/tareas.md` generado es idéntico al de `tools/artifact_to_md.py` para los mismos datos.
+- [ ] Funciona sin conexión a internet.
+- [ ] Un cliente WebSocket mínimo (script de test) recibe `upsert` al mover una tarjeta desde la UI.
+- [ ] Mover una tarjeta cambia exactamente un archivo en `git status`, y el diff es solo la línea de `status` (más `updated_at`).
+- [ ] Con la app apagada: editar a mano un JSON, validar contra `compass/schema/` y, al levantar la app, verlo reflejado sin pérdidas.
+- [ ] Un archivo con marcadores de conflicto de git se marca como inválido y la app no lo sobrescribe.
+- [ ] Borrar la app por completo no pierde ningún dato: todo está en `compass/` y en git.
+- [ ] Corre en Linux y Windows.
+
+## 15. Decisiones abiertas
+<!-- id: decisiones-abiertas -->
+
+- [x] Nombre de la app: **Scope Compass** (CLI `scompass`, datos en `compass/`).
+- [x] Repo propio: `dannroda/scope-compass`, carpeta hermana de los proyectos.
+- [ ] Licencia del repo.
+- [ ] Versión mínima de Node (propuesta: la LTS vigente al empezar M1).
+- [ ] ¿Editar hitos desde la UI en v1 o dejarlo en CLI?
+- [ ] ¿Export markdown automático en cada cambio o solo a pedido?

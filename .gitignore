@@ -1,0 +1,15 @@
+# Godot
+.godot/
+/android/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Editores y sistema
+.idea/
+.vscode/
+.DS_Store
+
+# Python
+__pycache__/
