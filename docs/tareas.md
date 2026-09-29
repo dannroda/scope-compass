@@ -60,11 +60,11 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 **Referencias:** `docs/spec.md#decisiones-abiertas`
 
-### 0.5 Abrir el repo en Godot · Pendiente
+### 0.5 Abrir el repo en Godot · En curso
 
 - [ ] Abre en Godot 4.8 sin errores
 - [ ] El addon `scope_compass` se activa
-- [ ] Editor Settings › TextFile Extensions incluye `js,html,css,json,md`
+- [ ] Editor Settings › Docks › FileSystem › TextFile Extensions: agregar `js,html,css` (`md` y `json` vienen por defecto)
 - [ ] `compass/` no aparece en el FileSystem (`.gdignore`)
 
 **Prueba:** Abrir `../scope-compass` en Godot 4.8, activar el addon y editar `hub/README.md` desde el editor.

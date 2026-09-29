@@ -10,7 +10,7 @@
     },
     {
       "done": false,
-      "text": "Editor Settings › TextFile Extensions incluye `js,html,css,json,md`"
+      "text": "Editor Settings › Docks › FileSystem › TextFile Extensions: agregar `js,html,css` (`md` y `json` vienen por defecto)"
     },
     {
       "done": false,
@@ -28,8 +28,8 @@
       "section": "godot"
     }
   ],
-  "status": "todo",
+  "status": "doing",
   "test": "Abrir `../scope-compass` en Godot 4.8, activar el addon y editar `hub/README.md` desde el editor.",
   "title": "Abrir el repo en Godot",
-  "updated_at": "2026-09-29T20:00:00Z"
+  "updated_at": "2026-09-29T23:15:00Z"
 }
