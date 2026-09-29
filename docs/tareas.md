@@ -79,7 +79,7 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 **Notas:** Mientras no exista la app, el tablero vive en el artifact y `compass/` es su copia en git.
 
-## M1 — Store + CLI (sin servidor)  (0/7)
+## M1 — Store + CLI (sin servidor)  (1/7)
 
 Leer y escribir `compass/` con validación, formato canónico y ETag, desde la CLI `scompass`, sin hub corriendo.
 
@@ -89,13 +89,15 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 - `export md` produce lo mismo que `tools/artifact_to_md.py`.
 - Un JSON inválido o con marcadores de conflicto se reporta y nunca se sobrescribe.
 
-### 1.1 Formato canónico y escritura atómica · Pendiente
+### 1.1 Formato canónico y escritura atómica · Hecho
 
-- [ ] Serializador canónico: claves ordenadas, 2 espacios, UTF-8, salto de línea final
-- [ ] Escritura atómica: archivo temporal + rename
-- [ ] Tests de ida y vuelta (leer → escribir → mismo contenido)
+- [x] Serializador canónico: claves ordenadas, 2 espacios, UTF-8, salto de línea final
+- [x] Escritura atómica: archivo temporal + rename
+- [x] Tests de ida y vuelta (leer → escribir → mismo contenido)
 
 **Prueba:** Reescribir un archivo editado a mano no cambia su contenido, solo el formato.
+
+**Notas:** `hub/src/store/canonical.js` y `hub/src/store/atomic.js`. Mismos bytes que el `canon()` de Python de `tools/` (verificado con los 21 JSON de Epiphany y casos límite). Los temporales se llaman `.<archivo>.<hex>.tmp`; el watcher de M2 los ignora con `isTempFile`. Los schemas no están en formato canónico a propósito (orden legible).
 
 **Referencias:** `docs/spec.md#sin-app`, `docs/spec.md#concurrencia`
 
