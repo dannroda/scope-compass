@@ -3,7 +3,7 @@
 > Copia local del tablero https://claude.ai/artifact/JAiu8ZznTSLcDk8EzU3Zaj. El tablero es la fuente de verdad; este archivo se regenera desde ahí.
 > Generado: 2026-09-29
 
-## M0 — Fundaciones del repo  (2/6)
+## M0 — Fundaciones del repo  (3/6)
 
 Repo inicializado con el spec ordenado, las decisiones registradas, los schemas, el tablero propio y la estructura base. Se abre en Godot.
 
@@ -12,7 +12,7 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 - Se abre en Godot 4.8 sin errores y el addon stub se activa.
 - Las decisiones abiertas del spec están resueltas o con fecha para decidir.
 
-### 0.1 Estructura base del repo · Revisión
+### 0.1 Estructura base del repo · Hecho
 
 - [x] Carpetas `docs/`, `schema/`, `hub/`, `web/`, `addons/scope_compass/`, `tools/`, `compass/`
 - [x] `README.md` en la raíz y en cada carpeta sin código
@@ -20,7 +20,7 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 - [x] `project.godot` mínimo
 - [x] `hub/package.json` con el `postinstall` que crea `node_modules/.gdignore`
 - [x] Primer commit y remoto `origin`
-- [ ] Push a GitHub
+- [x] Push a GitHub
 
 **Prueba:** `git ls-files` muestra la estructura de `docs/spec.md` §9.
 
