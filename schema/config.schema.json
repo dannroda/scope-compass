@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dannroda/scope-compass/schema/config.schema.json",
+  "title": "Config",
+  "description": "Configuración del proyecto: compass/config.json.",
+  "type": "object",
+  "required": [
+    "project"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "project": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Nombre del proyecto, para títulos y el export markdown"
+    },
+    "board_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Tablero en artifact del que se migró o que todavía se usa"
+    },
+    "docs": {
+      "type": "array",
+      "description": "Documentos referenciables desde las tareas (§10)",
+      "items": {
+        "type": "object",
+        "required": [
+          "alias",
+          "path"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "alias": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "description": "Nombre corto usado en [[alias#seccion]]"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Ruta relativa a la raíz del proyecto, o un patrón como docs/**/*.md"
+          }
+        }
+      }
+    },
+    "export_md": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Ruta del export markdown, relativa a la raíz del proyecto"
+    },
+    "port": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "description": "Puerto del hub en 127.0.0.1"
+    }
+  }
+}

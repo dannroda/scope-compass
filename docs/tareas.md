@@ -3,7 +3,7 @@
 > Copia local del tablero https://claude.ai/artifact/JAiu8ZznTSLcDk8EzU3Zaj. El tablero es la fuente de verdad; este archivo se regenera desde ahí.
 > Generado: 2026-09-29
 
-## M0 — Fundaciones del repo  (3/6)
+## M0 — Fundaciones del repo  (4/6)
 
 Repo inicializado con el spec ordenado, las decisiones registradas, los schemas, el tablero propio y la estructura base. Se abre en Godot.
 
@@ -36,14 +36,16 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 **Referencias:** `docs/spec.md#objetivo`
 
-### 0.3 Schemas · En curso
+### 0.3 Schemas · Hecho
 
 - [x] `schema/milestone.schema.json` y `schema/task.schema.json`
 - [x] Copia en `compass/schema/`
-- [ ] `schema/config.schema.json` para `compass/config.json`
-- [ ] Validar los datos existentes contra los schemas
+- [x] `schema/config.schema.json` para `compass/config.json`
+- [x] Validar los datos existentes contra los schemas
 
 **Prueba:** Los JSON de `compass/` y de `project-epiphany/compass/` validan contra `schema/`.
+
+**Notas:** Validador: `uv run tools/validate.py compass ../project-epiphany/compass` (schemas, formato canónico, conflictos, hitos inexistentes). La copia del schema de config en `project-epiphany/compass/schema/` queda para cuando Epiphany adopte la CLI (M4).
 
 **Referencias:** `docs/spec.md#validacion`
 

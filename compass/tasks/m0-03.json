@@ -9,18 +9,18 @@
       "text": "Copia en `compass/schema/`"
     },
     {
-      "done": false,
+      "done": true,
       "text": "`schema/config.schema.json` para `compass/config.json`"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Validar los datos existentes contra los schemas"
     }
   ],
   "code": "0.3",
   "created_at": "2026-09-29T20:00:00Z",
   "milestone": "m00",
-  "notes": "",
+  "notes": "Validador: `uv run tools/validate.py compass ../project-epiphany/compass` (schemas, formato canónico, conflictos, hitos inexistentes). La copia del schema de config en `project-epiphany/compass/schema/` queda para cuando Epiphany adopte la CLI (M4).",
   "order": 3,
   "refs": [
     {
@@ -28,8 +28,8 @@
       "section": "validacion"
     }
   ],
-  "status": "doing",
+  "status": "done",
   "test": "Los JSON de `compass/` y de `project-epiphany/compass/` validan contra `schema/`.",
   "title": "Schemas",
-  "updated_at": "2026-09-29T20:00:00Z"
+  "updated_at": "2026-09-29T22:00:00Z"
 }
