@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import { registerApi } from './api.js';
+import { createAutoExport } from './auto-export.js';
 import { registerWs } from './ws.js';
 import { StoreError } from './store/json-files.js';
 import { createWatcher } from './watcher.js';
@@ -18,8 +19,9 @@ const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, inva
 
 // token: si se pasa, cada request tiene que traer `Authorization: Bearer <token>` (hosting, §12). En local no se usa.
 // watch: mira compass/ y publica los cambios externos (necesita validators).
+// exportMd: regenera el export markdown tras cada cambio (D13); app.events emite 'exported' con la ruta.
 // app.events emite 'event' con los mensajes del protocolo WebSocket (§5.5): upsert, delete, warning.
-export function createServer({ projectDir, store, validators, watch = false, token = null, logger = false }) {
+export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false }) {
   const app = Fastify({ logger });
   app.decorate('events', new EventEmitter());
   const emit = (evt) => app.events.emit('event', evt);
@@ -28,6 +30,11 @@ export function createServer({ projectDir, store, validators, watch = false, tok
   if (watcher) {
     app.addHook('onReady', () => watcher.start());
     app.addHook('onClose', async () => watcher.close());
+  }
+  if (exportMd) {
+    const auto = createAutoExport({ projectDir, store, emit, onExported: (path) => app.events.emit('exported', path) });
+    app.events.on('event', (e) => { if (e.type === 'upsert' || e.type === 'delete') auto.schedule(); });
+    app.addHook('onClose', () => auto.flush());
   }
   // Escrituras del hub: se publican enseguida y el watcher no las repite.
   const publish = {

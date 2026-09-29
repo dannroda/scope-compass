@@ -302,7 +302,7 @@ scompass import artifact <carpeta-export>   # §8
 - `--json` en todas las lecturas y escrituras, para que los agentes parseen sin adivinar. Cada documento sale con su `etag`.
 - `--etag <e>` en las escrituras: falla con `conflict` (y el documento actual) si alguien lo cambió desde que se leyó.
 - `--dir <proyecto>`; sin él, busca `compass/config.json` subiendo desde la carpeta actual. `--file -` lee de stdin.
-- Después de cada escritura (desde la CLI o desde el hub) se regenera el markdown. Se desactiva con `config.json › auto_export_md: false` (D13).
+- Después de cada escritura se regenera el markdown. Se desactiva con `config.json › auto_export_md: false` (D13). Sin hub lo hace la CLI; con hub lo hace el hub, tras cualquier cambio (API, CLI o externo) con un debounce de 200 ms, y relee la config en cada export.
 
 ## 7. Frontend: portar el artifact
 <!-- id: frontend -->

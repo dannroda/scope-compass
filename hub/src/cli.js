@@ -96,8 +96,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     try { return JSON.parse(text); } catch (e) { throw new StoreError('invalid_argument', `${path}: JSON inválido: ${e.message}`); }
   };
   const done = (r, msg) => { o.json ? print(JSON.stringify(r)) : print(msg); return 0; };
-  // D13: después de cada escritura se regenera el export, salvo auto_export_md: false.
+  // D13: después de cada escritura se regenera el export, salvo auto_export_md: false. Con hub, lo hace el hub.
   const written = async (r, msg) => {
+    if (store.hub) return done(r, msg);
     const all = await store.loadAll();
     if (all.config?.export_md && all.config.auto_export_md !== false) await exportMarkdown(project, all);
     return done(r, msg);
@@ -125,7 +126,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       showWarnings(all.warnings);
       const port = Number(o.port ?? all.config?.port ?? 4711);
       if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`puerto inválido: ${o.port}`);
-      const app = createServer({ projectDir: project, store, validators, watch: true });
+      const app = createServer({ projectDir: project, store, validators, watch: true, exportMd: true });
       if (!o.json) app.events.on('event', (e) => { if (e.type === 'warning') warn(`aviso [${e.code}] ${e.path}: ${e.message}`); });
       let addr;
       try {
@@ -204,7 +205,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (!existsSync(join(compass, 'config.json'))) throw new StoreError('not_found', `no hay ${join(compass, 'config.json')}: corré \`scompass init\` primero`);
       const r = await importArtifact(src, compass, { validators, overwrite: o.overwrite, dryRun: o['dry-run'], ...(now && { now }) });
       const wrote = ['milestones', 'tasks'].some((c) => r[c].created.length + r[c].updated.length);
-      if (wrote && !o['dry-run']) {
+      if (wrote && !o['dry-run'] && !store.hub) {
         const all = await store.loadAll();
         if (all.config?.export_md && all.config.auto_export_md !== false) await exportMarkdown(project, all);
       }

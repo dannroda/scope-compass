@@ -180,7 +180,7 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-## M2 — Hub: API REST + WebSocket  (5/8)
+## M2 — Hub: API REST + WebSocket  (6/8)
 
 Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de §5.5 y el watcher de cambios externos.
 
@@ -256,13 +256,15 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 **Referencias:** `docs/spec.md#cli`
 
-### 2.6 Export markdown desde el hub · Pendiente
+### 2.6 Export markdown desde el hub · Hecho
 
-- [ ] Regenerar `export_md` después de cada escritura de la API (D13)
-- [ ] Debounce para ráfagas de cambios
-- [ ] También tras cambios externos detectados por el watcher
+- [x] Regenerar `export_md` después de cada escritura de la API (D13)
+- [x] Debounce para ráfagas de cambios
+- [x] También tras cambios externos detectados por el watcher
 
 **Prueba:** Mover una tarjeta desde la API actualiza `docs/tareas.md`.
+
+**Notas:** `hub/src/auto-export.js` (`exportMd: true` en `serve`). Debounce de 200 ms y relectura de la config en cada export. Al cerrar el hub se hace el export pendiente. Con hub, la CLI ya no exporta. Cerrada con el hub corriendo: el markdown lo generó el hub.
 
 **Referencias:** `docs/spec.md#cli`
 
