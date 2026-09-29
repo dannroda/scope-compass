@@ -427,7 +427,7 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
 **Notas:** Depende del usuario.
 
-## M5 — Dock de Godot (v1.5)  (0/7)
+## M5 — Dock de Godot (v1.5)  (2/7)
 
 Addon `scope_compass` con un dock que muestra las tareas del hito actual y las mueve a través del hub.
 
@@ -436,27 +436,29 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 - Mover una tarea desde el dock se ve en la UI web al instante, y al revés.
 - Sin hub corriendo, el dock muestra las tareas leyendo `compass/` en solo lectura.
 
-### 5.1 Estructura del addon con `EditorDock` · Pendiente
+### 5.1 Estructura del addon con `EditorDock` · Hecho
 
-- [ ] Dock con `EditorDock` + `add_dock` (API de 4.8, D19)
-- [ ] Vista del dock como `Control` aparte, testeable sin el editor
-- [ ] Se agrega y se quita limpio al activar y desactivar el plugin
+- [x] Dock con `EditorDock` + `add_dock` (API de 4.8, D19)
+- [x] Vista del dock como `Control` aparte, testeable sin el editor
+- [x] Se agrega y se quita limpio al activar y desactivar el plugin
 
 **Prueba:** Activar el plugin muestra el dock "Tablero"; desactivarlo lo quita sin errores.
 
-**Notas:** API verificada en 4.8-dev6 con un proyecto descartable.
+**Notas:** `scope_compass.gd` monta `dock_view.gd` (un VBoxContainer) dentro de un `EditorDock`. Probado en el editor sin ventana sobre este repo: se monta y se desmonta sin errores.
 
 **Referencias:** `docs/spec.md#godot`
 
-### 5.2 Modo sin hub: leer `compass/` · Pendiente
+### 5.2 Modo sin hub: leer `compass/` · Hecho
 
-- [ ] Leer hitos y tareas con `FileAccess`/`JSON`, mismo orden que la CLI; los inválidos se avisan
-- [ ] Selector de hito (por defecto el primero sin terminar; se recuerda por proyecto)
-- [ ] Tareas agrupadas por estado, plegables, con código, título y pasos
-- [ ] Aviso de solo lectura, "Reintentar" y "Abrir compass/tasks"
-- [ ] Pie con "N sin commitear" (`git status`)
+- [x] Leer hitos y tareas con `FileAccess`/`JSON`, mismo orden que la CLI; los inválidos se avisan
+- [x] Selector de hito (por defecto el primero sin terminar; se recuerda por proyecto)
+- [x] Tareas agrupadas por estado, plegables, con código, título y pasos
+- [x] Aviso de solo lectura, "Reintentar" y "Abrir compass/tasks"
+- [x] Pie con "N sin commitear" (`git status`)
 
 **Prueba:** Sin hub, el dock muestra las tareas del hito y un aviso de solo lectura.
+
+**Notas:** `compass_reader.gd` (lectura y validación mínima, mismos avisos que el hub), `board.gd` (orden de la CLI; hito por defecto: el primero sin terminar) y `dock_view.gd`. Sin hub relee cada 5 s. Tests de Godot sin ventana desde `npm test` (`hub/test/dock.test.js`). `web/fonts/.gdignore`: Godot importaba las fuentes.
 
 **Referencias:** `docs/spec.md#godot`, `docs/spec.md#sin-app`
 

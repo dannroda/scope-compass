@@ -1,30 +1,30 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Leer hitos y tareas con `FileAccess`/`JSON`, mismo orden que la CLI; los inválidos se avisan"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Selector de hito (por defecto el primero sin terminar; se recuerda por proyecto)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Tareas agrupadas por estado, plegables, con código, título y pasos"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Aviso de solo lectura, \"Reintentar\" y \"Abrir compass/tasks\""
     },
     {
-      "done": false,
+      "done": true,
       "text": "Pie con \"N sin commitear\" (`git status`)"
     }
   ],
   "code": "5.2",
   "created_at": "2026-09-29T23:49:26.974Z",
   "milestone": "m05",
-  "notes": "",
+  "notes": "`compass_reader.gd` (lectura y validación mínima, mismos avisos que el hub), `board.gd` (orden de la CLI; hito por defecto: el primero sin terminar) y `dock_view.gd`. Sin hub relee cada 5 s. Tests de Godot sin ventana desde `npm test` (`hub/test/dock.test.js`). `web/fonts/.gdignore`: Godot importaba las fuentes.",
   "order": 2,
   "refs": [
     {
@@ -36,8 +36,8 @@
       "section": "sin-app"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "Sin hub, el dock muestra las tareas del hito y un aviso de solo lectura.",
   "title": "Modo sin hub: leer `compass/`",
-  "updated_at": "2026-09-29T23:49:26.974Z"
+  "updated_at": "2026-09-29T23:52:58.266Z"
 }

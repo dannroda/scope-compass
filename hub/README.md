@@ -33,3 +33,5 @@ Sin `npm link`: `node hub/bin/scompass.js …`. Por ahora escribe siempre direct
 ## Tests
 
 `npm test` en `hub/`. Los tests que escriben usan `test/fixtures/compass/`, una copia congelada del tablero, para no depender del estado real de `compass/`. Los que comprueban propiedades de los datos reales (formato canónico, carga sin avisos, export idéntico a `tools/`) leen `../compass/` y `../../project-epiphany/compass/` si existe.
+
+Los tests del dock (`test/dock.test.js`) lanzan Godot sin ventana con `test/godot/runner.gd`; se saltean si no hay `godot` en el PATH. Para ver el dock sin abrir el editor: `xvfb-run -a godot --path .. --script res://hub/test/godot/shot.gd -- <proyecto> <salida.png> [tarea]`.

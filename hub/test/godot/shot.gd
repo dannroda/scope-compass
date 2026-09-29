@@ -1,0 +1,23 @@
+extends SceneTree
+## Captura de la vista del dock (para revisar a ojo): godot --path <repo> --script res://hub/test/godot/shot.gd -- <proyecto> <png> [tarea]
+const DockView := preload("res://addons/scope_compass/dock_view.gd")
+
+func _initialize() -> void:
+	var a := OS.get_cmdline_user_args()
+	get_root().size = Vector2i(380, 900)
+	var bg := ColorRect.new()
+	bg.color = Color("#252930")
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	get_root().add_child(bg)
+	var v := DockView.new()
+	v.set_anchors_preset(Control.PRESET_FULL_RECT)
+	v.offset_left = 8; v.offset_top = 8; v.offset_right = -8; v.offset_bottom = -8
+	get_root().add_child(v)
+	v.setup(a[0])
+	if a.size() > 2:
+		v.selected_task = a[2]
+		v._render()
+	for i in 10:
+		await process_frame
+	get_root().get_texture().get_image().save_png(a[1])
+	quit()
