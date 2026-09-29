@@ -10,8 +10,9 @@ import { exportMarkdown } from './export-md.js';
 import { importArtifact } from './import-artifact.js';
 import { KINDS, loadValidators, parseDoc, SCHEMA_DIR } from './schema.js';
 import { canonical } from './store/canonical.js';
-import { createJsonFilesStore, etagOf, StoreError } from './store/json-files.js';
+import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { createServer, listen } from './server.js';
+import { listMilestones, listTasks } from './views.js';
 
 const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
 const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
@@ -54,8 +55,6 @@ export function findProject(cwd, dir) {
   }
 }
 
-const byOrder = (a, b) => (a.doc.order ?? 0) - (b.doc.order ?? 0) ||
-  String(a.doc.code ?? '').localeCompare(String(b.doc.code ?? ''), 'es', { numeric: true }) || a.id.localeCompare(b.id);
 
 // signal: corta `serve` (los tests lo usan); sin él, serve termina con SIGINT o SIGTERM.
 export async function run(argv, { cwd = process.cwd(), out = process.stdout, err = process.stderr, stdin = process.stdin, now, signal } = {}) {
@@ -147,25 +146,21 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const all = await store.loadAll();
       showWarnings(all.warnings);
       const ms = new Map(all.milestones);
-      const mOrder = (id) => ms.get(id)?.order ?? Infinity;
-      const tasks = [...all.tasks].map(([id, doc]) => ({ id, doc }))
-        .filter((t) => !o.milestone || t.doc.milestone === o.milestone)
-        .filter((t) => !o.status || t.doc.status === o.status)
-        .sort((a, b) => mOrder(a.doc.milestone) - mOrder(b.doc.milestone) || byOrder(a, b));
+      const tasks = listTasks(all, { milestone: o.milestone, status: o.status });
       if (o.json) {
-        print(JSON.stringify({ tasks: tasks.map((t) => ({ id: t.id, etag: etagOf(t.doc), ...t.doc })), warnings: all.warnings }));
+        print(JSON.stringify({ tasks, warnings: all.warnings }));
         return 0;
       }
       let last;
       for (const t of tasks) {
-        if (t.doc.milestone !== last) {
-          last = t.doc.milestone;
+        if (t.milestone !== last) {
+          last = t.milestone;
           const m = ms.get(last);
           print(`\n${m ? `${m.code} · ${m.title}` : last}`);
         }
-        const cl = t.doc.checklist ?? [];
+        const cl = t.checklist ?? [];
         const steps = cl.length ? `  ${cl.filter((c) => c.done).length}/${cl.length}` : '';
-        print(`  ${t.id.padEnd(9)} ${(t.doc.code || '').padEnd(5)} ${STATUS[t.doc.status].padEnd(9)} ${t.doc.title}${steps}`);
+        print(`  ${t.id.padEnd(9)} ${(t.code || '').padEnd(5)} ${STATUS[t.status].padEnd(9)} ${t.title}${steps}`);
       }
       if (!tasks.length) print('Sin tareas.');
       return 0;
@@ -260,9 +255,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (sub === 'list') {
         const { items, warnings } = await store.list('milestones');
         showWarnings(warnings);
-        items.sort(byOrder);
-        if (o.json) return done({ milestones: items.map((m) => ({ id: m.id, etag: m.etag, ...m.doc })), warnings });
-        for (const m of items) print(`  ${m.id.padEnd(5)} ${m.doc.code.padEnd(4)} ${m.doc.title}`);
+        const milestones = listMilestones(items.map((m) => [m.id, m.doc]));
+        if (o.json) return done({ milestones, warnings });
+        for (const m of milestones) print(`  ${m.id.padEnd(5)} ${m.code.padEnd(4)} ${m.title}`);
         return 0;
       }
       if (sub === 'show') {

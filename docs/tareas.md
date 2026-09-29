@@ -180,7 +180,7 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-## M2 — Hub: API REST + WebSocket  (1/8)
+## M2 — Hub: API REST + WebSocket  (2/8)
 
 Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de §5.5 y el watcher de cambios externos.
 
@@ -205,15 +205,17 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 **Referencias:** `docs/spec.md#arranque`, `docs/spec.md#arquitectura`, `docs/spec.md#servidor`
 
-### 2.2 API REST · Pendiente
+### 2.2 API REST · Hecho
 
-- [ ] `GET/PUT/DELETE /api/milestones[/:id]`; `DELETE` rechaza con `409` si tiene tareas
-- [ ] `GET /api/tasks?milestone=&status=`, `POST`, `PATCH`, `DELETE`
-- [ ] Cabecera `ETag` en cada documento; `If-Match` en escrituras
-- [ ] `409 conflict` con el documento actual; `invalid_file` como `409`
-- [ ] `POST /api/export/markdown`
+- [x] `GET/PUT/DELETE /api/milestones[/:id]`; `DELETE` rechaza con `409` si tiene tareas
+- [x] `GET /api/tasks?milestone=&status=`, `POST`, `PATCH`, `DELETE`
+- [x] Cabecera `ETag` en cada documento; `If-Match` en escrituras
+- [x] `409 conflict` con el documento actual; `invalid_file` como `409`
+- [x] `POST /api/export/markdown`
 
 **Prueba:** Dos `PATCH` con el mismo `If-Match`: el segundo devuelve `409` con el documento actual.
+
+**Notas:** `hub/src/api.js`, vistas compartidas con la CLI en `hub/src/views.js`. Extras sobre §5.2: `GET` de un documento, `PUT /api/tasks/:id` y `If-None-Match: *` para crear solo si no existe. Cerrada por la propia API.
 
 **Referencias:** `docs/spec.md#api-rest`, `docs/spec.md#concurrencia`
 

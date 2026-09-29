@@ -218,14 +218,19 @@ npx scompass serve [--dir <proyecto>] [--port 4711] [--open]
 |---|---|---|
 | `GET` | `/api/health` | `{ok, name, version, project}`: la CLI lo usa para saber si hay un hub para este proyecto |
 | `GET` | `/api/milestones` | Lista ordenada por `order` |
+| `GET` | `/api/milestones/:id` | Un hito |
 | `PUT` | `/api/milestones/:id` | Crea o reemplaza |
 | `DELETE` | `/api/milestones/:id` | Borra; rechaza con `409` si tiene tareas |
 | `GET` | `/api/tasks?milestone=&status=` | Lista, con filtros opcionales |
+| `GET` | `/api/tasks/:id` | Una tarea |
 | `POST` | `/api/tasks` | Crea; devuelve el documento con `id` y su `ETag` |
+| `PUT` | `/api/tasks/:id` | Crea o reemplaza (lo usa `scompass set`) |
 | `PATCH` | `/api/tasks/:id` | Merge de campos (los arrays se reemplazan enteros, igual que en el artifact) |
 | `DELETE` | `/api/tasks/:id` | Borra |
 | `GET` | `/ws` | WebSocket de eventos (§5.5) |
 | `POST` | `/api/export/markdown` | Regenera `docs/tareas.md` |
+
+Los documentos van planos, `{id, etag, ...campos}`, igual que en `scompass --json`, y las listas traen `warnings` con los archivos inválidos. Cada documento lleva la cabecera `ETag` (entre comillas). En escrituras, `If-Match` exige esa versión e `If-None-Match: *` exige que el documento no exista.
 
 Las respuestas de error usan el formato `{error: {code, message}}` con los códigos `invalid_argument` (`400`), `not_found` (`404`), `conflict` (`409`), `invalid_file` e `io_error` (`500`), más `unauthenticated` (`401`) cuando el token está activado (§12). `invalid_file` (`409`) indica que el archivo en disco es inválido o tiene marcadores de conflicto: se rechaza cualquier escritura hasta que se corrija a mano (§4.3, §4.5). En un `PATCH`, un campo con valor `null` se borra del documento.
 
