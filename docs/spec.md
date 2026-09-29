@@ -519,7 +519,7 @@ Para respetar el principio de §1 también hosteado, **git sigue siendo el almac
 - [ ] Con la app apagada: editar a mano un JSON, validar contra `compass/schema/` y, al levantar la app, verlo reflejado sin pérdidas.
 - [ ] Un archivo con marcadores de conflicto de git se marca como inválido y la app no lo sobrescribe.
 - [ ] Borrar la app por completo no pierde ningún dato: todo está en `compass/` y en git.
-- [ ] Corre en Linux y Windows.
+- [ ] Corre en Linux. Windows queda para después de v1 (D15).
 
 ## 15. Decisiones abiertas
 <!-- id: decisiones-abiertas -->

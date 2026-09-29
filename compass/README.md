@@ -10,9 +10,9 @@ Estos archivos **son** las tareas de Scope Compass. Se pueden leer, editar y ver
 
 ## Estado actual
 
-Mientras la app no exista, el tablero se usa desde el artifact https://claude.ai/artifact/JAiu8ZznTSLcDk8EzU3Zaj y **esta carpeta es su copia en git**. Claude la regenera después de cada cambio en el tablero, junto con `docs/tareas.md`.
+**Esta carpeta es la fuente de verdad** desde el 2026-09-30 (D16). Se edita con `scompass` (`node hub/bin/scompass.js`, o `scompass` después de `npm link` en `hub/`) o a mano, y los cambios se commitean como cualquier otro archivo. `scompass` regenera `docs/tareas.md` en cada escritura; si editás a mano, corré `scompass export md`.
 
-Si editás algo acá a mano, pedile a Claude que lo suba al tablero; si no, la próxima regeneración lo pisa.
+El tablero en artifact (https://claude.ai/artifact/JAiu8ZznTSLcDk8EzU3Zaj) quedó archivado: no se sincroniza y sus datos pueden estar viejos.
 
 ## Manejo sin la app
 

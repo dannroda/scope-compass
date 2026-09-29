@@ -1,6 +1,6 @@
 # Tareas — Scope Compass
 
-> Copia local del tablero https://claude.ai/artifact/JAiu8ZznTSLcDk8EzU3Zaj. El tablero es la fuente de verdad; este archivo se regenera desde ahí.
+> Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
 > Generado: 2026-09-29
 
 ## M0 — Fundaciones del repo  (6/6)

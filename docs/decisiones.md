@@ -113,3 +113,21 @@ Después de cada escritura, desde la CLI o desde el hub, se regenera `export_md`
 - **Por qué:** es el validador de JSON Schema de referencia en Node, soporta 2020-12 completo y compila cada schema una sola vez. `strict: true` hace que un error en los propios schemas se note al arrancar.
 - **Descartado:** validar a mano, porque duplicaría los schemas en código y se desincronizaría, y otras librerías más chicas con soporte parcial de 2020-12.
 - **Detalle:** `npm install <paquete>` no corre el `postinstall` del proyecto. Después de agregar una dependencia hay que correr `npm install` sin argumentos para que se cree `node_modules/.gdignore`.
+
+## D15 · Linux primero
+**2026-09-30 · vigente** · spec §14
+
+v1 se desarrolla y se prueba solo en Linux. Windows no se prueba ni bloquea ningún hito.
+
+- **Por qué:** es la única plataforma en uso hoy. Probar Windows sin usarlo cuesta tiempo (CI, rutas, fin de línea) sin que nadie se beneficie.
+- **Se mantiene igual:** nada de lo que se escribe asume Linux a propósito (rutas con `node:path`, ids válidos como nombre de archivo en Windows, sin comandos del sistema), así que portar después debería ser barato.
+- **Revisar:** cuando alguien lo use en Windows, o al hacer el hosting (M7).
+
+## D16 · El tablero de Scope Compass vive en `compass/`
+**2026-09-30 · vigente** · spec §8 · reemplaza el uso del artifact
+
+Migrado con `scompass import artifact` desde el último export del artifact: 8 hitos y 13 tareas, todos sin cambios respecto de `compass/`. Se quitó `board_url` de `compass/config.json`.
+
+- **Por qué:** M1 cerrado, la CLI ya alcanza para trabajar el tablero, y usar la herramienta en su propio desarrollo es la mejor forma de encontrar lo que falta antes de migrar Epiphany (M4).
+- **Costo aceptado:** hasta M3 no hay UI; el tablero se ve en `docs/tareas.md` o con `scompass list`.
+- **El artifact** queda archivado y sin sincronización. No se borra: tiene el historial de antes de la migración.
