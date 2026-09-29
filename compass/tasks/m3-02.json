@@ -1,22 +1,22 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Reemplazar `claude.use(\"db\")` por un cliente de `/api`"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Carga inicial de hitos y tareas"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Crear, mover, editar y borrar tareas por la API"
     }
   ],
   "code": "3.2",
   "created_at": "2026-09-29T22:25:12.538Z",
   "milestone": "m03",
-  "notes": "",
+  "notes": "Cliente de `/api` en `app.js`; cada escritura aplica el documento que devuelve la API. Prueba de humo con Playwright sobre una copia: crear, mover, tildar, arrastrar y borrar cambian los JSON. Todavía sin etag (3.4) ni WebSocket (3.3).",
   "order": 2,
   "refs": [
     {
@@ -28,8 +28,8 @@
       "section": "api-rest"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "Crear, mover, tildar pasos y borrar desde la UI cambia los JSON de `compass/`.",
   "title": "Cliente de la API y carga inicial",
-  "updated_at": "2026-09-29T22:25:12.538Z"
+  "updated_at": "2026-09-29T22:45:45.130Z"
 }

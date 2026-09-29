@@ -100,3 +100,29 @@ test('scompass serve: puerto ocupado y proyecto sin compass/ fallan con 1', asyn
   assert.equal(await n.done, 1);
   assert.match(n.err(), /init/);
 });
+
+test('sirve la UI de web/ y nada fuera de ella', async () => {
+  const app = createServer({ projectDir: dir, store });
+  const index = await app.inject('/');
+  assert.equal(index.statusCode, 200);
+  assert.match(index.headers['content-type'], /text\/html/);
+  assert.match(index.body, /<script src="app.js"/);
+  assert.match((await app.inject('/app.js')).headers['content-type'], /javascript/);
+  assert.match((await app.inject('/app.css')).headers['content-type'], /text\/css/);
+  for (const url of ['/fonts/..%2F..%2Fpackage.json', '/fonts/.hidden.woff2', '/fonts/nada.woff2', '/README.md', '/api/nada']) {
+    const r = await app.inject(url);
+    assert.equal(r.statusCode, 404, url);
+    assert.equal(r.json().error.code, 'not_found', url);
+  }
+  await app.close();
+});
+
+test('GET /api/config devuelve la config del proyecto', async () => {
+  const app = createServer({ projectDir: dir, store });
+  const r = await app.inject('/api/config');
+  assert.equal(r.statusCode, 200);
+  assert.equal(r.json().project, 'Scope Compass');
+  await rm(join(dir, 'compass', 'config.json'));
+  assert.equal((await app.inject('/api/config')).statusCode, 409);
+  await app.close();
+});

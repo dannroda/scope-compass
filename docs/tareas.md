@@ -293,7 +293,7 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 **Referencias:** `docs/spec.md#cli`
 
-## M3 — UI web (port del artifact)  (0/8)
+## M3 — UI web (port del artifact)  (2/8)
 
 La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexión, fuentes locales y las mejoras chicas de §7.
 
@@ -302,24 +302,28 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 - Dos pestañas abiertas se sincronizan en menos de 1 s.
 - Funciona sin conexión a internet.
 
-### 3.1 Estructura de `web/` servida por el hub · Pendiente
+### 3.1 Estructura de `web/` servida por el hub · Hecho
 
-- [ ] Separar `docs/reference/tablero-artifact.html` en `web/index.html`, `app.css` y `app.js` sin build step
-- [ ] El hub sirve `web/` en `/` (handler propio, sin dependencia nueva)
-- [ ] `GET /api/config` con el nombre del proyecto para el título
-- [ ] Mismo aspecto que el artifact en claro y oscuro
+- [x] Separar `docs/reference/tablero-artifact.html` en `web/index.html`, `app.css` y `app.js` sin build step
+- [x] El hub sirve `web/` en `/` (handler propio, sin dependencia nueva)
+- [x] `GET /api/config` con el nombre del proyecto para el título
+- [x] Mismo aspecto que el artifact en claro y oscuro
 
 **Prueba:** `scompass serve --open` muestra el tablero con el aspecto del artifact.
 
+**Notas:** `web/index.html`, `app.css` (copiado del artifact) y `app.js`. El hub sirve `/`, `/app.css`, `/app.js` y `/fonts/:file` con rutas fijas. Revisado con capturas de Playwright en claro, oscuro y 390 px. En "Todos" las tarjetas se ordenan por hito y después por order, como `scompass list` (el artifact mezclaba hitos).
+
 **Referencias:** `docs/spec.md#frontend`, `docs/spec.md#v1-paridad`
 
-### 3.2 Cliente de la API y carga inicial · Pendiente
+### 3.2 Cliente de la API y carga inicial · Hecho
 
-- [ ] Reemplazar `claude.use("db")` por un cliente de `/api`
-- [ ] Carga inicial de hitos y tareas
-- [ ] Crear, mover, editar y borrar tareas por la API
+- [x] Reemplazar `claude.use("db")` por un cliente de `/api`
+- [x] Carga inicial de hitos y tareas
+- [x] Crear, mover, editar y borrar tareas por la API
 
 **Prueba:** Crear, mover, tildar pasos y borrar desde la UI cambia los JSON de `compass/`.
+
+**Notas:** Cliente de `/api` en `app.js`; cada escritura aplica el documento que devuelve la API. Prueba de humo con Playwright sobre una copia: crear, mover, tildar, arrastrar y borrar cambian los JSON. Todavía sin etag (3.4) ni WebSocket (3.3).
 
 **Referencias:** `docs/spec.md#frontend`, `docs/spec.md#api-rest`
 
@@ -362,11 +366,13 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 ### 3.7 Mejoras chicas del port · Pendiente
 
-- [ ] No perder el texto sin guardar de "Notas" y "Cómo probarlo" cuando llega un evento
+- [ ] No perder lo escrito en el detalle (Notas, Cómo probarlo y "Agregar paso") cuando se vuelve a dibujar, sea por un evento de otra pestaña o por la respuesta de una escritura propia
 - [ ] Reordenar tarjetas dentro de una columna al arrastrar (`order`)
 - [ ] Atajos: `N` nueva tarea, `1`–`4` estado de la tarea abierta, `Esc` cierra
 
 **Prueba:** Escribir notas mientras otra pestaña mueve la misma tarea no pierde lo escrito.
+
+**Notas:** En la prueba de humo de 3.2: escribir en "Agregar paso" antes de que vuelva la respuesta de un cambio de estado pierde lo escrito, porque el panel se redibuja.
 
 **Referencias:** `docs/spec.md#frontend`
 

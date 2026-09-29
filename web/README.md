@@ -1,5 +1,7 @@
 # web
 
-UI del tablero, sin framework ni build step: `index.html`, `app.css`, `app.js` y `fonts/`. La sirve el hub.
+UI del tablero, sin framework ni build step: `index.html`, `app.css`, `app.js` y `fonts/`. La sirve el hub (`scompass serve`) en `/`.
 
-Todavía no hay código. Es el port de `../docs/reference/tablero-artifact.html` (ver `../docs/spec.md` §7): se reemplaza la capa `claude.use("db")` por un cliente de la API del hub y se empaquetan las fuentes localmente.
+Es el port de `../docs/reference/tablero-artifact.html` (spec §7). El CSS y el render son los del artifact; la capa `claude.use("db")` se reemplazó por un cliente de la API del hub (`/api`).
+
+Pendiente en M3: WebSocket (3.3), etag y 409 (3.4), avisos de archivos inválidos (3.5), fuentes locales (3.6; hoy vienen de Google Fonts), mejoras chicas (3.7).
