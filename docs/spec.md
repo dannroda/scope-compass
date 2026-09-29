@@ -298,7 +298,7 @@ scompass export md [--out docs/tareas.md]
 scompass import artifact <carpeta-export>   # §8
 ```
 
-- Si hay un servidor corriendo, la CLI **llama a la API**, que emite los eventos a la UI. Si no hay servidor, escribe los archivos directamente, con la misma validación y la misma escritura atómica.
+- Si hay un servidor corriendo, la CLI **llama a la API**, que emite los eventos a la UI. Si no hay servidor, escribe los archivos directamente, con la misma validación y la misma escritura atómica. Para decidir, pide `GET /api/health` en el puerto de `config.json` (300 ms) y usa el hub solo si es del **mismo proyecto**. La salida, `--json` y los códigos de salida son iguales en los dos modos. `--direct` fuerza el disco.
 - `--json` en todas las lecturas y escrituras, para que los agentes parseen sin adivinar. Cada documento sale con su `etag`.
 - `--etag <e>` en las escrituras: falla con `conflict` (y el documento actual) si alguien lo cambió desde que se leyó.
 - `--dir <proyecto>`; sin él, busca `compass/config.json` subiendo desde la carpeta actual. `--file -` lee de stdin.

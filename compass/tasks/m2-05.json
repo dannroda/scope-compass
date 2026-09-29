@@ -1,22 +1,22 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Detectar el hub en el puerto de la config (`/api/health` del mismo proyecto)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Escrituras por la API cuando está; si no, directo al disco"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Mismos códigos de salida y la misma salida `--json` en los dos modos"
     }
   ],
   "code": "2.5",
   "created_at": "2026-09-29T20:28:48.529Z",
   "milestone": "m02",
-  "notes": "",
+  "notes": "`hub/src/store/http.js`: store sobre la API con la misma interfaz que json-files; la CLI elige uno u otro. Solo usa el hub si `/api/health` es del mismo proyecto. `--direct` fuerza el disco. Test: misma secuencia con y sin hub, salida idéntica. Cerrada por la CLI a través del hub.",
   "order": 5,
   "refs": [
     {
@@ -24,8 +24,8 @@
       "section": "cli"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "`scompass move` con el hub corriendo emite el evento por WebSocket; con el hub apagado escribe el archivo igual.",
   "title": "La CLI usa el hub si está corriendo",
-  "updated_at": "2026-09-29T20:28:48.529Z"
+  "updated_at": "2026-09-29T21:22:46.167Z"
 }

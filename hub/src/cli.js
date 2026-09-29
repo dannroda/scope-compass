@@ -11,6 +11,7 @@ import { importArtifact } from './import-artifact.js';
 import { KINDS, loadValidators, parseDoc, SCHEMA_DIR } from './schema.js';
 import { canonical } from './store/canonical.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
+import { createHttpStore, detectHub } from './store/http.js';
 import { createServer, listen } from './server.js';
 import { listMilestones, listTasks } from './views.js';
 
@@ -34,7 +35,10 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
 
   --json      salida JSON en lecturas y escrituras
   --etag <e>  en escrituras: falla con conflicto si el documento cambió
-  --dir <p>   raíz del proyecto (por defecto: la carpeta con compass/ más cercana hacia arriba)`;
+  --dir <p>   raíz del proyecto (por defecto: la carpeta con compass/ más cercana hacia arriba)
+  --direct    escribir directo en compass/ aunque haya un hub corriendo
+
+Si hay un hub de este proyecto en el puerto de config.json, las lecturas y escrituras pasan por su API.`;
 
 class UsageError extends Error {}
 
@@ -42,7 +46,7 @@ const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
-  port: { type: 'string' }, open: { type: 'boolean' },
+  port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' },
   help: { type: 'boolean', short: 'h' }
 };
 
@@ -76,7 +80,13 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const project = findProject(cwd, o.dir);
   const compass = join(project, 'compass');
   const validators = loadValidators();
-  const store = createJsonFilesStore(compass, { validators, ...(now && { now }) });
+  let store = createJsonFilesStore(compass, { validators, ...(now && { now }) });
+  // Con un hub de este proyecto corriendo, todo pasa por su API (eventos al instante, una sola cola de escritura).
+  if (!o.direct && !['init', 'serve', 'help'].includes(cmd)) {
+    const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
+    const hub = await detectHub(project, cfg?.port);
+    if (hub) store = createHttpStore(hub, compass, { validators });
+  }
   const ifMatch = o.etag === undefined ? {} : { ifMatch: o.etag };
   const showWarnings = (ws) => { for (const w of ws) warn(`aviso [${w.code}] ${w.path}: ${w.message}`); };
   const need = (v, what) => { if (v === undefined || v === '') throw new UsageError(`falta ${what}`); return v; };

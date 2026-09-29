@@ -180,7 +180,7 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-## M2 — Hub: API REST + WebSocket  (4/8)
+## M2 — Hub: API REST + WebSocket  (5/8)
 
 Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de §5.5 y el watcher de cambios externos.
 
@@ -244,13 +244,15 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 **Referencias:** `docs/spec.md#websocket`
 
-### 2.5 La CLI usa el hub si está corriendo · Pendiente
+### 2.5 La CLI usa el hub si está corriendo · Hecho
 
-- [ ] Detectar el hub en el puerto de la config (`/api/health` del mismo proyecto)
-- [ ] Escrituras por la API cuando está; si no, directo al disco
-- [ ] Mismos códigos de salida y la misma salida `--json` en los dos modos
+- [x] Detectar el hub en el puerto de la config (`/api/health` del mismo proyecto)
+- [x] Escrituras por la API cuando está; si no, directo al disco
+- [x] Mismos códigos de salida y la misma salida `--json` en los dos modos
 
 **Prueba:** `scompass move` con el hub corriendo emite el evento por WebSocket; con el hub apagado escribe el archivo igual.
+
+**Notas:** `hub/src/store/http.js`: store sobre la API con la misma interfaz que json-files; la CLI elige uno u otro. Solo usa el hub si `/api/health` es del mismo proyecto. `--direct` fuerza el disco. Test: misma secuencia con y sin hub, salida idéntica. Cerrada por la CLI a través del hub.
 
 **Referencias:** `docs/spec.md#cli`
 
