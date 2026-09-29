@@ -180,7 +180,7 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-## M2 — Hub: API REST + WebSocket  (3/8)
+## M2 — Hub: API REST + WebSocket  (4/8)
 
 Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de §5.5 y el watcher de cambios externos.
 
@@ -232,13 +232,15 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 **Referencias:** `docs/spec.md#cambios-externos`, `docs/spec.md#validacion`
 
-### 2.4 WebSocket · Pendiente
+### 2.4 WebSocket · Hecho
 
-- [ ] `/ws` con `hello` al conectar
-- [ ] `upsert`, `delete` y `warning` para escrituras de la API y cambios externos
-- [ ] Mensajes del cliente: `update` → `ack` o `error` (con `conflict` y el documento)
+- [x] `/ws` con `hello` al conectar
+- [x] `upsert`, `delete` y `warning` para escrituras de la API y cambios externos
+- [x] Mensajes del cliente: `update` → `ack` o `error` (con `conflict` y el documento)
 
 **Prueba:** Un cliente WebSocket mínimo recibe `upsert` al mover una tarjeta por la API y por la CLI.
+
+**Notas:** `hub/src/ws.js`. `update` solo para tareas (como la API, D12); el ack va a quien lo manda y el upsert a todos. Errores sin cerrar la conexión; un error inesperado responde `io_error` en vez de tumbar el hub. Cerrada por el propio WebSocket.
 
 **Referencias:** `docs/spec.md#websocket`
 

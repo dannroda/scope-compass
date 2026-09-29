@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import { registerApi } from './api.js';
+import { registerWs } from './ws.js';
 import { StoreError } from './store/json-files.js';
 import { createWatcher } from './watcher.js';
 import { flat } from './views.js';
@@ -68,6 +69,7 @@ export function createServer({ projectDir, store, validators, watch = false, tok
 
   app.get('/api/health', async () => ({ ok: true, name: 'scope-compass', version: VERSION, project: projectDir }));
   registerApi(app, { store, projectDir, publish });
+  app.register(registerWs, { store, publish, version: VERSION });
 
   // La UI llega en M3.
   app.get('/', async (req, reply) => reply.type('text/plain; charset=utf-8')

@@ -271,6 +271,10 @@ Cliente → servidor (opcional; las escrituras también se pueden hacer por REST
 ```
 Respuesta: `{"type": "ack", "req": 7, "doc": {...}}` o `{"type": "error", "req": 7, "code": "conflict", "doc": {...}}`.
 
+- `update` solo admite `tasks`, igual que la API (los hitos se editan por CLI, D12). Un `update` exitoso responde `ack` a quien lo mandó y además se publica como `upsert` para todos, incluido quien lo mandó.
+- Un mensaje inválido responde `error` (con `req: null` si no se pudo leer) y la conexión sigue abierta.
+- **Para los clientes:** el `hello` llega apenas se abre la conexión. El handler de mensajes se registra antes de ceder el control (antes de cualquier `await`), o el `hello` se pierde.
+
 - Al conectar, el cliente carga el estado inicial por REST y después aplica eventos.
 - Reconexión con backoff; al reconectar, recarga el estado completo (es chico).
 - Se valida con los mismos JSON Schema que la API REST.
