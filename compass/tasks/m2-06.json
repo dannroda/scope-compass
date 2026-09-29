@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Regenerar `export_md` después de cada escritura de la API (D13)"
+    },
+    {
+      "done": false,
+      "text": "Debounce para ráfagas de cambios"
+    },
+    {
+      "done": false,
+      "text": "También tras cambios externos detectados por el watcher"
+    }
+  ],
+  "code": "2.6",
+  "created_at": "2026-09-29T20:28:48.671Z",
+  "milestone": "m02",
+  "notes": "",
+  "order": 6,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "cli"
+    }
+  ],
+  "status": "todo",
+  "test": "Mover una tarjeta desde la API actualiza `docs/tareas.md`.",
+  "title": "Export markdown desde el hub",
+  "updated_at": "2026-09-29T20:28:48.671Z"
+}

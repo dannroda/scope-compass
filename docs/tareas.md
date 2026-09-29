@@ -180,7 +180,7 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-## M2 — Hub: API REST + WebSocket
+## M2 — Hub: API REST + WebSocket  (0/8)
 
 Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de §5.5 y el watcher de cambios externos.
 
@@ -189,6 +189,93 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 - Una escritura con ETag viejo devuelve `409` con el documento actual.
 - Editar un JSON a mano se emite por WebSocket en menos de 1 s.
 - Un cliente WebSocket mínimo de test recibe `upsert` al mover una tarjeta.
+
+### 2.1 Servidor Fastify y `scompass serve` · Pendiente
+
+- [ ] Dependencias `fastify` y `@fastify/websocket` (D17)
+- [ ] Escucha solo en `127.0.0.1`, puerto de `config.json` o `--port`
+- [ ] `scompass serve [--port] [--open]`; sin `compass/` sugiere `scompass init`
+- [ ] Errores `{error: {code, message}}` con los códigos del store
+- [ ] Hook de autenticación por token, apagado en local
+- [ ] `GET /api/health` con la versión y la ruta del proyecto
+
+**Prueba:** `scompass serve` arranca, `curl 127.0.0.1:4711/api/health` responde, y no escucha en otras interfaces.
+
+**Referencias:** `docs/spec.md#arranque`, `docs/spec.md#arquitectura`, `docs/spec.md#servidor`
+
+### 2.2 API REST · Pendiente
+
+- [ ] `GET/PUT/DELETE /api/milestones[/:id]`; `DELETE` rechaza con `409` si tiene tareas
+- [ ] `GET /api/tasks?milestone=&status=`, `POST`, `PATCH`, `DELETE`
+- [ ] Cabecera `ETag` en cada documento; `If-Match` en escrituras
+- [ ] `409 conflict` con el documento actual; `invalid_file` como `409`
+- [ ] `POST /api/export/markdown`
+
+**Prueba:** Dos `PATCH` con el mismo `If-Match`: el segundo devuelve `409` con el documento actual.
+
+**Referencias:** `docs/spec.md#api-rest`, `docs/spec.md#concurrencia`
+
+### 2.3 Watcher de cambios externos · Pendiente
+
+- [ ] `fs.watch` recursivo sobre `compass/` con debounce
+- [ ] Ignora los temporales de `writeAtomic`
+- [ ] Distingue escrituras propias de externas (sin eventos duplicados)
+- [ ] Archivo inválido → aviso, no se cae el servidor
+
+**Prueba:** Editar un JSON a mano con el hub corriendo emite el cambio en menos de 1 s; un JSON roto emite un aviso.
+
+**Referencias:** `docs/spec.md#cambios-externos`, `docs/spec.md#validacion`
+
+### 2.4 WebSocket · Pendiente
+
+- [ ] `/ws` con `hello` al conectar
+- [ ] `upsert`, `delete` y `warning` para escrituras de la API y cambios externos
+- [ ] Mensajes del cliente: `update` → `ack` o `error` (con `conflict` y el documento)
+
+**Prueba:** Un cliente WebSocket mínimo recibe `upsert` al mover una tarjeta por la API y por la CLI.
+
+**Referencias:** `docs/spec.md#websocket`
+
+### 2.5 La CLI usa el hub si está corriendo · Pendiente
+
+- [ ] Detectar el hub en el puerto de la config (`/api/health` del mismo proyecto)
+- [ ] Escrituras por la API cuando está; si no, directo al disco
+- [ ] Mismos códigos de salida y la misma salida `--json` en los dos modos
+
+**Prueba:** `scompass move` con el hub corriendo emite el evento por WebSocket; con el hub apagado escribe el archivo igual.
+
+**Referencias:** `docs/spec.md#cli`
+
+### 2.6 Export markdown desde el hub · Pendiente
+
+- [ ] Regenerar `export_md` después de cada escritura de la API (D13)
+- [ ] Debounce para ráfagas de cambios
+- [ ] También tras cambios externos detectados por el watcher
+
+**Prueba:** Mover una tarjeta desde la API actualiza `docs/tareas.md`.
+
+**Referencias:** `docs/spec.md#cli`
+
+### 2.7 Tests de M2 · Pendiente
+
+- [ ] Criterios de §14 que necesitan servidor (sin UI)
+- [ ] Escritura concurrente con ETag viejo → `409`
+- [ ] JSON inválido con el hub corriendo → aviso, el servidor sigue
+
+**Prueba:** `npm test` en `hub/` pasa, incluidos los tests con servidor.
+
+**Referencias:** `docs/spec.md#criterios-v1`
+
+### 2.8 `--etag` que exija que el documento no exista · Pendiente
+
+- [ ] Valor especial (por ejemplo `--etag none`) que mapee a `ifMatch: null`
+- [ ] Documentarlo en `--help` y en el spec §6
+
+**Prueba:** `scompass set x --file t.json --etag none` falla con `conflict` si `x` ya existe.
+
+**Notas:** Salió al cargar M2: `--etag ''` no expresaba "que no exista".
+
+**Referencias:** `docs/spec.md#cli`
 
 ## M3 — UI web (port del artifact)
 

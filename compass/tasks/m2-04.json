@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "`/ws` con `hello` al conectar"
+    },
+    {
+      "done": false,
+      "text": "`upsert`, `delete` y `warning` para escrituras de la API y cambios externos"
+    },
+    {
+      "done": false,
+      "text": "Mensajes del cliente: `update` → `ack` o `error` (con `conflict` y el documento)"
+    }
+  ],
+  "code": "2.4",
+  "created_at": "2026-09-29T20:28:48.419Z",
+  "milestone": "m02",
+  "notes": "",
+  "order": 4,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "websocket"
+    }
+  ],
+  "status": "todo",
+  "test": "Un cliente WebSocket mínimo recibe `upsert` al mover una tarjeta por la API y por la CLI.",
+  "title": "WebSocket",
+  "updated_at": "2026-09-29T20:28:48.419Z"
+}

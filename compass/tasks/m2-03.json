@@ -1,0 +1,39 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "`fs.watch` recursivo sobre `compass/` con debounce"
+    },
+    {
+      "done": false,
+      "text": "Ignora los temporales de `writeAtomic`"
+    },
+    {
+      "done": false,
+      "text": "Distingue escrituras propias de externas (sin eventos duplicados)"
+    },
+    {
+      "done": false,
+      "text": "Archivo inválido → aviso, no se cae el servidor"
+    }
+  ],
+  "code": "2.3",
+  "created_at": "2026-09-29T20:28:48.309Z",
+  "milestone": "m02",
+  "notes": "",
+  "order": 3,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "cambios-externos"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "validacion"
+    }
+  ],
+  "status": "todo",
+  "test": "Editar un JSON a mano con el hub corriendo emite el cambio en menos de 1 s; un JSON roto emite un aviso.",
+  "title": "Watcher de cambios externos",
+  "updated_at": "2026-09-29T20:28:48.309Z"
+}

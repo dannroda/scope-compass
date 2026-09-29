@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Detectar el hub en el puerto de la config (`/api/health` del mismo proyecto)"
+    },
+    {
+      "done": false,
+      "text": "Escrituras por la API cuando está; si no, directo al disco"
+    },
+    {
+      "done": false,
+      "text": "Mismos códigos de salida y la misma salida `--json` en los dos modos"
+    }
+  ],
+  "code": "2.5",
+  "created_at": "2026-09-29T20:28:48.529Z",
+  "milestone": "m02",
+  "notes": "",
+  "order": 5,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "cli"
+    }
+  ],
+  "status": "todo",
+  "test": "`scompass move` con el hub corriendo emite el evento por WebSocket; con el hub apagado escribe el archivo igual.",
+  "title": "La CLI usa el hub si está corriendo",
+  "updated_at": "2026-09-29T20:28:48.529Z"
+}

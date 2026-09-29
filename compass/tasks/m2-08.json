@@ -1,0 +1,27 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Valor especial (por ejemplo `--etag none`) que mapee a `ifMatch: null`"
+    },
+    {
+      "done": false,
+      "text": "Documentarlo en `--help` y en el spec §6"
+    }
+  ],
+  "code": "2.8",
+  "created_at": "2026-09-29T20:28:48.890Z",
+  "milestone": "m02",
+  "notes": "Salió al cargar M2: `--etag ''` no expresaba \"que no exista\".",
+  "order": 8,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "cli"
+    }
+  ],
+  "status": "todo",
+  "test": "`scompass set x --file t.json --etag none` falla con `conflict` si `x` ya existe.",
+  "title": "`--etag` que exija que el documento no exista",
+  "updated_at": "2026-09-29T20:28:48.890Z"
+}

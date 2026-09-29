@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Criterios de §14 que necesitan servidor (sin UI)"
+    },
+    {
+      "done": false,
+      "text": "Escritura concurrente con ETag viejo → `409`"
+    },
+    {
+      "done": false,
+      "text": "JSON inválido con el hub corriendo → aviso, el servidor sigue"
+    }
+  ],
+  "code": "2.7",
+  "created_at": "2026-09-29T20:28:48.774Z",
+  "milestone": "m02",
+  "notes": "",
+  "order": 7,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "criterios-v1"
+    }
+  ],
+  "status": "todo",
+  "test": "`npm test` en `hub/` pasa, incluidos los tests con servidor.",
+  "title": "Tests de M2",
+  "updated_at": "2026-09-29T20:28:48.774Z"
+}

@@ -1,0 +1,51 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Dependencias `fastify` y `@fastify/websocket` (D17)"
+    },
+    {
+      "done": false,
+      "text": "Escucha solo en `127.0.0.1`, puerto de `config.json` o `--port`"
+    },
+    {
+      "done": false,
+      "text": "`scompass serve [--port] [--open]`; sin `compass/` sugiere `scompass init`"
+    },
+    {
+      "done": false,
+      "text": "Errores `{error: {code, message}}` con los códigos del store"
+    },
+    {
+      "done": false,
+      "text": "Hook de autenticación por token, apagado en local"
+    },
+    {
+      "done": false,
+      "text": "`GET /api/health` con la versión y la ruta del proyecto"
+    }
+  ],
+  "code": "2.1",
+  "created_at": "2026-09-29T20:28:48.089Z",
+  "milestone": "m02",
+  "notes": "",
+  "order": 1,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "arranque"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "arquitectura"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "servidor"
+    }
+  ],
+  "status": "todo",
+  "test": "`scompass serve` arranca, `curl 127.0.0.1:4711/api/health` responde, y no escucha en otras interfaces.",
+  "title": "Servidor Fastify y `scompass serve`",
+  "updated_at": "2026-09-29T20:28:48.089Z"
+}
