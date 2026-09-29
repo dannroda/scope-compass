@@ -4,6 +4,9 @@
   "private": true,
   "description": "Hub y CLI de Scope Compass: tablero de tareas por hito con los datos en git.",
   "type": "module",
+  "bin": {
+    "scompass": "bin/scompass.js"
+  },
   "engines": {
     "node": ">=22"
   },

@@ -1,30 +1,30 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "`init`: crea `compass/` con schemas, README, `.gdignore` y `config.json`"
     },
     {
-      "done": false,
+      "done": true,
       "text": "`list` y `show` con `--json`"
     },
     {
-      "done": false,
+      "done": true,
       "text": "`add`, `move`, `check`"
     },
     {
-      "done": false,
+      "done": true,
       "text": "`set` y `milestone set` con `--file`"
     },
     {
-      "done": false,
+      "done": true,
       "text": "`--dir` para apuntar a otro proyecto"
     }
   ],
   "code": "1.4",
   "created_at": "2026-09-29T20:00:00Z",
   "milestone": "m01",
-  "notes": "",
+  "notes": "`hub/src/cli.js` + `hub/bin/scompass.js` (`npm link` en `hub/`). Extras sobre el spec: `milestone list|show`, `--etag` en escrituras, `--file -` (stdin), búsqueda de `compass/` hacia arriba. `check` numera desde 1. `serve`, `export` e `import` responden \"todavía no está disponible\".",
   "order": 4,
   "refs": [
     {
@@ -32,8 +32,8 @@
       "section": "cli"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "`scompass --dir ../project-epiphany list --json` lista las tareas de Epiphany.",
   "title": "CLI básica",
-  "updated_at": "2026-09-29T20:00:00Z"
+  "updated_at": "2026-09-30T01:00:00Z"
 }

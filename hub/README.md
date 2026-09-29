@@ -18,3 +18,14 @@ test/                node:test
 ```
 
 `npm install` crea `node_modules/.gdignore` (script `postinstall`) para que Godot no escanee las dependencias. `npm install <paquete>` no lo corre: después de agregar una dependencia, correr `npm install` sin argumentos.
+
+## CLI
+
+```
+cd hub && npm install && npm link     # deja `scompass` en el PATH
+scompass --help
+scompass list                          # desde cualquier carpeta dentro de un proyecto con compass/
+scompass --dir ../project-epiphany list --json
+```
+
+Sin `npm link`: `node hub/bin/scompass.js …`. Por ahora escribe siempre directo en `compass/`; cuando exista el hub (M2), usará la API si está corriendo.

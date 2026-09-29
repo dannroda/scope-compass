@@ -226,7 +226,7 @@ npx scompass serve [--dir <proyecto>] [--port 4711] [--open]
 | `GET` | `/ws` | WebSocket de eventos (§5.5) |
 | `POST` | `/api/export/markdown` | Regenera `docs/tareas.md` |
 
-Las respuestas de error usan el formato `{error: {code, message}}` con los códigos `invalid_argument`, `not_found`, `conflict` e `io_error`.
+Las respuestas de error usan el formato `{error: {code, message}}` con los códigos `invalid_argument`, `not_found`, `conflict`, `invalid_file` e `io_error`. `invalid_file` (`409`) indica que el archivo en disco es inválido o tiene marcadores de conflicto: se rechaza cualquier escritura hasta que se corrija a mano (§4.3, §4.5). En un `PATCH`, un campo con valor `null` se borra del documento.
 
 ### 5.3 Concurrencia
 <!-- id: concurrencia -->
@@ -277,15 +277,17 @@ scompass list [--milestone m00] [--status doing] [--json]
 scompass show <id> [--json]
 scompass add "<título>" --milestone m00 [--code 0.11]
 scompass move <id> <todo|doing|review|done>
-scompass check <id> <índice> [--undo]
+scompass check <id> <n> [--undo]             # n desde 1, como lo muestra `show`
 scompass set <id> --file task.json          # reemplazo completo, para cargas grandes
-scompass milestone set <id> --file m.json
+scompass milestone list | show <id> | set <id> --file m.json
 scompass export md [--out docs/tareas.md]
 scompass import artifact <carpeta-export>   # §8
 ```
 
 - Si hay un servidor corriendo, la CLI **llama a la API**, que emite los eventos a la UI. Si no hay servidor, escribe los archivos directamente, con la misma validación y la misma escritura atómica.
-- `--json` en todas las lecturas, para que los agentes parseen sin adivinar.
+- `--json` en todas las lecturas y escrituras, para que los agentes parseen sin adivinar. Cada documento sale con su `etag`.
+- `--etag <e>` en las escrituras: falla con `conflict` (y el documento actual) si alguien lo cambió desde que se leyó.
+- `--dir <proyecto>`; sin él, busca `compass/config.json` subiendo desde la carpeta actual. `--file -` lee de stdin.
 - Después de cada escritura (desde la CLI o desde el hub) se regenera el markdown. Se desactiva con `config.json › auto_export_md: false` (D13).
 
 ## 7. Frontend: portar el artifact

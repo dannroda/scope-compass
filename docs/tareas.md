@@ -81,7 +81,7 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 **Notas:** Mientras no exista la app, el tablero vive en el artifact y `compass/` es su copia en git.
 
-## M1 — Store + CLI (sin servidor)  (3/7)
+## M1 — Store + CLI (sin servidor)  (4/7)
 
 Leer y escribir `compass/` con validación, formato canónico y ETag, desde la CLI `scompass`, sin hub corriendo.
 
@@ -130,15 +130,17 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#modelo`, `docs/spec.md#concurrencia`, `docs/spec.md#arquitectura`
 
-### 1.4 CLI básica · Pendiente
+### 1.4 CLI básica · Hecho
 
-- [ ] `init`: crea `compass/` con schemas, README, `.gdignore` y `config.json`
-- [ ] `list` y `show` con `--json`
-- [ ] `add`, `move`, `check`
-- [ ] `set` y `milestone set` con `--file`
-- [ ] `--dir` para apuntar a otro proyecto
+- [x] `init`: crea `compass/` con schemas, README, `.gdignore` y `config.json`
+- [x] `list` y `show` con `--json`
+- [x] `add`, `move`, `check`
+- [x] `set` y `milestone set` con `--file`
+- [x] `--dir` para apuntar a otro proyecto
 
 **Prueba:** `scompass --dir ../project-epiphany list --json` lista las tareas de Epiphany.
+
+**Notas:** `hub/src/cli.js` + `hub/bin/scompass.js` (`npm link` en `hub/`). Extras sobre el spec: `milestone list|show`, `--etag` en escrituras, `--file -` (stdin), búsqueda de `compass/` hacia arriba. `check` numera desde 1. `serve`, `export` e `import` responden "todavía no está disponible".
 
 **Referencias:** `docs/spec.md#cli`
 
