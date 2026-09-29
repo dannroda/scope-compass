@@ -24,6 +24,7 @@ export class StoreError extends Error {
 export const etagOf = (doc) => createHash('sha256').update(canonical(doc)).digest('hex').slice(0, 16);
 
 const ID = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+export const isValidId = (id) => typeof id === 'string' && ID.test(id);
 const B36 = '0123456789abcdefghijklmnopqrstuvwxyz';
 export const randomId = () => Array.from({ length: 8 }, () => B36[randomInt(36)]).join('');
 
@@ -40,7 +41,7 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
   };
   const pathOf = (collection, id) => {
     checkCollection(collection);
-    if (typeof id !== 'string' || !ID.test(id)) throw new StoreError('invalid_argument', `id inválido: ${id}`);
+    if (!isValidId(id)) throw new StoreError('invalid_argument', `id inválido: ${id}`);
     return join(compassDir, collection, `${id}.json`);
   };
 

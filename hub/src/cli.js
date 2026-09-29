@@ -6,6 +6,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { exportMarkdown } from './export-md.js';
+import { importArtifact } from './import-artifact.js';
 import { KINDS, loadValidators, parseDoc, SCHEMA_DIR } from './schema.js';
 import { canonical } from './store/canonical.js';
 import { createJsonFilesStore, etagOf, StoreError } from './store/json-files.js';
@@ -24,6 +25,8 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   set <id> --file task.json                 reemplazo completo (--file - lee stdin)
   milestone list | show <id> | set <id> --file m.json
   export md [--out docs/tareas.md]          regenera el markdown (también se hace solo al escribir)
+  import artifact <carpeta> [--dry-run] [--overwrite]
+                                            migra el export de ArtifactData (milestones/, tasks/)
 
   --json      salida JSON en lecturas y escrituras
   --etag <e>  en escrituras: falla con conflicto si el documento cambió
@@ -34,7 +37,7 @@ class UsageError extends Error {}
 const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
-  file: { type: 'string' }, out: { type: 'string' }, undo: { type: 'boolean' }, project: { type: 'string' },
+  file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
 
@@ -150,6 +153,31 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       return done({ path }, `Exportado ${path}`);
     },
 
+    async import() {
+      if (rest[0] !== 'artifact') throw new UsageError(`origen de import desconocido: ${rest[0] ?? ''} (artifact)`);
+      const src = resolve(cwd, need(rest[1], 'la carpeta del export'));
+      if (!existsSync(join(compass, 'config.json'))) throw new StoreError('not_found', `no hay ${join(compass, 'config.json')}: corré \`scompass init\` primero`);
+      const r = await importArtifact(src, compass, { validators, overwrite: o.overwrite, dryRun: o['dry-run'], ...(now && { now }) });
+      const wrote = ['milestones', 'tasks'].some((c) => r[c].created.length + r[c].updated.length);
+      if (wrote && !o['dry-run']) {
+        const all = await store.loadAll();
+        if (all.config?.export_md && all.config.auto_export_md !== false) await exportMarkdown(project, all);
+      }
+      if (o.json) print(JSON.stringify(r));
+      else {
+        const line = (label, x) => `${label}: ${Object.values(x).reduce((n, l) => n + l.length, 0)} en el export · ` +
+          `${x.created.length} nuevos, ${x.unchanged.length} sin cambios, ${x.updated.length} actualizados, ` +
+          `${x.different.length} distintos (no importados), ${x.invalid.length} inválidos`;
+        if (o['dry-run']) print('Simulación: no se escribió nada.');
+        print(line('Hitos', r.milestones));
+        print(line('Tareas', r.tasks));
+        for (const c of ['milestones', 'tasks']) if (r[c].different.length) print(`Distintos en ${c}: ${r[c].different.join(', ')} (--overwrite para reemplazarlos)`);
+        for (const w of r.warnings) warn(`aviso ${w.path}: ${w.message}`);
+      }
+      const clean = ['milestones', 'tasks'].every((c) => !r[c].different.length && !r[c].invalid.length);
+      return clean && !r.warnings.length ? 0 : 1;
+    },
+
     async add() {
       const title = need(rest[0], 'el título');
       const milestone = need(o.milestone, '--milestone');
@@ -213,7 +241,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       throw new UsageError(`subcomando desconocido: milestone ${sub ?? ''}`);
     }
   };
-  for (const later of ['serve', 'import']) {
+  for (const later of ['serve']) {
     commands[later] = async () => { throw new StoreError('invalid_argument', `\`scompass ${later}\` todavía no está disponible`); };
   }
 

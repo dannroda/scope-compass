@@ -320,7 +320,7 @@ La UI actual (`docs/reference/tablero-artifact.html`) ya separa el render de los
 <!-- id: migracion -->
 
 1. Exportar los datos con `ArtifactData`, action `list` sobre `milestones` y `tasks`, con `out_dir`. Genera un JSON por documento.
-2. `scompass import artifact <out_dir>` copia cada documento a `compass/` en formato canónico, descarta el campo `version` del artifact, agrega `created_at` (igual a `updated_at` si existe) y valida.
+2. `scompass init` y después `scompass import artifact <out_dir>`: copia cada documento a `compass/` en formato canónico, descarta los campos `version` e `id` del artifact, agrega `created_at` (el del documento que ya existía en `compass/`, si no `updated_at`) y valida. `--dry-run` muestra el reporte sin escribir. Un documento que ya existe con otro contenido no se pisa salvo con `--overwrite`, y uno inválido en disco nunca.
 3. Comparar conteos: hitos y tareas importados contra los listados.
 4. Regenerar `docs/tareas.md` y comparar con el existente. Solo debería cambiar la fecha.
 5. Dejar el artifact como archivo de solo lectura. No hay sincronización bidireccional.

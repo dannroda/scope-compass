@@ -81,7 +81,7 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 **Notas:** Mientras no exista la app, el tablero vive en el artifact y `compass/` es su copia en git.
 
-## M1 — Store + CLI (sin servidor)  (5/7)
+## M1 — Store + CLI (sin servidor)  (6/7)
 
 Leer y escribir `compass/` con validación, formato canónico y ETag, desde la CLI `scompass`, sin hub corriendo.
 
@@ -157,13 +157,15 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#cli`
 
-### 1.6 Import desde el artifact · Pendiente
+### 1.6 Import desde el artifact · Hecho
 
-- [ ] Port de `tools/artifact_to_tablero.py`
-- [ ] Descarta `version`; `created_at` = `updated_at` si existe
-- [ ] Reporte de conteos
+- [x] Port de `tools/artifact_to_tablero.py`
+- [x] Descarta `version`; `created_at` = `updated_at` si existe
+- [x] Reporte de conteos
 
 **Prueba:** Importar el export de Epiphany: 11 hitos y 10 tareas, sin diferencias con `project-epiphany/compass/`.
+
+**Notas:** `hub/src/import-artifact.js` + `scompass import artifact <carpeta> [--dry-run] [--overwrite]`. Export real de Epiphany: 11 hitos y 10 tareas sin cambios contra `project-epiphany/compass/`, e import en limpio idéntico a `tools/artifact_to_tablero.py`. Si el documento ya existe conserva su `created_at`. La detección de notas "gdd.md §N.N" → `refs` (spec §8, notas) queda para M6.
 
 **Referencias:** `docs/spec.md#migracion`
 
