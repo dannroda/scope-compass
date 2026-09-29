@@ -125,3 +125,40 @@ test('reconexión: con el hub caído muestra el aviso; al volver recarga lo que 
   await page.waitForFunction(() => document.querySelector('.card[data-id="m1-04"]')?.closest('.col')?.getAttribute('aria-label') === 'Revisión', null, { timeout: 2000 });
   await page.context().close();
 });
+
+test('JSON roto con la UI abierta: aviso y la tarjeta se va; al arreglarlo, vuelve', async () => {
+  const page = await open();
+  assert.equal(await page.isHidden('#warnings'), true);
+  const original = await readFile(join(compass, 'tasks', 'm1-04.json'), 'utf8');
+  await writeFile(join(compass, 'tasks', 'm1-04.json'), original.replace('  "status": "done",\n', '<<<<<<< HEAD\n  "status": "done",\n=======\n  "status": "todo",\n>>>>>>> otra\n'));
+  await page.waitForSelector('#warnings:has-text("compass/tasks/m1-04.json")', { timeout: 1000 });
+  assert.match(await page.textContent('#warnings'), /conflicto de git/);
+  assert.equal(await page.locator('.card[data-id="m1-04"]').count(), 0);
+  await writeFile(join(compass, 'tasks', 'm1-04.json'), original);
+  await page.waitForSelector('.card[data-id="m1-04"]', { timeout: 1000 });
+  assert.equal(await page.isHidden('#warnings'), true);
+  await page.context().close();
+});
+
+test('un archivo inválido al cargar se avisa desde el principio', async () => {
+  await writeFile(join(compass, 'tasks', 'm0-02.json'), '{"title": ');
+  const page = await open();
+  assert.match(await page.textContent('#warnings'), /compass\/tasks\/m0-02\.json · JSON inválido/);
+  assert.equal(await page.locator('.card[data-id="m0-02"]').count(), 0);
+  await page.context().close();
+});
+
+test('sin internet: ninguna petición fuera de 127.0.0.1 y las tres fuentes cargan', async () => {
+  const ctx = await browser.newContext();
+  const external = [];
+  await ctx.route((u) => u.hostname !== '127.0.0.1', (route) => { external.push(route.request().url()); return route.abort(); });
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => pageErrors.push(e.message));
+  await page.goto(url);
+  await page.waitForSelector('.card');
+  await page.evaluate(() => document.fonts.ready);
+  const loaded = await page.evaluate(() => [...document.fonts].filter((f) => f.status === 'loaded').map((f) => `${f.family.replace(/"/g, '')} ${f.weight}`).sort());
+  assert.deepEqual(external, []);
+  for (const f of ['Cinzel 700', 'Alegreya Sans 400', 'Alegreya Sans 700', 'JetBrains Mono 500']) assert.ok(loaded.includes(f), `${f} en ${loaded}`);
+  await ctx.close();
+});

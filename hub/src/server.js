@@ -28,7 +28,9 @@ const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, inva
 // app.events emite 'event' con los mensajes del protocolo WebSocket (§5.5): upsert, delete, warning.
 // webDir: carpeta de la UI (por defecto web/ del repo).
 export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false, webDir = WEB_DIR }) {
-  const app = Fastify({ logger });
+  // Al cerrar se cortan todas las conexiones: con la UI abierta (que reintenta cada 0,5 s) el cierre
+  // podía quedar esperando una conexión nueva o el cierre educado de un WebSocket.
+  const app = Fastify({ logger, forceCloseConnections: true });
   app.decorate('events', new EventEmitter());
   const emit = (evt) => app.events.emit('event', evt);
 

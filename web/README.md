@@ -4,4 +4,8 @@ UI del tablero, sin framework ni build step: `index.html`, `app.css`, `app.js` y
 
 Es el port de `../docs/reference/tablero-artifact.html` (spec §7). El CSS y el render son los del artifact; la capa `claude.use("db")` se reemplazó por un cliente de la API del hub (`/api`).
 
-Pendiente en M3: WebSocket (3.3), etag y 409 (3.4), avisos de archivos inválidos (3.5), fuentes locales (3.6; hoy vienen de Google Fonts), mejoras chicas (3.7).
+- En vivo por WebSocket, con reconexión; escrituras con etag y recuperación ante `409`.
+- Avisa de los archivos de `compass/` que el hub no pudo leer.
+- `fonts/`: Cinzel, Alegreya Sans y JetBrains Mono (subconjunto latino de `@fontsource` 5.3.0, licencias OFL al lado). No hace ninguna petición fuera del hub.
+
+Pendiente en M3: mejoras chicas (3.7).

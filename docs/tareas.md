@@ -293,7 +293,7 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 **Referencias:** `docs/spec.md#cli`
 
-## M3 — UI web (port del artifact)  (4/8)
+## M3 — UI web (port del artifact)  (6/8)
 
 La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexión, fuentes locales y las mejoras chicas de §7.
 
@@ -350,21 +350,25 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 **Referencias:** `docs/spec.md#concurrencia`, `docs/spec.md#frontend`
 
-### 3.5 Avisos de archivos inválidos · Pendiente
+### 3.5 Avisos de archivos inválidos · Hecho
 
-- [ ] Mostrar los `warnings` de la carga y los eventos `warning`
-- [ ] El aviso desaparece cuando el archivo se corrige
+- [x] Mostrar los `warnings` de la carga y los eventos `warning`
+- [x] El aviso desaparece cuando el archivo se corrige
 
 **Prueba:** Romper un JSON a mano con la UI abierta muestra un aviso; arreglarlo lo quita y la tarea vuelve.
 
+**Notas:** Sección de avisos en la UI con los `warnings` de la carga y los eventos `warning`, uno por archivo; se va con el `upsert` o `delete` de ese archivo. Un archivo que pasa a inválido deja de mostrarse como tarjeta.
+
 **Referencias:** `docs/spec.md#validacion`, `docs/spec.md#cambios-externos`
 
-### 3.6 Fuentes locales · Pendiente
+### 3.6 Fuentes locales · Hecho
 
-- [ ] Cinzel, Alegreya Sans y JetBrains Mono en `web/fonts/` (OFL, con sus licencias)
-- [ ] Sin requests a Google Fonts ni a ningún otro host
+- [x] Cinzel, Alegreya Sans y JetBrains Mono en `web/fonts/` (OFL, con sus licencias)
+- [x] Sin requests a Google Fonts ni a ningún otro host
 
 **Prueba:** Con la red cortada, la UI carga con las mismas tipografías.
+
+**Notas:** `web/fonts/`: 5 woff2 (subconjunto latino, `@fontsource` 5.3.0) y sus licencias OFL. Test de navegador con todo lo que no es 127.0.0.1 bloqueado: ninguna petición externa y las fuentes cargan.
 
 **Referencias:** `docs/spec.md#frontend`
 
@@ -388,7 +392,7 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 **Prueba:** `npm test` en `hub/` corre también los tests de navegador.
 
-**Notas:** Adelantado en 3.3/3.4: `hub/test/ui.test.js` con Playwright dentro de `node:test` (dos pestañas, CLI y edición a mano, 409, pasos seguidos, reconexión).
+**Notas:** Adelantado en 3.3–3.6: `hub/test/ui.test.js` (dos pestañas, CLI y edición a mano, 409, pasos seguidos, reconexión, avisos, sin internet). Encontró un bug real: cerrar el hub con la UI abierta podía colgarse (cierre educado del WebSocket + reconexiones de la UI); arreglado con `terminate()` y `forceCloseConnections`. Sin el arreglo el archivo se colgaba 3/6 veces; con él, 0/10.
 
 **Referencias:** `docs/spec.md#criterios-v1`
 

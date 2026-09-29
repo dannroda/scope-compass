@@ -6,7 +6,13 @@ import { flat } from './views.js';
 
 // Plugin de Fastify: app.register(registerWs, { store, publish, version }).
 export async function registerWs(app, { store, publish, version }) {
-  await app.register(websocket);
+  // Al cerrar el hub, los clientes se cortan en el acto (el cierre educado espera hasta 30 s).
+  await app.register(websocket, {
+    preClose(done) {
+      for (const client of this.websocketServer.clients) client.terminate();
+      this.websocketServer.close(done);
+    }
+  });
 
   app.get('/ws', { websocket: true }, (socket) => {
     const send = (msg) => { if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(msg)); };

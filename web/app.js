@@ -279,7 +279,24 @@
     if (keepFocus) { const el = document.getElementById(keepFocus); if (el) el.focus(); }
   }
 
-  function render() { renderMiles(); renderSummary(); renderBoard(); renderDetail(); renderConn(); }
+  // Archivos que el hub no pudo leer: se ignoran hasta que alguien los corrija a mano (spec §4.3).
+  const WARNING_TEXT = { invalid_json: 'JSON inválido', invalid_schema: 'no cumple el formato', conflict_markers: 'conflicto de git sin resolver', unknown_milestone: 'apunta a un hito que no existe', missing_config: 'falta', io_error: 'error de lectura' };
+  function setWarning(w) {
+    S.warnings = S.warnings.filter((x) => x.path !== w.path);
+    S.warnings.push({ code: w.code, path: w.path, message: w.message });
+  }
+  const clearWarning = (collection, id) => { S.warnings = S.warnings.filter((x) => x.path !== 'compass/' + collection + '/' + id + '.json'); };
+  function renderWarnings() {
+    const box = document.getElementById('warnings');
+    box.hidden = !S.warnings.length || S.offline;
+    if (box.hidden) { box.replaceChildren(); return; }
+    box.replaceChildren(
+      h('h2', null, S.warnings.length === 1 ? 'Un archivo no se pudo leer' : S.warnings.length + ' archivos no se pudieron leer'),
+      h('p', null, 'No se muestran ni se sobrescriben hasta que se corrijan a mano. Al arreglarlos, el aviso se va solo.'),
+      h('ul', null, S.warnings.map((w) => h('li', null, h('code', null, w.path), ' · ' + (WARNING_TEXT[w.code] || w.code), h('span', { class: 'sr' }, ': ' + w.message)))));
+  }
+
+  function render() { renderMiles(); renderSummary(); renderWarnings(); renderBoard(); renderDetail(); renderConn(); }
 
   function setFilter(id) { S.filter = id; pref('filter', id); render(); }
   function openTask(id) { S.openId = id; S.confirmDelete = false; render(); const el = document.getElementById('d-title'); if (el) el.focus(); }
@@ -321,7 +338,8 @@
         S.project = config.project || '';
         S.milestones = m.milestones;
         S.tasks = t.tasks;
-        S.warnings = [...m.warnings, ...t.warnings];
+        S.warnings = [];
+        for (const w of [...m.warnings, ...t.warnings]) setWarning(w);
         S.offline = false;
       } catch (e) {
         S.offline = true;
@@ -341,9 +359,14 @@
   function onEvent(m) {
     if (m.type === 'hello') { load(); return; }
     if (loading) { eventsDuringLoad = true; return; }
-    if (m.type === 'upsert') apply(m.collection, m.id, m.doc);
-    else if (m.type === 'delete') apply(m.collection, m.id, null);
-    else if (m.type === 'warning') { S.warnings.push(m); render(); }
+    if (m.type === 'upsert') { clearWarning(m.collection, m.id); apply(m.collection, m.id, m.doc); }
+    else if (m.type === 'delete') { clearWarning(m.collection, m.id); apply(m.collection, m.id, null); }
+    else if (m.type === 'warning') {
+      setWarning(m);
+      // Un archivo que pasó a inválido deja de mostrarse, igual que en la carga.
+      const hit = /^compass\/(milestones|tasks)\/([^/]+)\.json$/.exec(m.path);
+      if (hit && m.code !== 'unknown_milestone') apply(hit[1], hit[2], null); else render();
+    }
   }
 
   // WebSocket con reconexión: espera creciente de 0,5 s a 10 s, y vuelve a 0,5 s al conectar.
