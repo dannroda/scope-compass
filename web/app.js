@@ -224,10 +224,46 @@
     return h('button', { class: 'card', type: 'button', draggable: 'true', style: 'border-left: 4px solid ' + s.color,
       'aria-current': S.openId === t.id ? 'true' : null, 'data-id': t.id,
       ondragstart: (e) => { e.dataTransfer.setData('text/plain', t.id); e.dataTransfer.effectAllowed = 'move'; },
+      ondragover: (e) => { e.preventDefault(); e.currentTarget.classList.add('drop-before'); },
+      ondragleave: (e) => e.currentTarget.classList.remove('drop-before'),
+      ondrop: (e) => {
+        e.preventDefault(); e.stopPropagation();
+        e.currentTarget.classList.remove('drop-before');
+        e.currentTarget.closest('.col')?.classList.remove('over');
+        const id = e.dataTransfer.getData('text/plain');
+        if (id && id !== t.id) dropBefore(id, t);
+      },
       onclick: () => openTask(t.id) },
       h('span', { class: 'meta' }, t.code ? h('span', null, t.code) : null, m && S.filter === 'all' ? h('span', { class: 'ms' }, m.code) : null),
       h('span', { class: 't' }, rich(t.title)),
       p.total ? h('span', { class: 'cl' }, h('span', { class: 'bar', role: 'img', 'aria-label': p.done + ' de ' + p.total + ' pasos' }, h('i', { style: 'width:' + pct + '%' })), p.done + '/' + p.total) : null);
+  }
+
+  // Campos editables del detalle. Cada uno guarda en data-orig el valor con el que se dibujó:
+  // si el usuario lo cambió y todavía no lo guardó, el valor escrito se conserva al redibujar.
+  const EDITABLE = ['d-title', 'd-addcl', 'd-test', 'd-notes'];
+  function captureEdits(box) {
+    const active = box.contains(document.activeElement) ? document.activeElement : null;
+    const dirty = {};
+    for (const id of EDITABLE) {
+      const el = document.getElementById(id);
+      if (el && el.value !== el.dataset.orig) dirty[id] = el.value;
+    }
+    return {
+      dirty,
+      focus: active && active.id,
+      sel: active && 'selectionStart' in active ? [active.selectionStart, active.selectionEnd] : null
+    };
+  }
+  function restoreEdits({ dirty, focus, sel }) {
+    for (const [id, value] of Object.entries(dirty)) {
+      const el = document.getElementById(id);
+      if (el) el.value = value;
+    }
+    const el = focus && document.getElementById(focus);
+    if (!el) return;
+    el.focus();
+    if (sel && typeof el.setSelectionRange === 'function') { try { el.setSelectionRange(sel[0], sel[1]); } catch (e) { /* checkbox, select */ } }
   }
 
   function renderDetail() {
@@ -237,12 +273,13 @@
     const m = msById(t.milestone);
     const cl = Array.isArray(t.checklist) ? t.checklist : [];
     const p = clProgress(t);
-    const keepFocus = document.activeElement && box.contains(document.activeElement) ? document.activeElement.id : null;
+    // Lo que el usuario está escribiendo en esta misma tarea sobrevive al redibujado (3.7).
+    const edits = box.dataset.task === t.id ? captureEdits(box) : null;
     box.replaceChildren(
       h('div', { class: 'head' }, t.code || '', m ? h('span', null, '· ' + m.code + ' ' + m.title) : null,
         h('button', { class: 'btn ghost close', type: 'button', 'aria-label': 'Cerrar detalle', onclick: closeTask }, 'Cerrar')),
       h('label', { for: 'd-title', class: 'sr' }, 'Título'),
-      h('input', { class: 'title', id: 'd-title', value: t.title || '', onchange: (e) => { const v = e.target.value.trim(); if (v && v !== t.title) updateTask(t.id, { title: v }); } }),
+      h('input', { class: 'title', id: 'd-title', value: t.title || '', 'data-orig': t.title || '', onchange: (e) => { const v = e.target.value.trim(); if (v && v !== t.title) updateTask(t.id, { title: v }); } }),
       h('div', { class: 'seg', role: 'group', 'aria-label': 'Estado' }, STATUSES.map((s) =>
         h('button', { type: 'button', 'aria-pressed': (t.status || 'todo') === s.id ? 'true' : 'false', onclick: () => setStatus(t.id, s.id) }, s.label))),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
@@ -260,14 +297,14 @@
         })) : h('p', { style: 'margin:0;color:var(--muted);font-size:14px' }, 'Sin pasos todavía.'),
         h('form', { class: 'addcl', onsubmit: (e) => { e.preventDefault(); const inp = e.target.querySelector('input'); const v = inp.value.trim(); if (!v) return; inp.value = ''; updateTask(t.id, (cur) => ({ checklist: [...checklistOf(cur), { text: v, done: false }] })); } },
           h('label', { for: 'd-addcl', class: 'sr' }, 'Nuevo paso'),
-          h('input', { id: 'd-addcl', placeholder: 'Agregar paso', autocomplete: 'off' }),
+          h('input', { id: 'd-addcl', placeholder: 'Agregar paso', autocomplete: 'off', 'data-orig': '' }),
           h('button', { class: 'btn', type: 'submit' }, 'Agregar'))),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('label', { class: 'label', for: 'd-test' }, 'Cómo probarlo'),
-        h('textarea', { id: 'd-test', onchange: (e) => updateTask(t.id, { test: e.target.value }) }, t.test || '')),
+        h('textarea', { id: 'd-test', 'data-orig': t.test || '', onchange: (e) => updateTask(t.id, { test: e.target.value }) }, t.test || '')),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('label', { class: 'label', for: 'd-notes' }, 'Notas'),
-        h('textarea', { id: 'd-notes', onchange: (e) => updateTask(t.id, { notes: e.target.value }) }, t.notes || '')),
+        h('textarea', { id: 'd-notes', 'data-orig': t.notes || '', onchange: (e) => updateTask(t.id, { notes: e.target.value }) }, t.notes || '')),
       h('div', { class: 'footer-actions' },
         h('span', null, t.updated_at ? 'Actualizada ' + new Date(t.updated_at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : ''),
         S.confirmDelete
@@ -276,7 +313,8 @@
               h('button', { class: 'btn', type: 'button', onclick: () => { S.confirmDelete = false; renderDetail(); } }, 'No'))
           : h('button', { class: 'btn ghost danger', type: 'button', onclick: () => { S.confirmDelete = true; renderDetail(); } }, 'Borrar tarea')));
     box.hidden = false;
-    if (keepFocus) { const el = document.getElementById(keepFocus); if (el) el.focus(); }
+    box.dataset.task = t.id;
+    if (edits) restoreEdits(edits);
   }
 
   // Archivos que el hub no pudo leer: se ignoran hasta que alguien los corrija a mano (spec §4.3).
@@ -301,16 +339,36 @@
   function setFilter(id) { S.filter = id; pref('filter', id); render(); }
   function openTask(id) { S.openId = id; S.confirmDelete = false; render(); const el = document.getElementById('d-title'); if (el) el.focus(); }
   function closeTask() { S.openId = null; S.confirmDelete = false; render(); }
+  // Soltar una tarjeta sobre otra: toma el estado de esa columna y, si son del mismo hito, queda justo antes.
+  function dropBefore(id, target) {
+    const t = S.tasks.find((x) => x.id === id);
+    if (!t) return;
+    const patch = {};
+    if (t.status !== target.status) patch.status = target.status;
+    if (t.milestone === target.milestone) {
+      const same = S.tasks.filter((x) => x.milestone === target.milestone && x.id !== id).sort(sortTasks);
+      const i = same.findIndex((x) => x.id === target.id);
+      const prev = i > 0 ? same[i - 1].order ?? 0 : (target.order ?? 0) - 2;
+      patch.order = (prev + (target.order ?? 0)) / 2;
+    }
+    if (Object.keys(patch).length) updateTask(id, patch);
+  }
+
   function setStatus(id, status) {
     const t = S.tasks.find((x) => x.id === id);
     if (!t || t.status === status) return;
     updateTask(id, { status });
   }
 
+  function openNewForm() {
+    const f = document.getElementById('new-form');
+    f.hidden = false;
+    if (S.filter !== 'all') document.getElementById('new-ms').value = S.filter;
+    document.getElementById('new-title').focus();
+  }
   document.getElementById('new-btn').addEventListener('click', () => {
     const f = document.getElementById('new-form');
-    f.hidden = !f.hidden;
-    if (!f.hidden) { if (S.filter !== 'all') document.getElementById('new-ms').value = S.filter; document.getElementById('new-title').focus(); }
+    if (f.hidden) openNewForm(); else f.hidden = true;
   });
   document.getElementById('new-cancel').addEventListener('click', () => { document.getElementById('new-form').hidden = true; });
   document.getElementById('new-form').addEventListener('submit', (e) => {
@@ -324,7 +382,21 @@
     // El hub pone el order (al final del hito), created_at y updated_at.
     write(async () => { const t = await api.create({ title, milestone, code: '', status: 'todo', checklist: [], test: '', notes: '', refs: [] }); applyTask(t.id, t); }, 'Tarea agregada');
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.openId && !e.defaultPrevented) closeTask(); });
+  // Atajos (3.7): N nueva tarea, 1–4 estado de la tarea abierta, Esc cierra. Nunca mientras se escribe.
+  const typing = (el) => el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+  document.addEventListener('keydown', (e) => {
+    if (e.defaultPrevented) return;
+    if (e.key === 'Escape') {
+      const f = document.getElementById('new-form');
+      if (!f.hidden && f.contains(document.activeElement)) { f.hidden = true; return; }
+      if (S.openId) closeTask();
+      return;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey || typing(document.activeElement)) return;
+    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openNewForm(); return; }
+    const n = Number(e.key);
+    if (S.openId && n >= 1 && n <= STATUSES.length) { e.preventDefault(); setStatus(S.openId, STATUSES[n - 1].id); }
+  });
 
   // Carga completa desde el hub. Si llegan eventos mientras carga, se repite: un evento viejo nunca pisa datos nuevos.
   let loading = false, eventsDuringLoad = false;

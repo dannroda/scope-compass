@@ -162,3 +162,82 @@ test('sin internet: ninguna petición fuera de 127.0.0.1 y las tres fuentes carg
   for (const f of ['Cinzel 700', 'Alegreya Sans 400', 'Alegreya Sans 700', 'JetBrains Mono 500']) assert.ok(loaded.includes(f), `${f} en ${loaded}`);
   await ctx.close();
 });
+
+test('lo escrito en Notas sobrevive a un cambio de otra pestaña y se guarda sin pisarlo', async () => {
+  const a = await open();
+  const b = await open();
+  await a.click('.card[data-id="m1-07"]');
+  await a.click('#d-notes');
+  await a.keyboard.press('Control+End');
+  await a.keyboard.type(' y lo que escribo');
+  // Otra pestaña mueve la misma tarea mientras escribo.
+  await b.click('.card[data-id="m1-07"]');
+  await b.click('.seg button:has-text("Revisión")');
+  await a.waitForFunction(() => document.querySelector('.seg button[aria-pressed="true"]')?.textContent === 'Revisión', null, { timeout: 1000 });
+  assert.match(await a.inputValue('#d-notes'), /y lo que escribo$/);
+  assert.equal(await a.evaluate(() => document.activeElement.id), 'd-notes', 'mantiene el foco');
+  await a.keyboard.type('!');
+  await a.click('#d-title'); // blur: se guarda
+  await a.waitForTimeout(300);
+  const t = await task('m1-07');
+  assert.match(t.notes, /y lo que escribo!$/);
+  assert.equal(t.status, 'review', 'el cambio de la otra pestaña sigue ahí');
+  await a.context().close();
+  await b.context().close();
+});
+
+test('"Agregar paso" no pierde lo escrito mientras vuelve la respuesta de otro cambio', async () => {
+  const page = await open();
+  await page.click('.card[data-id="m1-07"]');
+  await page.click('.seg button:has-text("En curso")');
+  await page.fill('#d-addcl', 'Paso escrito enseguida');
+  await page.waitForFunction(() => document.querySelector('.seg button[aria-pressed="true"]')?.textContent === 'En curso');
+  assert.equal(await page.inputValue('#d-addcl'), 'Paso escrito enseguida');
+  await page.click('.addcl button');
+  await page.waitForSelector('.checklist label:has-text("Paso escrito enseguida")');
+  assert.equal((await task('m1-07')).checklist.at(-1).text, 'Paso escrito enseguida');
+  await page.context().close();
+});
+
+test('arrastrar una tarjeta sobre otra del mismo hito la deja justo antes', async () => {
+  const page = await open();
+  await page.click('.chip:has-text("M1")');
+  const ids = () => page.$$eval('.col[aria-label="Hecho"] .card', (els) => els.map((e) => e.dataset.id));
+  const before = await ids();
+  assert.deepEqual(before.slice(0, 3), ['m1-01', 'm1-02', 'm1-03']);
+  await page.dragAndDrop('.card[data-id="m1-07"]', '.card[data-id="m1-02"]');
+  await page.waitForFunction(() => [...document.querySelectorAll('.col[aria-label="Hecho"] .card')].map((e) => e.dataset.id)[1] === 'm1-07');
+  assert.deepEqual((await ids()).slice(0, 3), ['m1-01', 'm1-07', 'm1-02']);
+  const [o1, o7, o2] = await Promise.all(['m1-01', 'm1-07', 'm1-02'].map(async (id) => (await task(id)).order));
+  assert.ok(o1 < o7 && o7 < o2, `${o1} < ${o7} < ${o2}`);
+  // Sobre una tarjeta de otra columna: cambia de estado y queda antes de ella.
+  await page.dragAndDrop('.card[data-id="m1-03"]', '.card[data-id="m1-07"]');
+  await page.waitForTimeout(300);
+  assert.equal((await ids())[1], 'm1-03');
+  await page.context().close();
+});
+
+test('atajos: N abre nueva tarea, 1–4 cambian el estado, y no se activan escribiendo', async () => {
+  const page = await open();
+  await page.keyboard.press('n');
+  assert.equal(await page.isVisible('#new-form'), true);
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'new-title');
+  await page.keyboard.type('nada');
+  assert.equal(await page.inputValue('#new-title'), 'nada', 'la n escrita es texto');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.isHidden('#new-form'), true);
+
+  await page.click('.card[data-id="m1-07"]');
+  await page.locator('.detail .close').focus();
+  await page.keyboard.press('2');
+  await page.waitForFunction(() => document.querySelector('.seg button[aria-pressed="true"]')?.textContent === 'En curso');
+  assert.equal((await task('m1-07')).status, 'doing');
+  await page.click('#d-notes');
+  await page.keyboard.type('3');
+  await page.waitForTimeout(200);
+  assert.equal((await task('m1-07')).status, 'doing', 'un 3 escrito en Notas no cambia el estado');
+  await page.locator('.detail .close').focus();
+  await page.keyboard.press('Escape');
+  assert.equal(await page.isHidden('#detail'), true);
+  await page.context().close();
+});

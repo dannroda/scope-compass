@@ -1,22 +1,22 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "No perder lo escrito en el detalle (Notas, Cómo probarlo y \"Agregar paso\") cuando se vuelve a dibujar, sea por un evento de otra pestaña o por la respuesta de una escritura propia"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Reordenar tarjetas dentro de una columna al arrastrar (`order`)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Atajos: `N` nueva tarea, `1`–`4` estado de la tarea abierta, `Esc` cierra"
     }
   ],
   "code": "3.7",
   "created_at": "2026-09-29T22:25:13.396Z",
   "milestone": "m03",
-  "notes": "En la prueba de humo de 3.2: escribir en \"Agregar paso\" antes de que vuelva la respuesta de un cambio de estado pierde lo escrito, porque el panel se redibuja.",
+  "notes": "Cada campo del detalle guarda en `data-orig` el valor dibujado; lo cambiado y no guardado, el foco y la selección se restauran al redibujar. Reordenar: soltar sobre una tarjeta del mismo hito la deja antes (order intermedio) y toma el estado de esa columna. Atajos N, 1–4 y Esc, nunca mientras se escribe. Los tests de \"no perder lo escrito\" fallan con el app.js anterior.",
   "order": 7,
   "refs": [
     {
@@ -24,8 +24,8 @@
       "section": "frontend"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "Escribir notas mientras otra pestaña mueve la misma tarea no pierde lo escrito.",
   "title": "Mejoras chicas del port",
-  "updated_at": "2026-09-29T22:45:45.325Z"
+  "updated_at": "2026-09-29T23:21:12.313Z"
 }

@@ -293,7 +293,7 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 **Referencias:** `docs/spec.md#cli`
 
-## M3 — UI web (port del artifact)  (6/8)
+## M3 — UI web (port del artifact)  (7/8)
 
 La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexión, fuentes locales y las mejoras chicas de §7.
 
@@ -372,15 +372,15 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 **Referencias:** `docs/spec.md#frontend`
 
-### 3.7 Mejoras chicas del port · Pendiente
+### 3.7 Mejoras chicas del port · Hecho
 
-- [ ] No perder lo escrito en el detalle (Notas, Cómo probarlo y "Agregar paso") cuando se vuelve a dibujar, sea por un evento de otra pestaña o por la respuesta de una escritura propia
-- [ ] Reordenar tarjetas dentro de una columna al arrastrar (`order`)
-- [ ] Atajos: `N` nueva tarea, `1`–`4` estado de la tarea abierta, `Esc` cierra
+- [x] No perder lo escrito en el detalle (Notas, Cómo probarlo y "Agregar paso") cuando se vuelve a dibujar, sea por un evento de otra pestaña o por la respuesta de una escritura propia
+- [x] Reordenar tarjetas dentro de una columna al arrastrar (`order`)
+- [x] Atajos: `N` nueva tarea, `1`–`4` estado de la tarea abierta, `Esc` cierra
 
 **Prueba:** Escribir notas mientras otra pestaña mueve la misma tarea no pierde lo escrito.
 
-**Notas:** En la prueba de humo de 3.2: escribir en "Agregar paso" antes de que vuelva la respuesta de un cambio de estado pierde lo escrito, porque el panel se redibuja.
+**Notas:** Cada campo del detalle guarda en `data-orig` el valor dibujado; lo cambiado y no guardado, el foco y la selección se restauran al redibujar. Reordenar: soltar sobre una tarjeta del mismo hito la deja antes (order intermedio) y toma el estado de esa columna. Atajos N, 1–4 y Esc, nunca mientras se escribe. Los tests de "no perder lo escrito" fallan con el app.js anterior.
 
 **Referencias:** `docs/spec.md#frontend`
 
