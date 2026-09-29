@@ -396,7 +396,7 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-## M4 — Adopción en Project Epiphany
+## M4 — Adopción en Project Epiphany  (1/2)
 
 Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
@@ -404,6 +404,28 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 - Epiphany tiene sus datos en `compass/` migrados con `scompass import artifact`.
 - El artifact de Epiphany queda como archivo de solo lectura.
 - Una semana de uso diario sin volver al artifact.
+
+### 4.1 Migrar Epiphany a `compass/` · Hecho
+
+- [x] Último export del artifact e import con `--dry-run`: 11 hitos y 10 tareas sin cambios
+- [x] Quitar `board_url`; copiar `config.schema.json` a su `compass/schema/`
+- [x] README de `compass/` y GDD apuntan a `compass/`; `docs/tareas.md` regenerado con `scompass`
+- [x] Hub y UI probados con los datos de Epiphany
+
+**Prueba:** `scompass --dir ../project-epiphany list` y la UI muestran las 11 hitos y 10 tareas sin avisos.
+
+**Notas:** Commit `cb42dae` en project-epiphany, sin push (queda para revisar). El artifact de Epiphany quedó archivado.
+
+**Referencias:** `docs/spec.md#migracion`
+
+### 4.2 Una semana de uso diario sin volver al artifact · Pendiente
+
+- [ ] Usar la UI o la CLI para el tablero de Epiphany a diario
+- [ ] Anotar acá lo que falte o moleste, como tareas nuevas
+
+**Prueba:** Una semana sin abrir el artifact de Epiphany.
+
+**Notas:** Depende del usuario.
 
 ## M5 — Dock de Godot (v1.5)
 

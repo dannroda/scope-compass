@@ -1,0 +1,35 @@
+{
+  "checklist": [
+    {
+      "done": true,
+      "text": "Último export del artifact e import con `--dry-run`: 11 hitos y 10 tareas sin cambios"
+    },
+    {
+      "done": true,
+      "text": "Quitar `board_url`; copiar `config.schema.json` a su `compass/schema/`"
+    },
+    {
+      "done": true,
+      "text": "README de `compass/` y GDD apuntan a `compass/`; `docs/tareas.md` regenerado con `scompass`"
+    },
+    {
+      "done": true,
+      "text": "Hub y UI probados con los datos de Epiphany"
+    }
+  ],
+  "code": "4.1",
+  "created_at": "2026-09-29T23:34:41.533Z",
+  "milestone": "m04",
+  "notes": "Commit `cb42dae` en project-epiphany, sin push (queda para revisar). El artifact de Epiphany quedó archivado.",
+  "order": 1,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "migracion"
+    }
+  ],
+  "status": "done",
+  "test": "`scompass --dir ../project-epiphany list` y la UI muestran las 11 hitos y 10 tareas sin avisos.",
+  "title": "Migrar Epiphany a `compass/`",
+  "updated_at": "2026-09-29T23:34:41.533Z"
+}
