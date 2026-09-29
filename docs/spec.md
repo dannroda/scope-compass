@@ -216,6 +216,7 @@ npx scompass serve [--dir <proyecto>] [--port 4711] [--open]
 
 | Método | Ruta | Qué hace |
 |---|---|---|
+| `GET` | `/api/health` | `{ok, name, version, project}`: la CLI lo usa para saber si hay un hub para este proyecto |
 | `GET` | `/api/milestones` | Lista ordenada por `order` |
 | `PUT` | `/api/milestones/:id` | Crea o reemplaza |
 | `DELETE` | `/api/milestones/:id` | Borra; rechaza con `409` si tiene tareas |
@@ -226,7 +227,7 @@ npx scompass serve [--dir <proyecto>] [--port 4711] [--open]
 | `GET` | `/ws` | WebSocket de eventos (§5.5) |
 | `POST` | `/api/export/markdown` | Regenera `docs/tareas.md` |
 
-Las respuestas de error usan el formato `{error: {code, message}}` con los códigos `invalid_argument`, `not_found`, `conflict`, `invalid_file` e `io_error`. `invalid_file` (`409`) indica que el archivo en disco es inválido o tiene marcadores de conflicto: se rechaza cualquier escritura hasta que se corrija a mano (§4.3, §4.5). En un `PATCH`, un campo con valor `null` se borra del documento.
+Las respuestas de error usan el formato `{error: {code, message}}` con los códigos `invalid_argument` (`400`), `not_found` (`404`), `conflict` (`409`), `invalid_file` e `io_error` (`500`), más `unauthenticated` (`401`) cuando el token está activado (§12). `invalid_file` (`409`) indica que el archivo en disco es inválido o tiene marcadores de conflicto: se rechaza cualquier escritura hasta que se corrija a mano (§4.3, §4.5). En un `PATCH`, un campo con valor `null` se borra del documento.
 
 ### 5.3 Concurrencia
 <!-- id: concurrencia -->

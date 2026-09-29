@@ -115,7 +115,7 @@ Después de cada escritura, desde la CLI o desde el hub, se regenera `export_md`
 - **Detalle:** `npm install <paquete>` no corre el `postinstall` del proyecto. Después de agregar una dependencia hay que correr `npm install` sin argumentos para que se cree `node_modules/.gdignore`.
 
 ## D15 · Linux primero
-**2026-09-30 · vigente** · spec §14
+**2026-09-29 · vigente** · spec §14
 
 v1 se desarrolla y se prueba solo en Linux. Windows no se prueba ni bloquea ningún hito.
 
@@ -124,10 +124,17 @@ v1 se desarrolla y se prueba solo en Linux. Windows no se prueba ni bloquea ning
 - **Revisar:** cuando alguien lo use en Windows, o al hacer el hosting (M7).
 
 ## D16 · El tablero de Scope Compass vive en `compass/`
-**2026-09-30 · vigente** · spec §8 · reemplaza el uso del artifact
+**2026-09-29 · vigente** · spec §8 · reemplaza el uso del artifact
 
 Migrado con `scompass import artifact` desde el último export del artifact: 8 hitos y 13 tareas, todos sin cambios respecto de `compass/`. Se quitó `board_url` de `compass/config.json`.
 
 - **Por qué:** M1 cerrado, la CLI ya alcanza para trabajar el tablero, y usar la herramienta en su propio desarrollo es la mejor forma de encontrar lo que falta antes de migrar Epiphany (M4).
 - **Costo aceptado:** hasta M3 no hay UI; el tablero se ve en `docs/tareas.md` o con `scompass list`.
 - **El artifact** queda archivado y sin sincronización. No se borra: tiene el historial de antes de la migración.
+
+## D17 · Hub con Fastify y @fastify/websocket
+**2026-09-29 · vigente** · spec §5 · `hub/src/server.js`
+
+- **Por qué:** Fastify valida y serializa rápido, tiene `inject` para testear sin abrir puertos, y `@fastify/websocket` comparte el mismo servidor y puerto para `/ws`. Lo proponía D4.
+- **Descartado:** `node:http` a mano (router, errores y WebSocket propios) y Express (sin `inject`, WebSocket aparte).
+- **Detalle:** el hub escucha siempre en `127.0.0.1`; `createServer` acepta un `token` para el hosting (§12), que en local no se usa.

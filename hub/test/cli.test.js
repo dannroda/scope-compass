@@ -94,7 +94,6 @@ test('errores: tarea o hito inexistente, estado inválido, comando desconocido',
   assert.equal((await cli(['add', 'x', '--milestone', 'm99'])).code, 1);
   assert.equal((await cli(['move', 'm0-01', 'wip'])).code, 2);
   assert.equal((await cli(['volar'])).code, 2);
-  assert.match((await cli(['serve'])).err, /todavía no está disponible/);
 });
 
 test('set y milestone set validan y no pisan con un documento inválido', async () => {

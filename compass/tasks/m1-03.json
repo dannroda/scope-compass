@@ -43,5 +43,5 @@
   "status": "done",
   "test": "Dos escrituras con el mismo ETag: la segunda falla con conflicto y devuelve el documento actual.",
   "title": "Store json-files + ETag",
-  "updated_at": "2026-09-30T00:15:00Z"
+  "updated_at": "2026-09-29T20:32:45Z"
 }

@@ -31,5 +31,5 @@
   "status": "done",
   "test": "Para los mismos datos, la salida es idéntica a `tools/artifact_to_md.py` (salvo la fecha).",
   "title": "Export markdown",
-  "updated_at": "2026-09-30T01:45:00Z"
+  "updated_at": "2026-09-29T20:32:45Z"
 }

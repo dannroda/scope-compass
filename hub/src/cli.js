@@ -1,5 +1,6 @@
 // CLI `scompass` (spec §6). run() no toca process: recibe argv y dónde escribir, y devuelve el código de salida.
 // Sin hub escribe directo en compass/ con el store json-files (misma validación y escritura atómica).
+import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -10,6 +11,7 @@ import { importArtifact } from './import-artifact.js';
 import { KINDS, loadValidators, parseDoc, SCHEMA_DIR } from './schema.js';
 import { canonical } from './store/canonical.js';
 import { createJsonFilesStore, etagOf, StoreError } from './store/json-files.js';
+import { createServer, listen } from './server.js';
 
 const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
 const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
@@ -17,6 +19,7 @@ const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done
 const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
 
   init [--project <nombre>]                 crea compass/ en el proyecto
+  serve [--port 4711] [--open]              levanta el hub en 127.0.0.1 (Ctrl+C para cerrar)
   list [--milestone m00] [--status doing]   tareas (--json para agentes)
   show <id>                                 una tarea, con los pasos numerados
   add "<título>" --milestone m00 [--code 0.11] [--status todo]
@@ -38,6 +41,7 @@ const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
+  port: { type: 'string' }, open: { type: 'boolean' },
   help: { type: 'boolean', short: 'h' }
 };
 
@@ -53,7 +57,8 @@ export function findProject(cwd, dir) {
 const byOrder = (a, b) => (a.doc.order ?? 0) - (b.doc.order ?? 0) ||
   String(a.doc.code ?? '').localeCompare(String(b.doc.code ?? ''), 'es', { numeric: true }) || a.id.localeCompare(b.id);
 
-export async function run(argv, { cwd = process.cwd(), out = process.stdout, err = process.stderr, stdin = process.stdin, now } = {}) {
+// signal: corta `serve` (los tests lo usan); sin él, serve termina con SIGINT o SIGTERM.
+export async function run(argv, { cwd = process.cwd(), out = process.stdout, err = process.stderr, stdin = process.stdin, now, signal } = {}) {
   const print = (s) => out.write(s + '\n');
   const warn = (s) => err.write(s + '\n');
   let args;
@@ -101,6 +106,40 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (!res.ok) throw new StoreError('invalid_argument', res.message);
       await writeFile(join(compass, 'config.json'), canonical(config));
       return done({ dir: compass, config }, `Creado ${compass}`);
+    },
+
+    async serve() {
+      if (!existsSync(join(compass, 'config.json'))) {
+        throw new StoreError('not_found', `no hay ${compass}: corré \`scompass --dir ${project} init\` para crearla`);
+      }
+      const all = await store.loadAll();
+      showWarnings(all.warnings);
+      const port = Number(o.port ?? all.config?.port ?? 4711);
+      if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`puerto inválido: ${o.port}`);
+      const app = createServer({ projectDir: project, store });
+      let addr;
+      try {
+        addr = await listen(app, port);
+      } catch (e) {
+        await app.close();
+        if (e.code === 'EADDRINUSE') throw new StoreError('io_error', `el puerto ${port} está ocupado (¿ya hay un hub corriendo?)`);
+        throw e;
+      }
+      const url = `http://${addr.address}:${addr.port}/`;
+      o.json ? print(JSON.stringify({ url, port: addr.port, project })) : print(`Scope Compass en ${url} · ${project} · Ctrl+C para cerrar`);
+      if (o.open) {
+        spawn('xdg-open', [url], { detached: true, stdio: 'ignore' }).on('error', () => warn(`no se pudo abrir el navegador: ${url}`)).unref();
+      }
+      let stop = signal;
+      if (!stop) {
+        const ac = new AbortController();
+        process.once('SIGINT', () => ac.abort());
+        process.once('SIGTERM', () => ac.abort());
+        stop = ac.signal;
+      }
+      if (!stop.aborted) await new Promise((res) => stop.addEventListener('abort', res, { once: true }));
+      await app.close();
+      return 0;
     },
 
     async list() {
@@ -241,9 +280,6 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       throw new UsageError(`subcomando desconocido: milestone ${sub ?? ''}`);
     }
   };
-  for (const later of ['serve']) {
-    commands[later] = async () => { throw new StoreError('invalid_argument', `\`scompass ${later}\` todavía no está disponible`); };
-  }
 
   if (!Object.hasOwn(commands, cmd)) {
     warn(`comando desconocido: ${cmd}\n\n${USAGE}`);

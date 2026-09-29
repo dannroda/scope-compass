@@ -35,5 +35,5 @@
   "status": "done",
   "test": "`scompass --dir ../project-epiphany list --json` lista las tareas de Epiphany.",
   "title": "CLI básica",
-  "updated_at": "2026-09-30T01:00:00Z"
+  "updated_at": "2026-09-29T20:32:45Z"
 }

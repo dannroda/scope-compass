@@ -180,7 +180,7 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-## M2 — Hub: API REST + WebSocket  (0/8)
+## M2 — Hub: API REST + WebSocket  (1/8)
 
 Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de §5.5 y el watcher de cambios externos.
 
@@ -190,16 +190,18 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 - Editar un JSON a mano se emite por WebSocket en menos de 1 s.
 - Un cliente WebSocket mínimo de test recibe `upsert` al mover una tarjeta.
 
-### 2.1 Servidor Fastify y `scompass serve` · Pendiente
+### 2.1 Servidor Fastify y `scompass serve` · Hecho
 
-- [ ] Dependencias `fastify` y `@fastify/websocket` (D17)
-- [ ] Escucha solo en `127.0.0.1`, puerto de `config.json` o `--port`
-- [ ] `scompass serve [--port] [--open]`; sin `compass/` sugiere `scompass init`
-- [ ] Errores `{error: {code, message}}` con los códigos del store
-- [ ] Hook de autenticación por token, apagado en local
-- [ ] `GET /api/health` con la versión y la ruta del proyecto
+- [x] Dependencias `fastify` y `@fastify/websocket` (D17)
+- [x] Escucha solo en `127.0.0.1`, puerto de `config.json` o `--port`
+- [x] `scompass serve [--port] [--open]`; sin `compass/` sugiere `scompass init`
+- [x] Errores `{error: {code, message}}` con los códigos del store
+- [x] Hook de autenticación por token, apagado en local
+- [x] `GET /api/health` con la versión y la ruta del proyecto
 
 **Prueba:** `scompass serve` arranca, `curl 127.0.0.1:4711/api/health` responde, y no escucha en otras interfaces.
+
+**Notas:** `hub/src/server.js` (`createServer`, `listen`) y `scompass serve`. `--open` usa `xdg-open` (D15). Probado a mano: escucha solo en 127.0.0.1 y SIGTERM lo cierra limpio.
 
 **Referencias:** `docs/spec.md#arranque`, `docs/spec.md#arquitectura`, `docs/spec.md#servidor`
 
