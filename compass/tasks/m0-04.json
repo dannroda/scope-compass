@@ -1,26 +1,26 @@
 {
   "checklist": [
     {
-      "done": false,
-      "text": "Licencia del repo (hoy `UNLICENSED` en `hub/package.json`)"
+      "done": true,
+      "text": "Licencia del repo: MIT (`LICENSE`, `hub/package.json`)"
     },
     {
-      "done": false,
-      "text": "Versión mínima de Node"
+      "done": true,
+      "text": "Versión mínima de Node: 22 (`engines`)"
     },
     {
-      "done": false,
-      "text": "¿Editar hitos desde la UI en v1 o solo por CLI?"
+      "done": true,
+      "text": "Hitos: solo CLI en v1; la UI los muestra"
     },
     {
-      "done": false,
-      "text": "¿Export markdown automático en cada cambio o a pedido?"
+      "done": true,
+      "text": "Export markdown automático en cada escritura, desactivable con `auto_export_md`"
     }
   ],
   "code": "0.4",
   "created_at": "2026-09-29T20:00:00Z",
   "milestone": "m00",
-  "notes": "Cada decisión tomada se agrega a `docs/decisiones.md`.",
+  "notes": "Decisiones D10–D13 en `docs/decisiones.md`: MIT, Node >=22, hitos solo por CLI en v1, export markdown automático (`auto_export_md`, activado por defecto).",
   "order": 4,
   "refs": [
     {
@@ -28,8 +28,8 @@
       "section": "decisiones-abiertas"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "",
   "title": "Decisiones abiertas",
-  "updated_at": "2026-09-29T20:00:00Z"
+  "updated_at": "2026-09-29T22:30:00Z"
 }

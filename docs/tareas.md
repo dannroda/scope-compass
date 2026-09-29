@@ -3,7 +3,7 @@
 > Copia local del tablero https://claude.ai/artifact/JAiu8ZznTSLcDk8EzU3Zaj. El tablero es la fuente de verdad; este archivo se regenera desde ahí.
 > Generado: 2026-09-29
 
-## M0 — Fundaciones del repo  (4/6)
+## M0 — Fundaciones del repo  (5/6)
 
 Repo inicializado con el spec ordenado, las decisiones registradas, los schemas, el tablero propio y la estructura base. Se abre en Godot.
 
@@ -49,14 +49,14 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 **Referencias:** `docs/spec.md#validacion`
 
-### 0.4 Decisiones abiertas · Pendiente
+### 0.4 Decisiones abiertas · Hecho
 
-- [ ] Licencia del repo (hoy `UNLICENSED` en `hub/package.json`)
-- [ ] Versión mínima de Node
-- [ ] ¿Editar hitos desde la UI en v1 o solo por CLI?
-- [ ] ¿Export markdown automático en cada cambio o a pedido?
+- [x] Licencia del repo: MIT (`LICENSE`, `hub/package.json`)
+- [x] Versión mínima de Node: 22 (`engines`)
+- [x] Hitos: solo CLI en v1; la UI los muestra
+- [x] Export markdown automático en cada escritura, desactivable con `auto_export_md`
 
-**Notas:** Cada decisión tomada se agrega a `docs/decisiones.md`.
+**Notas:** Decisiones D10–D13 en `docs/decisiones.md`: MIT, Node >=22, hitos solo por CLI en v1, export markdown automático (`auto_export_md`, activado por defecto).
 
 **Referencias:** `docs/spec.md#decisiones-abiertas`
 
@@ -140,6 +140,7 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 - [ ] Port de `tools/artifact_to_md.py`
 - [ ] `scompass export md [--out]`
 - [ ] Título y URL del tablero desde `config.json`
+- [ ] Regenerar después de cada escritura de la CLI si `auto_export_md` no es `false` (D13)
 
 **Prueba:** Para los mismos datos, la salida es idéntica a `tools/artifact_to_md.py` (salvo la fecha).
 

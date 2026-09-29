@@ -9,10 +9,10 @@
   ],
   "additionalProperties": false,
   "properties": {
-    "project": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Nombre del proyecto, para títulos y el export markdown"
+    "auto_export_md": {
+      "type": "boolean",
+      "default": true,
+      "description": "Regenerar export_md después de cada escritura (hub y CLI). Por defecto true."
     },
     "board_url": {
       "type": "string",
@@ -53,6 +53,11 @@
       "minimum": 1,
       "maximum": 65535,
       "description": "Puerto del hub en 127.0.0.1"
+    },
+    "project": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Nombre del proyecto, para títulos y el export markdown"
     }
   }
 }

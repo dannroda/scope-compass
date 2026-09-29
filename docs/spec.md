@@ -286,7 +286,7 @@ scompass import artifact <carpeta-export>   # §8
 
 - Si hay un servidor corriendo, la CLI **llama a la API**, que emite los eventos a la UI. Si no hay servidor, escribe los archivos directamente, con la misma validación y la misma escritura atómica.
 - `--json` en todas las lecturas, para que los agentes parseen sin adivinar.
-- Opcional: después de cada escritura desde la CLI se regenera el markdown (`config.json › autoExportMarkdown`).
+- Después de cada escritura (desde la CLI o desde el hub) se regenera el markdown. Se desactiva con `config.json › auto_export_md: false` (D13).
 
 ## 7. Frontend: portar el artifact
 <!-- id: frontend -->
@@ -524,7 +524,7 @@ Para respetar el principio de §1 también hosteado, **git sigue siendo el almac
 
 - [x] Nombre de la app: **Scope Compass** (CLI `scompass`, datos en `compass/`).
 - [x] Repo propio: `dannroda/scope-compass`, carpeta hermana de los proyectos.
-- [ ] Licencia del repo.
-- [ ] Versión mínima de Node (propuesta: la LTS vigente al empezar M1).
-- [ ] ¿Editar hitos desde la UI en v1 o dejarlo en CLI?
-- [ ] ¿Export markdown automático en cada cambio o solo a pedido?
+- [x] Licencia del repo: **MIT** (D10).
+- [x] Versión mínima de Node: **22** (D11).
+- [x] Editar hitos: **solo CLI en v1**; la UI los muestra (D12).
+- [x] Export markdown: **automático en cada escritura**, desactivable (D13).

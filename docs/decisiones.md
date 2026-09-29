@@ -75,3 +75,32 @@ Cada sección referenciable lleva `<!-- id: nombre -->` debajo del título. Las 
 
 - **Nombre:** Scope Compass (CLI `scompass`). Reemplaza el provisorio "tablero".
 - **Consecuencia:** `hub/node_modules` necesita `.gdignore` (lo crea el `postinstall`).
+
+## D10 · Licencia MIT
+**2026-09-29 · vigente** · `LICENSE`
+
+- **Por qué:** es corta y permisiva. Cualquiera puede usar Scope Compass en sus propios proyectos de Godot sin trámites.
+- **Descartado:** repo privado sin licencia (`UNLICENSED`) y Apache-2.0 (más larga, sin una ventaja concreta para una herramienta local).
+
+## D11 · Node 22 como versión mínima
+**2026-09-29 · vigente** · `hub/package.json › engines`
+
+- **Por qué:** es la versión instalada hoy y trae todo lo que v1 necesita: `node --test`, `fs.watch` recursivo y `fetch`. Tiene mantenimiento hasta abril de 2027. Es un mínimo, así que 24 también sirve.
+- **Descartado:** exigir 24, que era la propuesta del spec: obligaba a actualizar antes de M1 sin necesitar nada de lo que agrega.
+
+## D12 · Hitos: solo CLI en v1
+**2026-09-29 · vigente** · spec §2
+
+La UI muestra los hitos (pestañas, objetivo, "hecho cuando") pero no los edita. Se editan con `scompass milestone set` o a mano.
+
+- **Por qué:** los hitos cambian poco, y dejar el formulario afuera acorta M3.
+- **Revisar:** si en el uso diario (M4) editar hitos por CLI resulta molesto.
+
+## D13 · Export markdown automático, desactivable
+**2026-09-29 · vigente** · spec §6
+
+Después de cada escritura, desde la CLI o desde el hub, se regenera `export_md`. Se desactiva con `"auto_export_md": false` en `config.json`; por defecto está activado.
+
+- **Por qué:** `docs/tareas.md` nunca queda desfasado respecto de `compass/`, y quien lea el repo sin la app ve el estado real.
+- **Costo aceptado:** cada cambio también toca `docs/tareas.md` en el diff.
+- **Descartado:** solo a pedido (`scompass export md`), porque es fácil olvidarlo.
