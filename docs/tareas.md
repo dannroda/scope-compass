@@ -293,7 +293,7 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 **Referencias:** `docs/spec.md#cli`
 
-## M3 — UI web (port del artifact)  (7/8)
+## M3 — UI web (port del artifact)  (8/8)
 
 La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexión, fuentes locales y las mejoras chicas de §7.
 
@@ -384,15 +384,15 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 **Referencias:** `docs/spec.md#frontend`
 
-### 3.8 Tests de M3 (Playwright) · Pendiente
+### 3.8 Tests de M3 (Playwright) · Hecho
 
-- [ ] Playwright como devDependency (D18)
-- [ ] Criterios de §14 con UI: paridad, dos pestañas, 409, JSON inválido, sin internet
-- [ ] Claro, oscuro y pantalla angosta
+- [x] Playwright como devDependency (D18)
+- [x] Criterios de §14 con UI: paridad, dos pestañas, 409, JSON inválido, sin internet
+- [x] Claro, oscuro y pantalla angosta
 
 **Prueba:** `npm test` en `hub/` corre también los tests de navegador.
 
-**Notas:** Adelantado en 3.3–3.6: `hub/test/ui.test.js` (dos pestañas, CLI y edición a mano, 409, pasos seguidos, reconexión, avisos, sin internet). Encontró un bug real: cerrar el hub con la UI abierta podía colgarse (cierre educado del WebSocket + reconexiones de la UI); arreglado con `terminate()` y `forceCloseConnections`. Sin el arreglo el archivo se colgaba 3/6 veces; con él, 0/10.
+**Notas:** `hub/test/ui.test.js` (Playwright en `node:test`, D18): 15 tests. Paridad con el HTML del artifact en claro/oscuro y 1400/900/390 px (detecta un cambio de un dígito en un token). Cliente WebSocket mínimo mientras la UI arrastra. Sin la app: los JSON validan con `compass/schema/` y el markdown tiene lo hecho. Encontró el cuelgue al cerrar el hub con la UI abierta (arreglado en 3.5/3.6).
 
 **Referencias:** `docs/spec.md#criterios-v1`
 

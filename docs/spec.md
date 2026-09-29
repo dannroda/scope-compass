@@ -523,19 +523,19 @@ Para respetar el principio de §1 también hosteado, **git sigue siendo el almac
 <!-- id: criterios-v1 -->
 
 - [x] `scompass import artifact` migra los 11 hitos y las 10 tareas de M0 sin diferencias de contenido.
-- [ ] La UI hace todo lo de §2 (paridad) con el mismo aspecto que el artifact, en claro y oscuro, en escritorio y en pantalla angosta.
+- [x] La UI hace todo lo de §2 (paridad) con el mismo aspecto que el artifact, en claro y oscuro, en escritorio y en pantalla angosta.
 - [x] Dos pestañas abiertas: mover una tarjeta en una se refleja en la otra en menos de 1 s.
 - [x] Editar a mano `compass/tasks/<id>.json` con el servidor corriendo se refleja en la UI. Un JSON inválido muestra un aviso y no rompe el servidor.
 - [x] Escritura concurrente con un ETag viejo devuelve `409` y la UI se recupera sola.
 - [x] `scompass move`, `check`, `add` y `export md` funcionan con y sin servidor corriendo.
 - [x] `docs/tareas.md` generado es idéntico al de `tools/artifact_to_md.py` para los mismos datos.
 - [x] Funciona sin conexión a internet.
-- [ ] Un cliente WebSocket mínimo (script de test) recibe `upsert` al mover una tarjeta desde la UI.
+- [x] Un cliente WebSocket mínimo (script de test) recibe `upsert` al mover una tarjeta desde la UI.
 - [x] Mover una tarjeta cambia exactamente un archivo de `compass/` en `git status` (más `docs/tareas.md`, por D13), y el diff es solo la línea de `status` (más `updated_at`).
 - [x] Con la app apagada: editar a mano un JSON, validar contra `compass/schema/` y, al levantar la app, verlo reflejado sin pérdidas.
 - [x] Un archivo con marcadores de conflicto de git se marca como inválido y la app no lo sobrescribe.
-- [ ] Borrar la app por completo no pierde ningún dato: todo está en `compass/` y en git.
-- [ ] Corre en Linux. Windows queda para después de v1 (D15).
+- [x] Borrar la app por completo no pierde ningún dato: todo está en `compass/` y en git.
+- [x] Corre en Linux. Windows queda para después de v1 (D15).
 
 ## 15. Decisiones abiertas
 <!-- id: decisiones-abiertas -->

@@ -241,3 +241,91 @@ test('atajos: N abre nueva tarea, 1–4 cambian el estado, y no se activan escri
   assert.equal(await page.isHidden('#detail'), true);
   await page.context().close();
 });
+
+// --- Criterios de §14 con UI (3.8) ---
+
+const REFERENCE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'docs', 'reference', 'tablero-artifact.html');
+const TOKENS = ['--bg', '--surface', '--surface-2', '--line', '--fg', '--muted', '--accent', '--accent-soft', '--on-accent',
+  '--s-todo', '--s-doing', '--s-review', '--s-done', '--danger', '--font-display', '--font-body', '--font-mono', '--shadow'];
+
+// Estilos que definen el aspecto: tokens, tipografía y la forma de los bloques principales.
+async function looks(page) {
+  return page.evaluate((tokens) => {
+    const cs = (sel, props) => { const el = document.querySelector(sel); if (!el) return null; const s = getComputedStyle(el); return Object.fromEntries(props.map((p) => [p, s[p]])); };
+    const root = getComputedStyle(document.documentElement);
+    return {
+      tokens: Object.fromEntries(tokens.map((t) => [t, root.getPropertyValue(t).trim()])),
+      body: cs('body', ['backgroundColor', 'color', 'fontFamily', 'fontSize', 'lineHeight']),
+      h1: cs('h1', ['fontFamily', 'fontSize', 'letterSpacing']),
+      primary: cs('.btn.primary', ['backgroundColor', 'color', 'borderRadius', 'fontWeight', 'minHeight']),
+      summary: cs('section.summary', ['backgroundColor', 'borderRadius', 'padding', 'gridTemplateColumns']),
+      board: cs('main.board', ['gridTemplateColumns', 'gap']),
+      col: cs('.col', ['backgroundColor', 'borderRadius', 'padding', 'minHeight']),
+      colTitle: cs('.col h3', ['fontSize', 'textTransform', 'letterSpacing'])
+    };
+  }, TOKENS);
+}
+
+test('§14: mismo aspecto que el artifact en claro, oscuro, escritorio y pantalla angosta', async () => {
+  const html = await readFile(REFERENCE, 'utf8');
+  for (const colorScheme of ['light', 'dark']) {
+    for (const width of [1400, 900, 390]) {
+      const ctx = await browser.newContext({ colorScheme, viewport: { width, height: 900 } });
+      await ctx.route((u) => u.hostname !== '127.0.0.1', (r) => r.abort());
+      const ref = await ctx.newPage();
+      await ref.setContent(html);
+      // Lo que ponía el contenedor del artifact (el mismo body { margin: 0 } de app.css).
+      await ref.addStyleTag({ content: 'body { margin: 0; }' });
+      const ours = await ctx.newPage();
+      ours.on('pageerror', (e) => pageErrors.push(e.message));
+      await ours.goto(url);
+      await ours.waitForSelector('.card');
+      const [a, b] = [await looks(ref), await looks(ours)];
+      for (const k of Object.keys(a)) assert.deepEqual(b[k], a[k], `${colorScheme} ${width}px: ${k}`);
+      await ctx.close();
+    }
+  }
+});
+
+test('§14: un cliente WebSocket mínimo recibe upsert al mover una tarjeta desde la UI', async () => {
+  const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+  const got = [];
+  ws.onmessage = (e) => got.push(JSON.parse(e.data));
+  await new Promise((r) => { ws.onopen = r; });
+  const page = await open();
+  // Una tarjeta visible sin scroll: arrastrar tras un scroll puede levantar otra tarjeta.
+  await page.dragAndDrop('.card[data-id="m0-01"]', '.col[aria-label="En curso"]');
+  const t0 = Date.now();
+  while (!got.some((m) => m.type === 'upsert' && m.id === 'm0-01') && Date.now() - t0 < 1000) await new Promise((r) => setTimeout(r, 10));
+  const m = got.find((x) => x.type === 'upsert' && x.id === 'm0-01');
+  assert.ok(m, `llegó el upsert (recibidos: ${JSON.stringify(got.map((x) => [x.type, x.id]))}, en disco: ${(await task('m0-01')).status})`);
+  assert.equal(m.doc.status, 'doing');
+  ws.close();
+  await page.context().close();
+});
+
+test('§14: sin la app, todo lo hecho en la UI está en compass/ y en docs/tareas.md', async () => {
+  const page = await open();
+  await page.keyboard.press('n');
+  await page.fill('#new-title', 'Hecha en la UI');
+  await page.selectOption('#new-ms', 'm02');
+  await page.click('#new-form button[type=submit]');
+  await page.waitForSelector('.card:has-text("Hecha en la UI")');
+  await page.context().close();
+  await app.close(); // exporta lo pendiente al cerrar
+  app = null;
+  // Nada del código de la app: JSON.parse, el schema que vive en compass/schema/ y el markdown.
+  const { readdir } = await import('node:fs/promises');
+  const Ajv = (await import('ajv/dist/2020.js')).default;
+  const ajv = new Ajv({ allErrors: true });
+  (await import('ajv-formats')).default(ajv);
+  const validate = ajv.compile(JSON.parse(await readFile(join(compass, 'schema', 'task.schema.json'), 'utf8')));
+  const tasks = [];
+  for (const f of await readdir(join(compass, 'tasks'))) {
+    const t = JSON.parse(await readFile(join(compass, 'tasks', f), 'utf8'));
+    assert.ok(validate(t), f);
+    tasks.push(t);
+  }
+  assert.ok(tasks.some((t) => t.title === 'Hecha en la UI' && t.milestone === 'm02'));
+  assert.match(await readFile(join(dir, 'docs', 'tareas.md'), 'utf8'), /### Hecha en la UI · Pendiente/);
+});

@@ -1,22 +1,22 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Playwright como devDependency (D18)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Criterios de §14 con UI: paridad, dos pestañas, 409, JSON inválido, sin internet"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Claro, oscuro y pantalla angosta"
     }
   ],
   "code": "3.8",
   "created_at": "2026-09-29T22:25:13.569Z",
   "milestone": "m03",
-  "notes": "Adelantado en 3.3–3.6: `hub/test/ui.test.js` (dos pestañas, CLI y edición a mano, 409, pasos seguidos, reconexión, avisos, sin internet). Encontró un bug real: cerrar el hub con la UI abierta podía colgarse (cierre educado del WebSocket + reconexiones de la UI); arreglado con `terminate()` y `forceCloseConnections`. Sin el arreglo el archivo se colgaba 3/6 veces; con él, 0/10.",
+  "notes": "`hub/test/ui.test.js` (Playwright en `node:test`, D18): 15 tests. Paridad con el HTML del artifact en claro/oscuro y 1400/900/390 px (detecta un cambio de un dígito en un token). Cliente WebSocket mínimo mientras la UI arrastra. Sin la app: los JSON validan con `compass/schema/` y el markdown tiene lo hecho. Encontró el cuelgue al cerrar el hub con la UI abierta (arreglado en 3.5/3.6).",
   "order": 8,
   "refs": [
     {
@@ -24,8 +24,8 @@
       "section": "criterios-v1"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "`npm test` en `hub/` corre también los tests de navegador.",
   "title": "Tests de M3 (Playwright)",
-  "updated_at": "2026-09-29T23:16:43.932Z"
+  "updated_at": "2026-09-29T23:32:22.968Z"
 }
