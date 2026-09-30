@@ -62,12 +62,17 @@ var _steps_open := {}
 var _blocks := {}
 ## Resaltado para los CodeEdit de los snippets. El plugin pasa el GDScriptSyntaxHighlighter del editor; fuera
 ## del editor (tests) queda un CodeHighlighter básico.
+## Escala del editor para los íconos (el plugin la pasa; fuera del editor, 1).
+var icon_scale := 1.0
+var _icons := {}
 var make_highlighter: Callable = func(lang: String): return basic_highlighter(lang)
 var notice: Label
 var footer_dot: ColorRect
 var footer_label: Label
 var footer_right: Label
 var restart_button: Button
+var start_button: Button
+var open_tasks_button: Button
 var _poll: Timer
 var _notice_timer: Timer
 
@@ -337,6 +342,53 @@ func show_notice(text: String) -> void:
 	_notice_timer.start()
 
 
+# --- Íconos -------------------------------------------------------------------------------------
+
+## Un ícono de assets/ (p. ej. "node/arrow_clockwise"), cargado del SVG en tiempo de ejecución: assets/ tiene
+## .gdignore, así Godot no genera archivos .import en este repo ni en los proyectos que usan el addon.
+func icon(path: String) -> Texture2D:
+	if _icons.has(path):
+		return _icons[path]
+	var file := (get_script() as Script).resource_path.get_base_dir().path_join("assets/%s.svg" % path)
+	var tex: Texture2D = null
+	if FileAccess.file_exists(file):
+		var img := Image.new()
+		if img.load_svg_from_string(FileAccess.get_file_as_string(file), icon_scale) == OK:
+			tex = ImageTexture.create_from_image(img)
+	_icons[path] = tex
+	return tex
+
+
+## La escala del editor llega después de construir los botones: vuelve a cargar los íconos con ella.
+func set_icon_scale(scale: float) -> void:
+	icon_scale = scale
+	_icons.clear()
+	for pair in [[reload_button, "node/arrow_clockwise"], [browser_button, "node/arrow_up_right"], [start_button, "node/play"],
+			[open_tasks_button, "node/folder_open"], [restart_button, "node/arrow_counterclockwise"]]:
+		pair[0].icon = icon(pair[1])
+	_render()
+
+
+## Botón de solo ícono (con el texto de respaldo si el SVG no está).
+func _icon_button(path: String, fallback: String, tip: String) -> Button:
+	var b := Button.new()
+	b.tooltip_text = tip
+	b.icon = icon(path)
+	b.text = "" if b.icon else fallback
+	return b
+
+
+## Flecha de plegado: la del editor (la misma que usa el Tree), o ▸/▾ fuera del editor.
+func _fold_icon(open: bool, b: Button, label := "") -> void:
+	var name := "GuiTreeArrowDown" if open else "GuiTreeArrowRight"
+	if has_theme_icon(name, "EditorIcons"):
+		b.icon = get_theme_icon(name, "EditorIcons")
+		b.text = label
+	else:
+		b.icon = null
+		b.text = ("▾" if open else "▸") + (" " + label if label != "" else "")
+
+
 # --- Construcción ----------------------------------------------------------------------------
 
 func _build() -> void:
@@ -361,7 +413,9 @@ func _build() -> void:
 	var bb := HFlowContainer.new()
 	bv.add_child(bb)
 	var start := Button.new()
+	start_button = start
 	start.text = "Iniciar hub"
+	start.icon = icon("node/play")
 	start.pressed.connect(start_hub)
 	bb.add_child(start)
 	var retry := Button.new()
@@ -369,7 +423,9 @@ func _build() -> void:
 	retry.pressed.connect(func(): await reload(); await _try_hub())
 	bb.add_child(retry)
 	var open_tasks := Button.new()
+	open_tasks_button = open_tasks
 	open_tasks.text = "Abrir compass/tasks"
+	open_tasks.icon = icon("node/folder_open")
 	open_tasks.pressed.connect(func(): OS.shell_open(project_root.path_join("compass/tasks")))
 	bb.add_child(open_tasks)
 	add_child(banner)
@@ -389,14 +445,10 @@ func _build() -> void:
 	milestone_select.tooltip_text = "Hito"
 	milestone_select.item_selected.connect(_on_milestone_selected)
 	head.add_child(milestone_select)
-	reload_button = Button.new()
-	reload_button.tooltip_text = "Recargar"
-	reload_button.text = "↻"
+	reload_button = _icon_button("node/arrow_clockwise", "↻", "Recargar")
 	reload_button.pressed.connect(reload)
 	head.add_child(reload_button)
-	browser_button = Button.new()
-	browser_button.tooltip_text = "Abrir el tablero en el navegador"
-	browser_button.text = "↗"
+	browser_button = _icon_button("node/arrow_up_right", "↗", "Abrir el tablero en el navegador")
 	browser_button.pressed.connect(func(): OS.shell_open(client.base_url() + "/"))
 	head.add_child(browser_button)
 
@@ -495,6 +547,7 @@ func _build() -> void:
 	foot.add_child(footer_right)
 	restart_button = Button.new()
 	restart_button.text = "Reiniciar hub"
+	restart_button.icon = icon("node/arrow_counterclockwise")
 	restart_button.flat = true
 	restart_button.tooltip_text = "Reinicia el hub (para que cargue código nuevo de Scope Compass)"
 	restart_button.pressed.connect(restart_hub)
@@ -578,7 +631,7 @@ func _render_tree() -> void:
 ## Encabezado del bloque de tareas y estado del divisor (plegado: el detalle usa todo el alto).
 func _apply_split() -> void:
 	var n := board.tasks_of(current_milestone).size()
-	tasks_header.text = ("▸ " if tasks_collapsed else "▾ ") + "Tareas · %d" % n
+	_fold_icon(not tasks_collapsed, tasks_header, "Tareas · %d" % n)
 	tree.visible = not tasks_collapsed
 	split.collapsed = tasks_collapsed
 	if not tasks_collapsed:
@@ -643,7 +696,7 @@ func _render_detail() -> void:
 		if detail_text != "":
 			var toggle := Button.new()
 			toggle.flat = true
-			toggle.text = "▾" if open else "▸"
+			_fold_icon(open, toggle)
 			toggle.tooltip_text = "Ocultar detalle" if open else "Ver detalle"
 			toggle.size_flags_vertical = SIZE_SHRINK_BEGIN
 			toggle.pressed.connect(toggle_detail)
@@ -692,14 +745,12 @@ func _render_refs(t: Dictionary) -> void:
 		toggle.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		toggle.size_flags_horizontal = SIZE_EXPAND_FILL
 		toggle.clip_text = true
-		toggle.text = ("▾ " if open else "▸ ") + str(s.title).replace("`", "")
+		_fold_icon(open, toggle, str(s.title).replace("`", ""))
 		toggle.tooltip_text = "%s#%s" % [d.alias, s.id]
 		toggle.pressed.connect(func(): _refs_open[key] = not open; _render_detail())
 		head.add_child(toggle)
 		if online:
-			var web := Button.new()
-			web.text = "↗"
-			web.tooltip_text = "Abrir en el navegador"
+			var web := _icon_button("node/arrow_up_right", "↗", "Abrir en el navegador")
 			web.pressed.connect(func(): OS.shell_open("%s/#docs/%s/%s" % [client.base_url(), str(d.alias).uri_encode(), str(s.id).uri_encode()]))
 			head.add_child(web)
 		if open:

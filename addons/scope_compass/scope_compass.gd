@@ -37,6 +37,7 @@ func _enter_tree() -> void:
 	_dock.default_slot = EditorDock.DOCK_SLOT_RIGHT_UL
 	_dock.add_child(_view)
 	add_dock(_dock)
+	_view.set_icon_scale(EditorInterface.get_editor_scale())
 	_view.setup(ProjectSettings.globalize_path("res://").trim_suffix("/"))
 
 

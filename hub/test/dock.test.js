@@ -313,3 +313,7 @@ test('dock: "Reiniciar hub" vuelve a conectar, y el hub nuevo se cierra con el d
 test('dock: el bloque de tareas se pliega y el divisor lista/detalle se recuerda', { skip }, async () => {
   expectOk(await godot('split', dir), 'split');
 });
+
+test('dock: los botones usan los íconos de assets/ (SVG en tiempo de ejecución, escalados)', { skip }, async () => {
+  expectOk(await godot('icons', dir), 'icons');
+});
