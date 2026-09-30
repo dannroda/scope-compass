@@ -427,7 +427,7 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
 **Notas:** Depende del usuario.
 
-## M5 — Dock de Godot (v1.5)  (8/9)
+## M5 — Dock de Godot (v1.5)  (9/9)
 
 Addon `scope_compass` con un dock que muestra las tareas del hito actual y las mueve a través del hub.
 
@@ -531,16 +531,16 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Referencias:** `docs/spec.md#godot`
 
-### 5.9 Opción de mantener el hub, con ícono en la bandeja · Pendiente
+### 5.9 Opción de mantener el hub, con ícono en la bandeja · Hecho
 
-- [ ] `scompass serve --tray`: ícono en la bandeja de Plasma (StatusNotifierItem por D-Bus, D20)
-- [ ] Tooltip con proyecto y dirección; clic abre el tablero; menú "Abrir tablero" y "Detener hub"
-- [ ] Editor Settings `scope_compass/keep_hub_running`: el dock lo lanza independiente y con `--tray`
-- [ ] Epiphany en el puerto 4712 para poder tener los dos hubs a la vez
+- [x] `scompass serve --tray`: ícono en la bandeja de Plasma (StatusNotifierItem por D-Bus, D20)
+- [x] Tooltip con proyecto y dirección; clic abre el tablero; menú "Abrir tablero" y "Detener hub"
+- [x] Editor Settings `scope_compass/keep_hub_running`: el dock lo lanza independiente y con `--tray`
+- [x] Epiphany en el puerto 4712 para poder tener los dos hubs a la vez
 
 **Prueba:** Con la opción activada, cerrar el editor deja el hub y su ícono; "Detener hub" desde la bandeja lo cierra.
 
-**Notas:** KDE Plasma sobre Wayland: bandeja nativa por D-Bus, sin binarios nativos.
+**Notas:** `hub/src/tray.js` (D20): ícono, tooltip con proyecto y dirección, clic abre el tablero, menú "Abrir tablero" / "Detener hub". Probado en un bus privado (el test hace de Plasma) y registrado en el Plasma real. Editor Settings `scope_compass/keep_hub_running`: el dock lo lanza sin tubería y con `--tray`, y no lo cierra. `create_process` ya pone al hijo en su propia sesión (setsid sobraba y cambiaba el PID). Epiphany pasó al puerto 4712 (commit `1277eec` allá).
 
 **Referencias:** `docs/spec.md#godot`
 

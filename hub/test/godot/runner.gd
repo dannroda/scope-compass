@@ -252,3 +252,18 @@ func test_start_hub_and_hang(a: Array) -> void:
 	print("READY")
 	await create_timer(30.0).timeout
 	_fail(c, "nadie mató a Godot")
+
+
+# Modo "mantener": el hub queda corriendo aunque el dock lo quiera cerrar (5.9).
+func test_start_hub_keep(a: Array) -> void:
+	var c := "start_hub_keep"
+	var v := await _view(a[0])
+	v.scompass_setting = func(): return a[1]
+	v.keep_hub_setting = func(): return true
+	if not _check(c, await v.start_hub(), "no arrancó: " + v.notice.text): return
+	if not _check(c, v.hub_kept, "no quedó en modo mantener"): return
+	var pid: int = v.hub_pid
+	v.stop_hub() # lo que hace el plugin al cerrar el editor
+	await create_timer(1.0).timeout
+	if not _check(c, OS.is_process_running(pid), "el dock lo cerró igual"): return
+	print("PID ", pid)

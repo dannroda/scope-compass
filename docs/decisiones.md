@@ -154,3 +154,12 @@ Godot 4.8 agrega la clase `EditorDock` con `EditorPlugin.add_dock()` / `remove_d
 - **Por qué:** es la API de docks de la versión que usa el proyecto (4.8-dev6) y trae título, ícono, ranura por defecto y layout guardado. Se verificó con un proyecto descartable en el editor sin ventana: el dock queda en el panel lateral y se quita limpio.
 - **Riesgo:** 4.8 todavía es dev; si la API cambia antes de la versión estable, el cambio queda en `scope_compass.gd`. La vista del dock es un `Control` aparte que no depende de `EditorDock`.
 - **Descartado:** `add_control_to_dock()`, la API vieja.
+
+## D20 · Bandeja del sistema por D-Bus con `@homebridge/dbus-native`
+**2026-09-29 · vigente** · `hub/src/tray.js`
+
+`scompass serve --tray` pone un ícono en la bandeja (StatusNotifierItem + menú `com.canonical.dbusmenu`), el mecanismo nativo de KDE Plasma. Lo usa el dock cuando el hub tiene que seguir corriendo al cerrar el editor (`scope_compass/keep_hub_running`).
+
+- **Por qué:** JavaScript puro dentro del hub, sin binarios nativos ni otro lenguaje en tiempo de ejecución; se prueba en un bus D-Bus privado sin tocar la bandeja real.
+- **Descartado:** `dbus-next` (abandonado desde 2022; trae `node-gyp`/`request` con avisos críticos sin arreglo). PySide6 con `QSystemTrayIcon` queda como alternativa si el menú por D-Bus da problemas: está instalado en el sistema, pero sería un segundo proceso en Python.
+- **Límite:** en escritorios sin StatusNotifierWatcher (GNOME sin la extensión AppIndicator) no hay ícono; el hub avisa y sigue funcionando.

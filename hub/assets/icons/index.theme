@@ -1,0 +1,9 @@
+[Icon Theme]
+Name=scope-compass
+Directories=hicolor/scalable/apps
+
+[hicolor/scalable/apps]
+Size=24
+MinSize=16
+MaxSize=512
+Type=Scalable

@@ -16,6 +16,8 @@ var get_pref: Callable = func(_key: String, default): return default
 var set_pref: Callable = func(_key: String, _value): pass
 ## Ruta a scompass configurada en Editor Settings ("" = buscarla).
 var scompass_setting: Callable = func(): return ""
+## Editor Settings scope_compass/keep_hub_running: el hub sigue al cerrar el editor, con ícono en la bandeja.
+var keep_hub_setting: Callable = func(): return false
 
 var project_root := ""
 var board := Board.new()
@@ -31,6 +33,8 @@ var _queues := {}
 var hub_pid := -1
 ## Tubería con el hub que lanzó el dock: mientras exista, el hub vive; si Godot muere, el sistema la cierra.
 var _hub_pipe := {}
+## El hub se lanzó para quedar corriendo: el dock no lo cierra.
+var hub_kept := false
 
 var banner: PanelContainer
 var banner_title: Label
@@ -223,11 +227,19 @@ func start_hub() -> bool:
 	# Por sh con la salida a un log: si no, el hub hereda el stdout de Godot. exec conserva el PID.
 	var log_path := project_root.path_join(".godot/scope_compass_hub.log")
 	DirAccess.make_dir_recursive_absolute(log_path.get_base_dir())
-	var args: Array = ["-c", 'log="$1"; shift; exec "$@" >"$log" 2>&1', "sh", log_path, cmd[0]] + cmd[1] \
-		+ ["--dir", project_root, "serve", "--exit-on-stdin-close"]
-	# La entrada del hub es una tubería con Godot: si el editor se cierra, se cuelga o lo matan, el hub se va (5.8).
-	_hub_pipe = OS.execute_with_pipe("sh", PackedStringArray(args), false)
-	hub_pid = int(_hub_pipe.get("pid", -1))
+	hub_kept = bool(keep_hub_setting.call())
+	if hub_kept:
+		# Independiente del editor (5.9): sin tubería y con ícono en la bandeja para detenerlo. create_process ya
+		# pone al hijo en su propia sesión (setsid sobra y, al ser líder, haría un fork que cambia el PID).
+		var args: Array = ["-c", 'log="$1"; shift; exec "$@" >"$log" 2>&1 </dev/null', "sh", log_path, cmd[0]] + cmd[1] \
+			+ ["--dir", project_root, "serve", "--tray"]
+		hub_pid = OS.create_process("sh", PackedStringArray(args))
+	else:
+		var args: Array = ["-c", 'log="$1"; shift; exec "$@" >"$log" 2>&1', "sh", log_path, cmd[0]] + cmd[1] \
+			+ ["--dir", project_root, "serve", "--exit-on-stdin-close"]
+		# La entrada del hub es una tubería con Godot: si el editor se cierra, se cuelga o lo matan, el hub se va (5.8).
+		_hub_pipe = OS.execute_with_pipe("sh", PackedStringArray(args), false)
+		hub_pid = int(_hub_pipe.get("pid", -1))
 	if hub_pid <= 0:
 		hub_pid = -1
 		show_notice("No se pudo iniciar el hub con %s." % cmd[0])
@@ -251,10 +263,11 @@ func _wait_online(secs: float) -> bool:
 	return online
 
 
-## Cierra el hub solo si lo abrió este dock: corta la tubería (el hub termina el export pendiente y sale).
+## Cierra el hub solo si lo abrió este dock y no está en modo "mantener" (salvo force): corta la tubería
+## (el hub termina el export pendiente y sale).
 ## Si en 3 s sigue vivo, SIGTERM.
-func stop_hub() -> void:
-	if hub_pid <= 0:
+func stop_hub(force := false) -> void:
+	if hub_pid <= 0 or (hub_kept and not force):
 		return
 	for key in ["stdio", "stderr"]:
 		if _hub_pipe.get(key) is FileAccess:

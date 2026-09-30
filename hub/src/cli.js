@@ -13,6 +13,7 @@ import { canonical } from './store/canonical.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { createHttpStore, detectHub } from './store/http.js';
 import { createServer, listen } from './server.js';
+import { startTray } from './tray.js';
 import { listMilestones, listTasks } from './views.js';
 
 const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
@@ -23,6 +24,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   init [--project <nombre>]                 crea compass/ en el proyecto
   serve [--port 4711] [--open]              levanta el hub en 127.0.0.1 (Ctrl+C para cerrar)
         [--exit-on-stdin-close]             se cierra cuando se corta su entrada (lo usa el dock de Godot)
+        [--tray]                            ícono en la bandeja del sistema, con "Detener hub"
   list [--milestone m00] [--status doing]   tareas (--json para agentes)
   show <id>                                 una tarea, con los pasos numerados
   add "<título>" --milestone m00 [--code 0.11] [--status todo]
@@ -52,7 +54,7 @@ const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
-  port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' },
+  port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' },
   title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
@@ -146,10 +148,24 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       const url = `http://${addr.address}:${addr.port}/`;
       o.json ? print(JSON.stringify({ url, port: addr.port, project })) : print(`Scope Compass en ${url} · ${project} · Ctrl+C para cerrar`);
-      if (o.open) {
-        spawn('xdg-open', [url], { detached: true, stdio: 'ignore' }).on('error', () => warn(`no se pudo abrir el navegador: ${url}`)).unref();
-      }
+      // SCOMPASS_OPEN reemplaza a xdg-open (los tests lo usan para no abrir el navegador).
+      const openBoard = () => spawn(process.env.SCOMPASS_OPEN || 'xdg-open', [url], { detached: true, stdio: 'ignore' })
+        .on('error', () => warn(`no se pudo abrir el navegador: ${url}`)).unref();
+      if (o.open) openBoard();
       const ac = new AbortController();
+      let tray = null;
+      if (o.tray) {
+        try {
+          tray = await startTray({
+            title: 'Scope Compass',
+            tooltip: `${all.config?.project ?? project} · ${url}`,
+            onActivate: openBoard,
+            items: [{ label: 'Abrir tablero', onClick: openBoard }, { label: 'Detener hub', onClick: () => ac.abort() }]
+          });
+        } catch (e) {
+          warn(`sin ícono en la bandeja: ${e.message}`);
+        }
+      }
       if (signal) signal.addEventListener('abort', () => ac.abort(), { once: true });
       else {
         process.once('SIGINT', () => ac.abort());
@@ -165,6 +181,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const stop = ac.signal;
       if (!stop.aborted && !signal?.aborted) await new Promise((res) => stop.addEventListener('abort', res, { once: true }));
       if (o['exit-on-stdin-close']) stdin.pause?.();
+      tray?.close();
       await app.close();
       return 0;
     },

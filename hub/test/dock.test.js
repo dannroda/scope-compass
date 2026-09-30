@@ -229,3 +229,32 @@ test('si matan a Godot con kill -9, el hub que abrió el dock se cierra solo', {
     if (hubPid && alive(hubPid)) process.kill(hubPid, 'SIGKILL');
   }
 });
+
+
+test('modo "mantener": el hub sigue al cerrar el editor', { skip }, async () => {
+  const port = await freePort();
+  const cfgPath = join(dir, 'compass', 'config.json');
+  await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), port }));
+  let hubPid = 0;
+  try {
+    // Sin bus de sesión: el hub no pone el ícono en la bandeja real mientras corren los tests.
+    const env = { ...process.env };
+    delete env.DBUS_SESSION_BUS_ADDRESS;
+    const r = await new Promise((resolve) => {
+      const p = spawn('godot', ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--',
+        'start_hub_keep', dir, join(REPO, 'hub', 'bin', 'scompass.js')], { env });
+      let out = '';
+      p.stdout.on('data', (d) => { out += d; });
+      p.stderr.on('data', (d) => { out += d; });
+      p.on('exit', (code) => resolve({ code, out }));
+    });
+    hubPid = Number(/PID (\d+)/.exec(r.out)?.[1] ?? 0);
+    expectOk(r, 'start_hub_keep');
+    await new Promise((res) => setTimeout(res, 500));
+    assert.ok(alive(hubPid), 'el hub se cerró con Godot');
+    assert.equal((await (await fetch(`http://127.0.0.1:${port}/api/health`)).json()).ok, true);
+    assert.match(await readFile(join(dir, '.godot', 'scope_compass_hub.log'), 'utf8'), /sin ícono en la bandeja/);
+  } finally {
+    if (hubPid && alive(hubPid)) process.kill(hubPid, 'SIGTERM');
+  }
+});
