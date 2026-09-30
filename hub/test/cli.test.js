@@ -161,3 +161,20 @@ test('serve --exit-on-stdin-close: se cierra cuando se corta la entrada; sin la 
   without.kill('SIGTERM');
   assert.equal(await new Promise((r) => without.on('exit', r)), 0);
 });
+
+test('step add/set/rm: texto corto y detalle; show imprime el detalle sangrado', async () => {
+  assert.equal((await cli(['step', 'add', 'm1-07', 'Acciones de juego', '--detail', 'interact (B / E)\ndodge (B / Espacio)'])).code, 0);
+  let steps = (await task('m1-07')).checklist;
+  assert.deepEqual(steps.at(-1), { text: 'Acciones de juego', done: false, detail: 'interact (B / E)\ndodge (B / Espacio)' });
+  const n = String(steps.length);
+  const show = await cli(['show', 'm1-07']);
+  assert.match(show.out, new RegExp(`${n}\\. \\[ \\] Acciones de juego\\n {9}interact \\(B / E\\)\\n {9}dodge`));
+  assert.equal((await cli(['step', 'set', 'm1-07', n, '--text', 'Acciones'])).code, 0);
+  assert.equal((await task('m1-07')).checklist.at(-1).detail, 'interact (B / E)\ndodge (B / Espacio)', 'cambiar el texto conserva el detalle');
+  assert.equal((await cli(['step', 'set', 'm1-07', n, '--detail', ''])).code, 0);
+  assert.deepEqual((await task('m1-07')).checklist.at(-1), { text: 'Acciones', done: false }, '--detail "" lo quita');
+  assert.equal((await cli(['step', 'set', 'm1-07', '99', '--text', 'x'])).code, 1);
+  assert.equal((await cli(['step', 'set', 'm1-07', n])).code, 2);
+  assert.equal((await cli(['step', 'rm', 'm1-07', n])).code, 0);
+  assert.equal((await task('m1-07')).checklist.length, steps.length - 1);
+});

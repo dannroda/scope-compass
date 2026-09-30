@@ -218,9 +218,18 @@ test('refs suggest: "gdd.md §4.3" y "gdd §4" proponen la sección por número;
   assert.deepEqual(tasks[0].refs, [], 'no aplica nada');
 });
 
-test('refs suggest con Epiphany: sus dos citas ya son referencias', { skip: !existsSync(join(EPIPHANY, 'gdd.md')) && 'no está project-epiphany' }, async () => {
+test('refs suggest: también "en el GDD (§4.3)"', () => {
+  const docs = [{ alias: 'gdd', path: 'gdd.md', ...parseSections('# GDD\n### 4.3 Mapa de input\n<!-- id: input -->\n') }];
+  const s = suggestRefs(docs, [{ id: 'a', notes: 'La tabla completa está en el GDD (§4.3).', refs: [] }]);
+  assert.deepEqual(s.map((x) => x.ref), ['gdd#input']);
+});
+
+// Los datos reales de Epiphany cambian (hay otra sesión trabajándolos): solo se comprueba que toda propuesta
+// apunte a una sección que existe.
+test('refs suggest con Epiphany: toda propuesta apunta a una sección existente', { skip: !existsSync(join(EPIPHANY, 'gdd.md')) && 'no está project-epiphany' }, async () => {
   let out = '';
   assert.equal(await run(['--dir', EPIPHANY, '--direct', 'refs', 'suggest', '--json'], { out: { write: (s) => { out += s; } }, err: { write() {} } }), 0);
-  const s = JSON.parse(out).suggestions;
-  assert.deepEqual(s.map((x) => [x.code, x.ref, x.already]), [['0.2', 'gdd#input', true], ['0.7', 'gdd#entidades-componentes', true]]);
+  const config = JSON.parse(await (await import('node:fs/promises')).readFile(join(EPIPHANY, 'compass', 'config.json'), 'utf8'));
+  const docs = await loadDocs(EPIPHANY, config);
+  for (const x of JSON.parse(out).suggestions) assert.ok(resolveRef(docs, x.ref).section, x.ref);
 });

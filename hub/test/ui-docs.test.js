@@ -257,3 +257,40 @@ test('"Copiar enlace": copia [[alias#id]] de la sección actual y avisa si la se
   assert.match(await page.textContent('.docs-bar .fragile'), /Sin id/);
   await ctx.close();
 });
+
+test('pasos: ▸ despliega el detalle; ✎ edita texto y detalle (vacío lo quita); un [[enlace]] en el detalle cuenta', async () => {
+  await setTask('m1-06', { checklist: [{ text: 'Acciones de juego', done: false, detail: 'interact (B / E), ver [[gdd#camara]]' }, { text: 'Sin detalle', done: false }] });
+  const page = await open();
+  await page.click('.chip:has-text("M1")');
+  await page.click('.card[data-id="m1-06"]');
+  assert.equal(await page.locator('.checklist li').nth(1).locator('.step-toggle').count(), 0);
+  assert.equal(await page.locator('.step-detail').count(), 0);
+  await page.click('.step-toggle');
+  assert.match(await page.textContent('.step-detail'), /interact \(B \/ E\), ver Cámara/);
+  // Editar: texto nuevo y detalle nuevo.
+  await page.click('.checklist li >> nth=0 >> button[aria-label="Editar paso"]');
+  await page.fill('#d-step-text', 'Acciones');
+  await page.fill('#d-step-detail', 'solo interact');
+  await page.click('.step-edit-actions button:has-text("Guardar")');
+  await page.waitForFunction(() => !document.getElementById('d-step-text'));
+  assert.deepEqual((await task('m1-06')).checklist[0], { text: 'Acciones', done: false, detail: 'solo interact' });
+  // Detalle vacío lo quita; Escape cancela sin guardar.
+  await page.click('.checklist li >> nth=0 >> button[aria-label="Editar paso"]');
+  await page.fill('#d-step-detail', '');
+  await page.press('#d-step-text', 'Enter');
+  await page.waitForFunction(() => !document.getElementById('d-step-text'));
+  assert.deepEqual((await task('m1-06')).checklist[0], { text: 'Acciones', done: false });
+  await page.click('.checklist li >> nth=0 >> button[aria-label="Editar paso"]');
+  await page.fill('#d-step-text', 'No se guarda');
+  await page.press('#d-step-text', 'Escape');
+  assert.equal((await task('m1-06')).checklist[0].text, 'Acciones');
+  await page.close();
+});
+
+test('refs check cuenta los enlaces del detalle de un paso', async () => {
+  await setTask('m1-06', { checklist: [{ text: 'x', done: false, detail: 'ver [[gdd#no-existe]]' }] });
+  const { run } = await import('../src/cli.js');
+  let out = '';
+  assert.equal(await run(['--dir', dir, '--direct', 'refs', 'check', '--json'], { out: { write: (s) => { out += s; } }, err: { write() {} } }), 1);
+  assert.deepEqual(JSON.parse(out).broken.filter((b) => b.task === 'm1-06').map((b) => [b.ref, b.where]), [['gdd#no-existe', 'paso 1 (detalle)']]);
+});

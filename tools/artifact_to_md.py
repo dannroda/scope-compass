@@ -25,7 +25,9 @@ for mid, m in sorted(ms.items(), key=lambda kv: kv[1].get('order', 0)):
     for t in mt:
         head = ' '.join(x for x in [t.get('code', ''), t['title']] if x)
         L += [f"### {head} · {ST.get(t.get('status', 'todo'), t.get('status'))}", '']
-        L += [f"- [{'x' if c.get('done') else ' '}] {c['text']}" for c in t.get('checklist', [])]
+        for c in t.get('checklist', []):
+            L.append(f"- [{'x' if c.get('done') else ' '}] {c['text']}")
+            L += [f'  {l}' if l else '' for l in c['detail'].split('\n')] if c.get('detail') else []
         if t.get('checklist'): L.append('')
         if t.get('test'): L += [f"**Prueba:** {t['test']}", '']
         if t.get('notes'): L += [f"**Notas:** {t['notes']}", '']

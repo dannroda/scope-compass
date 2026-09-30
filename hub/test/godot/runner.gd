@@ -54,7 +54,7 @@ func test_offline(a: Array) -> void:
 	v.tree.get_root().get_child(0).get_child(0).select(0)
 	await process_frame
 	if not _check(c, v.detail.visible and v.status_select.disabled, "detalle visible y en solo lectura"): return
-	if not _check(c, v.steps_box.get_child_count() > 0 and v.steps_box.get_child(0).disabled, "pasos en solo lectura"): return
+	if not _check(c, v.steps_box.get_child_count() > 0 and v.step_checkbox(0).disabled, "pasos en solo lectura"): return
 
 
 # Elegir un hito lo recuerda (preferencia del proyecto) y cambia la lista.
@@ -169,7 +169,7 @@ func test_toggle_steps(a: Array) -> void:
 	var n: int = v.steps_box.get_child_count()
 	if not _check(c, n >= 3, "pocos pasos"): return
 	for i in n:
-		var cb: CheckBox = v.steps_box.get_child(i)
+		var cb: CheckBox = v.step_checkbox(i)
 		cb.button_pressed = not cb.button_pressed
 	if not _check(c, await _until(func(): return v._queues.is_empty()), "la fila no terminó"): return
 	if not _check(c, not v.notice.visible, "aviso inesperado: " + v.notice.text): return
@@ -311,3 +311,17 @@ func test_refs_online(a: Array) -> void:
 func test_refs_offline(a: Array) -> void:
 	var v := await _view(a[0])
 	await _refs_check(v, a, "refs_offline", false)
+
+
+# Un paso con detalle: ▸ lo despliega debajo del checkbox.
+func test_step_detail(a: Array) -> void:
+	var c := "step_detail"
+	var v := await _view(a[0])
+	_select(v, a[1])
+	var line: HBoxContainer = v.steps_box.get_child(0).get_child(0)
+	if not _check(c, line.get_child_count() == 2 and line.get_child(1).text == "▸", "falta el ▸ del detalle"): return
+	if not _check(c, v.steps_box.get_child(1).get_child(0).get_child_count() == 1, "un paso sin detalle no lleva ▸"): return
+	line.get_child(1).pressed.emit()
+	await process_frame
+	var row = v.steps_box.get_child(0)
+	if not _check(c, row.get_child_count() == 2 and row.get_child(1).get_child(0).text == a[2], "detalle: %s" % (row.get_child(1).get_child(0).text if row.get_child_count() == 2 else "no se desplegó")): return

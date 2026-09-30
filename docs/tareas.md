@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-09-29
+> Generado: 2026-09-30
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -544,7 +544,7 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Referencias:** `docs/spec.md#godot`
 
-## M6 — Documentos y referencias (v2)  (11/11)
+## M6 — Documentos y referencias (v2)  (12/12)
 
 Visor de documentos del proyecto (GDD) y referencias estables entre tareas y secciones (§10).
 
@@ -666,6 +666,10 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 ### 6.11 UI web: "Cerrar" del buscador de referencias y panel de detalle redimensionable · Hecho
 
 **Notas:** Reportado por el usuario. "Cerrar" no cerraba: el buscador abierto sin texto guarda "" y el toggle lo tomaba como cerrado. Panel: borde izquierdo arrastrable (y flechas, Shift = paso grande), entre 360 px y 90 % de la ventana, recordado en el navegador; doble clic vuelve a 460 px.
+
+### 6.12 Pasos con texto corto y detalle desplegable · Hecho
+
+**Notas:** Pedido del usuario: los pasos eran ambiguos cortos o demasiado largos para el dock. `checklist[].detail` opcional. Web: ▸ despliega, ✎ edita texto y detalle (vacío lo quita). Dock: ▸ debajo del checkbox. CLI: `step add|set|rm`, `show` con el detalle sangrado. Export md con el detalle sangrado (y `tools/artifact_to_md.py`, para seguir idénticos). Los enlaces del detalle cuentan en refs check, backlinks y refs suggest. `refs suggest` también reconoce "en el GDD (§4.3)".
 
 ## M7 — Hosting privado
 

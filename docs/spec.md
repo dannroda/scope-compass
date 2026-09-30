@@ -157,7 +157,7 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `order` | number | Orden dentro de la columna |
 | `title` | string | |
 | `status` | `"todo" \| "doing" \| "review" \| "done"` | |
-| `checklist` | `{ text: string, done: boolean }[]` | |
+| `checklist` | `{ text: string, done: boolean, detail?: string }[]` | `text`: el paso en una línea. `detail` (opcional): el cómo y el porqué; se muestra plegado debajo del paso |
 | `test` | string | "Cómo probarlo" |
 | `notes` | string | |
 | `refs` | `{ doc: string, section: string }[]` | Opcional. Referencias a secciones de documentos (§10). v1 las guarda y las muestra como texto; v2 las resuelve. |

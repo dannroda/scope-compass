@@ -33,7 +33,8 @@ export function renderMarkdown({ milestones, tasks }, { title, board, date = tod
       const head = [t.code ?? '', t.title].filter(Boolean).join(' ');
       L.push(`### ${head} · ${ST[t.status ?? 'todo'] ?? t.status}`, '');
       const cl = t.checklist ?? [];
-      L.push(...cl.map((c) => `- [${c.done ? 'x' : ' '}] ${c.text}`));
+      // El detalle de un paso va sangrado debajo, como continuación del ítem de la lista.
+      L.push(...cl.flatMap((c) => [`- [${c.done ? 'x' : ' '}] ${c.text}`, ...(c.detail ? c.detail.split('\n').map((l) => (l ? `  ${l}` : '')) : [])]));
       if (cl.length) L.push('');
       if (t.test) L.push(`**Prueba:** ${t.test}`, '');
       if (t.notes) L.push(`**Notas:** ${t.notes}`, '');

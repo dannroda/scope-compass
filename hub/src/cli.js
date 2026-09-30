@@ -32,6 +32,9 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   add "<título>" --milestone m00 [--code 0.11] [--status todo]
   move <id> <todo|doing|review|done>
   check <id> <n> [--undo]                   tilda el paso n (desde 1)
+  step add <id> "<texto>" [--detail "…"]     agrega un paso (texto corto; el detalle se despliega)
+  step set <id> <n> [--text …] [--detail …]  cambia un paso (--detail "" lo quita)
+  step rm <id> <n>                          quita un paso
   set <id> --file task.json                 reemplazo completo (--file - lee stdin)
   set <id> [--title t] [--notes n] [--test p] [--code c] [--milestone m] [--status s]
                                             cambia solo esos campos
@@ -64,7 +67,7 @@ const OPTIONS = {
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
   raw: { type: 'boolean' },
   port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' },
-  title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' },
+  title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
 
@@ -226,7 +229,10 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const d = t.doc;
       print(`${d.code ? d.code + ' ' : ''}${d.title}  [${t.id}]`);
       print(`Estado: ${STATUS[d.status]} · Hito: ${d.milestone}${d.updated_at ? ' · Actualizada: ' + d.updated_at : ''}`);
-      (d.checklist ?? []).forEach((c, i) => print(`  ${String(i + 1).padStart(2)}. [${c.done ? 'x' : ' '}] ${c.text}`));
+      (d.checklist ?? []).forEach((c, i) => {
+        print(`  ${String(i + 1).padStart(2)}. [${c.done ? 'x' : ' '}] ${c.text}`);
+        if (c.detail) for (const l of c.detail.split('\n')) print(`         ${l}`);
+      });
       if (d.test) print(`Prueba: ${d.test}`);
       if (d.notes) print(`Notas: ${d.notes}`);
       if (d.refs?.length) print(`Referencias: ${d.refs.map((r) => `${r.doc}#${r.section}`).join(', ')}`);
@@ -393,6 +399,40 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const next = cl.map((c, i) => (i === n - 1 ? { ...c, done: !o.undo } : c));
       const r = await store.patch('tasks', id, { checklist: next }, { ifMatch: o.etag ?? cur.etag });
       return written({ id: r.id, etag: r.etag, ...r.doc }, `${id} paso ${n} ${o.undo ? 'desmarcado' : 'hecho'}: ${cl[n - 1].text}`);
+    },
+
+    async step() {
+      const [sub, id, arg] = rest;
+      if (!['add', 'set', 'rm'].includes(sub)) throw new UsageError(`subcomando desconocido: step ${sub ?? ''} (add, set, rm)`);
+      need(id, 'el id de la tarea');
+      const cur = await store.get('tasks', id);
+      const cl = cur.doc.checklist ?? [];
+      let next;
+      let msg;
+      if (sub === 'add') {
+        const text = need(arg, 'el texto del paso');
+        next = [...cl, { text, done: false, ...(o.detail ? { detail: o.detail } : {}) }];
+        msg = `${id}: paso ${next.length} agregado`;
+      } else {
+        const n = Number(need(arg, 'el número de paso'));
+        if (!Number.isInteger(n) || n < 1 || n > cl.length) throw new StoreError('invalid_argument', `paso inexistente: ${arg} (la tarea tiene ${cl.length})`);
+        if (sub === 'rm') {
+          next = cl.filter((_, i) => i !== n - 1);
+          msg = `${id}: paso ${n} quitado`;
+        } else {
+          if (o.text === undefined && o.detail === undefined) throw new UsageError('falta --text o --detail');
+          next = cl.map((c, i) => {
+            if (i !== n - 1) return c;
+            const { detail, ...rest } = c;
+            const out = { ...rest, ...(o.text !== undefined ? { text: o.text } : {}) };
+            const d = o.detail !== undefined ? o.detail : detail;
+            return d ? { ...out, detail: d } : out;
+          });
+          msg = `${id}: paso ${n} actualizado`;
+        }
+      }
+      const r = await store.patch('tasks', id, { checklist: next }, { ifMatch: o.etag ?? cur.etag });
+      return written({ id: r.id, etag: r.etag, ...r.doc }, msg);
     },
 
     async set() {

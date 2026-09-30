@@ -1,0 +1,13 @@
+{
+  "checklist": [],
+  "code": "6.12",
+  "created_at": "2026-09-30T04:14:44.377Z",
+  "milestone": "m06",
+  "notes": "Pedido del usuario: los pasos eran ambiguos cortos o demasiado largos para el dock. `checklist[].detail` opcional. Web: ▸ despliega, ✎ edita texto y detalle (vacío lo quita). Dock: ▸ debajo del checkbox. CLI: `step add|set|rm`, `show` con el detalle sangrado. Export md con el detalle sangrado (y `tools/artifact_to_md.py`, para seguir idénticos). Los enlaces del detalle cuentan en refs check, backlinks y refs suggest. `refs suggest` también reconoce \"en el GDD (§4.3)\".",
+  "order": 12,
+  "refs": [],
+  "status": "done",
+  "test": "",
+  "title": "Pasos con texto corto y detalle desplegable",
+  "updated_at": "2026-09-30T04:14:44.893Z"
+}

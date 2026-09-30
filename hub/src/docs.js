@@ -107,7 +107,7 @@ export function checkRefs(docs, tasks) {
   };
   for (const t of tasks) {
     for (const r of t.refs ?? []) check(t, r.doc, r.section, 'refs');
-    const texts = [['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).map((c, i) => [`paso ${i + 1}`, c.text])];
+    const texts = [['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).flatMap((c, i) => [[`paso ${i + 1}`, c.text], [`paso ${i + 1} (detalle)`, c.detail]])];
     // Lo que está entre `…` es código (un ejemplo), no un enlace.
     for (const [where, text] of texts) for (const m of String(text ?? '').replace(/`[^`]*`/g, '').matchAll(LINK)) check(t, m[1], m[2], where);
   }
@@ -128,8 +128,11 @@ export function stampIds(text) {
   return { text: out.join('\n'), stamped };
 }
 
-// Citas "Ver `gdd.md` §4.3" (o "gdd §4.3"): documento por ruta o alias, y número de sección.
-const CITE = /`?([\w./-]+?)`?\s*§\s*(\d+(?:\.\d+)*)/g;
+// Citas "Ver `gdd.md` §4.3", "gdd §4.3" o "en el GDD (§4.3)": documento por ruta o alias (sin distinguir
+// mayúsculas), un paréntesis opcional, y el número de sección.
+const CITE = /`?([\w./-]+?)`?\s*\(?\s*§\s*(\d+(?:\.\d+)*)/g;
+const findDocLoose = (docs, key) => findDoc(docs, key) ?? findDoc(docs, key.replace(/\.md$/, '')) ??
+  docs.find((d) => d.alias.toLowerCase() === key.toLowerCase().replace(/\.md$/, '') || d.path.toLowerCase() === key.toLowerCase());
 
 /**
  * Propuestas de referencias a partir de citas por número en notas, prueba y pasos (spec §10.5).
@@ -139,10 +142,10 @@ const CITE = /`?([\w./-]+?)`?\s*§\s*(\d+(?:\.\d+)*)/g;
 export function suggestRefs(docs, tasks) {
   const out = [];
   for (const t of tasks) {
-    const texts = [['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).map((c, i) => [`paso ${i + 1}`, c.text])];
+    const texts = [['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).flatMap((c, i) => [[`paso ${i + 1}`, c.text], [`paso ${i + 1} (detalle)`, c.detail]])];
     for (const [where, text] of texts) {
       for (const m of String(text ?? '').matchAll(CITE)) {
-        const d = findDoc(docs, m[1]) ?? findDoc(docs, m[1].replace(/\.md$/, ''));
+        const d = findDocLoose(docs, m[1]);
         if (!d) continue;
         const num = m[2];
         const s = d.sections.find((x) => new RegExp(`^${num.replace(/\./g, '\\.')}(\\.|\\s)`).test(x.title));

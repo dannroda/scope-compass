@@ -53,6 +53,8 @@ var steps_box: VBoxContainer
 var refs_box: VBoxContainer
 ## Referencias desplegadas ("ruta#id") y bloques de las secciones pedidas al hub (6.7).
 var _refs_open := {}
+## Pasos con el detalle desplegado ("tarea:índice").
+var _steps_open := {}
 var _blocks := {}
 ## Resaltado para los CodeEdit de los snippets. El plugin pasa el GDScriptSyntaxHighlighter del editor; fuera
 ## del editor (tests) queda un CodeHighlighter básico.
@@ -527,14 +529,40 @@ func _render_detail() -> void:
 		c.queue_free()
 	var cl = t.get("checklist", [])
 	for i in (cl.size() if cl is Array else 0):
+		# Cada paso: el checkbox con el texto corto y, si tiene detalle, ▸ para desplegarlo debajo.
+		var row := VBoxContainer.new()
+		var line := HBoxContainer.new()
+		row.add_child(line)
 		var cb := CheckBox.new()
 		cb.text = str(cl[i].get("text", "")).replace("`", "")
 		cb.button_pressed = cl[i].get("done", false)
 		cb.disabled = not online
 		cb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		cb.size_flags_horizontal = SIZE_EXPAND_FILL
 		var id: String = t.id
 		cb.toggled.connect(func(on: bool): update_task(id, func(cur): return { "checklist": _toggled(cur, i, on) }))
-		steps_box.add_child(cb)
+		line.add_child(cb)
+		var detail_text := str(cl[i].get("detail", ""))
+		if detail_text != "":
+			var key := "%s:%d" % [id, i]
+			var open: bool = _steps_open.get(key, false)
+			var toggle := Button.new()
+			toggle.flat = true
+			toggle.text = "▾" if open else "▸"
+			toggle.tooltip_text = "Ocultar detalle" if open else "Ver detalle"
+			toggle.size_flags_vertical = SIZE_SHRINK_BEGIN
+			toggle.pressed.connect(func(): _steps_open[key] = not open; _render_detail())
+			line.add_child(toggle)
+			if open:
+				var detail_label := Label.new()
+				detail_label.text = detail_text.replace("`", "")
+				detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				detail_label.add_theme_color_override("font_color", Color("#a69d8c"))
+				var margin := MarginContainer.new()
+				margin.add_theme_constant_override("margin_left", 28)
+				margin.add_child(detail_label)
+				row.add_child(margin)
+		steps_box.add_child(row)
 	_render_refs(t)
 
 
@@ -742,6 +770,11 @@ func _count_uncommitted() -> int:
 
 
 # --- Para los tests ----------------------------------------------------------------------------
+
+## El checkbox del paso i del detalle.
+func step_checkbox(i: int) -> CheckBox:
+	return steps_box.get_child(i).get_child(0).get_child(0)
+
 
 ## Ids de las tareas visibles en la lista, en orden, con el estado de su grupo: ["doing:m0-03", …].
 func listed() -> Array:

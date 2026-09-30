@@ -9,7 +9,9 @@
   ];
   const S = { project: '', milestones: [], tasks: [], warnings: [], filter: pref('filter') || 'all', openId: null, confirmDelete: false, loaded: false, offline: false, connected: false,
     // Documentos (M6): índice de /api/docs, vista actual por el hash, referencias desplegadas, HTML en caché.
-    docs: [], view: 'board', doc: '', sec: '', refsOpen: new Set(), refSearch: null };
+    docs: [], view: 'board', doc: '', sec: '', refsOpen: new Set(), refSearch: null,
+    // Pasos: detalles desplegados y el paso en edición ("tarea:índice").
+    stepsOpen: new Set(), editStep: null };
   const sectionCache = new Map(); // "alias#id" → html
   const docCache = new Map(); // alias → html
 
@@ -274,7 +276,7 @@
 
   // Campos editables del detalle. Cada uno guarda en data-orig el valor con el que se dibujó:
   // si el usuario lo cambió y todavía no lo guardó, el valor escrito se conserva al redibujar.
-  const EDITABLE = ['d-title', 'd-addcl', 'd-refq', 'd-test', 'd-notes'];
+  const EDITABLE = ['d-title', 'd-addcl', 'd-refq', 'd-step-text', 'd-step-detail', 'd-test', 'd-notes'];
   function captureEdits(box) {
     const active = box.contains(document.activeElement) ? document.activeElement : null;
     const dirty = {};
@@ -342,6 +344,47 @@
   }
   { const w = Number(pref('detailWidth')); if (w) setDetailWidth(w, false); }
 
+  // Un paso: texto corto, ▸ para desplegar el detalle si tiene, ✎ para editar texto y detalle, × para quitarlo.
+  function stepItem(t, c, i) {
+    const key = t.id + ':' + i;
+    const id = 'cl-' + t.id + '-' + i;
+    const check = h('input', { type: 'checkbox', id, checked: !!c.done, onchange: (e) => { const done = e.target.checked; updateTask(t.id, (cur) => ({ checklist: checklistOf(cur).map((x, j) => j === i ? { ...x, done } : x) })); } });
+    if (S.editStep === key) {
+      const save = () => {
+        const text = document.getElementById('d-step-text').value.trim();
+        const detail = document.getElementById('d-step-detail').value.replace(/\s+$/, '');
+        if (!text) return;
+        S.editStep = null;
+        updateTask(t.id, (cur) => ({ checklist: checklistOf(cur).map((x, j) => {
+          if (j !== i) return x;
+          const { detail: _old, ...rest } = x;
+          return detail ? { ...rest, text, detail } : { ...rest, text };
+        }) }));
+      };
+      const cancel = () => { S.editStep = null; renderDetail(); };
+      return h('li', { class: 'editing' }, check,
+        h('div', { class: 'step-edit' },
+          h('label', { for: 'd-step-text', class: 'sr' }, 'Texto del paso'),
+          h('input', { id: 'd-step-text', value: c.text || '', 'data-orig': c.text || '', placeholder: 'Texto corto del paso', autocomplete: 'off',
+            onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } else if (e.key === 'Escape') { e.preventDefault(); cancel(); } } }),
+          h('label', { for: 'd-step-detail', class: 'sr' }, 'Detalle del paso'),
+          h('textarea', { id: 'd-step-detail', 'data-orig': c.detail || '', placeholder: 'Detalle (opcional): cómo, por qué, archivos, código…',
+            onkeydown: (e) => { if (e.key === 'Escape') { e.preventDefault(); cancel(); } } }, c.detail || ''),
+          h('div', { class: 'step-edit-actions' },
+            h('button', { class: 'btn primary small', type: 'button', onclick: save }, 'Guardar'),
+            h('button', { class: 'btn ghost small', type: 'button', onclick: cancel }, 'Cancelar'))));
+    }
+    const open = S.stepsOpen.has(key);
+    return h('li', { class: (c.done ? 'done' : '') + (c.detail ? ' has-detail' : '') }, check,
+      h('label', { for: id }, rich(c.text)),
+      c.detail ? h('button', { class: 'step-toggle', type: 'button', 'aria-expanded': open ? 'true' : 'false', 'aria-label': open ? 'Ocultar detalle' : 'Ver detalle',
+        title: open ? 'Ocultar detalle' : 'Ver detalle', onclick: () => { open ? S.stepsOpen.delete(key) : S.stepsOpen.add(key); renderDetail(); } }, open ? '▾' : '▸') : null,
+      h('button', { class: 'rm', type: 'button', 'aria-label': 'Editar paso', title: 'Editar texto y detalle',
+        onclick: () => { S.editStep = key; renderDetail(); document.getElementById('d-step-text')?.focus(); } }, '✎'),
+      h('button', { class: 'rm', type: 'button', 'aria-label': 'Quitar paso', onclick: () => updateTask(t.id, (cur) => ({ checklist: checklistOf(cur).filter((_, j) => j !== i) })) }, '×'),
+      c.detail && open ? h('div', { class: 'step-detail' }, rich(c.detail)) : null);
+  }
+
   function renderDetail() {
     const box = document.getElementById('detail');
     const t = S.tasks.find((x) => x.id === S.openId);
@@ -365,13 +408,7 @@
           S.milestones.map((x) => h('option', { value: x.id, selected: x.id === t.milestone }, x.code + ' · ' + x.title)))),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('span', { class: 'label' }, 'Pasos ' + (p.total ? '(' + p.done + '/' + p.total + ')' : '')),
-        cl.length ? h('ul', { class: 'checklist' }, cl.map((c, i) => {
-          const id = 'cl-' + t.id + '-' + i;
-          return h('li', { class: c.done ? 'done' : '' },
-            h('input', { type: 'checkbox', id, checked: !!c.done, onchange: (e) => { const done = e.target.checked; updateTask(t.id, (cur) => ({ checklist: checklistOf(cur).map((x, j) => j === i ? { ...x, done } : x) })); } }),
-            h('label', { for: id }, rich(c.text)),
-            h('button', { class: 'rm', type: 'button', 'aria-label': 'Quitar paso', onclick: () => updateTask(t.id, (cur) => ({ checklist: checklistOf(cur).filter((_, j) => j !== i) })) }, '×'));
-        })) : h('p', { style: 'margin:0;color:var(--muted);font-size:14px' }, 'Sin pasos todavía.'),
+        cl.length ? h('ul', { class: 'checklist' }, cl.map((c, i) => stepItem(t, c, i))) : h('p', { style: 'margin:0;color:var(--muted);font-size:14px' }, 'Sin pasos todavía.'),
         h('form', { class: 'addcl', onsubmit: (e) => { e.preventDefault(); const inp = e.target.querySelector('input'); const v = inp.value.trim(); if (!v) return; inp.value = ''; updateTask(t.id, (cur) => ({ checklist: [...checklistOf(cur), { text: v, done: false }] })); } },
           h('label', { for: 'd-addcl', class: 'sr' }, 'Nuevo paso'),
           h('input', { id: 'd-addcl', placeholder: 'Agregar paso', autocomplete: 'off', 'data-orig': '' }),
@@ -424,7 +461,7 @@
   function tasksFor(d, id) {
     const hits = (key, sid) => sid === id && (key === d.alias || key === d.path);
     return S.tasks.filter((t) => refsOf(t).some((r) => hits(r.doc, r.section)) ||
-      [t.notes, t.test, ...checklistOf(t).map((c) => c.text)].some((txt) =>
+      [t.notes, t.test, ...checklistOf(t).flatMap((c) => [c.text, c.detail])].some((txt) =>
         [...String(txt || '').replace(/`[^`]*`/g, '').matchAll(LINK)].some((m) => hits(m[1], m[2]))))
       .sort(sortTasks);
   }

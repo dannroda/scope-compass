@@ -280,3 +280,11 @@ test('dock sin hub: la referencia se arma con el markdown de disco, con el snipp
   await withDocs();
   expectOk(await godot('refs_offline', dir, 'm1-04'), 'refs_offline');
 });
+
+test('dock: un paso con detalle se despliega con ▸', { skip }, async () => {
+  const p = join(dir, 'compass', 'tasks', 'm1-04.json');
+  const t = JSON.parse(await readFile(p, 'utf8'));
+  t.checklist[0].detail = 'Detalle con `código` largo';
+  await writeFile(p, canonical(t));
+  expectOk(await godot('step_detail', dir, 'm1-04', 'Detalle con código largo'), 'step_detail');
+});

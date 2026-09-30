@@ -79,3 +79,22 @@ test('CLI: export md y export automático al escribir, salvo auto_export_md: fal
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test('el detalle de un paso va sangrado debajo, igual que en tools/artifact_to_md.py', async (t) => {
+  const d = await mkdtemp(join(tmpdir(), 'scompass-'));
+  try {
+    await cp(FIXTURE, join(d, 'compass'), { recursive: true });
+    const p = join(d, 'compass', 'tasks', 'm1-07.json');
+    const task = JSON.parse(await readFile(p, 'utf8'));
+    task.checklist[0].detail = 'Primera línea con `código`\n\nTercera, tras una vacía';
+    await writeFile(p, JSON.stringify(task, null, 2) + '\n');
+    const all = await loadCompass(join(d, 'compass'), V);
+    const md = renderMarkdown(all, { title: 'T', board: 'https://x', date: '2026-01-01' });
+    assert.match(md, /- \[x\] [^\n]+\n {2}Primera línea con `código`\n\n {2}Tercera, tras una vacía\n/);
+    const expected = await python(join(d, 'compass'), 'https://x', 'T');
+    if (expected === null) return t.skip('sin python3');
+    assert.equal(renderMarkdown(all, { title: 'T', board: 'https://x', date: dateOf(expected) }), expected);
+  } finally {
+    await rm(d, { recursive: true, force: true });
+  }
+});
