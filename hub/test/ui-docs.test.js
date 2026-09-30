@@ -190,3 +190,52 @@ test('§10.6: borrar una sección referenciada marca la tarea en vivo, y refs ch
   assert.deepEqual(JSON.parse(out).broken.map((b) => [b.task, b.ref]).sort(), [['m1-03', 'gdd.md#ventanas-ataque'], ['m1-04', 'gdd.md#ventanas-ataque'], ['m1-05', 'gdd.md#borrada']]);
   await page.close();
 });
+
+// --- Arreglos pedidos: "Cerrar" del buscador y ancho del panel ---
+
+test('"+ Agregar" abre el buscador y "Cerrar" lo cierra', async () => {
+  const page = await open();
+  await page.click('.chip:has-text("M1")');
+  await page.click('.card[data-id="m1-07"]');
+  await page.click('.refs-head button:has-text("Agregar")');
+  assert.equal(await page.isVisible('#d-refq'), true);
+  await page.click('.refs-head button:has-text("Cerrar")');
+  await page.waitForFunction(() => !document.getElementById('d-refq'));
+  assert.equal(await page.textContent('.refs-head button'), '+ Agregar');
+  // También cerrando después de escribir.
+  await page.click('.refs-head button:has-text("Agregar")');
+  await page.fill('#d-refq', 'cam');
+  await page.click('.refs-head button:has-text("Cerrar")');
+  await page.waitForFunction(() => !document.getElementById('d-refq'));
+  await page.close();
+});
+
+test('el panel de detalle se agranda arrastrando su borde, con el teclado, y se recuerda', async () => {
+  const page = await open();
+  await page.click('.chip:has-text("M1")');
+  await page.click('.card[data-id="m1-03"]');
+  const width = () => page.$eval('#detail', (el) => Math.round(el.getBoundingClientRect().width));
+  assert.equal(await width(), 460);
+  const box = await page.locator('#detail .resize').boundingBox();
+  await page.mouse.move(box.x + 4, box.y + 300);
+  await page.mouse.down();
+  await page.mouse.move(1440 - 800, box.y + 300, { steps: 5 });
+  await page.mouse.up();
+  assert.ok(Math.abs(await width() - 800) <= 2, `ancho ${await width()}`);
+  // Tope: 90 % de la ventana; mínimo 360.
+  await page.mouse.move(1440 - 800, 300); await page.mouse.down(); await page.mouse.move(10, 300, { steps: 3 }); await page.mouse.up();
+  assert.equal(await width(), 1296);
+  await page.focus('#detail .resize');
+  for (let i = 0; i < 60; i++) await page.keyboard.press('ArrowRight');
+  assert.equal(await width(), 360);
+  await page.keyboard.press('Shift+ArrowLeft');
+  assert.equal(await width(), 456);
+  // Se recuerda al recargar; doble clic vuelve al ancho original.
+  await page.reload();
+  await page.waitForSelector('.card');
+  await page.click('.card[data-id="m1-03"]');
+  assert.equal(await width(), 456);
+  await page.dblclick('#detail .resize');
+  assert.equal(await width(), 460);
+  await page.close();
+});

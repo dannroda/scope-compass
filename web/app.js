@@ -299,6 +299,49 @@
     if (sel && typeof el.setSelectionRange === 'function') { try { el.setSelectionRange(sel[0], sel[1]); } catch (e) { /* checkbox, select */ } }
   }
 
+  // Ancho del panel de detalle: se arrastra desde su borde izquierdo (o con las flechas) y se recuerda.
+  const DETAIL_MIN = 360;
+  const detailMax = () => Math.max(DETAIL_MIN, Math.round(window.innerWidth * 0.9));
+  function setDetailWidth(w, save) {
+    const px = Math.min(detailMax(), Math.max(DETAIL_MIN, Math.round(w)));
+    document.documentElement.style.setProperty('--detail-w', px + 'px');
+    if (save) pref('detailWidth', String(px));
+    return px;
+  }
+  const detailWidth = () => document.getElementById('detail').getBoundingClientRect().width;
+  function resizeHandle() {
+    return h('div', {
+      class: 'resize', role: 'separator', 'aria-orientation': 'vertical', 'aria-label': 'Ancho del panel', tabindex: '0',
+      'aria-valuemin': String(DETAIL_MIN), 'aria-valuemax': String(detailMax()), 'aria-valuenow': String(Math.round(detailWidth())),
+      title: 'Arrastrá para cambiar el ancho · doble clic: ancho original',
+      onpointerdown: (e) => {
+        e.preventDefault();
+        const handle = e.currentTarget;
+        handle.setPointerCapture(e.pointerId);
+        document.body.classList.add('resizing');
+        const move = (ev) => setDetailWidth(window.innerWidth - ev.clientX, false);
+        const up = () => {
+          handle.removeEventListener('pointermove', move);
+          document.body.classList.remove('resizing');
+          setDetailWidth(detailWidth(), true);
+        };
+        handle.addEventListener('pointermove', move);
+        handle.addEventListener('pointerup', up, { once: true });
+        handle.addEventListener('pointercancel', up, { once: true });
+      },
+      onkeydown: (e) => {
+        const step = e.shiftKey ? 96 : 24;
+        if (e.key === 'ArrowLeft') setDetailWidth(detailWidth() + step, true);
+        else if (e.key === 'ArrowRight') setDetailWidth(detailWidth() - step, true);
+        else return;
+        e.preventDefault();
+        e.currentTarget.setAttribute('aria-valuenow', String(Math.round(detailWidth())));
+      },
+      ondblclick: () => { document.documentElement.style.removeProperty('--detail-w'); pref('detailWidth', ''); }
+    });
+  }
+  { const w = Number(pref('detailWidth')); if (w) setDetailWidth(w, false); }
+
   function renderDetail() {
     const box = document.getElementById('detail');
     const t = S.tasks.find((x) => x.id === S.openId);
@@ -309,6 +352,7 @@
     // Lo que el usuario está escribiendo en esta misma tarea sobrevive al redibujado (3.7).
     const edits = box.dataset.task === t.id ? captureEdits(box) : null;
     box.replaceChildren(
+      resizeHandle(),
       h('div', { class: 'head' }, t.code || '', m ? h('span', null, '· ' + m.code + ' ' + m.title) : null,
         h('button', { class: 'btn ghost close', type: 'button', 'aria-label': 'Cerrar detalle', onclick: closeTask }, 'Cerrar')),
       h('label', { for: 'd-title', class: 'sr' }, 'Título'),
@@ -407,7 +451,7 @@
     const refs = refsOf(t);
     const box = h('div', { class: 'refs' },
       h('div', { class: 'refs-head' }, h('span', { class: 'label' }, 'Referencias'),
-        S.docs.length ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => { S.refSearch = S.refSearch ? null : ''; renderDetail(); document.getElementById('d-refq')?.focus(); } }, S.refSearch !== null ? 'Cerrar' : '+ Agregar') : null));
+        S.docs.length ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => { S.refSearch = S.refSearch === null ? '' : null; renderDetail(); document.getElementById('d-refq')?.focus(); } }, S.refSearch !== null ? 'Cerrar' : '+ Agregar') : null));
     if (S.refSearch !== null) box.append(refSearch(t));
     if (!refs.length && S.refSearch === null) box.append(h('p', { class: 'muted small' }, S.docs.length ? 'Sin referencias.' : 'El proyecto no tiene documentos configurados (compass/config.json › docs).'));
     refs.forEach((r, i) => {

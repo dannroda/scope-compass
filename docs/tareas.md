@@ -544,7 +544,7 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Referencias:** `docs/spec.md#godot`
 
-## M6 — Documentos y referencias (v2)  (10/10)
+## M6 — Documentos y referencias (v2)  (11/11)
 
 Visor de documentos del proyecto (GDD) y referencias estables entre tareas y secciones (§10).
 
@@ -662,6 +662,10 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 ### 6.10 Snippets del dock en CodeEdit con el resaltado del editor · Hecho
 
 **Notas:** Pedido del usuario: los snippets en el dock se ven mejor en un CodeEdit. `?format=blocks` (texto en BBCode, código crudo); el dock usa `GDScriptSyntaxHighlighter` del editor (verificado en el editor: resaltado y fuente `EditorFonts/source`); fuera del editor, un CodeHighlighter básico.
+
+### 6.11 UI web: "Cerrar" del buscador de referencias y panel de detalle redimensionable · Hecho
+
+**Notas:** Reportado por el usuario. "Cerrar" no cerraba: el buscador abierto sin texto guarda "" y el toggle lo tomaba como cerrado. Panel: borde izquierdo arrastrable (y flechas, Shift = paso grande), entre 360 px y 90 % de la ventana, recordado en el navegador; doble clic vuelve a 460 px.
 
 ## M7 — Hosting privado
 
