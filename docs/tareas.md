@@ -611,7 +611,7 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 **Prueba:** Los backlinks de cada sección coinciden con las `refs` de las tareas.
 
-**Notas:** Pestañas Tablero | Documentos con el hash (`#docs/gdd/ventanas-ataque`). Índice con punto verde y contador de tareas por sección (gris = sin planificar), documento renderizado, "Referenciada por" que sigue a la sección visible, contador de refs rotas y "Copiar [[alias#id]]". Backlinks calculados en el navegador. Al entrar a Documentos se cierra el detalle de la tarea (lo tapaba).
+**Notas:** Pestañas Tablero | Documentos con el hash (`#docs/gdd/ventanas-ataque`). Índice con punto verde y contador de tareas por sección (gris = sin planificar), documento renderizado, "Referenciada por" que sigue a la sección visible, contador de refs rotas y el botón para copiar `[[alias#id]]`. Backlinks calculados en el navegador. Al entrar a Documentos se cierra el detalle de la tarea (lo tapaba).
 
 **Referencias:** `docs/spec.md#documentos-ui`
 
