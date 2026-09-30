@@ -163,3 +163,10 @@ Godot 4.8 agrega la clase `EditorDock` con `EditorPlugin.add_dock()` / `remove_d
 - **Por qué:** JavaScript puro dentro del hub, sin binarios nativos ni otro lenguaje en tiempo de ejecución; se prueba en un bus D-Bus privado sin tocar la bandeja real.
 - **Descartado:** `dbus-next` (abandonado desde 2022; trae `node-gyp`/`request` con avisos críticos sin arreglo). PySide6 con `QSystemTrayIcon` queda como alternativa si el menú por D-Bus da problemas: está instalado en el sistema, pero sería un segundo proceso en Python.
 - **Límite:** en escritorios sin StatusNotifierWatcher (GNOME sin la extensión AppIndicator) no hay ícono; el hub avisa y sigue funcionando.
+
+## D21 · Documentos renderizados en el hub con markdown-it + Prism
+**2026-09-29 · vigente** · spec §10.4 · `hub/src/render.js`
+
+- **Por qué:** Prism trae GDScript (y JSON, bash, GLSL…); markdown-it es el estándar en Node y con `html: false` muestra como texto cualquier HTML del documento (nada de `<script>`). Las dos salen con 0 avisos de `npm audit` y 11 paquetes en total. Renderizar en el hub deja la UI sin paso de build y permite que el dock pida la misma sección en BBCode.
+- **Detalle:** los comentarios `<!-- id: … -->` se quitan antes de renderizar; cada título recibe `id="sec-<id>"` para enlazar desde el índice y las referencias.
+- **Descartado:** highlight.js (GDScript no viene incluido) y Shiki (gramáticas de VS Code, mucho más pesado).

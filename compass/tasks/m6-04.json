@@ -28,8 +28,8 @@
       "section": "referencias"
     }
   ],
-  "status": "todo",
+  "status": "doing",
   "test": "Una tarea con `refs` muestra la sección renderizada en su detalle, con GDScript resaltado.",
   "title": "UI web: referencias en el detalle",
-  "updated_at": "2026-09-30T01:23:40.114Z"
+  "updated_at": "2026-09-30T01:29:40.995Z"
 }

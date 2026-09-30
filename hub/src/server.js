@@ -7,6 +7,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import { registerApi } from './api.js';
+import { registerDocsApi } from './docs-api.js';
+import { createDocWatcher } from './doc-watcher.js';
 import { createAutoExport } from './auto-export.js';
 import { registerWs } from './ws.js';
 import { StoreError } from './store/json-files.js';
@@ -38,6 +40,13 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   if (watcher) {
     app.addHook('onReady', () => watcher.start());
     app.addHook('onClose', async () => watcher.close());
+    // Documentos del proyecto (§10.4): doc_changed al editarlos.
+    let docWatcher = null;
+    app.addHook('onReady', async () => {
+      const { config } = await store.loadAll();
+      docWatcher = createDocWatcher(projectDir, { docs: config?.docs, emit });
+    });
+    app.addHook('onClose', async () => docWatcher?.close());
   }
   if (exportMd) {
     const auto = createAutoExport({ projectDir, store, emit, onExported: (path) => app.events.emit('exported', path) });
@@ -84,6 +93,7 @@ export function createServer({ projectDir, store, validators, watch = false, exp
 
   app.get('/api/health', async () => ({ ok: true, name: 'scope-compass', version: VERSION, project: projectDir }));
   registerApi(app, { store, projectDir, publish });
+  registerDocsApi(app, { store, projectDir });
   app.register(registerWs, { store, publish, version: VERSION });
 
   app.get('/api/config', async () => {

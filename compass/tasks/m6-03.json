@@ -1,22 +1,22 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "`GET /api/docs`, `/api/docs/:alias`, `/api/docs/:alias/sections/:id` (con backlinks), `/api/refs/broken`"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Markdown renderizado con GDScript resaltado, librerías empaquetadas (D21)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "El watcher mira los documentos: evento `doc_changed`"
     }
   ],
   "code": "6.3",
   "created_at": "2026-09-30T01:23:39.909Z",
   "milestone": "m06",
-  "notes": "",
+  "notes": "`hub/src/docs-api.js` (`/api/docs`, `/api/docs/:alias`, `/sections/:id` con las tareas que la referencian, `/api/refs/broken`), `hub/src/render.js` (D21) y `hub/src/doc-watcher.js` (`doc_changed`, mira la carpeta de cada documento). Con Epiphany: backlinks de sus 12 refs y los bloques de GDScript resaltados.",
   "order": 3,
   "refs": [
     {
@@ -28,8 +28,8 @@
       "section": "cambios-externos"
     }
   ],
-  "status": "doing",
+  "status": "done",
   "test": "Editar `gdd.md` con el hub corriendo emite `doc_changed` en menos de 1 s.",
   "title": "API de documentos y render",
-  "updated_at": "2026-09-30T01:27:15.040Z"
+  "updated_at": "2026-09-30T01:29:40.735Z"
 }

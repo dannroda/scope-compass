@@ -544,7 +544,7 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Referencias:** `docs/spec.md#godot`
 
-## M6 — Documentos y referencias (v2)  (2/9)
+## M6 — Documentos y referencias (v2)  (3/9)
 
 Visor de documentos del proyecto (GDD) y referencias estables entre tareas y secciones (§10).
 
@@ -579,17 +579,19 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 **Referencias:** `docs/spec.md#ids-seccion`, `docs/spec.md#referencias`
 
-### 6.3 API de documentos y render · En curso
+### 6.3 API de documentos y render · Hecho
 
-- [ ] `GET /api/docs`, `/api/docs/:alias`, `/api/docs/:alias/sections/:id` (con backlinks), `/api/refs/broken`
-- [ ] Markdown renderizado con GDScript resaltado, librerías empaquetadas (D21)
-- [ ] El watcher mira los documentos: evento `doc_changed`
+- [x] `GET /api/docs`, `/api/docs/:alias`, `/api/docs/:alias/sections/:id` (con backlinks), `/api/refs/broken`
+- [x] Markdown renderizado con GDScript resaltado, librerías empaquetadas (D21)
+- [x] El watcher mira los documentos: evento `doc_changed`
 
 **Prueba:** Editar `gdd.md` con el hub corriendo emite `doc_changed` en menos de 1 s.
 
+**Notas:** `hub/src/docs-api.js` (`/api/docs`, `/api/docs/:alias`, `/sections/:id` con las tareas que la referencian, `/api/refs/broken`), `hub/src/render.js` (D21) y `hub/src/doc-watcher.js` (`doc_changed`, mira la carpeta de cada documento). Con Epiphany: backlinks de sus 12 refs y los bloques de GDScript resaltados.
+
 **Referencias:** `docs/spec.md#documentos-servidor`, `docs/spec.md#cambios-externos`
 
-### 6.4 UI web: referencias en el detalle · Pendiente
+### 6.4 UI web: referencias en el detalle · En curso
 
 - [ ] Sección "Referencias" con cada sección renderizada y plegable, y "Abrir en el documento"
 - [ ] Buscador de secciones para agregar referencias; quitar
