@@ -28,8 +28,8 @@
       "section": "cambios-externos"
     }
   ],
-  "status": "todo",
+  "status": "doing",
   "test": "Editar `gdd.md` con el hub corriendo emite `doc_changed` en menos de 1 s.",
   "title": "API de documentos y render",
-  "updated_at": "2026-09-30T01:23:39.909Z"
+  "updated_at": "2026-09-30T01:27:15.040Z"
 }

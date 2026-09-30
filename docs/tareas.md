@@ -544,7 +544,7 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Referencias:** `docs/spec.md#godot`
 
-## M6 — Documentos y referencias (v2)  (1/9)
+## M6 — Documentos y referencias (v2)  (2/9)
 
 Visor de documentos del proyecto (GDD) y referencias estables entre tareas y secciones (§10).
 
@@ -567,17 +567,19 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 **Referencias:** `docs/spec.md#ids-seccion`, `docs/spec.md#documentos-servidor`
 
-### 6.2 Chequeo y edición de referencias · En curso
+### 6.2 Chequeo y edición de referencias · Hecho
 
-- [ ] `scompass refs check`: lista las rotas y sale con código ≠ 0
-- [ ] `scompass ref add <tarea> <alias>#<id>` (y quitar)
-- [ ] `scompass doc stamp-ids <alias>`: estampa ids en las secciones que no tienen
+- [x] `scompass refs check`: lista las rotas y sale con código ≠ 0
+- [x] `scompass ref add <tarea> <alias>#<id>` (y quitar)
+- [x] `scompass doc stamp-ids <alias>`: estampa ids en las secciones que no tienen
 
 **Prueba:** Renombrar el título de una sección con id no rompe nada; borrar su id hace fallar `refs check`.
 
+**Notas:** `refs check` (refs y enlaces `[[alias#id]]` en notas, prueba y pasos; lo que está entre `…` es un ejemplo y no cuenta; sale con 1 si hay rotas, avisa las frágiles), `ref add|rm` (guarda la ruta del documento, como las refs existentes) y `doc stamp-ids [--dry-run]` (estampa el slug actual, así las refs frágiles siguen resolviendo). Criterio: renombrar el título no rompe; borrar el id sí.
+
 **Referencias:** `docs/spec.md#ids-seccion`, `docs/spec.md#referencias`
 
-### 6.3 API de documentos y render · Pendiente
+### 6.3 API de documentos y render · En curso
 
 - [ ] `GET /api/docs`, `/api/docs/:alias`, `/api/docs/:alias/sections/:id` (con backlinks), `/api/refs/broken`
 - [ ] Markdown renderizado con GDScript resaltado, librerías empaquetadas (D21)

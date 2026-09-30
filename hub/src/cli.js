@@ -7,7 +7,8 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { exportMarkdown } from './export-md.js';
-import { loadDocs, resolveRef, sectionMarkdown } from './docs.js';
+import { checkRefs, loadDocs, resolveRef, sectionMarkdown, stampIds } from './docs.js';
+import { writeAtomic } from './store/atomic.js';
 import { importArtifact } from './import-artifact.js';
 import { KINDS, loadValidators, parseDoc, SCHEMA_DIR } from './schema.js';
 import { canonical } from './store/canonical.js';
@@ -37,6 +38,9 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   milestone list | show <id> | set <id> --file m.json
   doc list                                  documentos de config.json con su índice de secciones
   doc show <alias>#<id> [--raw]             una sección (--raw: solo el markdown, para agentes)
+  doc stamp-ids <alias> [--dry-run]         agrega <!-- id: … --> a las secciones que no tienen
+  refs check                                referencias rotas (sale con 1 si hay) y frágiles
+  ref add|rm <tarea> <alias>#<id>           agrega o quita una referencia de la tarea
   export md [--out docs/tareas.md]          regenera el markdown (también se hace solo al escribir)
   import artifact <carpeta> [--dry-run] [--overwrite]
                                             migra el export de ArtifactData (milestones/, tasks/)
@@ -258,7 +262,56 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         out.write(md);
         return 0;
       }
+      if (sub === 'stamp-ids') {
+        const d = docs.find((x) => x.alias === need(target, 'el alias del documento') || x.path === target);
+        if (!d) throw new StoreError('not_found', `no hay un documento "${target}"`);
+        const text = await readFile(join(project, d.path), 'utf8');
+        const r = stampIds(text);
+        if (r.stamped.length && !o['dry-run']) await writeAtomic(join(project, d.path), r.text);
+        if (o.json) return done({ path: d.path, stamped: r.stamped, dryRun: !!o['dry-run'] });
+        print(r.stamped.length ? `${o['dry-run'] ? 'Se estamparían' : 'Estampados'} ${r.stamped.length} ids en ${d.path}: ${r.stamped.join(', ')}` : `${d.path} ya tiene ids en todas sus secciones.`);
+        return 0;
+      }
       throw new UsageError(`subcomando desconocido: doc ${sub ?? ''}`);
+    },
+
+    async refs() {
+      if (rest[0] !== 'check') throw new UsageError(`subcomando desconocido: refs ${rest[0] ?? ''} (check)`);
+      const all = await store.loadAll();
+      const docs = await loadDocs(project, all.config);
+      const problems = checkRefs(docs, [...all.tasks].map(([id, doc]) => ({ id, ...doc })));
+      const broken = problems.filter((p) => p.problem !== 'fragile');
+      if (o.json) print(JSON.stringify({ broken, fragile: problems.filter((p) => p.problem === 'fragile') }));
+      else {
+        const why = { missing_doc: 'no existe el documento', missing_section: 'no existe la sección', fragile: 'sin id explícito (frágil)' };
+        for (const p of problems) (p.problem === 'fragile' ? warn : print)(`${p.problem === 'fragile' ? 'aviso' : 'rota'}  ${p.task.padEnd(9)} ${p.ref} (${p.where}): ${why[p.problem]}`);
+        if (!problems.length) print('Todas las referencias resuelven.');
+      }
+      return broken.length ? 1 : 0;
+    },
+
+    async ref() {
+      const [sub, taskId, target] = rest;
+      if (sub !== 'add' && sub !== 'rm') throw new UsageError(`subcomando desconocido: ref ${sub ?? ''} (add, rm)`);
+      need(taskId, 'la tarea');
+      const all = await store.loadAll();
+      const docs = await loadDocs(project, all.config);
+      const r = resolveRef(docs, need(target, '<alias>#<id>'));
+      const cur = await store.get('tasks', taskId);
+      const refs = cur.doc.refs ?? [];
+      let next;
+      if (sub === 'add') {
+        if (!r.doc) throw new StoreError('not_found', `no hay un documento "${r.key}"`);
+        if (!r.section) throw new StoreError('not_found', `no hay una sección "${r.id}" en ${r.doc.path}`);
+        if (refs.some((x) => x.doc === r.doc.path && x.section === r.id)) return done({ id: cur.id, etag: cur.etag, ...cur.doc }, `${taskId} ya referencia ${target}`);
+        next = [...refs, { doc: r.doc.path, section: r.id }];
+      } else {
+        const path = r.doc?.path ?? r.key;
+        next = refs.filter((x) => !((x.doc === path || x.doc === r.key) && x.section === r.id));
+        if (next.length === refs.length) throw new StoreError('not_found', `${taskId} no referencia ${target}`);
+      }
+      const w = await store.patch('tasks', taskId, { refs: next }, { ifMatch: o.etag ?? cur.etag });
+      return written({ id: w.id, etag: w.etag, ...w.doc }, `${taskId}: ${sub === 'add' ? 'agregada' : 'quitada'} ${target}`);
     },
 
     async export() {

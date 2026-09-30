@@ -1,22 +1,22 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "`scompass refs check`: lista las rotas y sale con código ≠ 0"
     },
     {
-      "done": false,
+      "done": true,
       "text": "`scompass ref add <tarea> <alias>#<id>` (y quitar)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "`scompass doc stamp-ids <alias>`: estampa ids en las secciones que no tienen"
     }
   ],
   "code": "6.2",
   "created_at": "2026-09-30T01:23:39.702Z",
   "milestone": "m06",
-  "notes": "",
+  "notes": "`refs check` (refs y enlaces `[[alias#id]]` en notas, prueba y pasos; lo que está entre `…` es un ejemplo y no cuenta; sale con 1 si hay rotas, avisa las frágiles), `ref add|rm` (guarda la ruta del documento, como las refs existentes) y `doc stamp-ids [--dry-run]` (estampa el slug actual, así las refs frágiles siguen resolviendo). Criterio: renombrar el título no rompe; borrar el id sí.",
   "order": 2,
   "refs": [
     {
@@ -28,8 +28,8 @@
       "section": "referencias"
     }
   ],
-  "status": "doing",
+  "status": "done",
   "test": "Renombrar el título de una sección con id no rompe nada; borrar su id hace fallar `refs check`.",
   "title": "Chequeo y edición de referencias",
-  "updated_at": "2026-09-30T01:25:35.887Z"
+  "updated_at": "2026-09-30T01:27:14.829Z"
 }

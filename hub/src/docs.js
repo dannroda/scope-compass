@@ -89,3 +89,41 @@ export function resolveRef(docs, ref) {
   const doc = findDoc(docs, key) ?? null;
   return { key, id, doc, section: doc ? findSection(doc, id) : null };
 }
+
+// Enlaces en línea [[alias#id]] dentro de un texto.
+export const LINK = /\[\[([^\]#\s]+)#([a-z0-9][a-z0-9_-]*)\]\]/g;
+
+/**
+ * Referencias de las tareas que no resuelven: refs estructuradas y enlaces [[alias#id]] en notas, prueba y pasos.
+ * tasks: [{ id, ...doc }]. Devuelve [{ task, ref, where, problem: 'missing_doc'|'missing_section'|'fragile' }].
+ * 'fragile' = resuelve, pero contra una sección sin id explícito (se rompe si se renombra el título).
+ */
+export function checkRefs(docs, tasks) {
+  const out = [];
+  const check = (task, key, id, where) => {
+    const r = resolveRef(docs, { doc: key, section: id });
+    const problem = !r.doc ? 'missing_doc' : !r.section ? 'missing_section' : !r.section.explicit ? 'fragile' : null;
+    if (problem) out.push({ task: task.id, ref: `${key}#${id}`, where, problem });
+  };
+  for (const t of tasks) {
+    for (const r of t.refs ?? []) check(t, r.doc, r.section, 'refs');
+    const texts = [['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).map((c, i) => [`paso ${i + 1}`, c.text])];
+    // Lo que está entre `…` es código (un ejemplo), no un enlace.
+    for (const [where, text] of texts) for (const m of String(text ?? '').replace(/`[^`]*`/g, '').matchAll(LINK)) check(t, m[1], m[2], where);
+  }
+  return out;
+}
+
+/** Agrega <!-- id: slug --> debajo de cada título sin id. Devuelve { text, stamped: [ids] }. */
+export function stampIds(text) {
+  const { sections, lines } = parseSections(text);
+  const stamped = [];
+  const out = [...lines];
+  // De abajo hacia arriba, para que las líneas insertadas no corran los índices pendientes.
+  for (const s of [...sections].reverse()) {
+    if (s.explicit) continue;
+    out.splice(s.start + 1, 0, `<!-- id: ${s.id} -->`);
+    stamped.unshift(s.id);
+  }
+  return { text: out.join('\n'), stamped };
+}

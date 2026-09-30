@@ -108,3 +108,93 @@ test('doc list y doc show --raw con el GDD de Epiphany', { skip: !existsSync(joi
   assert.match(out, /^#### Ventanas de ataque/);
   assert.equal(await run(['--dir', EPIPHANY, '--direct', 'doc', 'show', 'gdd#no-existe'], io), 1);
 });
+
+// --- 6.2: refs check, ref add/rm, stamp-ids ---
+import { cp, readFile } from 'node:fs/promises';
+import { canonical } from '../src/store/canonical.js';
+import { checkRefs, stampIds } from '../src/docs.js';
+
+const FIXTURE = join(REPO, 'hub', 'test', 'fixtures', 'compass');
+
+async function projectWithGdd() {
+  const dir = await mkdtemp(join(tmpdir(), 'scompass-refs-'));
+  await cp(FIXTURE, join(dir, 'compass'), { recursive: true });
+  await writeFile(join(dir, 'gdd.md'), MD);
+  const cfg = join(dir, 'compass', 'config.json');
+  await writeFile(cfg, canonical({ ...JSON.parse(await readFile(cfg, 'utf8')), port: 1, docs: [{ alias: 'gdd', path: 'gdd.md' }] }));
+  // Sin las refs del fixture (apuntan a docs/spec.md, que acá no está).
+  const { readdir } = await import('node:fs/promises');
+  for (const f of await readdir(join(dir, 'compass', 'tasks'))) {
+    const p = join(dir, 'compass', 'tasks', f);
+    await writeFile(p, canonical({ ...JSON.parse(await readFile(p, 'utf8')), refs: [] }));
+  }
+  return dir;
+}
+const cliIn = (dir) => async (...argv) => {
+  let out = '', err = '';
+  const code = await run(argv, { cwd: dir, out: { write: (s) => { out += s; } }, err: { write: (s) => { err += s; } } });
+  return { code, out, err };
+};
+
+test('checkRefs: rotas, frágiles y enlaces en línea (los de dentro de `código` no cuentan)', async () => {
+  const docs = await loadDocs('/', { docs: [] });
+  docs.push({ alias: 'gdd', path: 'gdd.md', ...parseSections(MD) });
+  const problems = checkRefs(docs, [{
+    id: 't1', refs: [{ doc: 'gdd.md', section: 'combate' }, { doc: 'gdd.md', section: 'borrada' }, { doc: 'otro.md', section: 'x' }],
+    notes: 'ver [[gdd#sin-id-con-tildes]] y `[[gdd#ejemplo]]`', test: '[[gdd#camara]]', checklist: [{ text: 'paso [[gdd#nada]]', done: false }]
+  }]);
+  assert.deepEqual(problems.map((p) => [p.ref, p.where, p.problem]), [
+    ['gdd.md#borrada', 'refs', 'missing_section'], ['otro.md#x', 'refs', 'missing_doc'],
+    ['gdd#sin-id-con-tildes', 'notes', 'fragile'], ['gdd#nada', 'paso 1', 'missing_section']
+  ]);
+});
+
+test('ref add/rm y refs check: renombrar el título no rompe; borrar el id sí', async () => {
+  const dir = await projectWithGdd();
+  const cli = cliIn(dir);
+  try {
+    assert.equal((await cli('ref', 'add', 'm1-07', 'gdd#ventanas-ataque')).code, 0);
+    assert.deepEqual(JSON.parse(await readFile(join(dir, 'compass', 'tasks', 'm1-07.json'), 'utf8')).refs, [{ doc: 'gdd.md', section: 'ventanas-ataque' }]);
+    assert.match((await cli('ref', 'add', 'm1-07', 'gdd#ventanas-ataque')).out, /ya referencia/);
+    assert.equal((await cli('ref', 'add', 'm1-07', 'gdd#nada')).code, 1);
+    assert.equal((await cli('refs', 'check')).code, 0);
+
+    await writeFile(join(dir, 'gdd.md'), MD.replace('### Ventanas de ataque: `AttackData`', '### 7.2 Golpes con ventanas'));
+    assert.equal((await cli('refs', 'check')).code, 0, 'renombrar y renumerar no rompe');
+
+    await writeFile(join(dir, 'gdd.md'), MD.replace('<!-- id: ventanas-ataque -->\n', ''));
+    const r = await cli('refs', 'check', '--json');
+    assert.equal(r.code, 1);
+    assert.deepEqual(JSON.parse(r.out).broken.map((b) => [b.task, b.ref]), [['m1-07', 'gdd.md#ventanas-ataque']]);
+
+    assert.equal((await cli('ref', 'rm', 'm1-07', 'gdd#ventanas-ataque')).code, 0);
+    assert.equal((await cli('refs', 'check')).code, 0);
+    assert.equal((await cli('ref', 'rm', 'm1-07', 'gdd#ventanas-ataque')).code, 1);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('stamp-ids estampa el slug actual (las refs frágiles siguen resolviendo) y no toca lo demás', async () => {
+  const { text, stamped } = stampIds(MD);
+  assert.deepEqual(stamped, ['sin-id-con-tildes']);
+  assert.equal(text, MD.replace('### Sin id, con tildés\n', '### Sin id, con tildés\n<!-- id: sin-id-con-tildes -->\n'));
+  assert.deepEqual(stampIds(text).stamped, []);
+  const dir = await projectWithGdd();
+  try {
+    const cli = cliIn(dir);
+    assert.match((await cli('doc', 'stamp-ids', 'gdd', '--dry-run')).out, /Se estamparían 1/);
+    assert.equal(await readFile(join(dir, 'gdd.md'), 'utf8'), MD);
+    assert.equal((await cli('doc', 'stamp-ids', 'gdd')).code, 0);
+    assert.equal(await readFile(join(dir, 'gdd.md'), 'utf8'), text);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('refs check en los proyectos reales: sin referencias rotas', async () => {
+  for (const p of [REPO, EPIPHANY].filter((x) => existsSync(join(x, 'compass')))) {
+    const r = await run(['--dir', p, '--direct', 'refs', 'check'], { out: { write() {} }, err: { write() {} } });
+    assert.equal(r, 0, p);
+  }
+});
