@@ -10,6 +10,8 @@ signal event_received(msg: Dictionary)
 const HOST := "127.0.0.1"
 
 var project_root := ""
+## Puerto de config.json; `port` es el que se usa (puede ser otro, si el registro dice que el hub está ahí).
+var config_port := 4711
 var port := 4711
 var online := false
 ## Solo para tests: no aplicar los eventos del WebSocket (simula una vista desactualizada).
@@ -25,11 +27,30 @@ func base_url() -> String:
 	return "http://%s:%d" % [HOST, port]
 
 
-## ¿Hay un hub de este mismo proyecto? Si lo hay, abre el WebSocket (el hello dispara la carga).
+## ¿Hay un hub de este mismo proyecto? Primero en el puerto de la config y, si no, donde diga el registro de
+## hubs (lanzado con otro --port). Si lo hay, abre el WebSocket (el hello dispara la carga).
 func detect() -> bool:
 	if _connecting or online:
 		return online
 	_connecting = true
+	var ports := [config_port]
+	for p in registry_ports():
+		if not ports.has(p):
+			ports.append(p)
+	var first_error := ""
+	for p in ports:
+		port = p
+		if await _probe():
+			return true
+		if first_error == "":
+			first_error = last_error
+	port = config_port
+	last_error = first_error
+	_connecting = false
+	return false
+
+
+func _probe() -> bool:
 	var r := await request("GET", "/api/health", null, [], 0.5)
 	var ok := false
 	if r.code == 0:
@@ -47,8 +68,35 @@ func detect() -> bool:
 			_ws = null
 			ok = false
 			last_error = "no se pudo abrir el WebSocket"
-	_connecting = false
+		else:
+			_connecting = false
 	return ok
+
+
+## Puertos de los hubs de este proyecto según el registro ($XDG_RUNTIME_DIR/scope-compass/hubs/<pid>.json).
+func registry_ports() -> Array:
+	var dir := registry_dir()
+	var out := []
+	for f in DirAccess.get_files_at(dir):
+		if not f.ends_with(".json"):
+			continue
+		var h = JSON.parse_string(FileAccess.get_file_as_string(dir.path_join(f)))
+		if h is Dictionary and _same_path(str(h.get("project", "")), project_root) and h.get("port") != null:
+			out.append(int(h.port))
+	return out
+
+
+static func registry_dir() -> String:
+	var custom := OS.get_environment("SCOMPASS_REGISTRY")
+	if custom != "":
+		return custom.path_join("hubs")
+	var runtime := OS.get_environment("XDG_RUNTIME_DIR")
+	if runtime != "":
+		return runtime.path_join("scope-compass/hubs")
+	var out := []
+	OS.execute("id", ["-u"], out)
+	var uid := str(out[0]).strip_edges() if out.size() else ""
+	return OS.get_temp_dir().path_join("scope-compass-%s/hubs" % uid)
 
 
 func _process(_delta: float) -> void:

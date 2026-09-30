@@ -4,11 +4,22 @@ import { readFile, realpath } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseDoc } from '../schema.js';
 import { StoreError } from './json-files.js';
+import { hubsOf } from '../registry.js';
 
 const unflat = ({ id, etag, ...doc }) => ({ id, etag, doc });
 
-// ¿Hay un hub de este mismo proyecto en el puerto? Devuelve la URL base o null.
-export async function detectHub(projectDir, port, { timeoutMs = 300 } = {}) {
+// El hub de este proyecto: primero en el puerto de la config y, si no, donde diga el registro de hubs
+// (por si se lanzó con otro --port). Devuelve la URL base o null.
+export async function detectHub(projectDir, port, opts = {}) {
+  const ports = [port, ...hubsOf(projectDir).map((h) => h.port)].filter((p, i, a) => p && a.indexOf(p) === i);
+  for (const p of ports) {
+    const base = await probeHub(projectDir, p, opts);
+    if (base) return base;
+  }
+  return null;
+}
+
+async function probeHub(projectDir, port, { timeoutMs = 300 } = {}) {
   if (!port) return null;
   const base = `http://127.0.0.1:${port}`;
   try {

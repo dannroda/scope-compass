@@ -12,7 +12,7 @@
   },
   "scripts": {
     "postinstall": "node -e \"require('node:fs').writeFileSync('node_modules/.gdignore', '')\"",
-    "test": "node --test"
+    "test": "SCOMPASS_REGISTRY=\"${TMPDIR:-/tmp}/scompass-test-registry-$$\" node --test"
   },
   "license": "MIT",
   "dependencies": {

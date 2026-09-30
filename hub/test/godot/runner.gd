@@ -405,3 +405,11 @@ func test_detect_reason(a: Array) -> void:
 	if not _check(c, await _wait_file(a[0].path_join(".go")), "Node no avisó"): return
 	v._on_retry()
 	_check(c, await _until(func(): return v.online, 5.0), "Reintentar no lo encontró: " + v.banner_title.text)
+
+
+# El hub no está en el puerto de la config, pero el registro dice dónde está: el dock lo encuentra.
+func test_registry(a: Array) -> void:
+	var c := "registry"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	_check(c, v.client.port == int(a[1]) and v.client.config_port != v.client.port, "puerto %d (config %d)" % [v.client.port, v.client.config_port])

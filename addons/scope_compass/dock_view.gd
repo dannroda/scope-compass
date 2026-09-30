@@ -108,7 +108,9 @@ func reload() -> void:
 		if not _reload_again:
 			break
 	_loading = false
-	client.port = board.port()
+	client.config_port = board.port()
+	if not online:
+		client.port = client.config_port
 	_uncommitted = _count_uncommitted()
 	tasks_collapsed = bool(get_pref.call("tasks_collapsed", false))
 	var remembered: String = get_pref.call("milestone", "")
@@ -577,7 +579,7 @@ func _render() -> void:
 	_render_detail()
 
 	footer_dot.color = Color("#6fbf94") if online else Color("#e0655a")
-	footer_label.text = ("127.0.0.1:%d" % board.port()) if online else "Sin hub · solo lectura"
+	footer_label.text = ("127.0.0.1:%d" % client.port) if online else "Sin hub · solo lectura"
 	restart_button.visible = online
 	footer_right.text = ("compass: %d sin commitear" % _uncommitted) if _uncommitted >= 0 else ""
 

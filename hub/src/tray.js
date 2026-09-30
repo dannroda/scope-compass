@@ -9,7 +9,7 @@ const WATCHER = 'org.kde.StatusNotifierWatcher';
 const ITEM_PATH = '/StatusNotifierItem';
 const MENU_PATH = '/MenuBar';
 
-// Ícono dibujado en píxeles (ARGB32, big endian), por si el tema no encuentra el SVG.
+// Ícono dibujado en píxeles (ARGB32, big endian), por si la bandeja no encuentra el SVG del tema (el compass de @icons).
 function compassPixmap(size) {
   const buf = Buffer.alloc(size * size * 4);
   const c = (size - 1) / 2, r = size / 2 - 1;

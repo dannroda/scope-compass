@@ -345,3 +345,18 @@ test('dock: el aviso dice por qué no hay hub (otro proyecto) y "Reintentar" enc
     await rm(other, { recursive: true, force: true });
   }
 });
+
+test('dock: encuentra el hub por el registro aunque no esté en el puerto de la config', { skip }, async () => {
+  const { registerHub, unregisterHub } = await import('../src/registry.js');
+  const hub = await startHub();
+  // La config apunta a un puerto donde no hay nadie; el registro dice el puerto real.
+  const cfgPath = join(dir, 'compass', 'config.json');
+  await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), port: 1 }));
+  registerHub({ port: hub.port, project: dir });
+  try {
+    expectOk(await godotLive(['registry', dir, String(hub.port)]), 'registry');
+  } finally {
+    unregisterHub();
+    await hub.app.close();
+  }
+});

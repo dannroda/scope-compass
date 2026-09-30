@@ -16,6 +16,7 @@ import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { createHttpStore, detectHub } from './store/http.js';
 import { createServer, listen } from './server.js';
 import { startTray } from './tray.js';
+import { hubsOf, listHubs, registerHub, unregisterHub } from './registry.js';
 import { listMilestones, listTasks } from './views.js';
 
 const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
@@ -25,8 +26,9 @@ const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done
 const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
 
   init [--project <nombre>]                 crea compass/ en el proyecto
-  serve [--port 4711] [--open]              levanta el hub en 127.0.0.1 (Ctrl+C para cerrar)
+  serve [--port 4711] [--open] [--force]    levanta el hub en 127.0.0.1 (uno por proyecto; Ctrl+C para cerrar)
   restart                                   reinicia el hub de este proyecto (para cargar código nuevo)
+  hubs                                      hubs activos de todos los proyectos
         [--exit-on-stdin-close]             se cierra cuando se corta su entrada (lo usa el dock de Godot)
         [--tray]                            ícono en la bandeja del sistema, con "Detener hub"
   list [--milestone m00] [--status doing]   tareas (--json para agentes)
@@ -68,7 +70,7 @@ const OPTIONS = {
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
   raw: { type: 'boolean' },
-  port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' },
+  port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, force: { type: 'boolean' },
   title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
@@ -105,7 +107,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const validators = loadValidators();
   let store = createJsonFilesStore(compass, { validators, ...(now && { now }) });
   // Con un hub de este proyecto corriendo, todo pasa por su API (eventos al instante, una sola cola de escritura).
-  if (!o.direct && !['init', 'serve', 'restart', 'help'].includes(cmd)) {
+  if (!o.direct && !['init', 'serve', 'restart', 'hubs', 'help'].includes(cmd)) {
     const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
     const hub = await detectHub(project, cfg?.port);
     if (hub) store = createHttpStore(hub, compass, { validators });
@@ -148,6 +150,12 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       const all = await store.loadAll();
       showWarnings(all.warnings);
+      // Un hub por proyecto: dos escribirían el mismo compass/ y la UI y el dock podrían quedar en hubs distintos.
+      const others = hubsOf(project).filter((h) => h.pid !== process.pid);
+      if (others.length && !o.force) {
+        const h = others[0];
+        throw new StoreError('conflict', `ya hay un hub de este proyecto: PID ${h.pid} en http://127.0.0.1:${h.port}/ (scompass hubs lista todos; --force para levantar otro igual)`);
+      }
       const port = Number(o.port ?? all.config?.port ?? 4711);
       if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`puerto inválido: ${o.port}`);
       let restart = false;
@@ -162,6 +170,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         if (e.code === 'EADDRINUSE') throw new StoreError('io_error', `el puerto ${port} está ocupado (¿ya hay un hub corriendo?)`);
         throw e;
       }
+      registerHub({ port: addr.port, project });
       const url = `http://${addr.address}:${addr.port}/`;
       o.json ? print(JSON.stringify({ url, port: addr.port, project })) : print(`Scope Compass en ${url} · ${project} · Ctrl+C para cerrar`);
       // SCOMPASS_OPEN reemplaza a xdg-open (los tests lo usan para no abrir el navegador).
@@ -200,6 +209,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (o['exit-on-stdin-close'] && !restart) stdin.pause?.();
       tray?.close();
       await app.close();
+      unregisterHub();
       // Reinicio: el mismo comando otra vez, con la misma entrada y salida (si lo lanzó el dock, sigue atado a
       // Godot por la misma tubería) y el puerto ya libre.
       if (restart) {
@@ -267,6 +277,16 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         if (h?.pid && h.pid !== before) return done({ hub, pid: h.pid, previous: before }, `Hub reiniciado en ${hub} (PID ${before} → ${h.pid})`);
       }
       throw new StoreError('io_error', 'el hub se cerró pero no volvió en 10 s: mirá su log');
+    },
+
+    async hubs() {
+      const hubs = listHubs();
+      if (o.json) return done({ hubs });
+      if (!hubs.length) print('No hay hubs de Scope Compass corriendo.');
+      for (const h of hubs) print(`PID ${String(h.pid).padEnd(8)} http://127.0.0.1:${h.port}/  ${h.project}  (desde ${new Date(h.startedAt).toLocaleString('es-AR')})`);
+      const dup = hubs.filter((h, i) => hubs.findIndex((x) => x.project === h.project) !== i);
+      for (const h of dup) warn(`aviso: más de un hub para ${h.project}`);
+      return 0;
     },
 
     async doc() {
