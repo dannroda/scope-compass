@@ -613,7 +613,10 @@ func _render_detail() -> void:
 		cb.tooltip_text = "Marcar como hecho"
 		var id: String = t.id
 		cb.toggled.connect(func(on: bool): update_task(id, func(cur): return { "checklist": _toggled(cur, i, on) }))
-		line.add_child(cb)
+		var cb_box := MarginContainer.new() # para alinear el cuadradito con la primera línea del texto
+		cb_box.size_flags_vertical = SIZE_SHRINK_BEGIN
+		cb_box.add_child(cb)
+		line.add_child(cb_box)
 		var detail_text := str(cl[i].get("detail", ""))
 		var key := "%s:%d" % [id, i]
 		var open: bool = _steps_open.get(key, false)
@@ -632,6 +635,11 @@ func _render_detail() -> void:
 		if detail_text != "":
 			label.pressed.connect(toggle_detail)
 		line.add_child(label)
+		# El centro del cuadradito, a la altura del centro de la primera línea del texto (el botón tiene relleno).
+		var sb := label.get_theme_stylebox("normal")
+		var first_line := label.get_theme_font("font").get_height(label.get_theme_font_size("font_size"))
+		var center := sb.get_margin(SIDE_TOP) + first_line / 2.0
+		cb_box.add_theme_constant_override("margin_top", maxi(0, roundi(center - cb.get_combined_minimum_size().y / 2.0)))
 		if detail_text != "":
 			var toggle := Button.new()
 			toggle.flat = true
@@ -860,7 +868,7 @@ func _count_uncommitted() -> int:
 
 ## El checkbox del paso i del detalle.
 func step_checkbox(i: int) -> CheckBox:
-	return steps_box.get_child(i).get_child(0).get_child(0)
+	return steps_box.get_child(i).get_child(0).get_child(0).get_child(0)
 
 
 ## Ids de las tareas visibles en la lista, en orden, con el estado de su grupo: ["doing:m0-03", …].

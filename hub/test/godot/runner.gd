@@ -321,6 +321,14 @@ func test_step_detail(a: Array) -> void:
 	var line: HBoxContainer = v.steps_box.get_child(0).get_child(0)
 	if not _check(c, line.get_child_count() == 3 and line.get_child(2).text == "▸", "falta el ▸ del detalle"): return
 	if not _check(c, v.steps_box.get_child(1).get_child(0).get_child_count() == 2, "un paso sin detalle no lleva ▸"): return
+	# El cuadradito, centrado con la primera línea del texto (±2 px).
+	await process_frame
+	var cb: CheckBox = v.step_checkbox(0)
+	var label: Button = line.get_child(1)
+	var sb := label.get_theme_stylebox("normal")
+	var line_mid := label.global_position.y + sb.get_margin(SIDE_TOP) + label.get_theme_font("font").get_height(label.get_theme_font_size("font_size")) / 2.0
+	var cb_mid := cb.global_position.y + cb.size.y / 2.0
+	if not _check(c, absf(cb_mid - line_mid) <= 2.0, "cuadradito desalineado: centro %.1f vs línea %.1f" % [cb_mid, line_mid]): return
 	var was: bool = v.step_checkbox(0).button_pressed
 	line.get_child(1).pressed.emit() # el texto
 	await process_frame
