@@ -127,3 +127,30 @@ export function stampIds(text) {
   }
   return { text: out.join('\n'), stamped };
 }
+
+// Citas "Ver `gdd.md` §4.3" (o "gdd §4.3"): documento por ruta o alias, y número de sección.
+const CITE = /`?([\w./-]+?)`?\s*§\s*(\d+(?:\.\d+)*)/g;
+
+/**
+ * Propuestas de referencias a partir de citas por número en notas, prueba y pasos (spec §10.5).
+ * Una cita "§4.3" apunta a la sección cuyo título empieza con "4.3" (o "4."/"4 " para "§4").
+ * Devuelve [{ task, where, cite, ref, title, already }]; nunca aplica nada.
+ */
+export function suggestRefs(docs, tasks) {
+  const out = [];
+  for (const t of tasks) {
+    const texts = [['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).map((c, i) => [`paso ${i + 1}`, c.text])];
+    for (const [where, text] of texts) {
+      for (const m of String(text ?? '').matchAll(CITE)) {
+        const d = findDoc(docs, m[1]) ?? findDoc(docs, m[1].replace(/\.md$/, ''));
+        if (!d) continue;
+        const num = m[2];
+        const s = d.sections.find((x) => new RegExp(`^${num.replace(/\./g, '\\.')}(\\.|\\s)`).test(x.title));
+        if (!s) continue;
+        const already = (t.refs ?? []).some((r) => (findDoc(docs, r.doc) === d) && r.section === s.id);
+        out.push({ task: t.id, code: t.code ?? '', where, cite: m[0], ref: `${d.alias}#${s.id}`, title: s.title, already });
+      }
+    }
+  }
+  return out;
+}

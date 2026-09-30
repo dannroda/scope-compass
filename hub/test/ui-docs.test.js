@@ -160,3 +160,33 @@ test('6.6: [[gdd#id]] en pasos y notas se ve con el título actual; roto, marcad
   assert.match(page.url(), /#docs\/gdd\/ventanas-ataque$/);
   await page.close();
 });
+
+// --- 6.9: criterios de §10.6 medidos ---
+
+test('§10.6: editar gdd.md con la app abierta actualiza la vista en menos de 1 s', async () => {
+  const page = await open('#docs/gdd/ventanas-ataque');
+  await page.waitForSelector('article.doc-body h3#sec-ventanas-ataque');
+  const times = [];
+  for (const name of ['Ventanas de golpe', 'Ventanas de impacto', 'Ventanas de ataque']) {
+    const t0 = Date.now();
+    await writeFile(join(dir, 'gdd.md'), GDD.replace('### Ventanas de ataque', `### ${name}`));
+    await page.waitForSelector(`article.doc-body h3:has-text("${name}")`, { timeout: 3000 });
+    times.push(Date.now() - t0);
+  }
+  assert.ok(Math.max(...times) < 1000, `tardó ${times.join(', ')} ms`);
+  await page.close();
+});
+
+test('§10.6: borrar una sección referenciada marca la tarea en vivo, y refs check la lista', async () => {
+  const page = await open();
+  await page.click('.chip:has-text("M1")');
+  assert.doesNotMatch(await page.getAttribute('.card[data-id="m1-03"] .refmark', 'class'), /bad/);
+  await writeFile(join(dir, 'gdd.md'), GDD.replace(/### Ventanas de ataque[\s\S]*?(?=## Cámara)/, ''));
+  await page.waitForFunction(() => /bad/.test(document.querySelector('.card[data-id="m1-03"] .refmark')?.className), null, { timeout: 2000 });
+  const { run } = await import('../src/cli.js');
+  let out = '';
+  const code = await run(['--dir', dir, '--direct', 'refs', 'check', '--json'], { out: { write: (s) => { out += s; } }, err: { write() {} } });
+  assert.equal(code, 1);
+  assert.deepEqual(JSON.parse(out).broken.map((b) => [b.task, b.ref]).sort(), [['m1-03', 'gdd.md#ventanas-ataque'], ['m1-04', 'gdd.md#ventanas-ataque'], ['m1-05', 'gdd.md#borrada']]);
+  await page.close();
+});

@@ -7,7 +7,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { exportMarkdown } from './export-md.js';
-import { checkRefs, loadDocs, resolveRef, sectionMarkdown, stampIds } from './docs.js';
+import { checkRefs, loadDocs, resolveRef, sectionMarkdown, stampIds, suggestRefs } from './docs.js';
 import { writeAtomic } from './store/atomic.js';
 import { importArtifact } from './import-artifact.js';
 import { KINDS, loadValidators, parseDoc, SCHEMA_DIR } from './schema.js';
@@ -40,6 +40,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   doc show <alias>#<id> [--raw]             una sección (--raw: solo el markdown, para agentes)
   doc stamp-ids <alias> [--dry-run]         agrega <!-- id: … --> a las secciones que no tienen
   refs check                                referencias rotas (sale con 1 si hay) y frágiles
+  refs suggest                              propone refs a partir de citas "gdd.md §4.3" (no aplica nada)
   ref add|rm <tarea> <alias>#<id>           agrega o quita una referencia de la tarea
   export md [--out docs/tareas.md]          regenera el markdown (también se hace solo al escribir)
   import artifact <carpeta> [--dry-run] [--overwrite]
@@ -276,9 +277,20 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     },
 
     async refs() {
-      if (rest[0] !== 'check') throw new UsageError(`subcomando desconocido: refs ${rest[0] ?? ''} (check)`);
+      if (rest[0] !== 'check' && rest[0] !== 'suggest') throw new UsageError(`subcomando desconocido: refs ${rest[0] ?? ''} (check, suggest)`);
       const all = await store.loadAll();
       const docs = await loadDocs(project, all.config);
+      if (rest[0] === 'suggest') {
+        const s = suggestRefs(docs, [...all.tasks].map(([id, doc]) => ({ id, ...doc })));
+        if (o.json) return done({ suggestions: s });
+        const pending = s.filter((x) => !x.already);
+        for (const x of s) {
+          print(`${x.already ? 'ya está' : 'propuesta'}  ${(x.code || x.task).padEnd(6)} ${x.where}: "${x.cite}" → ${x.ref} (${x.title.replace(/`/g, '')})`);
+          if (!x.already) print(`           scompass ref add ${x.task} ${x.ref}`);
+        }
+        print(s.length ? `${pending.length} por revisar, ${s.length - pending.length} ya referenciadas.` : 'No hay citas por número de sección.');
+        return 0;
+      }
       const problems = checkRefs(docs, [...all.tasks].map(([id, doc]) => ({ id, ...doc })));
       const broken = problems.filter((p) => p.problem !== 'fragile');
       if (o.json) print(JSON.stringify({ broken, fragile: problems.filter((p) => p.problem === 'fragile') }));
@@ -342,6 +354,12 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         print(line('Tareas', r.tasks));
         for (const c of ['milestones', 'tasks']) if (r[c].different.length) print(`Distintos en ${c}: ${r[c].different.join(', ')} (--overwrite para reemplazarlos)`);
         for (const w of r.warnings) warn(`aviso ${w.path}: ${w.message}`);
+        // Citas "gdd.md §4.3" en lo importado: se proponen como refs, sin aplicarlas (spec §10.5).
+        if (!o['dry-run']) {
+          const all = await store.loadAll();
+          const pending = suggestRefs(await loadDocs(project, all.config), [...all.tasks].map(([id, doc]) => ({ id, ...doc }))).filter((x) => !x.already);
+          if (pending.length) print(`${pending.length} citas por número de sección pueden pasar a referencias: scompass refs suggest`);
+        }
       }
       const clean = ['milestones', 'tasks'].every((c) => !r[c].different.length && !r[c].invalid.length);
       return clean && !r.warnings.length ? 0 : 1;

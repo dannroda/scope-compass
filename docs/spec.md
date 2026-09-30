@@ -443,7 +443,7 @@ scompass ref add <task-id> gdd#ventanas-ataque
 ### 10.5 Migración de las notas actuales
 <!-- id: migracion-notas -->
 
-Las notas de hoy tienen la forma "Ver `gdd.md` §4.3". `scompass import artifact` las detecta con un patrón (`gdd.md` + `§N.N`) y propone la referencia estructurada equivalente. Para eso el GDD tiene que tener sus ids estampados antes de importar. La propuesta se revisa a mano: no se aplica sola.
+Las notas de hoy tienen la forma "Ver `gdd.md` §4.3". `scompass refs suggest` las detecta con un patrón (`gdd.md` o el alias + `§N.N`: la sección cuyo título empieza con ese número) y propone la referencia estructurada equivalente, con el `scompass ref add` listo para aplicarla; `import artifact` avisa si quedaron citas por revisar. Para eso el GDD tiene que tener sus ids estampados antes de importar. La propuesta se revisa a mano: no se aplica sola.
 
 ### 10.6 Criterios de aceptación de v2
 <!-- id: criterios-v2 -->
@@ -452,7 +452,7 @@ Las notas de hoy tienen la forma "Ver `gdd.md` §4.3". `scompass import artifact
 - [x] Renombrar o renumerar una sección con id explícito no rompe ninguna referencia.
 - [x] Borrar una sección referenciada marca la tarea con una advertencia, y `scompass refs check` la lista.
 - [x] La vista Documentos muestra los backlinks correctos por sección.
-- [ ] Editar `gdd.md` con la app abierta actualiza la vista en menos de 1 s.
+- [x] Editar `gdd.md` con la app abierta actualiza la vista en menos de 1 s.
 
 ## 11. Visión: organizador de proyectos de videojuegos
 <!-- id: vision -->

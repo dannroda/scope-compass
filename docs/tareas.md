@@ -544,7 +544,7 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Referencias:** `docs/spec.md#godot`
 
-## M6 — Documentos y referencias (v2)  (7/9)
+## M6 — Documentos y referencias (v2)  (9/9)
 
 Visor de documentos del proyecto (GDD) y referencias estables entre tareas y secciones (§10).
 
@@ -637,21 +637,25 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 **Referencias:** `docs/spec.md#godot`, `docs/spec.md#documentos-servidor`
 
-### 6.8 Migración de notas "§N.N" · En curso
+### 6.8 Migración de notas "§N.N" · Hecho
 
-- [ ] Detectar "`gdd.md` §N.N" en notas, pruebas y pasos
-- [ ] Proponer la referencia equivalente (sin aplicarla sola)
+- [x] Detectar "`gdd.md` §N.N" en notas, pruebas y pasos
+- [x] Proponer la referencia equivalente (sin aplicarla sola)
 
 **Prueba:** En Epiphany, las notas con "§" dan propuestas revisables.
 
+**Notas:** `scompass refs suggest` (`suggestRefs` en `docs.js`): cita "`gdd.md` §4.3" o "gdd §4.3" → la sección cuyo título empieza con ese número; marca las que ya son ref y da el `ref add` listo. `import artifact` avisa si hay por revisar. En Epiphany: sus 2 citas ya eran referencias.
+
 **Referencias:** `docs/spec.md#migracion-notas`
 
-### 6.9 Tests de M6 · Pendiente
+### 6.9 Tests de M6 · Hecho
 
-- [ ] Criterios de §10.6
-- [ ] Con los documentos reales de Epiphany y de este repo
+- [x] Criterios de §10.6
+- [x] Con los documentos reales de Epiphany y de este repo
 
 **Prueba:** `npm test` en `hub/` pasa con los tests de documentos.
+
+**Notas:** Criterios de §10.6 cumplidos: tests de docs (parser, refs check, stamp-ids, suggest), API, UI (detalle, vista Documentos, enlaces, cambio de gdd.md medido: menos de 1 s en 3 ediciones seguidas, sección borrada marca la tarea en vivo) y dock (BBCode con y sin hub), con los documentos reales de Epiphany y de este repo.
 
 **Referencias:** `docs/spec.md#criterios-v2`
 

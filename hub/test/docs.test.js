@@ -198,3 +198,29 @@ test('refs check en los proyectos reales: sin referencias rotas', async () => {
     assert.equal(r, 0, p);
   }
 });
+
+// --- 6.8: citas "§N.N" → propuestas de refs ---
+import { suggestRefs } from '../src/docs.js';
+
+test('refs suggest: "gdd.md §4.3" y "gdd §4" proponen la sección por número; nunca aplica', async () => {
+  const text = '# GDD\n## 4. Cámara y control\n### 4.3 Mapa de input\n<!-- id: input -->\n### 4.30 Otra\n## 11. Arquitectura\n';
+  const docs = [{ alias: 'gdd', path: 'gdd.md', ...parseSections(text) }];
+  const tasks = [
+    { id: 'a', code: '0.1', notes: 'Ver `gdd.md` §4.3. Y también gdd §4.', refs: [] },
+    { id: 'b', notes: 'ya: `gdd.md` §4.3', refs: [{ doc: 'gdd.md', section: 'input' }] },
+    { id: 'c', test: 'nada: gdd.md §99 y otro.md §4', checklist: [{ text: 'paso gdd §11', done: false }] }
+  ];
+  const s = suggestRefs(docs, tasks);
+  assert.deepEqual(s.map((x) => [x.task, x.where, x.ref, x.already]), [
+    ['a', 'notes', 'gdd#input', false], ['a', 'notes', 'gdd#4-camara-y-control', false],
+    ['b', 'notes', 'gdd#input', true], ['c', 'paso 1', 'gdd#11-arquitectura', false]
+  ]);
+  assert.deepEqual(tasks[0].refs, [], 'no aplica nada');
+});
+
+test('refs suggest con Epiphany: sus dos citas ya son referencias', { skip: !existsSync(join(EPIPHANY, 'gdd.md')) && 'no está project-epiphany' }, async () => {
+  let out = '';
+  assert.equal(await run(['--dir', EPIPHANY, '--direct', 'refs', 'suggest', '--json'], { out: { write: (s) => { out += s; } }, err: { write() {} } }), 0);
+  const s = JSON.parse(out).suggestions;
+  assert.deepEqual(s.map((x) => [x.code, x.ref, x.already]), [['0.2', 'gdd#input', true], ['0.7', 'gdd#entidades-componentes', true]]);
+});
