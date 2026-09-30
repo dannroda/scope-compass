@@ -45,7 +45,7 @@ func test_offline(a: Array) -> void:
 	var v := await _view(a[0])
 	var c := "offline"
 	if not _check(c, v.banner.visible, "falta el aviso de solo lectura"): return
-	if not _check(c, v.banner_title.text == "No hay hub en 127.0.0.1:4711", "título del aviso: " + v.banner_title.text): return
+	if not _check(c, v.banner_title.text.begins_with("No hay hub en 127.0.0.1:4711"), "título del aviso: " + v.banner_title.text): return
 	if not _check(c, v.current_milestone == a[1], "hito por defecto %s, esperado %s" % [v.current_milestone, a[1]]): return
 	var listed := v.listed()
 	if not _check(c, JSON.stringify(listed) == a[2], "tareas listadas %s, esperado %s" % [JSON.stringify(listed), a[2]]): return
@@ -392,3 +392,16 @@ func test_icons(a: Array) -> void:
 	for name in v.ICONS:
 		if not _check(c, v.ICONS[name] is Texture2D, "no cargó %s" % name): return
 	_check(c, v.reload_button.icon == v.ICONS.reload and v.browser_button.icon == v.ICONS.browser, "botones sin ícono")
+
+
+# El aviso dice por qué no encontró el hub; "Reintentar" lo vuelve a buscar.
+func test_detect_reason(a: Array) -> void:
+	var c := "detect_reason"
+	var v := await _view(a[0])
+	await v._try_hub()
+	v._render()
+	if not _check(c, v.banner_title.text.contains(a[1]), "aviso: " + v.banner_title.text): return
+	print("READY")
+	if not _check(c, await _wait_file(a[0].path_join(".go")), "Node no avisó"): return
+	v._on_retry()
+	_check(c, await _until(func(): return v.online, 5.0), "Reintentar no lo encontró: " + v.banner_title.text)

@@ -320,3 +320,28 @@ test('dock: el bloque de tareas se pliega y el divisor lista/detalle se recuerda
 test('dock: los botones usan los íconos de assets/', { skip }, async () => {
   expectOk(await godot('icons', dir), 'icons');
 });
+
+test('dock: el aviso dice por qué no hay hub (otro proyecto) y "Reintentar" encuentra el correcto', { skip }, async () => {
+  // En el puerto de la config corre el hub de OTRO proyecto.
+  const other = await mkdtemp(join(tmpdir(), 'scompass-otro-'));
+  await cp(FIXTURE, join(other, 'compass'), { recursive: true });
+  const port = await freePort();
+  const cfgPath = join(dir, 'compass', 'config.json');
+  await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), port }));
+  const V2 = loadValidators();
+  let app = createServer({ projectDir: other, store: createJsonFilesStore(join(other, 'compass'), { validators: V2 }) });
+  await listen(app, port);
+  try {
+    const r = await godotLive(['detect_reason', dir, 'otro proyecto'], async (line) => {
+      if (line !== 'READY') return;
+      await app.close();
+      app = createServer({ projectDir: dir, store: createJsonFilesStore(join(dir, 'compass'), { validators: V2 }), validators: V2, watch: true });
+      await listen(app, port);
+      await writeFile(join(dir, '.go'), '');
+    });
+    expectOk(r, 'detect_reason');
+  } finally {
+    await app.close();
+    await rm(other, { recursive: true, force: true });
+  }
+});

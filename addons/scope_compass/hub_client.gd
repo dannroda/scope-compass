@@ -17,6 +17,8 @@ var ignore_events := false
 
 var _ws: WebSocketPeer = null
 var _connecting := false
+## Por qué falló la última búsqueda del hub (para mostrarlo en el aviso del dock).
+var last_error := ""
 
 
 func base_url() -> String:
@@ -29,13 +31,22 @@ func detect() -> bool:
 		return online
 	_connecting = true
 	var r := await request("GET", "/api/health", null, [], 0.5)
-	var ok: bool = r.code == 200 and r.json is Dictionary and r.json.get("name") == "scope-compass" \
-		and _same_path(str(r.json.get("project", "")), project_root)
+	var ok := false
+	if r.code == 0:
+		last_error = "no responde"
+	elif not (r.json is Dictionary and r.json.get("name") == "scope-compass"):
+		last_error = "responde otro programa (HTTP %d)" % r.code
+	elif not _same_path(str(r.json.get("project", "")), project_root):
+		last_error = "es el hub de otro proyecto: %s" % r.json.get("project", "")
+	else:
+		ok = true
+		last_error = ""
 	if ok:
 		_ws = WebSocketPeer.new()
 		if _ws.connect_to_url("ws://%s:%d/ws" % [HOST, port]) != OK:
 			_ws = null
 			ok = false
+			last_error = "no se pudo abrir el WebSocket"
 	_connecting = false
 	return ok
 
@@ -58,6 +69,14 @@ func _process(_delta: float) -> void:
 			if online:
 				online = false
 				went_offline.emit()
+
+
+## Descarta un intento de conexión a medias (lo usa "Reintentar").
+func reset() -> void:
+	_connecting = false
+	if _ws and _ws.get_ready_state() != WebSocketPeer.STATE_OPEN:
+		_ws.close()
+		_ws = null
 
 
 func close() -> void:

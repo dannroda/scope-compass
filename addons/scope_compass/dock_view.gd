@@ -120,6 +120,13 @@ func reload() -> void:
 	loaded.emit()
 
 
+func _on_retry() -> void:
+	client.reset()
+	await reload()
+	await _try_hub()
+	_render()
+
+
 func _try_hub() -> void:
 	if not online:
 		await client.detect()
@@ -397,7 +404,7 @@ func _build() -> void:
 	bb.add_child(start)
 	var retry := Button.new()
 	retry.text = "Reintentar"
-	retry.pressed.connect(func(): await reload(); await _try_hub())
+	retry.pressed.connect(_on_retry)
 	bb.add_child(retry)
 	var open_tasks := Button.new()
 	open_tasks.text = "Abrir compass/tasks"
@@ -552,7 +559,7 @@ func _exit_tree() -> void:
 
 func _render() -> void:
 	banner.visible = not online
-	banner_title.text = "No hay hub en 127.0.0.1:%d" % board.port()
+	banner_title.text = "No hay hub en 127.0.0.1:%d" % board.port() + ((" (" + client.last_error + ")") if client.last_error != "" else "")
 	warnings_label.visible = board.warnings.size() > 0
 	warnings_label.text = "\n".join(board.warnings.map(func(w): return "%s · %s" % [w.path, w.message]))
 	browser_button.disabled = not online
