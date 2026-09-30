@@ -13,6 +13,9 @@ const FIXTURE = join(REPO, 'hub', 'test', 'fixtures', 'compass');
 const hasGodot = (() => { try { execFileSync('godot', ['--version'], { stdio: 'ignore' }); return true; } catch { return false; } })();
 const skip = !hasGodot && 'sin godot en el PATH';
 let dir;
+// Los íconos del addon se usan con preload: en un clon nuevo Godot tiene que importarlos primero.
+import { before } from 'node:test';
+before(() => { if (hasGodot) execFileSync('godot', ['--headless', '--path', REPO, '--import'], { stdio: 'ignore', timeout: 120000 }); });
 
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'scompass-dock-'));
@@ -314,6 +317,6 @@ test('dock: el bloque de tareas se pliega y el divisor lista/detalle se recuerda
   expectOk(await godot('split', dir), 'split');
 });
 
-test('dock: los botones usan los íconos de assets/ (SVG en tiempo de ejecución, escalados)', { skip }, async () => {
+test('dock: los botones usan los íconos de assets/', { skip }, async () => {
   expectOk(await godot('icons', dir), 'icons');
 });

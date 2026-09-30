@@ -62,17 +62,12 @@ var _steps_open := {}
 var _blocks := {}
 ## Resaltado para los CodeEdit de los snippets. El plugin pasa el GDScriptSyntaxHighlighter del editor; fuera
 ## del editor (tests) queda un CodeHighlighter básico.
-## Escala del editor para los íconos (el plugin la pasa; fuera del editor, 1).
-var icon_scale := 1.0
-var _icons := {}
 var make_highlighter: Callable = func(lang: String): return basic_highlighter(lang)
 var notice: Label
 var footer_dot: ColorRect
 var footer_label: Label
 var footer_right: Label
 var restart_button: Button
-var start_button: Button
-var open_tasks_button: Button
 var _poll: Timer
 var _notice_timer: Timer
 
@@ -344,37 +339,20 @@ func show_notice(text: String) -> void:
 
 # --- Íconos -------------------------------------------------------------------------------------
 
-## Un ícono de assets/ (p. ej. "node/arrow_clockwise"), cargado del SVG en tiempo de ejecución: assets/ tiene
-## .gdignore, así Godot no genera archivos .import en este repo ni en los proyectos que usan el addon.
-func icon(path: String) -> Texture2D:
-	if _icons.has(path):
-		return _icons[path]
-	var file := (get_script() as Script).resource_path.get_base_dir().path_join("assets/%s.svg" % path)
-	var tex: Texture2D = null
-	if FileAccess.file_exists(file):
-		var img := Image.new()
-		if img.load_svg_from_string(FileAccess.get_file_as_string(file), icon_scale) == OK:
-			tex = ImageTexture.create_from_image(img)
-	_icons[path] = tex
-	return tex
+## Íconos de @icons (assets/node/…, MIT). Su .import los escala con el editor y los adapta al tema.
+const ICONS := {
+	"reload": preload("assets/node/arrow_clockwise.svg"),
+	"restart": preload("assets/node/arrow_counterclockwise.svg"),
+	"browser": preload("assets/node/arrow_up_right.svg"),
+	"start": preload("assets/node/play.svg"),
+	"folder": preload("assets/node/folder_open.svg"),
+}
 
 
-## La escala del editor llega después de construir los botones: vuelve a cargar los íconos con ella.
-func set_icon_scale(scale: float) -> void:
-	icon_scale = scale
-	_icons.clear()
-	for pair in [[reload_button, "node/arrow_clockwise"], [browser_button, "node/arrow_up_right"], [start_button, "node/play"],
-			[open_tasks_button, "node/folder_open"], [restart_button, "node/arrow_counterclockwise"]]:
-		pair[0].icon = icon(pair[1])
-	_render()
-
-
-## Botón de solo ícono (con el texto de respaldo si el SVG no está).
-func _icon_button(path: String, fallback: String, tip: String) -> Button:
+func _icon_button(name: String, tip: String) -> Button:
 	var b := Button.new()
+	b.icon = ICONS[name]
 	b.tooltip_text = tip
-	b.icon = icon(path)
-	b.text = "" if b.icon else fallback
 	return b
 
 
@@ -413,9 +391,8 @@ func _build() -> void:
 	var bb := HFlowContainer.new()
 	bv.add_child(bb)
 	var start := Button.new()
-	start_button = start
 	start.text = "Iniciar hub"
-	start.icon = icon("node/play")
+	start.icon = ICONS.start
 	start.pressed.connect(start_hub)
 	bb.add_child(start)
 	var retry := Button.new()
@@ -423,9 +400,8 @@ func _build() -> void:
 	retry.pressed.connect(func(): await reload(); await _try_hub())
 	bb.add_child(retry)
 	var open_tasks := Button.new()
-	open_tasks_button = open_tasks
 	open_tasks.text = "Abrir compass/tasks"
-	open_tasks.icon = icon("node/folder_open")
+	open_tasks.icon = ICONS.folder
 	open_tasks.pressed.connect(func(): OS.shell_open(project_root.path_join("compass/tasks")))
 	bb.add_child(open_tasks)
 	add_child(banner)
@@ -445,10 +421,10 @@ func _build() -> void:
 	milestone_select.tooltip_text = "Hito"
 	milestone_select.item_selected.connect(_on_milestone_selected)
 	head.add_child(milestone_select)
-	reload_button = _icon_button("node/arrow_clockwise", "↻", "Recargar")
+	reload_button = _icon_button("reload", "Recargar")
 	reload_button.pressed.connect(reload)
 	head.add_child(reload_button)
-	browser_button = _icon_button("node/arrow_up_right", "↗", "Abrir el tablero en el navegador")
+	browser_button = _icon_button("browser", "Abrir el tablero en el navegador")
 	browser_button.pressed.connect(func(): OS.shell_open(client.base_url() + "/"))
 	head.add_child(browser_button)
 
@@ -547,7 +523,7 @@ func _build() -> void:
 	foot.add_child(footer_right)
 	restart_button = Button.new()
 	restart_button.text = "Reiniciar hub"
-	restart_button.icon = icon("node/arrow_counterclockwise")
+	restart_button.icon = ICONS.restart
 	restart_button.flat = true
 	restart_button.tooltip_text = "Reinicia el hub (para que cargue código nuevo de Scope Compass)"
 	restart_button.pressed.connect(restart_hub)
@@ -750,7 +726,7 @@ func _render_refs(t: Dictionary) -> void:
 		toggle.pressed.connect(func(): _refs_open[key] = not open; _render_detail())
 		head.add_child(toggle)
 		if online:
-			var web := _icon_button("node/arrow_up_right", "↗", "Abrir en el navegador")
+			var web := _icon_button("browser", "Abrir en el navegador")
 			web.pressed.connect(func(): OS.shell_open("%s/#docs/%s/%s" % [client.base_url(), str(d.alias).uri_encode(), str(s.id).uri_encode()]))
 			head.add_child(web)
 		if open:

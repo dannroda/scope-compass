@@ -385,14 +385,10 @@ func test_restart_hub(a: Array) -> void:
 	if not _check(c, await _until(func(): return not alive.call(after), 5.0), "el hub nuevo no se cerró con el dock"): return
 
 
-# Íconos: los botones cargan los SVG de assets/ (sin .import) y quedan sin texto.
+# Íconos: los botones usan los de assets/ (importados por Godot).
 func test_icons(a: Array) -> void:
 	var c := "icons"
 	var v := await _view(a[0])
-	for path in ["node/arrow_clockwise", "node/arrow_counterclockwise", "node/arrow_up_right", "node/play", "node/folder_open"]:
-		var t := v.icon(path)
-		if not _check(c, t != null and t.get_width() == 16, "no cargó %s" % path): return
-	if not _check(c, v.reload_button.icon != null and v.reload_button.text == "", "recargar sin ícono"): return
-	if not _check(c, v.browser_button.icon != null and v.browser_button.text == "", "navegador sin ícono"): return
-	v.set_icon_scale(2.0)
-	_check(c, v.icon("node/play").get_width() == 32 and v.reload_button.icon.get_width() == 32, "no respeta la escala del editor")
+	for name in v.ICONS:
+		if not _check(c, v.ICONS[name] is Texture2D, "no cargó %s" % name): return
+	_check(c, v.reload_button.icon == v.ICONS.reload and v.browser_button.icon == v.ICONS.browser, "botones sin ícono")
