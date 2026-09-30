@@ -22,6 +22,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
 
   init [--project <nombre>]                 crea compass/ en el proyecto
   serve [--port 4711] [--open]              levanta el hub en 127.0.0.1 (Ctrl+C para cerrar)
+        [--exit-on-stdin-close]             se cierra cuando se corta su entrada (lo usa el dock de Godot)
   list [--milestone m00] [--status doing]   tareas (--json para agentes)
   show <id>                                 una tarea, con los pasos numerados
   add "<título>" --milestone m00 [--code 0.11] [--status todo]
@@ -51,7 +52,7 @@ const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
-  port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' },
+  port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' },
   title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
@@ -148,14 +149,22 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (o.open) {
         spawn('xdg-open', [url], { detached: true, stdio: 'ignore' }).on('error', () => warn(`no se pudo abrir el navegador: ${url}`)).unref();
       }
-      let stop = signal;
-      if (!stop) {
-        const ac = new AbortController();
+      const ac = new AbortController();
+      if (signal) signal.addEventListener('abort', () => ac.abort(), { once: true });
+      else {
         process.once('SIGINT', () => ac.abort());
         process.once('SIGTERM', () => ac.abort());
-        stop = ac.signal;
       }
-      if (!stop.aborted) await new Promise((res) => stop.addEventListener('abort', res, { once: true }));
+      // Lanzado por el dock con una tubería: si Godot se cierra o muere, la entrada se corta y el hub se va.
+      if (o['exit-on-stdin-close']) {
+        stdin.on('end', () => ac.abort());
+        stdin.on('close', () => ac.abort());
+        stdin.on('error', () => ac.abort());
+        stdin.resume();
+      }
+      const stop = ac.signal;
+      if (!stop.aborted && !signal?.aborted) await new Promise((res) => stop.addEventListener('abort', res, { once: true }));
+      if (o['exit-on-stdin-close']) stdin.pause?.();
       await app.close();
       return 0;
     },

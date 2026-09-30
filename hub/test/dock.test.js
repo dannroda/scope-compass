@@ -197,3 +197,35 @@ test('"Iniciar hub" levanta scompass serve, el dock pasa a edición y al cerrarl
 test('"Iniciar hub" sin scompass encontrable no inventa un comando', { skip }, async () => {
   expectOk(await godotLive(['start_hub_missing', dir]), 'start_hub_missing');
 });
+
+// --- El hub lanzado por el dock muere con el editor (5.8) ---
+const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+const waitFor = async (cond, ms) => { const t0 = Date.now(); while (!cond() && Date.now() - t0 < ms) await new Promise((r) => setTimeout(r, 50)); return cond(); };
+
+test('si matan a Godot con kill -9, el hub que abrió el dock se cierra solo', { skip }, async () => {
+  const port = await freePort();
+  const cfgPath = join(dir, 'compass', 'config.json');
+  await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), port }));
+  let hubPid = 0;
+  const p = spawn('godot', ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--',
+    'start_hub_and_hang', dir, join(REPO, 'hub', 'bin', 'scompass.js')]);
+  try {
+    await new Promise((resolve, reject) => {
+      let buf = '';
+      const t = setTimeout(() => reject(new Error('Godot no llegó a READY: ' + buf)), 30000);
+      p.stdout.on('data', (d) => {
+        buf += d;
+        const m = /PID (\d+)/.exec(buf);
+        if (m) hubPid = Number(m[1]);
+        if (buf.includes('READY')) { clearTimeout(t); resolve(); }
+      });
+    });
+    assert.ok(alive(hubPid), 'el hub corre');
+    p.kill('SIGKILL');
+    assert.ok(await waitFor(() => !alive(hubPid), 3000), 'el hub sigue vivo 3 s después de matar a Godot');
+    await assert.rejects(fetch(`http://127.0.0.1:${port}/api/health`));
+  } finally {
+    p.kill('SIGKILL');
+    if (hubPid && alive(hubPid)) process.kill(hubPid, 'SIGKILL');
+  }
+});

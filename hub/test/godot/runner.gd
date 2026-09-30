@@ -240,3 +240,15 @@ func test_start_hub_missing(a: Array) -> void:
 	v.scompass_setting = func(): return "/no/existe/scompass.js"
 	v.project_root = "/no/existe"
 	if not _check(c, v.scompass_command().is_empty() or v.scompass_command()[0] != "node", "encontró algo inesperado"): return
+
+
+# Lanza el hub desde el dock y se queda esperando: Node mata a Godot con kill -9 (5.8).
+func test_start_hub_and_hang(a: Array) -> void:
+	var c := "start_hub_and_hang"
+	var v := await _view(a[0])
+	v.scompass_setting = func(): return a[1]
+	if not _check(c, await v.start_hub(), "no arrancó: " + v.notice.text): return
+	print("PID ", v.hub_pid)
+	print("READY")
+	await create_timer(30.0).timeout
+	_fail(c, "nadie mató a Godot")

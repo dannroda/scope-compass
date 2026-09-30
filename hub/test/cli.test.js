@@ -140,3 +140,24 @@ test('set con campos sueltos cambia solo esos campos', async () => {
   assert.equal((await cli(['set', 'm1-07', '--file', 'x.json', '--notes', 'n'])).code, 2, 'no se combinan');
   assert.equal((await cli(['set', 'nada', '--notes', 'n'])).code, 1);
 });
+
+test('serve --exit-on-stdin-close: se cierra cuando se corta la entrada; sin la opción, no', async () => {
+  const { spawn } = await import('node:child_process');
+  const bin = join(REPO, 'hub', 'bin', 'scompass.js');
+  const start = (extra) => new Promise((resolve) => {
+    const p = spawn(process.execPath, [bin, '--dir', dir, 'serve', '--port', '0', ...extra]);
+    p.stdout.once('data', () => resolve(p));
+  });
+  const withFlag = await start(['--exit-on-stdin-close']);
+  const t0 = Date.now();
+  const code = await new Promise((r) => { withFlag.on('exit', r); withFlag.stdin.end(); });
+  assert.equal(code, 0);
+  assert.ok(Date.now() - t0 < 2000);
+
+  const without = await start([]);
+  without.stdin.end();
+  await new Promise((r) => setTimeout(r, 500));
+  assert.equal(without.exitCode, null, 'sin la opción sigue corriendo');
+  without.kill('SIGTERM');
+  assert.equal(await new Promise((r) => without.on('exit', r)), 0);
+});

@@ -29,6 +29,8 @@ var _loading := false
 var _reload_again := false
 var _queues := {}
 var hub_pid := -1
+## Tubería con el hub que lanzó el dock: mientras exista, el hub vive; si Godot muere, el sistema la cierra.
+var _hub_pipe := {}
 
 var banner: PanelContainer
 var banner_title: Label
@@ -221,8 +223,11 @@ func start_hub() -> bool:
 	# Por sh con la salida a un log: si no, el hub hereda el stdout de Godot. exec conserva el PID.
 	var log_path := project_root.path_join(".godot/scope_compass_hub.log")
 	DirAccess.make_dir_recursive_absolute(log_path.get_base_dir())
-	var args: Array = ["-c", 'log="$1"; shift; exec "$@" >"$log" 2>&1', "sh", log_path, cmd[0]] + cmd[1] + ["--dir", project_root, "serve"]
-	hub_pid = OS.create_process("sh", PackedStringArray(args))
+	var args: Array = ["-c", 'log="$1"; shift; exec "$@" >"$log" 2>&1', "sh", log_path, cmd[0]] + cmd[1] \
+		+ ["--dir", project_root, "serve", "--exit-on-stdin-close"]
+	# La entrada del hub es una tubería con Godot: si el editor se cierra, se cuelga o lo matan, el hub se va (5.8).
+	_hub_pipe = OS.execute_with_pipe("sh", PackedStringArray(args), false)
+	hub_pid = int(_hub_pipe.get("pid", -1))
 	if hub_pid <= 0:
 		hub_pid = -1
 		show_notice("No se pudo iniciar el hub con %s." % cmd[0])
@@ -246,10 +251,18 @@ func _wait_online(secs: float) -> bool:
 	return online
 
 
-## Cierra el hub solo si lo abrió este dock. SIGTERM: deja que termine el export pendiente.
+## Cierra el hub solo si lo abrió este dock: corta la tubería (el hub termina el export pendiente y sale).
+## Si en 3 s sigue vivo, SIGTERM.
 func stop_hub() -> void:
 	if hub_pid <= 0:
 		return
+	for key in ["stdio", "stderr"]:
+		if _hub_pipe.get(key) is FileAccess:
+			_hub_pipe[key].close()
+	_hub_pipe = {}
+	var t0 := Time.get_ticks_msec()
+	while OS.is_process_running(hub_pid) and Time.get_ticks_msec() - t0 < 3000:
+		OS.delay_msec(50)
 	if OS.is_process_running(hub_pid):
 		if OS.execute("kill", ["-TERM", str(hub_pid)]) != 0:
 			OS.kill(hub_pid)

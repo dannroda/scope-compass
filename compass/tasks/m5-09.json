@@ -1,0 +1,35 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "`scompass serve --tray`: ícono en la bandeja de Plasma (StatusNotifierItem por D-Bus, D20)"
+    },
+    {
+      "done": false,
+      "text": "Tooltip con proyecto y dirección; clic abre el tablero; menú \"Abrir tablero\" y \"Detener hub\""
+    },
+    {
+      "done": false,
+      "text": "Editor Settings `scope_compass/keep_hub_running`: el dock lo lanza independiente y con `--tray`"
+    },
+    {
+      "done": false,
+      "text": "Epiphany en el puerto 4712 para poder tener los dos hubs a la vez"
+    }
+  ],
+  "code": "5.9",
+  "created_at": "2026-09-30T00:51:36.535Z",
+  "milestone": "m05",
+  "notes": "KDE Plasma sobre Wayland: bandeja nativa por D-Bus, sin binarios nativos.",
+  "order": 9,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "godot"
+    }
+  ],
+  "status": "todo",
+  "test": "Con la opción activada, cerrar el editor deja el hub y su ícono; \"Detener hub\" desde la bandeja lo cierra.",
+  "title": "Opción de mantener el hub, con ícono en la bandeja",
+  "updated_at": "2026-09-30T00:51:36.535Z"
+}

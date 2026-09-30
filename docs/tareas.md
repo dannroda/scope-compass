@@ -427,7 +427,7 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
 **Notas:** Depende del usuario.
 
-## M5 — Dock de Godot (v1.5)  (7/7)
+## M5 — Dock de Godot (v1.5)  (8/9)
 
 Addon `scope_compass` con un dock que muestra las tareas del hito actual y las mueve a través del hub.
 
@@ -516,6 +516,31 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 **Prueba:** El dock de Epiphany muestra sus tareas.
 
 **Notas:** Symlink `project-epiphany/addons/scope_compass` → `../../scope-compass/addons/scope_compass` y activado en su `project.godot`. El editor de Epiphany lo carga sin errores y el dock lee su tablero. Con tareas de muchos pasos, el detalle ahora tiene su propio scroll.
+
+**Referencias:** `docs/spec.md#godot`
+
+### 5.8 El hub lanzado por el dock muere con el editor · Hecho
+
+- [x] `scompass serve --exit-on-stdin-close`: se cierra cuando se corta su entrada
+- [x] El dock lo lanza con `OS.execute_with_pipe` (la salida sigue yendo al log)
+- [x] Probado matando a Godot con `kill -9`: el hub se va solo
+
+**Prueba:** Iniciar el hub desde el dock y matar a Godot con `kill -9`: el hub se cierra en menos de 2 s.
+
+**Notas:** `scompass serve --exit-on-stdin-close` y el dock lo lanza con `OS.execute_with_pipe` (la salida sigue yendo a `.godot/scope_compass_hub.log`). Al cerrar el dock se corta la tubería; si en 3 s sigue vivo, SIGTERM. Test: Godot lanza el hub y Node lo mata con `kill -9`; con la versión anterior el hub quedaba vivo, ahora se va en menos de 3 s. También probado con el editor real cerrándose normalmente.
+
+**Referencias:** `docs/spec.md#godot`
+
+### 5.9 Opción de mantener el hub, con ícono en la bandeja · Pendiente
+
+- [ ] `scompass serve --tray`: ícono en la bandeja de Plasma (StatusNotifierItem por D-Bus, D20)
+- [ ] Tooltip con proyecto y dirección; clic abre el tablero; menú "Abrir tablero" y "Detener hub"
+- [ ] Editor Settings `scope_compass/keep_hub_running`: el dock lo lanza independiente y con `--tray`
+- [ ] Epiphany en el puerto 4712 para poder tener los dos hubs a la vez
+
+**Prueba:** Con la opción activada, cerrar el editor deja el hub y su ícono; "Detener hub" desde la bandeja lo cierra.
+
+**Notas:** KDE Plasma sobre Wayland: bandeja nativa por D-Bus, sin binarios nativos.
 
 **Referencias:** `docs/spec.md#godot`
 
