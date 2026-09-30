@@ -427,7 +427,7 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
 **Notas:** Depende del usuario.
 
-## M5 — Dock de Godot (v1.5)  (4/7)
+## M5 — Dock de Godot (v1.5)  (7/7)
 
 Addon `scope_compass` con un dock que muestra las tareas del hito actual y las mueve a través del hub.
 
@@ -486,32 +486,36 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Referencias:** `docs/spec.md#godot`, `docs/spec.md#concurrencia`
 
-### 5.5 Iniciar el hub desde el dock · Pendiente
+### 5.5 Iniciar el hub desde el dock · Hecho
 
-- [ ] "Iniciar hub" con `OS.create_process` (ruta a `scompass` configurable)
-- [ ] Cerrarlo al salir del editor solo si lo abrió el dock
+- [x] "Iniciar hub" con `OS.create_process` (ruta a `scompass` configurable)
+- [x] Cerrarlo al salir del editor solo si lo abrió el dock
 
 **Prueba:** Sin hub, "Iniciar hub" lo levanta y el dock pasa a edición; al cerrar el editor, el hub se cierra.
 
+**Notas:** "Iniciar hub" busca scompass en Editor Settings (`scope_compass/scompass_path`), al lado del proyecto, dentro de él o en el PATH. Se lanza por `sh` con la salida a `.godot/scope_compass_hub.log` (si no, heredaba el stdout de Godot y colgaba los tests). Al salir, SIGTERM solo si lo abrió el dock.
+
 **Referencias:** `docs/spec.md#godot`
 
-### 5.6 Tests de M5 · Pendiente
+### 5.6 Tests de M5 · Hecho
 
-- [ ] Godot sin ventana lanzado desde `npm test` (se saltea si no hay `godot`)
-- [ ] Dock ↔ UI web en los dos sentidos; modo sin hub
+- [x] Godot sin ventana lanzado desde `npm test` (se saltea si no hay `godot`)
+- [x] Dock ↔ UI web en los dos sentidos; modo sin hub
 
 **Prueba:** `npm test` en `hub/` corre también los tests de Godot.
 
+**Notas:** `hub/test/dock.test.js`: 12 casos con Godot sin ventana (sin hub, con hub en los dos sentidos, 409, pasos seguidos, nueva tarea, reconexión, iniciar y cerrar el hub). Estables en 3 corridas.
+
 **Referencias:** `docs/spec.md#criterios-v1`, `docs/spec.md#godot`
 
-### 5.7 Instalar el addon en Epiphany · Pendiente
+### 5.7 Instalar el addon en Epiphany · Hecho
 
-- [ ] Symlink `project-epiphany/addons/scope_compass` → este addon
-- [ ] Activarlo y usarlo con el tablero de Epiphany
+- [x] Symlink `project-epiphany/addons/scope_compass` → este addon
+- [x] Activarlo y usarlo con el tablero de Epiphany
 
 **Prueba:** El dock de Epiphany muestra sus tareas.
 
-**Notas:** Depende de que `scope-compass` esté clonado al lado de Epiphany.
+**Notas:** Symlink `project-epiphany/addons/scope_compass` → `../../scope-compass/addons/scope_compass` y activado en su `project.godot`. El editor de Epiphany lo carga sin errores y el dock lee su tablero. Con tareas de muchos pasos, el detalle ahora tiene su propio scroll.
 
 **Referencias:** `docs/spec.md#godot`
 

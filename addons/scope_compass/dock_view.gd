@@ -14,6 +14,8 @@ const HubClient := preload("hub_client.gd")
 ## Preferencias por proyecto. El plugin las guarda en la metadata del proyecto del editor.
 var get_pref: Callable = func(_key: String, default): return default
 var set_pref: Callable = func(_key: String, _value): pass
+## Ruta a scompass configurada en Editor Settings ("" = buscarla).
+var scompass_setting: Callable = func(): return ""
 
 var project_root := ""
 var board := Board.new()
@@ -26,6 +28,7 @@ var _uncommitted := -1
 var _loading := false
 var _reload_again := false
 var _queues := {}
+var hub_pid := -1
 
 var banner: PanelContainer
 var banner_title: Label
@@ -36,6 +39,7 @@ var browser_button: Button
 var new_row: HBoxContainer
 var new_title: LineEdit
 var tree: Tree
+var detail_scroll: ScrollContainer
 var detail: VBoxContainer
 var detail_title: Label
 var status_select: OptionButton
@@ -184,6 +188,74 @@ func create_task(title: String) -> void:
 		show_notice("No se pudo crear la tarea.")
 
 
+# --- Iniciar el hub (5.5) ----------------------------------------------------------------------
+
+## Dónde está scompass: la opción de Editor Settings, al lado del proyecto, dentro de él o en el PATH.
+## Devuelve [programa, args previos] listos para OS.create_process, o [] si no se encontró.
+func scompass_command() -> Array:
+	var candidates: Array = []
+	var configured: String = scompass_setting.call()
+	if configured != "":
+		candidates.append(configured)
+	candidates.append(project_root.path_join("../scope-compass/hub/bin/scompass.js").simplify_path())
+	candidates.append(project_root.path_join("hub/bin/scompass.js"))
+	for path in candidates:
+		if path.ends_with(".js") and FileAccess.file_exists(path):
+			return ["node", [path]]
+		if not path.ends_with(".js") and FileAccess.file_exists(path):
+			return [path, []]
+	var out := []
+	if OS.execute("sh", ["-c", "command -v scompass"], out) == 0 and str(out[0]).strip_edges() != "":
+		return [str(out[0]).strip_edges(), []]
+	return []
+
+
+## Levanta `scompass serve` para este proyecto y espera a conectarse (hasta 8 s).
+func start_hub() -> bool:
+	if online:
+		return true
+	var cmd := scompass_command()
+	if cmd.is_empty():
+		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path.")
+		return false
+	# Por sh con la salida a un log: si no, el hub hereda el stdout de Godot. exec conserva el PID.
+	var log_path := project_root.path_join(".godot/scope_compass_hub.log")
+	DirAccess.make_dir_recursive_absolute(log_path.get_base_dir())
+	var args: Array = ["-c", 'log="$1"; shift; exec "$@" >"$log" 2>&1', "sh", log_path, cmd[0]] + cmd[1] + ["--dir", project_root, "serve"]
+	hub_pid = OS.create_process("sh", PackedStringArray(args))
+	if hub_pid <= 0:
+		hub_pid = -1
+		show_notice("No se pudo iniciar el hub con %s." % cmd[0])
+		return false
+	for i in 32:
+		await get_tree().create_timer(0.25).timeout
+		if await client.detect() or online:
+			break
+		if not OS.is_process_running(hub_pid):
+			break
+	if not online and not await _wait_online(2.0):
+		show_notice("El hub no arrancó. Mirá .godot/scope_compass_hub.log o probá `scompass serve` en una terminal.")
+		return false
+	return true
+
+
+func _wait_online(secs: float) -> bool:
+	var t0 := Time.get_ticks_msec()
+	while not online and Time.get_ticks_msec() - t0 < secs * 1000:
+		await get_tree().process_frame
+	return online
+
+
+## Cierra el hub solo si lo abrió este dock. SIGTERM: deja que termine el export pendiente.
+func stop_hub() -> void:
+	if hub_pid <= 0:
+		return
+	if OS.is_process_running(hub_pid):
+		if OS.execute("kill", ["-TERM", str(hub_pid)]) != 0:
+			OS.kill(hub_pid)
+	hub_pid = -1
+
+
 func show_notice(text: String) -> void:
 	notice.text = text
 	notice.visible = true
@@ -212,6 +284,10 @@ func _build() -> void:
 	bv.add_child(btext)
 	var bb := HBoxContainer.new()
 	bv.add_child(bb)
+	var start := Button.new()
+	start.text = "Iniciar hub"
+	start.pressed.connect(start_hub)
+	bb.add_child(start)
 	var retry := Button.new()
 	retry.text = "Reintentar"
 	retry.pressed.connect(func(): await reload(); await _try_hub())
@@ -270,8 +346,14 @@ func _build() -> void:
 	tree.item_collapsed.connect(_on_item_collapsed)
 	add_child(tree)
 
+	# El detalle se desplaza solo: una tarea con muchos pasos no le quita lugar a la lista.
+	detail_scroll = ScrollContainer.new()
+	detail_scroll.size_flags_vertical = SIZE_EXPAND_FILL
+	detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(detail_scroll)
 	detail = VBoxContainer.new()
-	add_child(detail)
+	detail.size_flags_horizontal = SIZE_EXPAND_FILL
+	detail_scroll.add_child(detail)
 	detail_title = Label.new()
 	detail_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_title.add_theme_font_size_override("font_size", 15)
@@ -391,6 +473,7 @@ func _render_tree() -> void:
 func _render_detail() -> void:
 	var t = board.task(selected_task)
 	detail.visible = t != null
+	detail_scroll.visible = t != null
 	if t == null:
 		return
 	detail_title.text = (((str(t.code) + " ") if str(t.get("code", "")) != "" else "") + str(t.title)).replace("`", "")

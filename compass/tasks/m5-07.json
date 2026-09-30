@@ -1,18 +1,18 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Symlink `project-epiphany/addons/scope_compass` → este addon"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Activarlo y usarlo con el tablero de Epiphany"
     }
   ],
   "code": "5.7",
   "created_at": "2026-09-29T23:49:27.918Z",
   "milestone": "m05",
-  "notes": "Depende de que `scope-compass` esté clonado al lado de Epiphany.",
+  "notes": "Symlink `project-epiphany/addons/scope_compass` → `../../scope-compass/addons/scope_compass` y activado en su `project.godot`. El editor de Epiphany lo carga sin errores y el dock lee su tablero. Con tareas de muchos pasos, el detalle ahora tiene su propio scroll.",
   "order": 7,
   "refs": [
     {
@@ -20,8 +20,8 @@
       "section": "godot"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "El dock de Epiphany muestra sus tareas.",
   "title": "Instalar el addon en Epiphany",
-  "updated_at": "2026-09-29T23:49:27.918Z"
+  "updated_at": "2026-09-30T00:10:24.244Z"
 }

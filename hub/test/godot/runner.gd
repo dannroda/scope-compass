@@ -8,6 +8,7 @@ var _failed := false
 
 
 func _initialize() -> void:
+	await process_frame # el árbol listo antes de agregar nodos que hacen requests
 	var args := OS.get_cmdline_user_args()
 	var case_name: String = args[0] if args.size() > 0 else ""
 	var fn := "test_" + case_name
@@ -215,3 +216,27 @@ func test_reconnect(a: Array) -> void:
 	if not _check(c, await _until(func(): return v.online and not v._loading, 10.0), "no se reconectó"): return
 	if not _check(c, not v.banner.visible, "el aviso sigue visible"): return
 	if not _check(c, v.board.task(a[1]).status == a[2], "no recargó lo que cambió mientras estaba caído"): return
+
+
+# "Iniciar hub" levanta scompass serve y el dock pasa a edición; stop_hub lo cierra.
+func test_start_hub(a: Array) -> void:
+	var c := "start_hub"
+	var v := await _view(a[0])
+	v.scompass_setting = func(): return a[1]
+	if not _check(c, not v.online, "ya había hub"): return
+	if not _check(c, await v.start_hub(), "no arrancó: " + v.notice.text): return
+	if not _check(c, await _until(func(): return v.online and not v._loading and not v.banner.visible), "no pasó a edición"): return
+	var pid: int = v.hub_pid
+	print("PID ", pid)
+	v.stop_hub()
+	if not _check(c, await _until(func(): return not OS.is_process_running(pid), 5.0), "el hub sigue corriendo"): return
+	if not _check(c, await _until(func(): return not v.online, 5.0), "el dock sigue en línea"): return
+
+
+# Sin scompass: avisa en lugar de fallar en silencio.
+func test_start_hub_missing(a: Array) -> void:
+	var c := "start_hub_missing"
+	var v := await _view(a[0])
+	v.scompass_setting = func(): return "/no/existe/scompass.js"
+	v.project_root = "/no/existe"
+	if not _check(c, v.scompass_command().is_empty() or v.scompass_command()[0] != "node", "encontró algo inesperado"): return

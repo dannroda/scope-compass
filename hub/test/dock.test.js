@@ -170,3 +170,30 @@ test('con hub: si el hub se cae pasa a solo lectura y al volver se reconecta sol
   await hub.app.close();
   expectOk(r, 'reconnect');
 });
+
+// --- Iniciar el hub desde el dock (5.5) ---
+import { createServer as netServer } from 'node:net';
+
+const freePort = () => new Promise((res) => { const s = netServer().listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => res(port)); }); });
+
+test('"Iniciar hub" levanta scompass serve, el dock pasa a edición y al cerrarlo el hub se va', { skip }, async () => {
+  const port = await freePort();
+  const cfgPath = join(dir, 'compass', 'config.json');
+  await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), port }));
+  let pid = 0;
+  try {
+    const r = await godotLive(['start_hub', dir, join(REPO, 'hub', 'bin', 'scompass.js')], (line) => {
+      const m = /^PID (\d+)/.exec(line);
+      if (m) pid = Number(m[1]);
+    });
+    expectOk(r, 'start_hub');
+    assert.ok(pid > 0);
+    await assert.rejects(fetch(`http://127.0.0.1:${port}/api/health`), 'el hub se cerró');
+  } finally {
+    if (pid) try { process.kill(pid, 'SIGKILL'); } catch {}
+  }
+});
+
+test('"Iniciar hub" sin scompass encontrable no inventa un comando', { skip }, async () => {
+  expectOk(await godotLive(['start_hub_missing', dir]), 'start_hub_missing');
+});
