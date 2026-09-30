@@ -7,7 +7,11 @@
     { id: 'review', label: 'Revisión', color: 'var(--s-review)' },
     { id: 'done', label: 'Hecho', color: 'var(--s-done)' }
   ];
-  const S = { project: '', milestones: [], tasks: [], warnings: [], filter: pref('filter') || 'all', openId: null, confirmDelete: false, loaded: false, offline: false, connected: false };
+  const S = { project: '', milestones: [], tasks: [], warnings: [], filter: pref('filter') || 'all', openId: null, confirmDelete: false, loaded: false, offline: false, connected: false,
+    // Documentos (M6): índice de /api/docs, vista actual por el hash, referencias desplegadas, HTML en caché.
+    docs: [], view: 'board', doc: '', sec: '', refsOpen: new Set(), refSearch: null };
+  const sectionCache = new Map(); // "alias#id" → html
+  const docCache = new Map(); // alias → html
 
   // Cliente de la API (spec §5.2). Los errores llegan como { code, message } del hub.
   class ApiError extends Error {
@@ -43,7 +47,10 @@
     tasks: () => call('GET', '/api/tasks'),
     create: (doc) => call('POST', '/api/tasks', doc),
     update: (id, patch, etag) => call('PATCH', '/api/tasks/' + encodeURIComponent(id), patch, etag),
-    remove: (id, etag) => call('DELETE', '/api/tasks/' + encodeURIComponent(id), undefined, etag)
+    remove: (id, etag) => call('DELETE', '/api/tasks/' + encodeURIComponent(id), undefined, etag),
+    docs: () => call('GET', '/api/docs'),
+    doc: (alias) => call('GET', '/api/docs/' + encodeURIComponent(alias)),
+    section: (alias, id) => call('GET', '/api/docs/' + encodeURIComponent(alias) + '/sections/' + encodeURIComponent(id))
   };
 
   function pref(k, v) {
@@ -236,12 +243,14 @@
       onclick: () => openTask(t.id) },
       h('span', { class: 'meta' }, t.code ? h('span', null, t.code) : null, m && S.filter === 'all' ? h('span', { class: 'ms' }, m.code) : null),
       h('span', { class: 't' }, rich(t.title)),
+      refsOf(t).length ? h('span', { class: 'refmark' + (brokenRefs(t).length ? ' bad' : ''), title: brokenRefs(t).length ? 'Tiene referencias rotas' : refsOf(t).length + ' referencias a documentos' },
+        brokenRefs(t).length ? '⚠ ' : '§ ', refsOf(t).length) : null,
       p.total ? h('span', { class: 'cl' }, h('span', { class: 'bar', role: 'img', 'aria-label': p.done + ' de ' + p.total + ' pasos' }, h('i', { style: 'width:' + pct + '%' })), p.done + '/' + p.total) : null);
   }
 
   // Campos editables del detalle. Cada uno guarda en data-orig el valor con el que se dibujó:
   // si el usuario lo cambió y todavía no lo guardó, el valor escrito se conserva al redibujar.
-  const EDITABLE = ['d-title', 'd-addcl', 'd-test', 'd-notes'];
+  const EDITABLE = ['d-title', 'd-addcl', 'd-refq', 'd-test', 'd-notes'];
   function captureEdits(box) {
     const active = box.contains(document.activeElement) ? document.activeElement : null;
     const dirty = {};
@@ -299,6 +308,7 @@
           h('label', { for: 'd-addcl', class: 'sr' }, 'Nuevo paso'),
           h('input', { id: 'd-addcl', placeholder: 'Agregar paso', autocomplete: 'off', 'data-orig': '' }),
           h('button', { class: 'btn', type: 'submit' }, 'Agregar'))),
+      renderRefs(t),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('label', { class: 'label', for: 'd-test' }, 'Cómo probarlo'),
         h('textarea', { id: 'd-test', 'data-orig': t.test || '', onchange: (e) => updateTask(t.id, { test: e.target.value }) }, t.test || '')),
@@ -334,7 +344,193 @@
       h('ul', null, S.warnings.map((w) => h('li', null, h('code', null, w.path), ' · ' + (WARNING_TEXT[w.code] || w.code), h('span', { class: 'sr' }, ': ' + w.message)))));
   }
 
-  function render() { renderMiles(); renderSummary(); renderWarnings(); renderBoard(); renderDetail(); renderConn(); }
+  // --- Documentos y referencias (M6) ------------------------------------------------------------
+
+  const docByKey = (key) => S.docs.find((d) => d.alias === key) || S.docs.find((d) => d.path === key);
+  const sectionOf = (d, id) => d && d.sections.find((x) => x.id === id);
+  const refsOf = (t) => (Array.isArray(t.refs) ? t.refs : []);
+  const LINK = /\[\[([^\]#\s]+)#([a-z0-9][a-z0-9_-]*)\]\]/g;
+
+  // Tareas que referencian una sección: refs estructuradas y enlaces [[alias#id]] (los de dentro de `…` no cuentan).
+  function tasksFor(d, id) {
+    const hits = (key, sid) => sid === id && (key === d.alias || key === d.path);
+    return S.tasks.filter((t) => refsOf(t).some((r) => hits(r.doc, r.section)) ||
+      [t.notes, t.test, ...checklistOf(t).map((c) => c.text)].some((txt) =>
+        [...String(txt || '').replace(/`[^`]*`/g, '').matchAll(LINK)].some((m) => hits(m[1], m[2]))))
+      .sort(sortTasks);
+  }
+  const brokenRefs = (t) => refsOf(t).filter((r) => !sectionOf(docByKey(r.doc), r.section));
+  const allBroken = () => S.tasks.flatMap((t) => brokenRefs(t).map((r) => ({ t, r })));
+
+  // HTML de una sección, pedido al desplegarla y guardado hasta que el documento cambie.
+  function sectionHtml(d, id) {
+    const key = d.alias + '#' + id;
+    if (sectionCache.has(key)) return sectionCache.get(key);
+    sectionCache.set(key, null);
+    api.section(d.alias, id).then((r) => { sectionCache.set(key, r.html); renderDetail(); })
+      .catch(() => { sectionCache.delete(key); });
+    return null;
+  }
+  function htmlBox(cls, html, tag = 'div') {
+    const el = h(tag, { class: cls });
+    if (html === null || html === undefined) el.append(h('p', { class: 'muted' }, 'Cargando…'));
+    else el.innerHTML = html; // HTML del hub: markdown-it sin HTML crudo del documento (D21)
+    return el;
+  }
+
+  function renderRefs(t) {
+    const refs = refsOf(t);
+    const box = h('div', { class: 'refs' },
+      h('div', { class: 'refs-head' }, h('span', { class: 'label' }, 'Referencias'),
+        S.docs.length ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => { S.refSearch = S.refSearch ? null : ''; renderDetail(); document.getElementById('d-refq')?.focus(); } }, S.refSearch !== null ? 'Cerrar' : '+ Agregar') : null));
+    if (S.refSearch !== null) box.append(refSearch(t));
+    if (!refs.length && S.refSearch === null) box.append(h('p', { class: 'muted small' }, S.docs.length ? 'Sin referencias.' : 'El proyecto no tiene documentos configurados (compass/config.json › docs).'));
+    refs.forEach((r, i) => {
+      const d = docByKey(r.doc);
+      const sec = sectionOf(d, r.section);
+      const key = t.id + '|' + r.doc + '#' + r.section;
+      const remove = h('button', { class: 'rm', type: 'button', 'aria-label': 'Quitar referencia', onclick: () => updateTask(t.id, (cur) => ({ refs: refsOf(cur).filter((x) => !(x.doc === r.doc && x.section === r.section)) })) }, '×');
+      if (!sec) {
+        box.append(h('div', { class: 'ref broken' }, h('div', { class: 'ref-head' },
+          h('span', null, '⚠ Referencia rota: ', h('code', null, r.doc + '#' + r.section)),
+          h('button', { class: 'btn ghost small', type: 'button', onclick: () => { S.refSearch = r.section.replace(/-/g, ' '); renderDetail(); document.getElementById('d-refq')?.focus(); } }, 'Buscar la sección nueva'),
+          remove)));
+        return;
+      }
+      const open = S.refsOpen.has(key) || (i === 0 && !S.refsOpen.has('closed:' + key));
+      const toggle = () => { if (open) { S.refsOpen.delete(key); S.refsOpen.add('closed:' + key); } else { S.refsOpen.add(key); S.refsOpen.delete('closed:' + key); } renderDetail(); };
+      box.append(h('div', { class: 'ref' + (open ? ' open' : '') },
+        h('div', { class: 'ref-head' },
+          h('button', { class: 'ref-toggle', type: 'button', 'aria-expanded': open ? 'true' : 'false', onclick: toggle },
+            h('span', { class: 'chev', 'aria-hidden': 'true' }, open ? '▾' : '▸'), rich(sec.title)),
+          h('span', { class: 'ref-id' }, d.alias + '#' + sec.id, sec.explicit ? null : ' · frágil'),
+          h('a', { href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(sec.id) }, 'Abrir en el documento'),
+          remove),
+        open ? htmlBox('doc-body ref-body', sectionHtml(d, sec.id)) : null));
+    });
+    return box;
+  }
+
+  // Buscador de secciones: título o id, en todos los documentos.
+  function refSearch(t) {
+    const q = String(S.refSearch || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const words = q.split(/\s+/).filter(Boolean);
+    const norm = (x) => x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const have = new Set(refsOf(t).map((r) => (docByKey(r.doc)?.path || r.doc) + '#' + r.section));
+    const matches = S.docs.flatMap((d) => d.sections.map((s) => ({ d, s })))
+      .filter(({ d, s }) => !have.has(d.path + '#' + s.id) && words.every((w) => norm(s.title + ' ' + s.id).includes(w)))
+      .slice(0, 8);
+    return h('div', { class: 'ref-search' },
+      h('label', { for: 'd-refq', class: 'sr' }, 'Buscar sección'),
+      h('input', { id: 'd-refq', placeholder: 'Buscar sección por título', autocomplete: 'off', value: S.refSearch || '', 'data-orig': S.refSearch || '',
+        oninput: (e) => { S.refSearch = e.target.value; renderDetail(); } }),
+      h('ul', { class: 'ref-matches' }, matches.map(({ d, s }) => h('li', null,
+        h('button', { type: 'button', onclick: () => { S.refSearch = null; updateTask(t.id, (cur) => refsOf(cur).some((x) => (docByKey(x.doc)?.path || x.doc) === d.path && x.section === s.id) ? null : ({ refs: [...refsOf(cur), { doc: d.path, section: s.id }] })); } },
+          rich(s.title), h('span', { class: 'ref-id' }, d.alias + '#' + s.id))))),
+      words.length && !matches.length ? h('p', { class: 'muted small' }, 'Ninguna sección coincide.') : null);
+  }
+
+  // Vista Documentos: índice, documento y tareas que referencian la sección actual.
+  function readHash() {
+    const m = /^#docs(?:\/([^/]+)(?:\/([^/]+))?)?$/.exec(location.hash);
+    S.view = m ? 'docs' : 'board';
+    if (m) { S.openId = null; S.confirmDelete = false; } // el detalle de una tarea es del tablero
+    if (m) { S.doc = m[1] ? decodeURIComponent(m[1]) : (S.doc || ''); S.sec = m[2] ? decodeURIComponent(m[2]) : ''; }
+  }
+  function docHtml(alias) {
+    if (docCache.has(alias)) return docCache.get(alias);
+    docCache.set(alias, null);
+    api.doc(alias).then((r) => { docCache.set(alias, r.html); renderDocs(true); scrollToSection(); }).catch(() => docCache.delete(alias));
+    return null;
+  }
+  let docObserver = null;
+  function renderDocs(rebuildArticle) {
+    const box = document.getElementById('docs');
+    if (S.view !== 'docs') { box.replaceChildren(); return; }
+    if (!S.docs.length) { box.replaceChildren(h('div', { class: 'notice' }, 'Este proyecto no tiene documentos configurados. Agregalos en ', h('code', null, 'compass/config.json › docs'), '.')); return; }
+    const d = docByKey(S.doc) || S.docs[0];
+    S.doc = d.alias;
+    const sec = sectionOf(d, S.sec);
+    const broken = allBroken();
+    const existing = box.querySelector('article.doc-body');
+    const keepArticle = existing && existing.dataset.alias === d.alias && existing.dataset.ready === '1' && docCache.get(d.alias) && !rebuildArticle;
+    const article = keepArticle ? existing : htmlBox('doc-body', docHtml(d.alias), 'article');
+    article.dataset.alias = d.alias;
+    article.dataset.ready = docCache.get(d.alias) ? '1' : '0';
+    article.classList.add('doc-article');
+    const counts = new Map(d.sections.map((s) => [s.id, tasksFor(d, s.id).length]));
+    box.replaceChildren(
+      h('div', { class: 'docs-bar' },
+        S.docs.length > 1 ? h('select', { 'aria-label': 'Documento', onchange: (e) => { location.hash = '#docs/' + encodeURIComponent(e.target.value); } },
+          S.docs.map((x) => h('option', { value: x.alias, selected: x.alias === d.alias }, x.path))) : h('code', null, d.path),
+        h('span', { class: 'pill' + (broken.length ? ' bad' : '') }, h('span', { class: 'dot' }), broken.length === 1 ? '1 referencia rota' : broken.length + ' referencias rotas'),
+        sec ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => copy('[[' + d.alias + '#' + sec.id + ']]') }, 'Copiar [[' + d.alias + '#' + sec.id + ']]') : null),
+      h('div', { class: 'docs-grid' },
+        h('nav', { class: 'toc', 'aria-label': 'Índice de ' + d.path }, d.sections.map((s) => h('a', {
+          href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(s.id), 'aria-current': s.id === S.sec ? 'true' : null,
+          style: 'padding-left:' + (6 + (s.level - 1) * 12) + 'px', title: counts.get(s.id) ? counts.get(s.id) + ' tareas' : 'Sin tareas: todavía no planificada'
+        }, h('span', { class: 'toc-dot' + (counts.get(s.id) ? ' has' : '') }), h('span', { class: 't' }, rich(s.title)),
+          counts.get(s.id) ? h('span', { class: 'n' }, counts.get(s.id)) : null))),
+        article,
+        h('aside', { class: 'backlinks', 'aria-label': 'Tareas que referencian esta sección' },
+          sec ? [h('div', { class: 'label' }, 'Referenciada por · ' + (counts.get(sec.id) === 1 ? '1 tarea' : counts.get(sec.id) + ' tareas')),
+            ...tasksFor(d, sec.id).map((t) => h('a', { href: '#', class: 'bl-task', onclick: (e) => { e.preventDefault(); goToTask(t.id); } },
+              h('span', { class: 'dot', style: 'background:' + STATUSES.find((x) => x.id === t.status).color }), t.code ? h('span', { class: 'code' }, t.code) : null, rich(t.title))),
+            counts.get(sec.id) ? null : h('p', { class: 'muted small' }, 'Ninguna tarea referencia esta sección: parte del diseño todavía sin planificar.')]
+            : h('p', { class: 'muted small' }, 'Elegí una sección del índice para ver qué tareas la referencian.'))));
+    observeHeadings(article);
+  }
+  // Al bajar por el documento, el índice y los backlinks siguen a la sección visible.
+  function observeHeadings(article) {
+    docObserver?.disconnect();
+    if (!('IntersectionObserver' in window)) return;
+    docObserver = new IntersectionObserver((entries) => {
+      const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      const id = top?.target.dataset.section;
+      if (id && id !== S.sec && !scrollingTo) {
+        S.sec = id;
+        history.replaceState(null, '', '#docs/' + encodeURIComponent(S.doc) + '/' + encodeURIComponent(id));
+        renderDocs();
+      }
+    }, { rootMargin: '0px 0px -70% 0px' });
+    article.querySelectorAll('[data-section]').forEach((el) => docObserver.observe(el));
+  }
+  let scrollingTo = false;
+  function scrollToSection() {
+    if (S.view !== 'docs' || !S.sec) return;
+    const el = document.getElementById('sec-' + S.sec);
+    if (!el) return;
+    scrollingTo = true;
+    el.scrollIntoView({ block: 'start' });
+    setTimeout(() => { scrollingTo = false; }, 300);
+  }
+  function goToTask(id) {
+    const t = S.tasks.find((x) => x.id === id);
+    if (!t) return;
+    if (S.filter !== 'all' && S.filter !== t.milestone) setFilter(t.milestone);
+    location.hash = '';
+    S.view = 'board';
+    openTask(id);
+  }
+  function docChanged(alias) {
+    for (const k of [...sectionCache.keys()]) if (k.startsWith(alias + '#')) sectionCache.delete(k);
+    docCache.delete(alias);
+    api.docs().then((r) => { S.docs = r.docs; render(); }).catch(() => {});
+  }
+  async function copy(text) {
+    try { await navigator.clipboard.writeText(text); toast('Copiado: ' + text); } catch (e) { toast(text); }
+  }
+
+  function render() {
+    renderMiles(); renderSummary(); renderWarnings(); renderBoard(); renderDetail(); renderDocs(); renderConn();
+    // La vista se aplica al final: renderSummary muestra su caja por su cuenta.
+    const docsView = S.view === 'docs';
+    for (const id of ['miles', 'summary', 'board', 'new-btn']) document.getElementById(id).hidden = docsView;
+    if (docsView) document.getElementById('new-form').hidden = true;
+    document.getElementById('docs').hidden = !docsView;
+    document.getElementById('tab-board').setAttribute('aria-current', docsView ? 'false' : 'page');
+    document.getElementById('tab-docs').setAttribute('aria-current', docsView ? 'page' : 'false');
+  }
 
   function setFilter(id) { S.filter = id; pref('filter', id); render(); }
   function openTask(id) { S.openId = id; S.confirmDelete = false; render(); const el = document.getElementById('d-title'); if (el) el.focus(); }
@@ -406,7 +602,10 @@
     do {
       eventsDuringLoad = false;
       try {
-        const [config, m, t] = await Promise.all([api.config(), api.milestones(), api.tasks()]);
+        const [config, m, t, d] = await Promise.all([api.config(), api.milestones(), api.tasks(), api.docs().catch(() => ({ docs: [] }))]);
+        S.docs = d.docs;
+        sectionCache.clear();
+        docCache.clear();
         S.project = config.project || '';
         S.milestones = m.milestones;
         S.tasks = t.tasks;
@@ -431,6 +630,7 @@
   function onEvent(m) {
     if (m.type === 'hello') { load(); return; }
     if (loading) { eventsDuringLoad = true; return; }
+    if (m.type === 'doc_changed') { docChanged(m.alias); return; }
     if (m.type === 'upsert') { clearWarning(m.collection, m.id); apply(m.collection, m.id, m.doc); }
     else if (m.type === 'delete') { clearWarning(m.collection, m.id); apply(m.collection, m.id, null); }
     else if (m.type === 'warning') {
@@ -461,6 +661,8 @@
     el.hidden = S.connected || !S.loaded;
   }
 
+  readHash();
+  window.addEventListener('hashchange', () => { readHash(); render(); scrollToSection(); });
   render();
   connect();
   // Si el WebSocket no conecta, igual se intenta la carga (muestra el aviso de hub caído).

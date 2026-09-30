@@ -14,6 +14,7 @@
     <span class="conn" id="conn" role="status" hidden>Sin conexión con el hub · reintentando</span>
     <button class="btn primary" id="new-btn" type="button">Nueva tarea</button>
   </header>
+  <nav class="views" aria-label="Vistas"><a href="#" id="tab-board">Tablero</a><a href="#docs" id="tab-docs">Documentos</a></nav>
   <nav class="miles" id="miles" aria-label="Hitos"></nav>
   <form class="newtask" id="new-form" hidden>
     <label for="new-title" class="sr">Título</label>
@@ -26,6 +27,7 @@
   <section class="summary" id="summary" aria-live="polite"></section>
   <section class="warnings" id="warnings" role="alert" hidden></section>
   <main class="board" id="board" aria-label="Tablero"></main>
+  <section class="docs" id="docs" aria-label="Documentos" hidden></section>
 </div>
 <aside class="detail" id="detail" hidden aria-label="Detalle de la tarea"></aside>
 <div class="toast" id="toast" role="status" hidden></div>

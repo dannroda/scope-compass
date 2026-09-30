@@ -544,7 +544,7 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Referencias:** `docs/spec.md#godot`
 
-## M6 — Documentos y referencias (v2)  (3/9)
+## M6 — Documentos y referencias (v2)  (5/9)
 
 Visor de documentos del proyecto (GDD) y referencias estables entre tareas y secciones (§10).
 
@@ -591,27 +591,31 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 **Referencias:** `docs/spec.md#documentos-servidor`, `docs/spec.md#cambios-externos`
 
-### 6.4 UI web: referencias en el detalle · En curso
+### 6.4 UI web: referencias en el detalle · Hecho
 
-- [ ] Sección "Referencias" con cada sección renderizada y plegable, y "Abrir en el documento"
-- [ ] Buscador de secciones para agregar referencias; quitar
-- [ ] Indicador en la tarjeta y aviso si alguna está rota
+- [x] Sección "Referencias" con cada sección renderizada y plegable, y "Abrir en el documento"
+- [x] Buscador de secciones para agregar referencias; quitar
+- [x] Indicador en la tarjeta y aviso si alguna está rota
 
 **Prueba:** Una tarea con `refs` muestra la sección renderizada en su detalle, con GDScript resaltado.
 
+**Notas:** Sección "Referencias" en el detalle: cada una plegable (la primera abierta), sección renderizada (sin repetir el título), "Abrir en el documento", quitar. Buscador por título o id para agregar. Rotas: aviso con "Buscar la sección nueva". Tarjetas: § n, en rojo si hay rotas.
+
 **Referencias:** `docs/spec.md#documentos-ui`, `docs/spec.md#referencias`
 
-### 6.5 UI web: vista Documentos · Pendiente
+### 6.5 UI web: vista Documentos · Hecho
 
-- [ ] Pestaña "Documentos" al lado de los hitos
-- [ ] Índice lateral y contenido renderizado
-- [ ] Junto a cada título, cuántas tareas lo referencian, con la lista
+- [x] Pestaña "Documentos" al lado de los hitos
+- [x] Índice lateral y contenido renderizado
+- [x] Junto a cada título, cuántas tareas lo referencian, con la lista
 
 **Prueba:** Los backlinks de cada sección coinciden con las `refs` de las tareas.
 
+**Notas:** Pestañas Tablero | Documentos con el hash (`#docs/gdd/ventanas-ataque`). Índice con punto verde y contador de tareas por sección (gris = sin planificar), documento renderizado, "Referenciada por" que sigue a la sección visible, contador de refs rotas y "Copiar [[alias#id]]". Backlinks calculados en el navegador. Al entrar a Documentos se cierra el detalle de la tarea (lo tapaba).
+
 **Referencias:** `docs/spec.md#documentos-ui`
 
-### 6.6 Enlaces en línea `[[alias#id]]` · Pendiente
+### 6.6 Enlaces en línea `[[alias#id]]` · En curso
 
 - [ ] En notas, "Cómo probarlo" y pasos: enlace con el título actual de la sección
 - [ ] Rotos: marcados como tales

@@ -1,22 +1,22 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Sección \"Referencias\" con cada sección renderizada y plegable, y \"Abrir en el documento\""
     },
     {
-      "done": false,
+      "done": true,
       "text": "Buscador de secciones para agregar referencias; quitar"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Indicador en la tarjeta y aviso si alguna está rota"
     }
   ],
   "code": "6.4",
   "created_at": "2026-09-30T01:23:40.114Z",
   "milestone": "m06",
-  "notes": "",
+  "notes": "Sección \"Referencias\" en el detalle: cada una plegable (la primera abierta), sección renderizada (sin repetir el título), \"Abrir en el documento\", quitar. Buscador por título o id para agregar. Rotas: aviso con \"Buscar la sección nueva\". Tarjetas: § n, en rojo si hay rotas.",
   "order": 4,
   "refs": [
     {
@@ -28,8 +28,8 @@
       "section": "referencias"
     }
   ],
-  "status": "doing",
+  "status": "done",
   "test": "Una tarea con `refs` muestra la sección renderizada en su detalle, con GDScript resaltado.",
   "title": "UI web: referencias en el detalle",
-  "updated_at": "2026-09-30T01:29:40.995Z"
+  "updated_at": "2026-09-30T01:53:15.287Z"
 }

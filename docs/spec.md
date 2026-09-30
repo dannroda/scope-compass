@@ -448,10 +448,10 @@ Las notas de hoy tienen la forma "Ver `gdd.md` §4.3". `scompass import artifact
 ### 10.6 Criterios de aceptación de v2
 <!-- id: criterios-v2 -->
 
-- [ ] Una tarea con `refs` muestra la sección renderizada en su detalle, con snippets de GDScript resaltados.
-- [ ] Renombrar o renumerar una sección con id explícito no rompe ninguna referencia.
-- [ ] Borrar una sección referenciada marca la tarea con una advertencia, y `scompass refs check` la lista.
-- [ ] La vista Documentos muestra los backlinks correctos por sección.
+- [x] Una tarea con `refs` muestra la sección renderizada en su detalle, con snippets de GDScript resaltados.
+- [x] Renombrar o renumerar una sección con id explícito no rompe ninguna referencia.
+- [x] Borrar una sección referenciada marca la tarea con una advertencia, y `scompass refs check` la lista.
+- [x] La vista Documentos muestra los backlinks correctos por sección.
 - [ ] Editar `gdd.md` con la app abierta actualiza la vista en menos de 1 s.
 
 ## 11. Visión: organizador de proyectos de videojuegos
