@@ -19,12 +19,14 @@ import { startTray } from './tray.js';
 import { listMilestones, listTasks } from './views.js';
 
 const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
+const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
 const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
 
 const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
 
   init [--project <nombre>]                 crea compass/ en el proyecto
   serve [--port 4711] [--open]              levanta el hub en 127.0.0.1 (Ctrl+C para cerrar)
+  restart                                   reinicia el hub de este proyecto (para cargar código nuevo)
         [--exit-on-stdin-close]             se cierra cuando se corta su entrada (lo usa el dock de Godot)
         [--tray]                            ícono en la bandeja del sistema, con "Detener hub"
   list [--milestone m00] [--status doing]   tareas (--json para agentes)
@@ -103,7 +105,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const validators = loadValidators();
   let store = createJsonFilesStore(compass, { validators, ...(now && { now }) });
   // Con un hub de este proyecto corriendo, todo pasa por su API (eventos al instante, una sola cola de escritura).
-  if (!o.direct && !['init', 'serve', 'help'].includes(cmd)) {
+  if (!o.direct && !['init', 'serve', 'restart', 'help'].includes(cmd)) {
     const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
     const hub = await detectHub(project, cfg?.port);
     if (hub) store = createHttpStore(hub, compass, { validators });
@@ -148,7 +150,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       showWarnings(all.warnings);
       const port = Number(o.port ?? all.config?.port ?? 4711);
       if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`puerto inválido: ${o.port}`);
-      const app = createServer({ projectDir: project, store, validators, watch: true, exportMd: true });
+      let restart = false;
+      const app = createServer({ projectDir: project, store, validators, watch: true, exportMd: true,
+        onRestart: () => { restart = true; ac.abort(); } });
       if (!o.json) app.events.on('event', (e) => { if (e.type === 'warning') warn(`aviso [${e.code}] ${e.path}: ${e.message}`); });
       let addr;
       try {
@@ -172,7 +176,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
             title: 'Scope Compass',
             tooltip: `${all.config?.project ?? project} · ${url}`,
             onActivate: openBoard,
-            items: [{ label: 'Abrir tablero', onClick: openBoard }, { label: 'Detener hub', onClick: () => ac.abort() }]
+            items: [{ label: 'Abrir tablero', onClick: openBoard }, { label: 'Reiniciar hub', onClick: () => { restart = true; ac.abort(); } },
+              { label: 'Detener hub', onClick: () => ac.abort() }]
           });
         } catch (e) {
           warn(`sin ícono en la bandeja: ${e.message}`);
@@ -192,9 +197,18 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       const stop = ac.signal;
       if (!stop.aborted && !signal?.aborted) await new Promise((res) => stop.addEventListener('abort', res, { once: true }));
-      if (o['exit-on-stdin-close']) stdin.pause?.();
+      if (o['exit-on-stdin-close'] && !restart) stdin.pause?.();
       tray?.close();
       await app.close();
+      // Reinicio: el mismo comando otra vez, con la misma entrada y salida (si lo lanzó el dock, sigue atado a
+      // Godot por la misma tubería) y el puerto ya libre.
+      if (restart) {
+        // En el mismo puerto que tenía (con --port 0 tomaría otro al azar).
+        const again = argv.filter((x, i) => x !== '--port' && argv[i - 1] !== '--port' && !x.startsWith('--port='));
+        spawn(process.execPath, [BIN, ...again, '--port', String(addr.port)], { cwd, env: process.env, stdio: 'inherit', detached: true }).unref();
+        if (!o.json) print('Reiniciando el hub…');
+        if (stdin === process.stdin) process.exit(0);
+      }
       return 0;
     },
 
@@ -237,6 +251,22 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (d.notes) print(`Notas: ${d.notes}`);
       if (d.refs?.length) print(`Referencias: ${d.refs.map((r) => `${r.doc}#${r.section}`).join(', ')}`);
       return 0;
+    },
+
+    async restart() {
+      const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
+      const hub = await detectHub(project, cfg?.port);
+      if (!hub) throw new StoreError('not_found', `no hay un hub de este proyecto en el puerto ${cfg?.port ?? 4711}`);
+      const before = (await (await fetch(hub + '/api/health')).json()).pid;
+      const r = await fetch(hub + '/api/restart', { method: 'POST' });
+      if (r.status !== 202) throw new StoreError('io_error', `el hub no aceptó reiniciarse (HTTP ${r.status})`);
+      // Espera al hub nuevo: mismo puerto, otro PID.
+      for (let i = 0; i < 100; i++) {
+        await new Promise((res) => setTimeout(res, 100));
+        const h = await fetch(hub + '/api/health', { signal: AbortSignal.timeout(300) }).then((x) => x.json()).catch(() => null);
+        if (h?.pid && h.pid !== before) return done({ hub, pid: h.pid, previous: before }, `Hub reiniciado en ${hub} (PID ${before} → ${h.pid})`);
+      }
+      throw new StoreError('io_error', 'el hub se cerró pero no volvió en 10 s: mirá su log');
     },
 
     async doc() {

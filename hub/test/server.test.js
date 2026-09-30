@@ -25,7 +25,7 @@ test('GET /api/health devuelve versión y proyecto', async () => {
   const app = createServer({ projectDir: dir, store });
   const r = await app.inject('/api/health');
   assert.equal(r.statusCode, 200);
-  assert.deepEqual(r.json(), { ok: true, name: 'scope-compass', version: VERSION, project: dir });
+  assert.deepEqual(r.json(), { ok: true, name: 'scope-compass', version: VERSION, project: dir, pid: process.pid });
   await app.close();
 });
 

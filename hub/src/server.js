@@ -29,7 +29,8 @@ const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, inva
 // exportMd: regenera el export markdown tras cada cambio (D13); app.events emite 'exported' con la ruta.
 // app.events emite 'event' con los mensajes del protocolo WebSocket (§5.5): upsert, delete, warning.
 // webDir: carpeta de la UI (por defecto web/ del repo).
-export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false, webDir = WEB_DIR }) {
+// onRestart: si se pasa, POST /api/restart lo llama (serve cierra y se vuelve a lanzar).
+export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false, webDir = WEB_DIR, onRestart = null }) {
   // Al cerrar se cortan todas las conexiones: con la UI abierta (que reintenta cada 0,5 s) el cierre
   // podía quedar esperando una conexión nueva o el cierre educado de un WebSocket.
   const app = Fastify({ logger, forceCloseConnections: true });
@@ -91,7 +92,14 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   app.setNotFoundHandler((req, reply) =>
     reply.code(404).send({ error: { code: 'not_found', message: `no existe ${req.method} ${req.url}` } }));
 
-  app.get('/api/health', async () => ({ ok: true, name: 'scope-compass', version: VERSION, project: projectDir }));
+  app.get('/api/health', async () => ({ ok: true, name: 'scope-compass', version: VERSION, project: projectDir, pid: process.pid }));
+  // Reiniciar el hub (carga código nuevo). Responde antes de cerrar; el hub nuevo toma el mismo puerto.
+  app.post('/api/restart', async (req, reply) => {
+    if (!onRestart) throw new StoreError('invalid_argument', 'este hub no se puede reiniciar desde la API');
+    reply.code(202).send({ ok: true, restarting: true });
+    setImmediate(onRestart);
+    return reply;
+  });
   registerApi(app, { store, projectDir, publish });
   registerDocsApi(app, { store, projectDir });
   app.register(registerWs, { store, publish, version: VERSION });

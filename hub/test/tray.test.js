@@ -69,15 +69,26 @@ test('serve --tray: se registra en la bandeja, muestra el proyecto y el menú ci
 
     const [, layout] = await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'GetLayout', 'iias', [0, -1, []]);
     const labels = layout[2].map((v) => v[1][0][1].find(([k]) => k === 'label')[1][1][0]);
-    assert.deepEqual(labels, ['Abrir tablero', 'Detener hub']);
+    assert.deepEqual(labels, ['Abrir tablero', 'Reiniciar hub', 'Detener hub']);
 
     await call(service, '/StatusNotifierItem', 'org.kde.StatusNotifierItem', 'Activate', 'ii', [0, 0]);
     for (let i = 0; i < 40 && !existsSync(join(dir, 'opened')); i++) await sleep(50);
     assert.equal((await readFile(join(dir, 'opened'), 'utf8')).trim(), url, 'clic en el ícono abre el tablero');
 
+    // "Reiniciar hub": el proceso termina y vuelve otro, que se registra de nuevo en la bandeja.
     await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'Event', 'isvu', [2, 'clicked', ['s', ''], 0]);
-    const code = await Promise.race([exited, sleep(3000).then(() => 'sigue vivo')]);
-    assert.equal(code, 0, '"Detener hub" cierra el hub');
+    assert.equal(await Promise.race([exited, sleep(3000).then(() => 'sigue vivo')]), 0, 'el viejo terminó');
+    let again;
+    for (let i = 0; i < 60 && !(again = registered.find((s) => !s.includes(String(hub.pid)))); i++) await sleep(50);
+    assert.ok(again, 'el hub nuevo no se registró en la bandeja');
+    const newPid = Number(/StatusNotifierItem-(\d+)-1/.exec(again)[1]);
+    await sleep(300);
+    const health = await fetch(url + 'api/health').then((r) => r.json()).catch((e) => { throw new Error(`sin hub tras reiniciar (${e.cause?.code}); salida: ${out}`); });
+    assert.equal(health.pid, newPid, 'mismo puerto, otro PID');
+    // "Detener hub" en el nuevo.
+    await call(again, '/MenuBar', 'com.canonical.dbusmenu', 'Event', 'isvu', [3, 'clicked', ['s', ''], 0]);
+    for (let i = 0; i < 60; i++) { try { process.kill(newPid, 0); await sleep(50); } catch { break; } }
+    assert.throws(() => process.kill(newPid, 0), '"Detener hub" cierra el hub');
   } finally {
     hub.kill('SIGKILL');
   }

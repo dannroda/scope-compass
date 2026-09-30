@@ -427,7 +427,7 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
 **Notas:** Depende del usuario.
 
-## M5 — Dock de Godot (v1.5)  (9/9)
+## M5 — Dock de Godot (v1.5)  (10/10)
 
 Addon `scope_compass` con un dock que muestra las tareas del hito actual y las mueve a través del hub.
 
@@ -543,6 +543,10 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 **Notas:** `hub/src/tray.js` (D20): ícono, tooltip con proyecto y dirección, clic abre el tablero, menú "Abrir tablero" / "Detener hub". Probado en un bus privado (el test hace de Plasma) y registrado en el Plasma real. Editor Settings `scope_compass/keep_hub_running`: el dock lo lanza sin tubería y con `--tray`, y no lo cierra. `create_process` ya pone al hijo en su propia sesión (setsid sobraba y cambiaba el PID). Epiphany pasó al puerto 4712 (commit `1277eec` allá).
 
 **Referencias:** `docs/spec.md#godot`
+
+### 5.10 Reiniciar el hub (dock, bandeja, CLI y API) · Hecho
+
+**Notas:** Pedido del usuario, para cargar código nuevo sin cerrar el editor. `POST /api/restart`: el hub cierra, libera el puerto y se relanza con los mismos argumentos (y el puerto que tenía de verdad), heredando entrada y salida: si lo lanzó el dock sigue atado a Godot por la misma tubería. `/api/health` informa el PID. Dock: botón "Reiniciar hub" en el pie; bandeja: "Reiniciar hub" en el menú; CLI: `scompass restart`. Detalles: la tubería "pipe" de Node es un par de sockets y el test necesitó un pipe real (cat); OS.is_process_running de Godot no ve al hub reiniciado (es nieto), se usa kill -0. Los tests que leen Epiphany ya no dependen de su contenido exacto.
 
 ## M6 — Documentos y referencias (v2)  (12/12)
 

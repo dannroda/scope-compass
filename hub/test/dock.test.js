@@ -288,3 +288,24 @@ test('dock: un paso con detalle se despliega con ▸', { skip }, async () => {
   await writeFile(p, canonical(t));
   expectOk(await godot('step_detail', dir, 'm1-04', 'Detalle con código largo'), 'step_detail');
 });
+
+test('dock: "Reiniciar hub" vuelve a conectar, y el hub nuevo se cierra con el dock', { skip }, async () => {
+  const port = await freePort();
+  const cfgPath = join(dir, 'compass', 'config.json');
+  await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), port }));
+  const env = { ...process.env };
+  delete env.DBUS_SESSION_BUS_ADDRESS;
+  let pids = [];
+  try {
+    const r = await new Promise((resolve) => {
+      const p = spawn('godot', ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--', 'restart_hub', dir, join(REPO, 'hub', 'bin', 'scompass.js')], { env });
+      let out = '';
+      p.stdout.on('data', (d) => { out += d; }); p.stderr.on('data', (d) => { out += d; });
+      p.on('exit', (code) => resolve({ code, out }));
+    });
+    pids = (/PIDS (\d+) (\d+)/.exec(r.out) ?? []).slice(1).map(Number);
+    expectOk(r, 'restart_hub');
+  } finally {
+    for (const pid of pids) if (alive(pid)) process.kill(pid, 'SIGKILL');
+  }
+});

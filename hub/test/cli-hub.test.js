@@ -132,3 +132,45 @@ test('--etag none y campos sueltos dan lo mismo con y sin hub', async () => {
   assert.equal(await readFile(join(hubDir, 'compass', 'tasks', 'm2-99.json'), 'utf8'),
     await readFile(join(disk, 'compass', 'tasks', 'm2-99.json'), 'utf8'));
 });
+
+// --- Reiniciar el hub ---
+import { spawn } from 'node:child_process';
+import { createServer as netServer } from 'node:net';
+
+const freePort = () => new Promise((res) => { const s = netServer().listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => res(port)); }); });
+const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+
+test('scompass restart: el hub vuelve en el mismo puerto con otro PID y sigue atado a la misma entrada', async () => {
+  const port = await freePort();
+  const cfgPath = join(disk, 'compass', 'config.json');
+  await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), port }));
+  const bin = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
+  // Entrada por un pipe del sistema, como la de Godot (con cat en el medio): la tubería 'pipe' de Node es un par
+  // de sockets, y al cerrarse el proceso viejo le haría shutdown también al nuevo.
+  const hub = spawn('sh', ['-c', 'cat | exec "$0" "$@"', process.execPath, bin, '--dir', disk, 'serve', '--exit-on-stdin-close'], { stdio: ['pipe', 'pipe', 'pipe'] });
+  let newPid = 0;
+  try {
+    await new Promise((r) => hub.stdout.once('data', r));
+    const before = (await (await fetch(`http://127.0.0.1:${port}/api/health`)).json()).pid;
+    const r = await cli(disk, ['restart', '--json']);
+    assert.equal(r.code, 0, r.err);
+    ({ pid: newPid } = JSON.parse(r.out));
+    assert.notEqual(newPid, before);
+    assert.equal((await (await fetch(`http://127.0.0.1:${port}/api/health`)).json()).pid, newPid);
+    for (let i = 0; i < 40 && alive(before); i++) await new Promise((res) => setTimeout(res, 50));
+    assert.ok(!alive(before), 'el viejo terminó');
+    // La entrada es la misma tubería: al cortarla, el hub nuevo también se cierra.
+    hub.stdin.end();
+    for (let i = 0; i < 40 && alive(newPid); i++) await new Promise((res) => setTimeout(res, 50));
+    assert.ok(!alive(newPid), 'el hub nuevo sigue vivo con la entrada cerrada');
+  } finally {
+    hub.kill('SIGKILL');
+    if (newPid && alive(newPid)) process.kill(newPid, 'SIGKILL');
+  }
+});
+
+test('scompass restart sin hub: error claro', async () => {
+  const r = await cli(disk, ['restart']);
+  assert.equal(r.code, 1);
+  assert.match(r.err, /no hay un hub de este proyecto/);
+});

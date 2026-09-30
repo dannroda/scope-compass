@@ -325,3 +325,22 @@ func test_step_detail(a: Array) -> void:
 	await process_frame
 	var row = v.steps_box.get_child(0)
 	if not _check(c, row.get_child_count() == 2 and row.get_child(1).get_child(0).text == a[2], "detalle: %s" % (row.get_child(1).get_child(0).text if row.get_child_count() == 2 else "no se desplegó")): return
+
+
+# "Reiniciar hub" desde el dock: vuelve, se reconecta y sigue siendo del dock (se cierra con stop_hub).
+func test_restart_hub(a: Array) -> void:
+	var c := "restart_hub"
+	var v := await _view(a[0])
+	v.scompass_setting = func(): return a[1]
+	if not _check(c, await v.start_hub(), "no arrancó: " + v.notice.text): return
+	if not _check(c, await _until(func(): return v.online and not v._loading), "no se conectó"): return
+	var before: int = v.hub_pid
+	if not _check(c, v.restart_button.visible, "falta el botón con hub"): return
+	if not _check(c, await v.restart_hub(), "no se reinició: " + v.notice.text): return
+	var after: int = v.hub_pid
+	print("PIDS ", before, " ", after)
+	# OS.is_process_running solo conoce los hijos de Godot; el hub reiniciado es nieto: kill -0.
+	var alive := func(pid: int) -> bool: return OS.execute("kill", ["-0", str(pid)]) == 0
+	if not _check(c, after != before and alive.call(after), "PID nuevo inválido: %d → %d" % [before, after]): return
+	v.stop_hub()
+	if not _check(c, await _until(func(): return not alive.call(after), 5.0), "el hub nuevo no se cerró con el dock"): return

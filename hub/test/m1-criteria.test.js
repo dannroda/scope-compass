@@ -36,7 +36,7 @@ test('compass/schema/ es copia exacta de schema/', async () => {
   }
 });
 
-test('§14: import artifact migra los 11 hitos y las 10 tareas de Epiphany sin diferencias', { skip: !existsSync(EPIPHANY) && 'no está project-epiphany' }, async () => {
+test('§14: import artifact migra los hitos y las tareas de Epiphany sin diferencias', { skip: !existsSync(EPIPHANY) && 'no está project-epiphany' }, async () => {
   const exp = join(dir, 'export');
   for (const c of ['milestones', 'tasks']) {
     await mkdir(join(exp, c), { recursive: true });
@@ -52,8 +52,10 @@ test('§14: import artifact migra los 11 hitos y las 10 tareas de Epiphany sin d
   const code = await run(['--dir', p, 'import', 'artifact', exp, '--json'], { out: { write: (s) => { out += s; } }, err: { write() {} } });
   assert.equal(code, 0);
   const r = JSON.parse(out);
-  assert.equal(r.milestones.unchanged.length, 11);
-  assert.equal(r.tasks.unchanged.length, 10);
+  // Epiphany cambia (hay otra sesión trabajándolo): todo lo que tiene tiene que quedar igual.
+  assert.equal(r.milestones.unchanged.length, (await readdir(join(EPIPHANY, 'milestones'))).length);
+  assert.equal(r.tasks.unchanged.length, (await readdir(join(EPIPHANY, 'tasks'))).length);
+  assert.ok(r.tasks.unchanged.length >= 10);
   for (const c of ['milestones', 'tasks']) {
     for (const name of await readdir(join(EPIPHANY, c))) {
       assert.equal(await readFile(join(p, 'compass', c, name), 'utf8'), await readFile(join(EPIPHANY, c, name), 'utf8'));

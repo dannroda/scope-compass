@@ -63,6 +63,7 @@ var notice: Label
 var footer_dot: ColorRect
 var footer_label: Label
 var footer_right: Label
+var restart_button: Button
 var _poll: Timer
 var _notice_timer: Timer
 
@@ -278,6 +279,32 @@ func _wait_online(secs: float) -> bool:
 	return online
 
 
+## Reinicia el hub (POST /api/restart): se cae, vuelve en el mismo puerto y el dock se reconecta. Si el hub era
+## de este dock, sigue siéndolo (hereda la tubería con Godot) y se actualiza su PID.
+func restart_hub() -> bool:
+	if not online:
+		return false
+	var r := await client.request("POST", "/api/restart")
+	if r.code != 202:
+		show_notice("El hub no aceptó reiniciarse.")
+		return false
+	var t0 := Time.get_ticks_msec()
+	while online and Time.get_ticks_msec() - t0 < 5000:
+		await get_tree().process_frame
+	while not online and Time.get_ticks_msec() - t0 < 12000:
+		await get_tree().create_timer(0.25).timeout
+		await client.detect()
+	if not await _wait_online(2.0):
+		show_notice("El hub no volvió después de reiniciarse. Mirá .godot/scope_compass_hub.log.")
+		return false
+	if hub_pid > 0:
+		var h := await client.request("GET", "/api/health")
+		if h.code == 200:
+			hub_pid = int(h.json.pid)
+	show_notice("Hub reiniciado.")
+	return true
+
+
 ## Cierra el hub solo si lo abrió este dock y no está en modo "mantener" (salvo force): corta la tubería
 ## (el hub termina el export pendiente y sale).
 ## Si en 3 s sigue vivo, SIGTERM.
@@ -288,10 +315,12 @@ func stop_hub(force := false) -> void:
 		if _hub_pipe.get(key) is FileAccess:
 			_hub_pipe[key].close()
 	_hub_pipe = {}
+	# Con kill -0: tras un reinicio el hub es nieto de Godot y OS.is_process_running no lo conoce.
+	var alive := func(pid: int) -> bool: return OS.execute("kill", ["-0", str(pid)]) == 0
 	var t0 := Time.get_ticks_msec()
-	while OS.is_process_running(hub_pid) and Time.get_ticks_msec() - t0 < 3000:
+	while alive.call(hub_pid) and Time.get_ticks_msec() - t0 < 3000:
 		OS.delay_msec(50)
-	if OS.is_process_running(hub_pid):
+	if alive.call(hub_pid):
 		if OS.execute("kill", ["-TERM", str(hub_pid)]) != 0:
 			OS.kill(hub_pid)
 	hub_pid = -1
@@ -439,6 +468,12 @@ func _build() -> void:
 	footer_right.size_flags_horizontal = SIZE_EXPAND_FILL
 	footer_right.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	foot.add_child(footer_right)
+	restart_button = Button.new()
+	restart_button.text = "Reiniciar hub"
+	restart_button.flat = true
+	restart_button.tooltip_text = "Reinicia el hub (para que cargue código nuevo de Scope Compass)"
+	restart_button.pressed.connect(restart_hub)
+	foot.add_child(restart_button)
 
 	# Sin hub: cada 3 s se busca el hub y se relee compass/ (una edición a mano o un git pull se ven solos).
 	_poll = Timer.new()
@@ -482,6 +517,7 @@ func _render() -> void:
 
 	footer_dot.color = Color("#6fbf94") if online else Color("#e0655a")
 	footer_label.text = ("127.0.0.1:%d" % board.port()) if online else "Sin hub · solo lectura"
+	restart_button.visible = online
 	footer_right.text = ("compass: %d sin commitear" % _uncommitted) if _uncommitted >= 0 else ""
 
 
