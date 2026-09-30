@@ -1,0 +1,35 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "`GET /api/docs`, `/api/docs/:alias`, `/api/docs/:alias/sections/:id` (con backlinks), `/api/refs/broken`"
+    },
+    {
+      "done": false,
+      "text": "Markdown renderizado con GDScript resaltado, librerías empaquetadas (D21)"
+    },
+    {
+      "done": false,
+      "text": "El watcher mira los documentos: evento `doc_changed`"
+    }
+  ],
+  "code": "6.3",
+  "created_at": "2026-09-30T01:23:39.909Z",
+  "milestone": "m06",
+  "notes": "",
+  "order": 3,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "documentos-servidor"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "cambios-externos"
+    }
+  ],
+  "status": "todo",
+  "test": "Editar `gdd.md` con el hub corriendo emite `doc_changed` en menos de 1 s.",
+  "title": "API de documentos y render",
+  "updated_at": "2026-09-30T01:23:39.909Z"
+}

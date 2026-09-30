@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Pestaña \"Documentos\" al lado de los hitos"
+    },
+    {
+      "done": false,
+      "text": "Índice lateral y contenido renderizado"
+    },
+    {
+      "done": false,
+      "text": "Junto a cada título, cuántas tareas lo referencian, con la lista"
+    }
+  ],
+  "code": "6.5",
+  "created_at": "2026-09-30T01:23:40.332Z",
+  "milestone": "m06",
+  "notes": "",
+  "order": 5,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "documentos-ui"
+    }
+  ],
+  "status": "todo",
+  "test": "Los backlinks de cada sección coinciden con las `refs` de las tareas.",
+  "title": "UI web: vista Documentos",
+  "updated_at": "2026-09-30T01:23:40.332Z"
+}

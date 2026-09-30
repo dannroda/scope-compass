@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "`GET /api/docs/:alias/sections/:id?format=bbcode`"
+    },
+    {
+      "done": false,
+      "text": "El detalle del dock lista las referencias y muestra la sección en un `RichTextLabel`"
+    }
+  ],
+  "code": "6.7",
+  "created_at": "2026-09-30T01:23:40.725Z",
+  "milestone": "m06",
+  "notes": "",
+  "order": 7,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "godot"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "documentos-servidor"
+    }
+  ],
+  "status": "todo",
+  "test": "El dock muestra la sección referenciada sin salir de Godot.",
+  "title": "Dock: referencias en BBCode",
+  "updated_at": "2026-09-30T01:23:40.725Z"
+}

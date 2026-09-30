@@ -1,0 +1,35 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Sección \"Referencias\" con cada sección renderizada y plegable, y \"Abrir en el documento\""
+    },
+    {
+      "done": false,
+      "text": "Buscador de secciones para agregar referencias; quitar"
+    },
+    {
+      "done": false,
+      "text": "Indicador en la tarjeta y aviso si alguna está rota"
+    }
+  ],
+  "code": "6.4",
+  "created_at": "2026-09-30T01:23:40.114Z",
+  "milestone": "m06",
+  "notes": "",
+  "order": 4,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "documentos-ui"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "referencias"
+    }
+  ],
+  "status": "todo",
+  "test": "Una tarea con `refs` muestra la sección renderizada en su detalle, con GDScript resaltado.",
+  "title": "UI web: referencias en el detalle",
+  "updated_at": "2026-09-30T01:23:40.114Z"
+}

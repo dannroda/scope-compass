@@ -544,7 +544,7 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Referencias:** `docs/spec.md#godot`
 
-## M6 — Documentos y referencias (v2)
+## M6 — Documentos y referencias (v2)  (0/9)
 
 Visor de documentos del proyecto (GDD) y referencias estables entre tareas y secciones (§10).
 
@@ -553,6 +553,93 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 - Renombrar o renumerar una sección con id no rompe referencias.
 - `scompass refs check` detecta referencias rotas.
 - El dock muestra la sección referenciada en BBCode.
+
+### 6.1 Parser de documentos e índice de secciones · Pendiente
+
+- [ ] Índice `{id, title, level, start, end}`; una sección llega hasta el próximo título de nivel igual o superior
+- [ ] Id explícito (`<!-- id: … -->`) o slug del título, marcado como frágil
+- [ ] Documentos de `config.json › docs` (alias y ruta o patrón)
+- [ ] `scompass doc list` y `doc show <alias>#<id> [--raw]`
+
+**Prueba:** `scompass --dir ../project-epiphany doc show gdd#ventanas-ataque --raw` devuelve justo esa sección.
+
+**Referencias:** `docs/spec.md#ids-seccion`, `docs/spec.md#documentos-servidor`
+
+### 6.2 Chequeo y edición de referencias · Pendiente
+
+- [ ] `scompass refs check`: lista las rotas y sale con código ≠ 0
+- [ ] `scompass ref add <tarea> <alias>#<id>` (y quitar)
+- [ ] `scompass doc stamp-ids <alias>`: estampa ids en las secciones que no tienen
+
+**Prueba:** Renombrar el título de una sección con id no rompe nada; borrar su id hace fallar `refs check`.
+
+**Referencias:** `docs/spec.md#ids-seccion`, `docs/spec.md#referencias`
+
+### 6.3 API de documentos y render · Pendiente
+
+- [ ] `GET /api/docs`, `/api/docs/:alias`, `/api/docs/:alias/sections/:id` (con backlinks), `/api/refs/broken`
+- [ ] Markdown renderizado con GDScript resaltado, librerías empaquetadas (D21)
+- [ ] El watcher mira los documentos: evento `doc_changed`
+
+**Prueba:** Editar `gdd.md` con el hub corriendo emite `doc_changed` en menos de 1 s.
+
+**Referencias:** `docs/spec.md#documentos-servidor`, `docs/spec.md#cambios-externos`
+
+### 6.4 UI web: referencias en el detalle · Pendiente
+
+- [ ] Sección "Referencias" con cada sección renderizada y plegable, y "Abrir en el documento"
+- [ ] Buscador de secciones para agregar referencias; quitar
+- [ ] Indicador en la tarjeta y aviso si alguna está rota
+
+**Prueba:** Una tarea con `refs` muestra la sección renderizada en su detalle, con GDScript resaltado.
+
+**Referencias:** `docs/spec.md#documentos-ui`, `docs/spec.md#referencias`
+
+### 6.5 UI web: vista Documentos · Pendiente
+
+- [ ] Pestaña "Documentos" al lado de los hitos
+- [ ] Índice lateral y contenido renderizado
+- [ ] Junto a cada título, cuántas tareas lo referencian, con la lista
+
+**Prueba:** Los backlinks de cada sección coinciden con las `refs` de las tareas.
+
+**Referencias:** `docs/spec.md#documentos-ui`
+
+### 6.6 Enlaces en línea `[[alias#id]]` · Pendiente
+
+- [ ] En notas, "Cómo probarlo" y pasos: enlace con el título actual de la sección
+- [ ] Rotos: marcados como tales
+
+**Prueba:** `[[gdd#ventanas-ataque]]` en una nota se ve como "Ventanas de ataque" y abre la sección.
+
+**Referencias:** `docs/spec.md#referencias`
+
+### 6.7 Dock: referencias en BBCode · Pendiente
+
+- [ ] `GET /api/docs/:alias/sections/:id?format=bbcode`
+- [ ] El detalle del dock lista las referencias y muestra la sección en un `RichTextLabel`
+
+**Prueba:** El dock muestra la sección referenciada sin salir de Godot.
+
+**Referencias:** `docs/spec.md#godot`, `docs/spec.md#documentos-servidor`
+
+### 6.8 Migración de notas "§N.N" · Pendiente
+
+- [ ] Detectar "`gdd.md` §N.N" en notas, pruebas y pasos
+- [ ] Proponer la referencia equivalente (sin aplicarla sola)
+
+**Prueba:** En Epiphany, las notas con "§" dan propuestas revisables.
+
+**Referencias:** `docs/spec.md#migracion-notas`
+
+### 6.9 Tests de M6 · Pendiente
+
+- [ ] Criterios de §10.6
+- [ ] Con los documentos reales de Epiphany y de este repo
+
+**Prueba:** `npm test` en `hub/` pasa con los tests de documentos.
+
+**Referencias:** `docs/spec.md#criterios-v2`
 
 ## M7 — Hosting privado
 

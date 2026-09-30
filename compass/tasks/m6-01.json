@@ -1,0 +1,39 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Índice `{id, title, level, start, end}`; una sección llega hasta el próximo título de nivel igual o superior"
+    },
+    {
+      "done": false,
+      "text": "Id explícito (`<!-- id: … -->`) o slug del título, marcado como frágil"
+    },
+    {
+      "done": false,
+      "text": "Documentos de `config.json › docs` (alias y ruta o patrón)"
+    },
+    {
+      "done": false,
+      "text": "`scompass doc list` y `doc show <alias>#<id> [--raw]`"
+    }
+  ],
+  "code": "6.1",
+  "created_at": "2026-09-30T01:23:39.496Z",
+  "milestone": "m06",
+  "notes": "",
+  "order": 1,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "ids-seccion"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "documentos-servidor"
+    }
+  ],
+  "status": "todo",
+  "test": "`scompass --dir ../project-epiphany doc show gdd#ventanas-ataque --raw` devuelve justo esa sección.",
+  "title": "Parser de documentos e índice de secciones",
+  "updated_at": "2026-09-30T01:23:39.496Z"
+}

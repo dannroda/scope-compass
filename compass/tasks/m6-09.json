@@ -1,0 +1,27 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Criterios de §10.6"
+    },
+    {
+      "done": false,
+      "text": "Con los documentos reales de Epiphany y de este repo"
+    }
+  ],
+  "code": "6.9",
+  "created_at": "2026-09-30T01:23:41.119Z",
+  "milestone": "m06",
+  "notes": "",
+  "order": 9,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "criterios-v2"
+    }
+  ],
+  "status": "todo",
+  "test": "`npm test` en `hub/` pasa con los tests de documentos.",
+  "title": "Tests de M6",
+  "updated_at": "2026-09-30T01:23:41.119Z"
+}

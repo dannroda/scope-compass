@@ -1,0 +1,27 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Detectar \"`gdd.md` §N.N\" en notas, pruebas y pasos"
+    },
+    {
+      "done": false,
+      "text": "Proponer la referencia equivalente (sin aplicarla sola)"
+    }
+  ],
+  "code": "6.8",
+  "created_at": "2026-09-30T01:23:40.931Z",
+  "milestone": "m06",
+  "notes": "",
+  "order": 8,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "migracion-notas"
+    }
+  ],
+  "status": "todo",
+  "test": "En Epiphany, las notas con \"§\" dan propuestas revisables.",
+  "title": "Migración de notas \"§N.N\"",
+  "updated_at": "2026-09-30T01:23:40.931Z"
+}
