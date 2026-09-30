@@ -348,7 +348,7 @@
   function stepItem(t, c, i) {
     const key = t.id + ':' + i;
     const id = 'cl-' + t.id + '-' + i;
-    const check = h('input', { type: 'checkbox', id, checked: !!c.done, onchange: (e) => { const done = e.target.checked; updateTask(t.id, (cur) => ({ checklist: checklistOf(cur).map((x, j) => j === i ? { ...x, done } : x) })); } });
+    const check = h('input', { type: 'checkbox', id, 'aria-label': 'Hecho: ' + (c.text || ''), checked: !!c.done, onchange: (e) => { const done = e.target.checked; updateTask(t.id, (cur) => ({ checklist: checklistOf(cur).map((x, j) => j === i ? { ...x, done } : x) })); } });
     if (S.editStep === key) {
       const save = () => {
         const text = document.getElementById('d-step-text').value.trim();
@@ -375,10 +375,13 @@
             h('button', { class: 'btn ghost small', type: 'button', onclick: cancel }, 'Cancelar'))));
     }
     const open = S.stepsOpen.has(key);
+    const toggle = () => { open ? S.stepsOpen.delete(key) : S.stepsOpen.add(key); renderDetail(); };
+    // El texto no marca el paso (eso es solo el checkbox): si tiene detalle, clickearlo lo despliega, como ▸.
     return h('li', { class: (c.done ? 'done' : '') + (c.detail ? ' has-detail' : '') }, check,
-      h('label', { for: id }, rich(c.text)),
+      h('div', { class: 'step-text', title: c.detail ? (open ? 'Ocultar detalle' : 'Ver detalle') : null,
+        onclick: (e) => { if (c.detail && !e.target.closest('a') && !window.getSelection().toString()) toggle(); } }, rich(c.text)),
       c.detail ? h('button', { class: 'step-toggle', type: 'button', 'aria-expanded': open ? 'true' : 'false', 'aria-label': open ? 'Ocultar detalle' : 'Ver detalle',
-        title: open ? 'Ocultar detalle' : 'Ver detalle', onclick: () => { open ? S.stepsOpen.delete(key) : S.stepsOpen.add(key); renderDetail(); } }, open ? '▾' : '▸') : null,
+        title: open ? 'Ocultar detalle' : 'Ver detalle', onclick: toggle }, open ? '▾' : '▸') : null,
       h('button', { class: 'rm', type: 'button', 'aria-label': 'Editar paso', title: 'Editar texto y detalle',
         onclick: () => { S.editStep = key; renderDetail(); document.getElementById('d-step-text')?.focus(); } }, '✎'),
       h('button', { class: 'rm', type: 'button', 'aria-label': 'Quitar paso', onclick: () => updateTask(t.id, (cur) => ({ checklist: checklistOf(cur).filter((_, j) => j !== i) })) }, '×'),

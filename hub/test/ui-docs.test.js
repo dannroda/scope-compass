@@ -150,8 +150,8 @@ test('6.6: [[gdd#id]] en pasos y notas se ve con el título actual; roto, marcad
   assert.match(await page.textContent('.card[data-id="m1-06"] .t'), /^Tarea con Combate$/, 'en la tarjeta, texto sin enlace');
   assert.equal(await page.locator('.card[data-id="m1-06"] a').count(), 0);
   await page.click('.card[data-id="m1-06"]');
-  assert.equal(await page.getAttribute('.checklist label a.doclink', 'href'), '#docs/gdd/camara');
-  assert.equal(await page.textContent('.checklist label a.doclink'), 'Cámara');
+  assert.equal(await page.getAttribute('.checklist .step-text a.doclink', 'href'), '#docs/gdd/camara');
+  assert.equal(await page.textContent('.checklist .step-text a.doclink'), 'Cámara');
   const notes = await page.$$eval('#d-notes ~ .doclinks > *', (els) => els.map((e) => e.textContent));
   assert.deepEqual(notes, ['Enlaces:', 'Ventanas de ataque', '⚠ gdd#borrada']);
   // El enlace lleva a la sección en la vista Documentos.
@@ -264,6 +264,13 @@ test('pasos: ▸ despliega el detalle; ✎ edita texto y detalle (vacío lo quit
   await page.click('.chip:has-text("M1")');
   await page.click('.card[data-id="m1-06"]');
   assert.equal(await page.locator('.checklist li').nth(1).locator('.step-toggle').count(), 0);
+  assert.equal(await page.locator('.step-detail').count(), 0);
+  // Clickear el texto despliega el detalle y no marca el paso.
+  await page.click('.checklist li >> nth=0 >> .step-text');
+  assert.match(await page.textContent('.step-detail'), /interact \(B \/ E\), ver Cámara/);
+  assert.equal(await page.isChecked('.checklist li >> nth=0 >> input[type=checkbox]'), false);
+  assert.equal((await task('m1-06')).checklist[0].done, false);
+  await page.click('.step-toggle');
   assert.equal(await page.locator('.step-detail').count(), 0);
   await page.click('.step-toggle');
   assert.match(await page.textContent('.step-detail'), /interact \(B \/ E\), ver Cámara/);

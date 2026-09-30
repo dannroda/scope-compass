@@ -101,8 +101,9 @@ main.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); ga
 .checklist li { display: flex; gap: 10px; align-items: flex-start; padding: 6px 4px; border-radius: 6px; }
 .checklist li:hover { background: var(--bg); }
 .checklist input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
-.checklist label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.checklist li.done label { color: var(--muted); text-decoration: line-through; }
+.checklist .step-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.checklist li.has-detail .step-text { cursor: pointer; }
+.checklist li.done .step-text { color: var(--muted); text-decoration: line-through; }
 .checklist .rm { border: 0; background: transparent; color: var(--muted); padding: 0 6px; min-height: 28px; }
 .checklist li { flex-wrap: wrap; }
 .checklist .step-toggle { border: 0; background: transparent; color: var(--accent); padding: 0 6px; min-height: 28px; }

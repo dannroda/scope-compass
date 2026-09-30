@@ -194,7 +194,7 @@ test('"Agregar paso" no pierde lo escrito mientras vuelve la respuesta de otro c
   await page.waitForFunction(() => document.querySelector('.seg button[aria-pressed="true"]')?.textContent === 'En curso');
   assert.equal(await page.inputValue('#d-addcl'), 'Paso escrito enseguida');
   await page.click('.addcl button');
-  await page.waitForSelector('.checklist label:has-text("Paso escrito enseguida")');
+  await page.waitForSelector('.checklist .step-text:has-text("Paso escrito enseguida")');
   assert.equal((await task('m1-07')).checklist.at(-1).text, 'Paso escrito enseguida');
   await page.context().close();
 });
