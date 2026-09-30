@@ -281,7 +281,7 @@ test('dock sin hub: la referencia se arma con el markdown de disco, con el snipp
   expectOk(await godot('refs_offline', dir, 'm1-04'), 'refs_offline');
 });
 
-test('dock: un paso con detalle se despliega con ▸', { skip }, async () => {
+test('dock: tocar el texto de un paso despliega su detalle (no lo tilda)', { skip }, async () => {
   const p = join(dir, 'compass', 'tasks', 'm1-04.json');
   const t = JSON.parse(await readFile(p, 'utf8'));
   t.checklist[0].detail = 'Detalle con `código` largo';
@@ -308,4 +308,8 @@ test('dock: "Reiniciar hub" vuelve a conectar, y el hub nuevo se cierra con el d
   } finally {
     for (const pid of pids) if (alive(pid)) process.kill(pid, 'SIGKILL');
   }
+});
+
+test('dock: el bloque de tareas se pliega y el divisor lista/detalle se recuerda', { skip }, async () => {
+  expectOk(await godot('split', dir), 'split');
 });

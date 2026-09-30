@@ -427,7 +427,7 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
 **Notas:** Depende del usuario.
 
-## M5 — Dock de Godot (v1.5)  (10/10)
+## M5 — Dock de Godot (v1.5)  (11/11)
 
 Addon `scope_compass` con un dock que muestra las tareas del hito actual y las mueve a través del hub.
 
@@ -547,6 +547,10 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 ### 5.10 Reiniciar el hub (dock, bandeja, CLI y API) · Hecho
 
 **Notas:** Pedido del usuario, para cargar código nuevo sin cerrar el editor. `POST /api/restart`: el hub cierra, libera el puerto y se relanza con los mismos argumentos (y el puerto que tenía de verdad), heredando entrada y salida: si lo lanzó el dock sigue atado a Godot por la misma tubería. `/api/health` informa el PID. Dock: botón "Reiniciar hub" en el pie; bandeja: "Reiniciar hub" en el menú; CLI: `scompass restart`. Detalles: la tubería "pipe" de Node es un par de sockets y el test necesitó un pipe real (cat); OS.is_process_running de Godot no ve al hub reiniciado (es nieto), se usa kill -0. Los tests que leen Epiphany ya no dependen de su contenido exacto.
+
+### 5.11 Dock: el texto del paso despliega su detalle, divisor lista/detalle, bloque de tareas plegable · Hecho
+
+**Notas:** Pedido del usuario. El cuadradito tilda y el texto (o ▸) despliega el detalle: tildar al tocar el texto era contraintuitivo. VSplitContainer entre la lista de tareas y el detalle, con el divisor recordado por proyecto; "▾ Tareas · n" pliega la lista y el detalle usa todo el alto (también recordado). De paso: el selector de hito fijaba el ancho mínimo del dock al del hito más largo (`fit_to_longest_item = false`) y los botones del aviso bajan de renglón.
 
 ## M6 — Documentos y referencias (v2)  (12/12)
 

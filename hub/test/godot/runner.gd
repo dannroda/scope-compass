@@ -313,18 +313,49 @@ func test_refs_offline(a: Array) -> void:
 	await _refs_check(v, a, "refs_offline", false)
 
 
-# Un paso con detalle: ▸ lo despliega debajo del checkbox.
+# Un paso con detalle: tocar el texto (o ▸) lo despliega; tocar el texto no tilda el paso.
 func test_step_detail(a: Array) -> void:
 	var c := "step_detail"
 	var v := await _view(a[0])
 	_select(v, a[1])
 	var line: HBoxContainer = v.steps_box.get_child(0).get_child(0)
-	if not _check(c, line.get_child_count() == 2 and line.get_child(1).text == "▸", "falta el ▸ del detalle"): return
-	if not _check(c, v.steps_box.get_child(1).get_child(0).get_child_count() == 1, "un paso sin detalle no lleva ▸"): return
-	line.get_child(1).pressed.emit()
+	if not _check(c, line.get_child_count() == 3 and line.get_child(2).text == "▸", "falta el ▸ del detalle"): return
+	if not _check(c, v.steps_box.get_child(1).get_child(0).get_child_count() == 2, "un paso sin detalle no lleva ▸"): return
+	var was: bool = v.step_checkbox(0).button_pressed
+	line.get_child(1).pressed.emit() # el texto
 	await process_frame
 	var row = v.steps_box.get_child(0)
 	if not _check(c, row.get_child_count() == 2 and row.get_child(1).get_child(0).text == a[2], "detalle: %s" % (row.get_child(1).get_child(0).text if row.get_child_count() == 2 else "no se desplegó")): return
+	if not _check(c, v.step_checkbox(0).button_pressed == was, "tocar el texto cambió el estado del paso"): return
+	v.steps_box.get_child(0).get_child(0).get_child(2).pressed.emit() # ▾ lo vuelve a plegar
+	await process_frame
+	_check(c, v.steps_box.get_child(0).get_child_count() == 1, "no se plegó")
+
+
+# El bloque de tareas se pliega (el detalle toma todo el alto) y el divisor se recuerda.
+func test_split(a: Array) -> void:
+	var c := "split"
+	var saved := {}
+	var v := DockView.new()
+	v.set_pref = func(k, val): saved[k] = val
+	v.get_pref = func(k, d): return saved.get(k, d)
+	get_root().add_child(v)
+	await v.setup(a[0])
+	if not _check(c, v.tasks_header.text.begins_with("▾ Tareas · "), "encabezado: " + v.tasks_header.text): return
+	v.tasks_header.pressed.emit()
+	await process_frame
+	if not _check(c, not v.tree.visible and v.split.collapsed and v.tasks_header.text.begins_with("▸"), "no se plegó"): return
+	if not _check(c, saved.get("tasks_collapsed") == true, "no se recordó el plegado"): return
+	v.tasks_header.pressed.emit()
+	v.split.dragged.emit(123)
+	if not _check(c, saved.get("split") == 123 and v.tree.visible, "no se recordó el divisor"): return
+	# Una vista nueva arranca como quedó.
+	saved["tasks_collapsed"] = true
+	var w := DockView.new()
+	w.get_pref = func(k, d): return saved.get(k, d)
+	get_root().add_child(w)
+	await w.setup(a[0])
+	_check(c, not w.tree.visible, "la vista nueva no arrancó plegada")
 
 
 # "Reiniciar hub" desde el dock: vuelve, se reconecta y sigue siendo del dock (se cierra con stop_hub).

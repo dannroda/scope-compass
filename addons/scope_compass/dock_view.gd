@@ -45,6 +45,10 @@ var browser_button: Button
 var new_row: HBoxContainer
 var new_title: LineEdit
 var tree: Tree
+## Lista de tareas y detalle, con divisor arrastrable; el bloque de tareas se puede plegar.
+var split: VSplitContainer
+var tasks_header: Button
+var tasks_collapsed := false
 var detail_scroll: ScrollContainer
 var detail: VBoxContainer
 var detail_title: Label
@@ -106,6 +110,7 @@ func reload() -> void:
 	_loading = false
 	client.port = board.port()
 	_uncommitted = _count_uncommitted()
+	tasks_collapsed = bool(get_pref.call("tasks_collapsed", false))
 	var remembered: String = get_pref.call("milestone", "")
 	if current_milestone == "" or board.milestone(current_milestone) == null:
 		current_milestone = remembered if board.milestone(remembered) != null else board.default_milestone()
@@ -352,7 +357,8 @@ func _build() -> void:
 	btext.text = "Mostrando las tareas desde compass/ en solo lectura. Para editarlas, iniciá el hub o editá los JSON y commiteá con git."
 	btext.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	bv.add_child(btext)
-	var bb := HBoxContainer.new()
+	# Los botones bajan de renglón en un dock angosto.
+	var bb := HFlowContainer.new()
 	bv.add_child(bb)
 	var start := Button.new()
 	start.text = "Iniciar hub"
@@ -378,6 +384,8 @@ func _build() -> void:
 	milestone_select = OptionButton.new()
 	milestone_select.size_flags_horizontal = SIZE_EXPAND_FILL
 	milestone_select.clip_text = true
+	# Sin esto el ancho mínimo del dock es el del hito con el nombre más largo.
+	milestone_select.fit_to_longest_item = false
 	milestone_select.tooltip_text = "Hito"
 	milestone_select.item_selected.connect(_on_milestone_selected)
 	head.add_child(milestone_select)
@@ -404,6 +412,22 @@ func _build() -> void:
 	add.pressed.connect(func(): var t := new_title.text; new_title.clear(); create_task(t))
 	new_row.add_child(add)
 
+	split = VSplitContainer.new()
+	split.size_flags_vertical = SIZE_EXPAND_FILL
+	split.dragged.connect(func(offset: int): set_pref.call("split", offset))
+	add_child(split)
+	var tasks_panel := VBoxContainer.new()
+	tasks_panel.size_flags_vertical = SIZE_EXPAND_FILL
+	split.add_child(tasks_panel)
+	tasks_header = Button.new()
+	tasks_header.flat = true
+	tasks_header.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	tasks_header.tooltip_text = "Plegar o desplegar la lista de tareas"
+	tasks_header.pressed.connect(func():
+		tasks_collapsed = not tasks_collapsed
+		set_pref.call("tasks_collapsed", tasks_collapsed)
+		_apply_split())
+	tasks_panel.add_child(tasks_header)
 	tree = Tree.new()
 	tree.hide_root = true
 	tree.columns = 2
@@ -411,16 +435,17 @@ func _build() -> void:
 	tree.set_column_expand(1, false)
 	tree.set_column_custom_minimum_width(1, 44)
 	tree.size_flags_vertical = SIZE_EXPAND_FILL
-	tree.custom_minimum_size.y = 160
+	tree.custom_minimum_size.y = 80
 	tree.item_selected.connect(_on_item_selected)
 	tree.item_collapsed.connect(_on_item_collapsed)
-	add_child(tree)
+	tasks_panel.add_child(tree)
 
 	# El detalle se desplaza solo: una tarea con muchos pasos no le quita lugar a la lista.
 	detail_scroll = ScrollContainer.new()
 	detail_scroll.size_flags_vertical = SIZE_EXPAND_FILL
 	detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(detail_scroll)
+	detail_scroll.custom_minimum_size.y = 60
+	split.add_child(detail_scroll)
 	detail = VBoxContainer.new()
 	detail.size_flags_horizontal = SIZE_EXPAND_FILL
 	detail_scroll.add_child(detail)
@@ -522,6 +547,7 @@ func _render() -> void:
 
 
 func _render_tree() -> void:
+	_apply_split()
 	tree.clear()
 	var root := tree.create_item()
 	var ts := board.tasks_of(current_milestone)
@@ -549,6 +575,16 @@ func _render_tree() -> void:
 				it.select(0)
 
 
+## Encabezado del bloque de tareas y estado del divisor (plegado: el detalle usa todo el alto).
+func _apply_split() -> void:
+	var n := board.tasks_of(current_milestone).size()
+	tasks_header.text = ("▸ " if tasks_collapsed else "▾ ") + "Tareas · %d" % n
+	tree.visible = not tasks_collapsed
+	split.collapsed = tasks_collapsed
+	if not tasks_collapsed:
+		split.split_offset = int(get_pref.call("split", split.split_offset))
+
+
 func _render_detail() -> void:
 	var t = board.task(selected_task)
 	detail.visible = t != null
@@ -569,25 +605,40 @@ func _render_detail() -> void:
 		var row := VBoxContainer.new()
 		var line := HBoxContainer.new()
 		row.add_child(line)
+		# El cuadradito tilda; el texto (y ▸) despliega el detalle. Tildar al tocar el texto era contraintuitivo.
 		var cb := CheckBox.new()
-		cb.text = str(cl[i].get("text", "")).replace("`", "")
 		cb.button_pressed = cl[i].get("done", false)
 		cb.disabled = not online
-		cb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		cb.size_flags_horizontal = SIZE_EXPAND_FILL
+		cb.size_flags_vertical = SIZE_SHRINK_BEGIN
+		cb.tooltip_text = "Marcar como hecho"
 		var id: String = t.id
 		cb.toggled.connect(func(on: bool): update_task(id, func(cur): return { "checklist": _toggled(cur, i, on) }))
 		line.add_child(cb)
 		var detail_text := str(cl[i].get("detail", ""))
+		var key := "%s:%d" % [id, i]
+		var open: bool = _steps_open.get(key, false)
+		var toggle_detail := func(): _steps_open[key] = not open; _render_detail()
+		var label := Button.new()
+		label.flat = true
+		label.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.size_flags_horizontal = SIZE_EXPAND_FILL
+		label.text = str(cl[i].get("text", "")).replace("`", "")
+		label.focus_mode = Control.FOCUS_NONE if detail_text == "" else Control.FOCUS_ALL
+		label.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if detail_text != "" else Control.CURSOR_ARROW
+		label.tooltip_text = ("Ocultar detalle" if open else "Ver detalle") if detail_text != "" else ""
+		if cl[i].get("done", false):
+			label.add_theme_color_override("font_color", Color("#a69d8c"))
 		if detail_text != "":
-			var key := "%s:%d" % [id, i]
-			var open: bool = _steps_open.get(key, false)
+			label.pressed.connect(toggle_detail)
+		line.add_child(label)
+		if detail_text != "":
 			var toggle := Button.new()
 			toggle.flat = true
 			toggle.text = "▾" if open else "▸"
 			toggle.tooltip_text = "Ocultar detalle" if open else "Ver detalle"
 			toggle.size_flags_vertical = SIZE_SHRINK_BEGIN
-			toggle.pressed.connect(func(): _steps_open[key] = not open; _render_detail())
+			toggle.pressed.connect(toggle_detail)
 			line.add_child(toggle)
 			if open:
 				var detail_label := Label.new()
