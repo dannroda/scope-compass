@@ -239,3 +239,21 @@ test('el panel de detalle se agranda arrastrando su borde, con el teclado, y se 
   assert.equal(await width(), 460);
   await page.close();
 });
+
+test('"Copiar enlace": copia [[alias#id]] de la sección actual y avisa si la sección no tiene id', async () => {
+  await writeFile(join(dir, 'gdd.md'), GDD + '\n## Sin id propio\nTexto.\n');
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => pageErrors.push(e.message));
+  await page.goto(url + '#docs/gdd/camara');
+  await page.waitForSelector('.copy-link');
+  assert.equal(await page.textContent('.copy-link'), 'Copiar enlace');
+  assert.equal(await page.locator('.docs-bar .fragile').count(), 0);
+  await page.click('.copy-link');
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '[[gdd#camara]]');
+  await page.waitForSelector('#toast:has-text("Copiado: [[gdd#camara]]")');
+  await page.click('.toc a[href="#docs/gdd/sin-id-propio"]');
+  await page.waitForSelector('.docs-bar .fragile');
+  assert.match(await page.textContent('.docs-bar .fragile'), /Sin id/);
+  await ctx.close();
+});

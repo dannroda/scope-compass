@@ -533,7 +533,11 @@
         S.docs.length > 1 ? h('select', { 'aria-label': 'Documento', onchange: (e) => { location.hash = '#docs/' + encodeURIComponent(e.target.value); } },
           S.docs.map((x) => h('option', { value: x.alias, selected: x.alias === d.alias }, x.path))) : h('code', null, d.path),
         h('span', { class: 'pill' + (broken.length ? ' bad' : '') }, h('span', { class: 'dot' }), broken.length === 1 ? '1 referencia rota' : broken.length + ' referencias rotas'),
-        sec ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => copy('[[' + d.alias + '#' + sec.id + ']]') }, 'Copiar [[' + d.alias + '#' + sec.id + ']]') : null),
+        // Enlace [[alias#id]] a la sección actual, para pegarlo en notas o pasos (6.6).
+        sec && !sec.explicit ? h('span', { class: 'fragile', title: 'Agregá <!-- id: … --> debajo del título en ' + d.path + ' (o scompass doc stamp-ids ' + d.alias + ')' },
+          'Sin id: el enlace se rompe si cambiás el título') : null,
+        sec ? h('button', { class: 'btn ghost small copy-link', type: 'button', title: 'Copia [[' + d.alias + '#' + sec.id + ']] para pegar en notas o pasos',
+          onclick: () => copy('[[' + d.alias + '#' + sec.id + ']]') }, 'Copiar enlace') : null),
       h('div', { class: 'docs-grid' },
         h('nav', { class: 'toc', 'aria-label': 'Índice de ' + d.path }, d.sections.map((s) => h('a', {
           href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(s.id), 'aria-current': s.id === S.sec ? 'true' : null,
