@@ -277,13 +277,24 @@ func _refs_check(v, a: Array, c: String, online: bool) -> void:
 	if not _check(c, head is HBoxContainer and head.get_child(0).text.contains("Ventanas de ataque"), "no está la referencia"): return
 	head.get_child(0).pressed.emit()
 	await process_frame
-	var text = v.refs_box.get_node_or_null("Section")
-	if not _check(c, text is RichTextLabel, "no se desplegó la sección"): return
-	if not _check(c, await _until(func(): return is_instance_valid(text) and text.get_parsed_text().contains("Las ventanas de golpe son datos"), 5.0), "sin el texto de la sección: " + (text.text if is_instance_valid(text) else "")): return
-	if online:
-		if not _check(c, text.bbcode_enabled and text.text.contains("[color=#ff7085]class_name[/color]"), "sin GDScript coloreado: " + text.text): return
-	else:
-		if not _check(c, text.text.begins_with("### Ventanas de ataque"), "sin hub se esperaba el markdown: " + text.text): return
+	var box = v.refs_box.get_node_or_null("Section")
+	if not _check(c, box is VBoxContainer, "no se desplegó la sección"): return
+	var code_of = func():
+		for ch in box.get_children():
+			if ch is CodeEdit:
+				return ch
+		return null
+	var text_of = func():
+		var out := ""
+		for ch in box.get_children():
+			if ch is RichTextLabel:
+				out += ch.get_parsed_text()
+		return out
+	if not _check(c, await _until(func(): return is_instance_valid(box) and text_of.call().contains("Las ventanas de golpe son datos") and code_of.call() != null, 5.0), "sin texto o sin snippet: " + text_of.call()): return
+	var ce: CodeEdit = code_of.call()
+	if not _check(c, ce.text == "class_name AttackData\nextends Resource", "código: " + ce.text): return
+	if not _check(c, not ce.editable and ce.syntax_highlighter != null, "el CodeEdit tendría que ser de solo lectura y con resaltado"): return
+	if not _check(c, not text_of.call().contains("class_name"), "el código no tendría que estar también en el texto"): return
 	var broken := false
 	for ch in v.refs_box.get_children():
 		if ch is Label and ch.text.contains("Referencia rota: gdd.md#borrada"):

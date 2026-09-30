@@ -479,7 +479,7 @@ Un plugin de editor (`addons/scopecompass/`, GDScript) con tres niveles de integ
 2. **Cliente del hub.** `HTTPRequest` para la carga inicial y las escrituras, y `WebSocketPeer` (con `poll()` en `_process`) para los cambios en vivo, con el protocolo de §5.5. **Esto es v1.5.**
 3. **Integración con el editor:**
    - **Dock** con las tareas del hito actual (un `Tree` con columnas por estado, o una lista filtrada).
-   - **Secciones del GDD dentro del editor:** `RichTextLabel` no entiende markdown pero sí BBCode, así que el servidor expone `GET /api/docs/:alias/sections/:id?format=bbcode` y el dock muestra la sección referenciada sin salir de Godot.
+   - **Secciones del GDD dentro del editor:** `RichTextLabel` no entiende markdown pero sí BBCode, así que el servidor expone `GET /api/docs/:alias/sections/:id?format=blocks`: el texto en BBCode y cada bloque de código crudo. El dock muestra el texto en `RichTextLabel` y los snippets en un `CodeEdit` de solo lectura con el `GDScriptSyntaxHighlighter` del editor, así se ven como en el editor de scripts (colores, fuente y tema del usuario). Sin hub, el dock parte el markdown de disco de la misma forma. (`?format=bbcode` devuelve la sección entera en BBCode.)
    - **Tareas del script abierto:** con la señal `editor_script_changed` del `ScriptEditor`, el dock muestra las tareas vinculadas a ese archivo (requiere las referencias a `res://` del módulo de la tabla).
    - **Abrir desde la tarea:** `EditorInterface.edit_script(script, línea)` o `EditorInterface.open_scene_from_path(path)` para saltar al archivo vinculado.
    - **Levantar el servidor desde el plugin:** `OS.create_process("node", [...])` al activar el plugin y `OS.kill(pid)` al desactivarlo, así no hace falta abrir una terminal.

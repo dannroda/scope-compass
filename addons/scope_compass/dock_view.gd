@@ -51,9 +51,12 @@ var detail_title: Label
 var status_select: OptionButton
 var steps_box: VBoxContainer
 var refs_box: VBoxContainer
-## Referencias desplegadas ("ruta#id") y BBCode de las secciones pedidas al hub (6.7).
+## Referencias desplegadas ("ruta#id") y bloques de las secciones pedidas al hub (6.7).
 var _refs_open := {}
-var _bbcode := {}
+var _blocks := {}
+## Resaltado para los CodeEdit de los snippets. El plugin pasa el GDScriptSyntaxHighlighter del editor; fuera
+## del editor (tests) queda un CodeHighlighter básico.
+var make_highlighter: Callable = func(lang: String): return basic_highlighter(lang)
 var notice: Label
 var footer_dot: ColorRect
 var footer_label: Label
@@ -141,9 +144,9 @@ func _on_event(msg: Dictionary) -> void:
 				_render()
 		"doc_changed":
 			# El documento cambió: se olvida el BBCode de sus secciones y se recarga el índice.
-			for k in _bbcode.keys():
+			for k in _blocks.keys():
 				if str(k).begins_with(str(msg.get("alias", "")) + "#"):
-					_bbcode.erase(k)
+					_blocks.erase(k)
 			await reload()
 		"warning":
 			board.warn(msg)
@@ -577,35 +580,119 @@ func _render_refs(t: Dictionary) -> void:
 			web.pressed.connect(func(): OS.shell_open("%s/#docs/%s/%s" % [client.base_url(), str(d.alias).uri_encode(), str(s.id).uri_encode()]))
 			head.add_child(web)
 		if open:
+			var box := VBoxContainer.new()
+			box.name = "Section"
+			refs_box.add_child(box)
+			_fill_section(box, d, s)
+
+
+## La sección en bloques: texto en RichTextLabel y cada snippet en un CodeEdit de solo lectura, con el resaltado
+## del editor. Con hub, los bloques los arma el hub (texto en BBCode); sin hub, se parte el markdown de disco.
+func _fill_section(box: VBoxContainer, d: Dictionary, s: Dictionary) -> void:
+	var key := "%s#%s" % [d.alias, s.id]
+	var blocks = _blocks.get(key)
+	if blocks == null and online:
+		var wait := Label.new()
+		wait.text = "Cargando…"
+		box.add_child(wait)
+		var r := await client.request("GET", "/api/docs/%s/sections/%s?format=blocks" % [str(d.alias).uri_encode(), str(s.id).uri_encode()])
+		if not is_instance_valid(box):
+			return
+		wait.queue_free()
+		if r.code != 200:
+			var err := Label.new()
+			err.text = "No se pudo traer la sección."
+			box.add_child(err)
+			return
+		blocks = r.json.blocks
+		_blocks[key] = blocks
+	elif blocks == null:
+		var lines: PackedStringArray = d.get("lines", PackedStringArray())
+		blocks = split_blocks(lines.slice(s.start, s.end))
+	for b in blocks:
+		if b.type == "code":
+			box.add_child(_code_view(str(b.code), str(b.get("lang", ""))))
+		else:
 			var text := RichTextLabel.new()
 			text.fit_content = true
 			text.selection_enabled = true
 			text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			text.name = "Section"
-			refs_box.add_child(text)
-			_fill_section(text, d, s)
+			text.bbcode_enabled = b.has("bbcode")
+			text.text = str(b.get("bbcode", b.get("text", "")))
+			box.add_child(text)
 
 
-## Con hub: BBCode renderizado por el hub (con GDScript coloreado). Sin hub: el markdown de la sección, tal cual.
-func _fill_section(text: RichTextLabel, d: Dictionary, s: Dictionary) -> void:
-	var key := "%s#%s" % [d.alias, s.id]
-	if online:
-		text.bbcode_enabled = true
-		if _bbcode.has(key):
-			text.text = _bbcode[key]
-			return
-		text.text = "Cargando…"
-		var r := await client.request("GET", "/api/docs/%s/sections/%s?format=bbcode" % [str(d.alias).uri_encode(), str(s.id).uri_encode()])
-		if r.code == 200:
-			_bbcode[key] = r.json.bbcode
-			if is_instance_valid(text):
-				text.text = r.json.bbcode
-		elif is_instance_valid(text):
-			text.text = "No se pudo traer la sección."
-	else:
-		text.bbcode_enabled = false
-		var lines: PackedStringArray = d.get("lines", PackedStringArray())
-		text.text = "\n".join(lines.slice(s.start, s.end)) if lines.size() > 0 else "(sin hub: abrí el documento)"
+func _code_view(code: String, lang: String) -> CodeEdit:
+	var ce := CodeEdit.new()
+	ce.text = code
+	ce.editable = false
+	ce.scroll_fit_content_height = true
+	ce.gutters_draw_line_numbers = false
+	ce.minimap_draw = false
+	ce.highlight_current_line = false
+	ce.wrap_mode = TextEdit.LINE_WRAPPING_NONE
+	ce.size_flags_horizontal = SIZE_EXPAND_FILL
+	ce.syntax_highlighter = make_highlighter.call(lang)
+	return ce
+
+
+## Parte el markdown de una sección en bloques de texto (plano) y de código, igual que renderBlocks del hub.
+static func split_blocks(lines: PackedStringArray) -> Array:
+	var blocks := []
+	var buf := PackedStringArray()
+	var fence := ""
+	var lang := ""
+	var id_line := RegEx.create_from_string("^\\s*<!--\\s*id:\\s*[a-z0-9][a-z0-9_-]*\\s*-->\\s*$")
+	var fence_re := RegEx.create_from_string("^\\s{0,3}(```|~~~)\\s*([\\w+-]*)")
+	for line in lines:
+		if id_line.search(line):
+			continue
+		var f := fence_re.search(line)
+		if fence == "" and f:
+			var chunk := "\n".join(buf).strip_edges()
+			if chunk != "":
+				blocks.append({ "type": "text", "text": chunk })
+			buf = PackedStringArray()
+			fence = f.get_string(1)
+			lang = "gdscript" if f.get_string(2) == "gd" else f.get_string(2)
+			continue
+		if fence != "" and f and f.get_string(1) == fence and f.get_string(2) == "":
+			blocks.append({ "type": "code", "lang": lang, "code": "\n".join(buf) })
+			buf = PackedStringArray()
+			fence = ""
+			continue
+		buf.append(line)
+	if fence != "":
+		blocks.append({ "type": "code", "lang": lang, "code": "\n".join(buf) })
+	elif "\n".join(buf).strip_edges() != "":
+		blocks.append({ "type": "text", "text": "\n".join(buf).strip_edges() })
+	return blocks
+
+
+const _KEYWORDS := ["func", "var", "const", "class_name", "extends", "if", "elif", "else", "for", "while", "match",
+	"return", "pass", "break", "continue", "signal", "enum", "static", "await", "in", "is", "as", "not", "and", "or",
+	"self", "super", "true", "false", "null", "void", "class"]
+const _TYPES := ["int", "float", "bool", "String", "StringName", "Array", "Dictionary", "Vector2", "Vector3", "Node",
+	"Node2D", "Node3D", "Resource", "Color", "Callable", "PackedStringArray"]
+
+
+## Resaltado básico de GDScript para cuando no hay editor (el plugin usa el del editor).
+static func basic_highlighter(lang: String) -> SyntaxHighlighter:
+	if lang != "gdscript":
+		return null
+	var h := CodeHighlighter.new()
+	for k in _KEYWORDS:
+		h.add_keyword_color(k, Color("#ff7085"))
+	for t in _TYPES:
+		h.add_keyword_color(t, Color("#8effda"))
+	h.number_color = Color("#a1ffe0")
+	h.function_color = Color("#57b3ff")
+	h.symbol_color = Color("#abc9ff")
+	h.member_variable_color = Color("#dfe2e6")
+	h.add_color_region("#", "", Color("#8a929c"), true)
+	h.add_color_region("\"", "\"", Color("#ffeda1"))
+	h.add_color_region("@", " ", Color("#ffb373"), false)
+	return h
 
 
 static func _toggled(t: Dictionary, index: int, on: bool) -> Array:

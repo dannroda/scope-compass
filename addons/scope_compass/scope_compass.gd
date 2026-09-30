@@ -23,6 +23,11 @@ func _enter_tree() -> void:
 	es.add_property_info({ "name": KEEP_SETTING, "type": TYPE_BOOL })
 	_view.scompass_setting = func(): return str(es.get_setting(SCOMPASS_SETTING))
 	_view.keep_hub_setting = func(): return bool(es.get_setting(KEEP_SETTING))
+	# Los snippets de GDScript se ven como en el editor de scripts: su resaltado, sus colores y su fuente.
+	_view.make_highlighter = func(lang: String):
+		if lang == "gdscript" and ClassDB.can_instantiate("GDScriptSyntaxHighlighter"):
+			return ClassDB.instantiate("GDScriptSyntaxHighlighter")
+		return DockView.basic_highlighter(lang)
 	_view.get_pref = func(key: String, default): return es.get_project_metadata("scope_compass", key, default)
 	_view.set_pref = func(key: String, value): es.set_project_metadata("scope_compass", key, value)
 

@@ -128,3 +128,34 @@ export function renderBBCode(text) {
   }
   return out.join('').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';
 }
+
+/**
+ * La sección en bloques para el dock: [{ type: 'text', bbcode }, { type: 'code', lang, code }]. Los bloques de
+ * código van crudos: el dock los muestra en un CodeEdit con el resaltado del propio editor de Godot.
+ */
+export function renderBlocks(text) {
+  const lines = text.split('\n').filter((l) => !ID_LINE.test(l));
+  const blocks = [];
+  let buf = [];
+  let fence = null;
+  let lang = '';
+  const flushText = () => {
+    const chunk = buf.join('\n');
+    buf = [];
+    if (chunk.trim()) blocks.push({ type: 'text', bbcode: renderBBCode(chunk).replace(/\n+$/, '') });
+  };
+  for (const line of lines) {
+    const f = /^\s{0,3}(```|~~~)\s*([\w+-]*)/.exec(line);
+    if (fence === null && f) { flushText(); fence = f[1]; lang = ({ gd: 'gdscript' })[f[2]] ?? f[2]; continue; }
+    if (fence !== null && f && f[1] === fence && !f[2]) {
+      blocks.push({ type: 'code', lang, code: buf.join('\n') });
+      buf = [];
+      fence = null;
+      continue;
+    }
+    buf.push(line);
+  }
+  if (fence !== null) blocks.push({ type: 'code', lang, code: buf.join('\n') });
+  else flushText();
+  return blocks;
+}

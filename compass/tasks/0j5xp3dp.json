@@ -1,0 +1,13 @@
+{
+  "checklist": [],
+  "code": "6.10",
+  "created_at": "2026-09-30T02:43:13.328Z",
+  "milestone": "m06",
+  "notes": "Pedido del usuario: los snippets en el dock se ven mejor en un CodeEdit. `?format=blocks` (texto en BBCode, código crudo); el dock usa `GDScriptSyntaxHighlighter` del editor (verificado en el editor: resaltado y fuente `EditorFonts/source`); fuera del editor, un CodeHighlighter básico.",
+  "order": 10,
+  "refs": [],
+  "status": "done",
+  "test": "",
+  "title": "Snippets del dock en CodeEdit con el resaltado del editor",
+  "updated_at": "2026-09-30T02:43:13.799Z"
+}

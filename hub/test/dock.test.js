@@ -268,7 +268,7 @@ async function withDocs() {
   await setTask('m1-04', { refs: [{ doc: 'gdd.md', section: 'ventanas-ataque' }, { doc: 'gdd.md', section: 'borrada' }] });
 }
 
-test('dock con hub: la referencia se despliega con la sección en BBCode y el GDScript coloreado', { skip }, async () => {
+test('dock con hub: la referencia se despliega con el texto en BBCode y el snippet en un CodeEdit con resaltado', { skip }, async () => {
   await withDocs();
   const hub = await startHub();
   const r = await godotLive(['refs_online', dir, 'm1-04']);
@@ -276,7 +276,7 @@ test('dock con hub: la referencia se despliega con la sección en BBCode y el GD
   expectOk(r, 'refs_online');
 });
 
-test('dock sin hub: la referencia muestra el markdown de la sección leído de disco', { skip }, async () => {
+test('dock sin hub: la referencia se arma con el markdown de disco, con el snippet en un CodeEdit', { skip }, async () => {
   await withDocs();
   expectOk(await godot('refs_offline', dir, 'm1-04'), 'refs_offline');
 });

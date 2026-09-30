@@ -544,7 +544,7 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Referencias:** `docs/spec.md#godot`
 
-## M6 — Documentos y referencias (v2)  (9/9)
+## M6 — Documentos y referencias (v2)  (10/10)
 
 Visor de documentos del proyecto (GDD) y referencias estables entre tareas y secciones (§10).
 
@@ -658,6 +658,10 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 **Notas:** Criterios de §10.6 cumplidos: tests de docs (parser, refs check, stamp-ids, suggest), API, UI (detalle, vista Documentos, enlaces, cambio de gdd.md medido: menos de 1 s en 3 ediciones seguidas, sección borrada marca la tarea en vivo) y dock (BBCode con y sin hub), con los documentos reales de Epiphany y de este repo.
 
 **Referencias:** `docs/spec.md#criterios-v2`
+
+### 6.10 Snippets del dock en CodeEdit con el resaltado del editor · Hecho
+
+**Notas:** Pedido del usuario: los snippets en el dock se ven mejor en un CodeEdit. `?format=blocks` (texto en BBCode, código crudo); el dock usa `GDScriptSyntaxHighlighter` del editor (verificado en el editor: resaltado y fuente `EditorFonts/source`); fuera del editor, un CodeHighlighter básico.
 
 ## M7 — Hosting privado
 

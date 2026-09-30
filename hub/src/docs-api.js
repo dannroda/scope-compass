@@ -1,7 +1,7 @@
 // API de documentos (spec §10.4): índice, documento y sección renderizados, backlinks y referencias rotas.
 // Solo lectura. Los documentos se releen en cada request: son archivos chicos y siempre están al día.
 import { checkRefs, findDoc, findSection, LINK, loadDocs, sectionMarkdown } from './docs.js';
-import { renderBBCode, renderMarkdown } from './render.js';
+import { renderBBCode, renderBlocks, renderMarkdown } from './render.js';
 import { StoreError } from './store/json-files.js';
 
 // Tareas que referencian cada sección: "<ruta>#<id>" → [{ id, code, title, status, milestone }].
@@ -63,6 +63,8 @@ export function registerDocsApi(app, { store, projectDir }) {
     const markdown = sectionMarkdown(d, s);
     // ?format=bbcode: para el RichTextLabel del dock de Godot (6.7).
     if (req.query.format === 'bbcode') return { alias: d.alias, path: d.path, ...sectionInfo(d, s, links), bbcode: renderBBCode(markdown) };
+    // ?format=blocks: texto en BBCode y código crudo, para mostrarlo en un CodeEdit.
+    if (req.query.format === 'blocks') return { alias: d.alias, path: d.path, ...sectionInfo(d, s, links), blocks: renderBlocks(markdown) };
     return { alias: d.alias, path: d.path, ...sectionInfo(d, s, links), markdown, html: renderMarkdown(markdown, inside) };
   });
 
