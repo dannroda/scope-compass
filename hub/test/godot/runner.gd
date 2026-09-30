@@ -267,3 +267,36 @@ func test_start_hub_keep(a: Array) -> void:
 	await create_timer(1.0).timeout
 	if not _check(c, OS.is_process_running(pid), "el dock lo cerró igual"): return
 	print("PID ", pid)
+
+
+# --- Referencias a documentos (6.7) ---------------------------------------------------------------
+
+func _refs_check(v, a: Array, c: String, online: bool) -> void:
+	_select(v, a[1])
+	var head = v.refs_box.get_child(1) if v.refs_box.get_child_count() > 1 else null
+	if not _check(c, head is HBoxContainer and head.get_child(0).text.contains("Ventanas de ataque"), "no está la referencia"): return
+	head.get_child(0).pressed.emit()
+	await process_frame
+	var text = v.refs_box.get_node_or_null("Section")
+	if not _check(c, text is RichTextLabel, "no se desplegó la sección"): return
+	if not _check(c, await _until(func(): return is_instance_valid(text) and text.get_parsed_text().contains("Las ventanas de golpe son datos"), 5.0), "sin el texto de la sección: " + (text.text if is_instance_valid(text) else "")): return
+	if online:
+		if not _check(c, text.bbcode_enabled and text.text.contains("[color=#ff7085]class_name[/color]"), "sin GDScript coloreado: " + text.text): return
+	else:
+		if not _check(c, text.text.begins_with("### Ventanas de ataque"), "sin hub se esperaba el markdown: " + text.text): return
+	var broken := false
+	for ch in v.refs_box.get_children():
+		if ch is Label and ch.text.contains("Referencia rota: gdd.md#borrada"):
+			broken = true
+	_check(c, broken, "falta el aviso de la referencia rota")
+
+
+func test_refs_online(a: Array) -> void:
+	var v = await _online_view(a[0], "refs_online")
+	if v == null: return
+	await _refs_check(v, a, "refs_online", true)
+
+
+func test_refs_offline(a: Array) -> void:
+	var v := await _view(a[0])
+	await _refs_check(v, a, "refs_offline", false)

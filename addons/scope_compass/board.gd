@@ -13,6 +13,8 @@ var config = null
 var milestones: Array = []
 var tasks: Array = []
 var warnings: Array = []
+## Documentos: [{ alias, path, sections: [{ id, title, … }] }] (del hub, o de compass_reader.read_docs sin hub).
+var docs: Array = []
 
 
 func load_from(data: Dictionary) -> void:
@@ -20,6 +22,7 @@ func load_from(data: Dictionary) -> void:
 	milestones = data.get("milestones", [])
 	tasks = data.get("tasks", [])
 	warnings = data.get("warnings", [])
+	docs = data.get("docs", [])
 
 
 func project_name() -> String:
@@ -106,6 +109,26 @@ func warn(w: Dictionary) -> void:
 			if list[j].id == id:
 				list.remove_at(j)
 				break
+
+
+## Documento por alias o por ruta (las refs usan la ruta; los enlaces [[alias#id]], el alias).
+func doc(key: String):
+	for d in docs:
+		if d.alias == key:
+			return d
+	for d in docs:
+		if d.path == key:
+			return d
+	return null
+
+
+func section(d, id: String):
+	if d == null:
+		return null
+	for s in d.sections:
+		if s.id == id:
+			return s
+	return null
 
 
 static func steps(t: Dictionary) -> Array:

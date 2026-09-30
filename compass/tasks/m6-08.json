@@ -20,8 +20,8 @@
       "section": "migracion-notas"
     }
   ],
-  "status": "todo",
+  "status": "doing",
   "test": "En Epiphany, las notas con \"§\" dan propuestas revisables.",
   "title": "Migración de notas \"§N.N\"",
-  "updated_at": "2026-09-30T01:23:40.931Z"
+  "updated_at": "2026-09-30T02:19:10.197Z"
 }

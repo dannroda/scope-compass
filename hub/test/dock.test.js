@@ -258,3 +258,25 @@ test('modo "mantener": el hub sigue al cerrar el editor', { skip }, async () => 
     if (hubPid && alive(hubPid)) process.kill(hubPid, 'SIGTERM');
   }
 });
+
+// --- Referencias a documentos en el dock (6.7) ---
+const GDD = '# Juego\n<!-- id: juego -->\n\n### Ventanas de ataque\n<!-- id: ventanas-ataque -->\n\nLas ventanas de golpe son datos.\n\n```gdscript\nclass_name AttackData\nextends Resource\n```\n\n## Cámara\n<!-- id: camara -->\n';
+async function withDocs() {
+  await writeFile(join(dir, 'gdd.md'), GDD);
+  const cfgPath = join(dir, 'compass', 'config.json');
+  await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), docs: [{ alias: 'gdd', path: 'gdd.md' }] }));
+  await setTask('m1-04', { refs: [{ doc: 'gdd.md', section: 'ventanas-ataque' }, { doc: 'gdd.md', section: 'borrada' }] });
+}
+
+test('dock con hub: la referencia se despliega con la sección en BBCode y el GDScript coloreado', { skip }, async () => {
+  await withDocs();
+  const hub = await startHub();
+  const r = await godotLive(['refs_online', dir, 'm1-04']);
+  await hub.app.close();
+  expectOk(r, 'refs_online');
+});
+
+test('dock sin hub: la referencia muestra el markdown de la sección leído de disco', { skip }, async () => {
+  await withDocs();
+  expectOk(await godot('refs_offline', dir, 'm1-04'), 'refs_offline');
+});

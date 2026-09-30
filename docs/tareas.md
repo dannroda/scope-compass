@@ -544,7 +544,7 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Referencias:** `docs/spec.md#godot`
 
-## M6 — Documentos y referencias (v2)  (5/9)
+## M6 — Documentos y referencias (v2)  (7/9)
 
 Visor de documentos del proyecto (GDD) y referencias estables entre tareas y secciones (§10).
 
@@ -615,25 +615,29 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 **Referencias:** `docs/spec.md#documentos-ui`
 
-### 6.6 Enlaces en línea `[[alias#id]]` · En curso
+### 6.6 Enlaces en línea `[[alias#id]]` · Hecho
 
-- [ ] En notas, "Cómo probarlo" y pasos: enlace con el título actual de la sección
-- [ ] Rotos: marcados como tales
+- [x] En notas, "Cómo probarlo" y pasos: enlace con el título actual de la sección
+- [x] Rotos: marcados como tales
 
 **Prueba:** `[[gdd#ventanas-ataque]]` en una nota se ve como "Ventanas de ataque" y abre la sección.
 
+**Notas:** `rich()` convierte `[[alias#id]]` (fuera de `código`) en enlace con el título actual de la sección, o lo marca roto. En las tarjetas (botones) va como texto. Debajo de Notas y "Cómo probarlo" (textareas) se listan sus enlaces.
+
 **Referencias:** `docs/spec.md#referencias`
 
-### 6.7 Dock: referencias en BBCode · Pendiente
+### 6.7 Dock: referencias en BBCode · Hecho
 
-- [ ] `GET /api/docs/:alias/sections/:id?format=bbcode`
-- [ ] El detalle del dock lista las referencias y muestra la sección en un `RichTextLabel`
+- [x] `GET /api/docs/:alias/sections/:id?format=bbcode`
+- [x] El detalle del dock lista las referencias y muestra la sección en un `RichTextLabel`
 
 **Prueba:** El dock muestra la sección referenciada sin salir de Godot.
 
+**Notas:** `?format=bbcode` en `/api/docs/:alias/sections/:id` (`renderBBCode`: títulos, listas, tablas simples, enlaces, corchetes escapados y GDScript coloreado con los tokens de Prism). El dock lista las refs de la tarea, plegables, con la sección en un RichTextLabel y "↗" a la UI web; sin hub, el markdown leído de disco (`compass_reader.read_docs`, mismo parser en GDScript). Una vez apareció en una captura con xvfb el aviso de "Iniciar hub" sin que nadie lo tocara; no se repitió en 4 corridas.
+
 **Referencias:** `docs/spec.md#godot`, `docs/spec.md#documentos-servidor`
 
-### 6.8 Migración de notas "§N.N" · Pendiente
+### 6.8 Migración de notas "§N.N" · En curso
 
 - [ ] Detectar "`gdd.md` §N.N" en notas, pruebas y pasos
 - [ ] Proponer la referencia equivalente (sin aplicarla sola)

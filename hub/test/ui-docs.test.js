@@ -138,3 +138,25 @@ test('editar el documento con la UI abierta la actualiza sola', async () => {
   await page.waitForSelector('article.doc-body h3:has-text("Ventanas de golpe")', { timeout: 2000 });
   await page.close();
 });
+
+test('6.6: [[gdd#id]] en pasos y notas se ve con el título actual; roto, marcado; en `código`, literal', async () => {
+  await setTask('m1-06', {
+    notes: 'Ver [[gdd#ventanas-ataque]] y [[gdd#borrada]]; ejemplo: `[[gdd#camara]]`',
+    checklist: [{ text: 'Revisar [[gdd#camara]] antes', done: false }],
+    title: 'Tarea con [[gdd#combate]]'
+  });
+  const page = await open();
+  await page.click('.chip:has-text("M1")');
+  assert.match(await page.textContent('.card[data-id="m1-06"] .t'), /^Tarea con Combate$/, 'en la tarjeta, texto sin enlace');
+  assert.equal(await page.locator('.card[data-id="m1-06"] a').count(), 0);
+  await page.click('.card[data-id="m1-06"]');
+  assert.equal(await page.getAttribute('.checklist label a.doclink', 'href'), '#docs/gdd/camara');
+  assert.equal(await page.textContent('.checklist label a.doclink'), 'Cámara');
+  const notes = await page.$$eval('#d-notes ~ .doclinks > *', (els) => els.map((e) => e.textContent));
+  assert.deepEqual(notes, ['Enlaces:', 'Ventanas de ataque', '⚠ gdd#borrada']);
+  // El enlace lleva a la sección en la vista Documentos.
+  await page.click('#d-notes ~ .doclinks a');
+  await page.waitForSelector('article.doc-body h3#sec-ventanas-ataque');
+  assert.match(page.url(), /#docs\/gdd\/ventanas-ataque$/);
+  await page.close();
+});

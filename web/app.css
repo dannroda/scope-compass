@@ -179,6 +179,10 @@ nav.views a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--
 .token.function { color: var(--tk-fn); }
 .token.annotation, .token.decorator, .token.variable { color: var(--tk-ann); }
 
+.doclink { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.doclink.broken { color: var(--danger); text-decoration: none; font-family: var(--font-mono); font-size: .85em; }
+.doclinks { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 14px; }
+
 /* Vista Documentos */
 .docs { display: flex; flex-direction: column; gap: 12px; }
 .docs-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

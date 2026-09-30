@@ -76,14 +76,38 @@
     return el;
   }
 
-  // `código` inline -> <code>, el resto como texto plano
-  function rich(str) {
+  const LINK = /\[\[([^\]#\s]+)#([a-z0-9][a-z0-9_-]*)\]\]/g;
+  // `código` inline -> <code>; [[alias#id]] fuera del código -> enlace con el título actual de la sección (6.6).
+  // plain: sin enlaces (dentro de un botón, como las tarjetas, un <a> es inválido).
+  function rich(str, plain) {
     const frag = document.createDocumentFragment();
     String(str || '').split('`').forEach((part, i) => {
       if (!part) return;
-      frag.append(i % 2 ? h('code', null, part) : document.createTextNode(part.replace(/\*\*/g, '')));
+      if (i % 2) { frag.append(h('code', null, part)); return; }
+      let last = 0;
+      for (const m of part.matchAll(LINK)) {
+        frag.append(document.createTextNode(part.slice(last, m.index).replace(/\*\*/g, '')));
+        frag.append(plain ? document.createTextNode(sectionOf(docByKey(m[1]), m[2])?.title.replace(/`/g, '') ?? m[0]) : docLink(m[1], m[2]));
+        last = m.index + m[0].length;
+      }
+      frag.append(document.createTextNode(part.slice(last).replace(/\*\*/g, '')));
     });
     return frag;
+  }
+  // Enlace a una sección: su título actual, o marcado como roto si ya no existe.
+  function docLink(key, id) {
+    const d = docByKey(key);
+    const sec = sectionOf(d, id);
+    if (!sec) return h('span', { class: 'doclink broken', title: 'Referencia rota: la sección ya no existe' }, '⚠ ' + key + '#' + id);
+    const a = h('a', { class: 'doclink', href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(sec.id), title: d.path + '#' + sec.id,
+      onclick: (e) => e.stopPropagation() }, sec.title.replace(/`/g, ''));
+    return a;
+  }
+  // Enlaces [[alias#id]] de un texto que se edita en un textarea: se listan debajo para poder abrirlos.
+  function linksOf(text) {
+    const found = [...String(text || '').replace(/`[^`]*`/g, '').matchAll(LINK)];
+    if (!found.length) return null;
+    return h('div', { class: 'doclinks' }, h('span', { class: 'muted' }, 'Enlaces:'), found.map((m) => docLink(m[1], m[2])));
   }
 
   function toast(msg) {
@@ -242,7 +266,7 @@
       },
       onclick: () => openTask(t.id) },
       h('span', { class: 'meta' }, t.code ? h('span', null, t.code) : null, m && S.filter === 'all' ? h('span', { class: 'ms' }, m.code) : null),
-      h('span', { class: 't' }, rich(t.title)),
+      h('span', { class: 't' }, rich(t.title, true)),
       refsOf(t).length ? h('span', { class: 'refmark' + (brokenRefs(t).length ? ' bad' : ''), title: brokenRefs(t).length ? 'Tiene referencias rotas' : refsOf(t).length + ' referencias a documentos' },
         brokenRefs(t).length ? '⚠ ' : '§ ', refsOf(t).length) : null,
       p.total ? h('span', { class: 'cl' }, h('span', { class: 'bar', role: 'img', 'aria-label': p.done + ' de ' + p.total + ' pasos' }, h('i', { style: 'width:' + pct + '%' })), p.done + '/' + p.total) : null);
@@ -311,10 +335,12 @@
       renderRefs(t),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('label', { class: 'label', for: 'd-test' }, 'Cómo probarlo'),
-        h('textarea', { id: 'd-test', 'data-orig': t.test || '', onchange: (e) => updateTask(t.id, { test: e.target.value }) }, t.test || '')),
+        h('textarea', { id: 'd-test', 'data-orig': t.test || '', onchange: (e) => updateTask(t.id, { test: e.target.value }) }, t.test || ''),
+        linksOf(t.test)),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('label', { class: 'label', for: 'd-notes' }, 'Notas'),
-        h('textarea', { id: 'd-notes', 'data-orig': t.notes || '', onchange: (e) => updateTask(t.id, { notes: e.target.value }) }, t.notes || '')),
+        h('textarea', { id: 'd-notes', 'data-orig': t.notes || '', onchange: (e) => updateTask(t.id, { notes: e.target.value }) }, t.notes || ''),
+        linksOf(t.notes)),
       h('div', { class: 'footer-actions' },
         h('span', null, t.updated_at ? 'Actualizada ' + new Date(t.updated_at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : ''),
         S.confirmDelete
@@ -349,7 +375,6 @@
   const docByKey = (key) => S.docs.find((d) => d.alias === key) || S.docs.find((d) => d.path === key);
   const sectionOf = (d, id) => d && d.sections.find((x) => x.id === id);
   const refsOf = (t) => (Array.isArray(t.refs) ? t.refs : []);
-  const LINK = /\[\[([^\]#\s]+)#([a-z0-9][a-z0-9_-]*)\]\]/g;
 
   // Tareas que referencian una sección: refs estructuradas y enlaces [[alias#id]] (los de dentro de `…` no cuentan).
   function tasksFor(d, id) {

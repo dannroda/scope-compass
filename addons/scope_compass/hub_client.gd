@@ -95,8 +95,9 @@ func load_all():
 	var ts := await request("GET", "/api/tasks")
 	if cfg.code != 200 or ms.code != 200 or ts.code != 200:
 		return null
+	var docs := await request("GET", "/api/docs")
 	return { "config": cfg.json, "milestones": ms.json.milestones, "tasks": ts.json.tasks,
-		"warnings": ms.json.warnings + ts.json.warnings }
+		"warnings": ms.json.warnings + ts.json.warnings, "docs": docs.json.docs if docs.code == 200 else [] }
 
 
 func _same_path(a: String, b: String) -> bool:

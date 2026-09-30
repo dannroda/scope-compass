@@ -38,3 +38,93 @@ export function renderMarkdown(text, sections = []) {
   }
   return md.renderer.render(tokens, md.options, {});
 }
+
+// --- BBCode para el dock de Godot (6.7): RichTextLabel no entiende markdown. ---
+
+// Colores del resaltado sobre el tema oscuro del editor (los de la UI web en oscuro).
+const BB_COLORS = { keyword: '#ff7085', boolean: '#ff7085', 'class-name': '#8effda', builtin: '#8effda', string: '#ffeda1',
+  char: '#ffeda1', number: '#a1ffe0', constant: '#a1ffe0', comment: '#8a929c', function: '#57b3ff', annotation: '#ffb373',
+  decorator: '#ffb373', variable: '#ffb373' };
+// Corchetes del texto: [lb] y [rb], para que `Array[int]` no se lea como etiqueta.
+const bbEscape = (s) => s.replace(/[[\]]/g, (c) => (c === '[' ? '[lb]' : '[rb]'));
+
+function bbTokens(tokens) {
+  return tokens.map((t) => {
+    if (typeof t === 'string') return bbEscape(t);
+    const inner = bbTokens(Array.isArray(t.content) ? t.content : [t.content]);
+    const color = BB_COLORS[t.type] ?? (Array.isArray(t.alias) ? t.alias.map((a) => BB_COLORS[a]).find(Boolean) : BB_COLORS[t.alias]);
+    return color ? `[color=${color}]${inner}[/color]` : inner;
+  }).join('');
+}
+
+function bbInline(children) {
+  let out = '';
+  for (const c of children ?? []) {
+    switch (c.type) {
+      case 'text': out += bbEscape(c.content); break;
+      case 'code_inline': out += `[code]${bbEscape(c.content)}[/code]`; break;
+      case 'strong_open': out += '[b]'; break;
+      case 'strong_close': out += '[/b]'; break;
+      case 'em_open': out += '[i]'; break;
+      case 'em_close': out += '[/i]'; break;
+      case 's_open': out += '[s]'; break;
+      case 's_close': out += '[/s]'; break;
+      case 'link_open': out += `[url=${c.attrGet('href')}]`; break;
+      case 'link_close': out += '[/url]'; break;
+      case 'softbreak': out += ' '; break;
+      case 'hardbreak': out += '\n'; break;
+      default: out += bbEscape(c.content ?? '');
+    }
+  }
+  return out;
+}
+
+const HEADING_SIZE = { h1: 22, h2: 19, h3: 17, h4: 16, h5: 15, h6: 15 };
+
+/** BBCode de un fragmento de markdown para un RichTextLabel (bbcode_enabled). */
+export function renderBBCode(text) {
+  const clean = text.split('\n').filter((l) => !ID_LINE.test(l)).join('\n');
+  const tokens = md.parse(clean, {});
+  const out = [];
+  const lists = []; // pila de { ordered, n }
+  let cells = null;
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    switch (t.type) {
+      case 'heading_open':
+        out.push(`[font_size=${HEADING_SIZE[t.tag]}][b]${bbInline(tokens[i + 1].children)}[/b][/font_size]\n`);
+        i += 2;
+        break;
+      case 'paragraph_open':
+        out.push(bbInline(tokens[i + 1].children) + (lists.length ? '\n' : '\n\n'));
+        i += 2;
+        break;
+      case 'bullet_list_open': lists.push({ ordered: false }); break;
+      case 'ordered_list_open': lists.push({ ordered: true, n: Number(t.attrGet('start') ?? 1) }); break;
+      case 'bullet_list_close': case 'ordered_list_close':
+        lists.pop();
+        if (!lists.length) out.push('\n');
+        break;
+      case 'list_item_open': {
+        const l = lists[lists.length - 1];
+        out.push('    '.repeat(lists.length - 1) + (l.ordered ? `${l.n++}. ` : '• '));
+        break;
+      }
+      case 'fence': case 'code_block': {
+        const lang = ({ gd: 'gdscript' })[t.info.trim()] ?? t.info.trim();
+        const body = Prism.languages[lang] ? bbTokens(Prism.tokenize(t.content.replace(/\n$/, ''), Prism.languages[lang])) : bbEscape(t.content.replace(/\n$/, ''));
+        out.push(`[bgcolor=#0c0f13][code]${body}[/code][/bgcolor]\n\n`);
+        break;
+      }
+      case 'blockquote_open': out.push('[i]'); break;
+      case 'blockquote_close': out.push('[/i]'); break;
+      case 'hr': out.push('────────\n\n'); break;
+      case 'tr_open': cells = []; break;
+      case 'th_open': case 'td_open': cells.push(bbInline(tokens[i + 1].children)); i += 2; break;
+      case 'tr_close': out.push((tokens[i - 1]?.type === 'th_close' ? `[b]${cells.join('  |  ')}[/b]` : cells.join('  |  ')) + '\n'); cells = null; break;
+      case 'table_close': out.push('\n'); break;
+      default: break;
+    }
+  }
+  return out.join('').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';
+}

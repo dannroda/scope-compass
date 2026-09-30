@@ -50,6 +50,10 @@ var detail: VBoxContainer
 var detail_title: Label
 var status_select: OptionButton
 var steps_box: VBoxContainer
+var refs_box: VBoxContainer
+## Referencias desplegadas ("ruta#id") y BBCode de las secciones pedidas al hub (6.7).
+var _refs_open := {}
+var _bbcode := {}
 var notice: Label
 var footer_dot: ColorRect
 var footer_label: Label
@@ -135,6 +139,12 @@ func _on_event(msg: Dictionary) -> void:
 				if msg.id == selected_task:
 					selected_task = ""
 				_render()
+		"doc_changed":
+			# El documento cambió: se olvida el BBCode de sus secciones y se recarga el índice.
+			for k in _bbcode.keys():
+				if str(k).begins_with(str(msg.get("alias", "")) + "#"):
+					_bbcode.erase(k)
+			await reload()
 		"warning":
 			board.warn(msg)
 			if board.task(selected_task) == null:
@@ -398,6 +408,8 @@ func _build() -> void:
 	srow.add_child(status_select)
 	steps_box = VBoxContainer.new()
 	detail.add_child(steps_box)
+	refs_box = VBoxContainer.new()
+	detail.add_child(refs_box)
 
 	notice = Label.new()
 	notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -520,6 +532,80 @@ func _render_detail() -> void:
 		var id: String = t.id
 		cb.toggled.connect(func(on: bool): update_task(id, func(cur): return { "checklist": _toggled(cur, i, on) }))
 		steps_box.add_child(cb)
+	_render_refs(t)
+
+
+# --- Referencias a documentos (6.7) ----------------------------------------------------------------
+
+func _render_refs(t: Dictionary) -> void:
+	for c in refs_box.get_children():
+		refs_box.remove_child(c)
+		c.queue_free()
+	var refs = t.get("refs", [])
+	if not refs is Array or refs.is_empty():
+		return
+	var label := Label.new()
+	label.text = "Referencias"
+	label.add_theme_color_override("font_color", Color("#a69d8c"))
+	refs_box.add_child(label)
+	for r in refs:
+		var d = board.doc(str(r.get("doc", "")))
+		var s = board.section(d, str(r.get("section", "")))
+		var key := "%s#%s" % [r.get("doc", ""), r.get("section", "")]
+		if s == null:
+			var broken := Label.new()
+			broken.text = "⚠ Referencia rota: " + key
+			broken.add_theme_color_override("font_color", Color("#e8806e"))
+			refs_box.add_child(broken)
+			continue
+		var head := HBoxContainer.new()
+		refs_box.add_child(head)
+		var open: bool = _refs_open.get(key, false)
+		var toggle := Button.new()
+		toggle.flat = true
+		toggle.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		toggle.size_flags_horizontal = SIZE_EXPAND_FILL
+		toggle.clip_text = true
+		toggle.text = ("▾ " if open else "▸ ") + str(s.title).replace("`", "")
+		toggle.tooltip_text = "%s#%s" % [d.alias, s.id]
+		toggle.pressed.connect(func(): _refs_open[key] = not open; _render_detail())
+		head.add_child(toggle)
+		if online:
+			var web := Button.new()
+			web.text = "↗"
+			web.tooltip_text = "Abrir en el navegador"
+			web.pressed.connect(func(): OS.shell_open("%s/#docs/%s/%s" % [client.base_url(), str(d.alias).uri_encode(), str(s.id).uri_encode()]))
+			head.add_child(web)
+		if open:
+			var text := RichTextLabel.new()
+			text.fit_content = true
+			text.selection_enabled = true
+			text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			text.name = "Section"
+			refs_box.add_child(text)
+			_fill_section(text, d, s)
+
+
+## Con hub: BBCode renderizado por el hub (con GDScript coloreado). Sin hub: el markdown de la sección, tal cual.
+func _fill_section(text: RichTextLabel, d: Dictionary, s: Dictionary) -> void:
+	var key := "%s#%s" % [d.alias, s.id]
+	if online:
+		text.bbcode_enabled = true
+		if _bbcode.has(key):
+			text.text = _bbcode[key]
+			return
+		text.text = "Cargando…"
+		var r := await client.request("GET", "/api/docs/%s/sections/%s?format=bbcode" % [str(d.alias).uri_encode(), str(s.id).uri_encode()])
+		if r.code == 200:
+			_bbcode[key] = r.json.bbcode
+			if is_instance_valid(text):
+				text.text = r.json.bbcode
+		elif is_instance_valid(text):
+			text.text = "No se pudo traer la sección."
+	else:
+		text.bbcode_enabled = false
+		var lines: PackedStringArray = d.get("lines", PackedStringArray())
+		text.text = "\n".join(lines.slice(s.start, s.end)) if lines.size() > 0 else "(sin hub: abrí el documento)"
 
 
 static func _toggled(t: Dictionary, index: int, on: bool) -> Array:
