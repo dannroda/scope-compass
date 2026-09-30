@@ -2,7 +2,7 @@
 
 Organizador de proyectos de videojuegos: tablero de tareas por hito, con los datos en git. Una app local (CLI `scompass` + hub + UI web) y un dock para el editor de Godot los hacen cómodos de usar, pero nunca son el único lugar donde viven.
 
-**Estado:** v1 completa (M1–M3): la CLI `scompass`, el hub (`scompass serve`, API REST y WebSocket en `127.0.0.1`) y la UI web del tablero, en vivo entre pestañas, la CLI y ediciones a mano. Se abre con `node hub/bin/scompass.js serve --open`. Project Epiphany ya usa `compass/` como fuente de verdad (M4, en su semana de prueba). Nació del tablero en artifact de [Project Epiphany](../project-epiphany), que es su primer usuario. Por ahora es **Linux primero** (D15).
+**Estado:** v1 (M1–M3), el dock de Godot (M5) y v2 (M6) completos: la CLI `scompass`, el hub (`scompass serve`, API REST y WebSocket en `127.0.0.1`), la UI web del tablero en vivo, el dock "Tablero" en el editor, y los documentos del proyecto (GDD) con referencias estables desde las tareas. Se abre con `node hub/bin/scompass.js serve --open`. Project Epiphany ya usa `compass/` como fuente de verdad (M4, en su semana de prueba). Nació del tablero en artifact de [Project Epiphany](../project-epiphany), que es su primer usuario. Por ahora es **Linux primero** (D15).
 
 ## Documentación
 
