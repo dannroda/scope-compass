@@ -7,6 +7,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { exportMarkdown } from './export-md.js';
+import { loadDocs, resolveRef, sectionMarkdown } from './docs.js';
 import { importArtifact } from './import-artifact.js';
 import { KINDS, loadValidators, parseDoc, SCHEMA_DIR } from './schema.js';
 import { canonical } from './store/canonical.js';
@@ -34,6 +35,8 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   set <id> [--title t] [--notes n] [--test p] [--code c] [--milestone m] [--status s]
                                             cambia solo esos campos
   milestone list | show <id> | set <id> --file m.json
+  doc list                                  documentos de config.json con su índice de secciones
+  doc show <alias>#<id> [--raw]             una sección (--raw: solo el markdown, para agentes)
   export md [--out docs/tareas.md]          regenera el markdown (también se hace solo al escribir)
   import artifact <carpeta> [--dry-run] [--overwrite]
                                             migra el export de ArtifactData (milestones/, tasks/)
@@ -54,6 +57,7 @@ const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
+  raw: { type: 'boolean' },
   port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' },
   title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
@@ -222,6 +226,39 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (d.notes) print(`Notas: ${d.notes}`);
       if (d.refs?.length) print(`Referencias: ${d.refs.map((r) => `${r.doc}#${r.section}`).join(', ')}`);
       return 0;
+    },
+
+    async doc() {
+      const [sub, target] = rest;
+      const all = await store.loadAll();
+      const docs = await loadDocs(project, all.config);
+      if (sub === 'list') {
+        if (o.json) {
+          return done({ docs: docs.map((d) => ({ alias: d.alias, path: d.path, warnings: d.warnings,
+            sections: d.sections.map(({ id, title, level, explicit }) => ({ id, title, level, explicit })) })) });
+        }
+        if (!docs.length) print('Sin documentos: agregalos en compass/config.json › docs.');
+        for (const d of docs) {
+          const fragile = d.sections.filter((s) => !s.explicit).length;
+          print(`${d.alias.padEnd(12)} ${d.path}  ${d.sections.length} secciones${fragile ? ` · ${fragile} sin id (frágiles)` : ''}`);
+          for (const w of d.warnings) warn(`aviso [${w.code}] ${d.path}: ${w.message}`);
+        }
+        return 0;
+      }
+      if (sub === 'show') {
+        const r = resolveRef(docs, need(target, '<alias>#<id>'));
+        if (!r.doc) throw new StoreError('not_found', `no hay un documento "${r.key}" (doc list muestra los que hay)`);
+        if (!r.section) throw new StoreError('not_found', `no hay una sección "${r.id}" en ${r.doc.path}`);
+        const md = sectionMarkdown(r.doc, r.section);
+        if (o.raw) { out.write(md); return 0; }
+        const { id, title, level, explicit, start, end } = r.section;
+        if (o.json) return done({ alias: r.doc.alias, path: r.doc.path, id, title, level, explicit, lines: [start + 1, end], markdown: md });
+        print(`${r.doc.alias}#${id} · ${r.doc.path}, líneas ${start + 1}–${end}${explicit ? '' : ' · sin id (frágil)'}`);
+        print('');
+        out.write(md);
+        return 0;
+      }
+      throw new UsageError(`subcomando desconocido: doc ${sub ?? ''}`);
     },
 
     async export() {

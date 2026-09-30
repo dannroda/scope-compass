@@ -544,7 +544,7 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Referencias:** `docs/spec.md#godot`
 
-## M6 — Documentos y referencias (v2)  (0/9)
+## M6 — Documentos y referencias (v2)  (1/9)
 
 Visor de documentos del proyecto (GDD) y referencias estables entre tareas y secciones (§10).
 
@@ -554,18 +554,20 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 - `scompass refs check` detecta referencias rotas.
 - El dock muestra la sección referenciada en BBCode.
 
-### 6.1 Parser de documentos e índice de secciones · Pendiente
+### 6.1 Parser de documentos e índice de secciones · Hecho
 
-- [ ] Índice `{id, title, level, start, end}`; una sección llega hasta el próximo título de nivel igual o superior
-- [ ] Id explícito (`<!-- id: … -->`) o slug del título, marcado como frágil
-- [ ] Documentos de `config.json › docs` (alias y ruta o patrón)
-- [ ] `scompass doc list` y `doc show <alias>#<id> [--raw]`
+- [x] Índice `{id, title, level, start, end}`; una sección llega hasta el próximo título de nivel igual o superior
+- [x] Id explícito (`<!-- id: … -->`) o slug del título, marcado como frágil
+- [x] Documentos de `config.json › docs` (alias y ruta o patrón)
+- [x] `scompass doc list` y `doc show <alias>#<id> [--raw]`
 
 **Prueba:** `scompass --dir ../project-epiphany doc show gdd#ventanas-ataque --raw` devuelve justo esa sección.
 
+**Notas:** `hub/src/docs.js`: índice de secciones (ignora bloques de código; ids explícitos o slug frágil; ids explícitos repetidos avisan), documentos por ruta o patrón, y refs resueltas por ruta (`gdd.md`) o alias (`gdd`). `scompass doc list` y `doc show alias#id [--raw|--json]`. Todas las refs de este repo resuelven contra `spec.md`.
+
 **Referencias:** `docs/spec.md#ids-seccion`, `docs/spec.md#documentos-servidor`
 
-### 6.2 Chequeo y edición de referencias · Pendiente
+### 6.2 Chequeo y edición de referencias · En curso
 
 - [ ] `scompass refs check`: lista las rotas y sale con código ≠ 0
 - [ ] `scompass ref add <tarea> <alias>#<id>` (y quitar)
