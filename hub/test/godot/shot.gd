@@ -13,7 +13,10 @@ func _initialize() -> void:
 	v.set_anchors_preset(Control.PRESET_FULL_RECT)
 	v.offset_left = 8; v.offset_top = 8; v.offset_right = -8; v.offset_bottom = -8
 	get_root().add_child(v)
-	v.setup(a[0])
+	await v.setup(a[0])
+	for i in 120:
+		if v.online and not v._loading: break
+		await create_timer(0.05).timeout
 	if a.size() > 2:
 		v.selected_task = a[2]
 		v._render()

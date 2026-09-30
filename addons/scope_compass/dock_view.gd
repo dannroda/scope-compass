@@ -2,9 +2,14 @@
 extends VBoxContainer
 ## Vista del dock "Tablero" (mockups Dock_Tasks y Dock_Offline). Es un Control común: el plugin la pone
 ## dentro de un EditorDock y los tests la instancian sin editor.
+## Con hub: carga por HTTP, cambios en vivo por WebSocket y edición. Sin hub: compass/ en solo lectura.
+
+signal state_changed(online: bool)
+signal loaded
 
 const Reader := preload("compass_reader.gd")
 const Board := preload("board.gd")
+const HubClient := preload("hub_client.gd")
 
 ## Preferencias por proyecto. El plugin las guarda en la metadata del proyecto del editor.
 var get_pref: Callable = func(_key: String, default): return default
@@ -12,45 +17,74 @@ var set_pref: Callable = func(_key: String, _value): pass
 
 var project_root := ""
 var board := Board.new()
+var client := HubClient.new()
 var online := false
 var current_milestone := ""
 var selected_task := ""
 var _collapsed := { "done": true }
 var _uncommitted := -1
-var _read_at := 0
+var _loading := false
+var _reload_again := false
+var _queues := {}
 
 var banner: PanelContainer
 var banner_title: Label
 var warnings_label: Label
 var milestone_select: OptionButton
 var reload_button: Button
+var browser_button: Button
+var new_row: HBoxContainer
+var new_title: LineEdit
 var tree: Tree
 var detail: VBoxContainer
 var detail_title: Label
 var status_select: OptionButton
 var steps_box: VBoxContainer
+var notice: Label
 var footer_dot: ColorRect
 var footer_label: Label
 var footer_right: Label
 var _poll: Timer
+var _notice_timer: Timer
 
 
 func _init() -> void:
 	name = "Tablero"
 	size_flags_vertical = SIZE_EXPAND_FILL
 	add_theme_constant_override("separation", 6)
+	add_child(client)
+	client.went_online.connect(_on_online)
+	client.went_offline.connect(_on_offline)
+	client.event_received.connect(_on_event)
 	_build()
 
 
 ## Punto de entrada: la raíz del proyecto (donde está compass/).
 func setup(root: String) -> void:
 	project_root = root
-	reload()
+	client.project_root = root
+	await reload()
+	await _try_hub()
 
 
+## Recarga completa: por HTTP si hay hub, de disco si no. Si llega otra mientras carga, se repite.
 func reload() -> void:
-	board.load_from(Reader.read(project_root))
-	_read_at = Time.get_unix_time_from_system()
+	if _loading:
+		_reload_again = true
+		return
+	_loading = true
+	while true:
+		_reload_again = false
+		var data = null
+		if online:
+			data = await client.load_all()
+		if data == null:
+			data = Reader.read(project_root)
+		board.load_from(data)
+		if not _reload_again:
+			break
+	_loading = false
+	client.port = board.port()
 	_uncommitted = _count_uncommitted()
 	var remembered: String = get_pref.call("milestone", "")
 	if current_milestone == "" or board.milestone(current_milestone) == null:
@@ -58,6 +92,102 @@ func reload() -> void:
 	if selected_task != "" and board.task(selected_task) == null:
 		selected_task = ""
 	_render()
+	loaded.emit()
+
+
+func _try_hub() -> void:
+	if not online:
+		await client.detect()
+
+
+# --- Hub ---------------------------------------------------------------------------------------
+
+func _on_online() -> void:
+	online = true
+	state_changed.emit(true)
+
+
+func _on_offline() -> void:
+	online = false
+	state_changed.emit(false)
+	await reload()
+
+
+func _on_event(msg: Dictionary) -> void:
+	match msg.get("type"):
+		"hello":
+			await reload()
+		"upsert":
+			if board.apply(msg.collection, msg.id, msg.doc):
+				_render()
+		"delete":
+			if board.apply(msg.collection, msg.id, null):
+				if msg.id == selected_task:
+					selected_task = ""
+				_render()
+		"warning":
+			board.warn(msg)
+			if board.task(selected_task) == null:
+				selected_task = ""
+			_render()
+
+
+## Escrituras de una tarea, en fila. El cambio se calcula al enviarlo, sobre el estado más reciente y con
+## su etag (como la UI web): tildar dos pasos seguidos no da 409 ni pisa el primero.
+## patch: un Dictionary o un Callable(task) -> Dictionary.
+func update_task(id: String, patch) -> void:
+	if not _queues.has(id):
+		_queues[id] = []
+	_queues[id].append(patch)
+	if _queues[id].size() > 1:
+		return
+	while not _queues[id].is_empty():
+		await _send_update(id, _queues[id][0])
+		_queues[id].pop_front()
+	_queues.erase(id)
+
+
+func _send_update(id: String, patch) -> void:
+	var t = board.task(id)
+	if t == null or not online:
+		return
+	var body: Dictionary = patch.call(t) if patch is Callable else patch
+	var r := await client.request("PATCH", "/api/tasks/" + id.uri_encode(), body, ["If-Match: \"%s\"" % t.get("etag", "")])
+	if r.code == 200:
+		board.apply("tasks", id, r.json)
+		_render()
+	elif r.code == 409 and r.json is Dictionary and r.json.error.get("current") is Dictionary:
+		# Alguien la cambió antes: se toma la versión actual y se avisa (spec §5.3).
+		var cur: Dictionary = r.json.error.current
+		var doc: Dictionary = cur.doc.duplicate()
+		doc["id"] = cur.id
+		doc["etag"] = cur.etag
+		board.apply("tasks", id, doc)
+		_render()
+		show_notice("Otra pestaña o la CLI cambió esta tarea; se actualizó. Revisá y volvé a aplicar tu cambio.")
+	else:
+		var msg: String = r.json.error.message if r.json is Dictionary and r.json.has("error") else "sin respuesta del hub"
+		show_notice("No se pudo guardar: " + msg)
+
+
+func create_task(title: String) -> void:
+	title = title.strip_edges()
+	if title == "" or current_milestone == "" or not online:
+		return
+	var r := await client.request("POST", "/api/tasks", { "title": title, "milestone": current_milestone, "code": "",
+		"status": "todo", "checklist": [], "test": "", "notes": "", "refs": [] })
+	if r.code == 201:
+		board.apply("tasks", r.json.id, r.json)
+		selected_task = r.json.id
+		_render()
+	else:
+		show_notice("No se pudo crear la tarea.")
+
+
+func show_notice(text: String) -> void:
+	notice.text = text
+	notice.visible = true
+	_notice_timer.start()
 
 
 # --- Construcción ----------------------------------------------------------------------------
@@ -84,7 +214,7 @@ func _build() -> void:
 	bv.add_child(bb)
 	var retry := Button.new()
 	retry.text = "Reintentar"
-	retry.pressed.connect(reload)
+	retry.pressed.connect(func(): await reload(); await _try_hub())
 	bb.add_child(retry)
 	var open_tasks := Button.new()
 	open_tasks.text = "Abrir compass/tasks"
@@ -110,6 +240,23 @@ func _build() -> void:
 	reload_button.text = "↻"
 	reload_button.pressed.connect(reload)
 	head.add_child(reload_button)
+	browser_button = Button.new()
+	browser_button.tooltip_text = "Abrir el tablero en el navegador"
+	browser_button.text = "↗"
+	browser_button.pressed.connect(func(): OS.shell_open(client.base_url() + "/"))
+	head.add_child(browser_button)
+
+	new_row = HBoxContainer.new()
+	add_child(new_row)
+	new_title = LineEdit.new()
+	new_title.placeholder_text = "Nueva tarea en este hito"
+	new_title.size_flags_horizontal = SIZE_EXPAND_FILL
+	new_title.text_submitted.connect(func(t): new_title.clear(); create_task(t))
+	new_row.add_child(new_title)
+	var add := Button.new()
+	add.text = "Agregar"
+	add.pressed.connect(func(): var t := new_title.text; new_title.clear(); create_task(t))
+	new_row.add_child(add)
 
 	tree = Tree.new()
 	tree.hide_root = true
@@ -139,9 +286,21 @@ func _build() -> void:
 	for s in Board.STATUSES:
 		status_select.add_item(s.label)
 		status_select.set_item_metadata(status_select.item_count - 1, s.id)
+	status_select.item_selected.connect(func(i): if selected_task != "": update_task(selected_task, { "status": status_select.get_item_metadata(i) }))
 	srow.add_child(status_select)
 	steps_box = VBoxContainer.new()
 	detail.add_child(steps_box)
+
+	notice = Label.new()
+	notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	notice.add_theme_color_override("font_color", Color("#e0a95a"))
+	notice.visible = false
+	add_child(notice)
+	_notice_timer = Timer.new()
+	_notice_timer.one_shot = true
+	_notice_timer.wait_time = 6.0
+	_notice_timer.timeout.connect(func(): notice.visible = false)
+	add_child(_notice_timer)
 
 	var foot := HBoxContainer.new()
 	add_child(foot)
@@ -156,15 +315,23 @@ func _build() -> void:
 	footer_right.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	foot.add_child(footer_right)
 
-	# Sin hub, se relee compass/ cada 5 s: una edición a mano o un git pull se ven solos.
+	# Sin hub: cada 3 s se busca el hub y se relee compass/ (una edición a mano o un git pull se ven solos).
 	_poll = Timer.new()
-	_poll.wait_time = 5.0
-	_poll.timeout.connect(func(): if not online and project_root != "": reload())
+	_poll.wait_time = 3.0
+	_poll.timeout.connect(func():
+		if not online and project_root != "":
+			await _try_hub()
+			if not online:
+				await reload())
 	add_child(_poll)
 
 
 func _ready() -> void:
 	_poll.start()
+
+
+func _exit_tree() -> void:
+	client.close()
 
 
 # --- Render ----------------------------------------------------------------------------------
@@ -174,6 +341,8 @@ func _render() -> void:
 	banner_title.text = "No hay hub en 127.0.0.1:%d" % board.port()
 	warnings_label.visible = board.warnings.size() > 0
 	warnings_label.text = "\n".join(board.warnings.map(func(w): return "%s · %s" % [w.path, w.message]))
+	browser_button.disabled = not online
+	new_row.visible = online
 
 	milestone_select.clear()
 	for m in board.milestones:
@@ -188,10 +357,7 @@ func _render() -> void:
 
 	footer_dot.color = Color("#6fbf94") if online else Color("#e0655a")
 	footer_label.text = ("127.0.0.1:%d" % board.port()) if online else "Sin hub · solo lectura"
-	var parts := []
-	if _uncommitted >= 0:
-		parts.append("compass: %d sin commitear" % _uncommitted)
-	footer_right.text = " · ".join(parts)
+	footer_right.text = ("compass: %d sin commitear" % _uncommitted) if _uncommitted >= 0 else ""
 
 
 func _render_tree() -> void:
@@ -233,6 +399,7 @@ func _render_detail() -> void:
 			status_select.select(i)
 	status_select.disabled = not online
 	for c in steps_box.get_children():
+		steps_box.remove_child(c)
 		c.queue_free()
 	var cl = t.get("checklist", [])
 	for i in (cl.size() if cl is Array else 0):
@@ -241,7 +408,20 @@ func _render_detail() -> void:
 		cb.button_pressed = cl[i].get("done", false)
 		cb.disabled = not online
 		cb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var id: String = t.id
+		cb.toggled.connect(func(on: bool): update_task(id, func(cur): return { "checklist": _toggled(cur, i, on) }))
 		steps_box.add_child(cb)
+
+
+static func _toggled(t: Dictionary, index: int, on: bool) -> Array:
+	var out := []
+	var cl = t.get("checklist", [])
+	for j in (cl.size() if cl is Array else 0):
+		var c: Dictionary = cl[j].duplicate()
+		if j == index:
+			c["done"] = on
+		out.append(c)
+	return out
 
 
 # --- Eventos ---------------------------------------------------------------------------------

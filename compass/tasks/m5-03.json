@@ -1,22 +1,22 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Detectar el hub por `/api/health` del mismo proyecto"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Carga por HTTP y cambios por `WebSocketPeer` con reconexión"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Pasar de solo lectura a edición (y al revés) según haya hub"
     }
   ],
   "code": "5.3",
   "created_at": "2026-09-29T23:49:27.167Z",
   "milestone": "m05",
-  "notes": "",
+  "notes": "`hub_client.gd`: detecta el hub por `/api/health` del mismo proyecto, carga por HTTP y aplica eventos del `WebSocketPeer`. Sin hub reintenta cada 3 s y lee compass/. Tests con Godot y un hub reales: un cambio de la web llega al dock en menos de 1 s; el hub se cae y vuelve y el dock se reconecta solo.",
   "order": 3,
   "refs": [
     {
@@ -28,8 +28,8 @@
       "section": "websocket"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "Con el hub corriendo, un cambio desde la UI web se ve en el dock al instante.",
   "title": "Cliente del hub",
-  "updated_at": "2026-09-29T23:49:27.167Z"
+  "updated_at": "2026-09-29T23:59:31.436Z"
 }

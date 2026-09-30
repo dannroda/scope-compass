@@ -71,6 +71,43 @@ func default_milestone() -> String:
 	return milestones[0].id if milestones.size() > 0 else ""
 
 
+## Aplica un documento del hub (o lo quita si doc es null). Devuelve si cambió algo.
+func apply(collection: String, id: String, doc) -> bool:
+	var list: Array = milestones if collection == "milestones" else tasks
+	var i := -1
+	for j in list.size():
+		if list[j].id == id:
+			i = j
+	if doc == null:
+		if i < 0:
+			return false
+		list.remove_at(i)
+	elif i >= 0:
+		list[i] = doc
+	else:
+		list.append(doc)
+	if collection == "milestones":
+		list.sort_custom(func(a, b): return _num(a.get("order")) < _num(b.get("order")))
+	# Un archivo que se corrigió deja de estar en los avisos.
+	var path := "compass/%s/%s.json" % [collection, id]
+	warnings = warnings.filter(func(w): return w.path != path)
+	return true
+
+
+## Un aviso del hub (un archivo que pasó a inválido): reemplaza el del mismo archivo y lo saca de la lista.
+func warn(w: Dictionary) -> void:
+	warnings = warnings.filter(func(x): return x.path != w.get("path"))
+	warnings.append({ "code": w.get("code", ""), "path": w.get("path", ""), "message": w.get("message", "") })
+	var parts := str(w.get("path", "")).split("/")
+	if parts.size() == 3 and parts[0] == "compass" and w.get("code") != "unknown_milestone":
+		var list: Array = milestones if parts[1] == "milestones" else tasks
+		var id := parts[2].get_basename()
+		for j in list.size():
+			if list[j].id == id:
+				list.remove_at(j)
+				break
+
+
 static func steps(t: Dictionary) -> Array:
 	var cl = t.get("checklist", [])
 	cl = cl if cl is Array else []

@@ -427,7 +427,7 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
 **Notas:** Depende del usuario.
 
-## M5 — Dock de Godot (v1.5)  (2/7)
+## M5 — Dock de Godot (v1.5)  (4/7)
 
 Addon `scope_compass` con un dock que muestra las tareas del hito actual y las mueve a través del hub.
 
@@ -462,23 +462,27 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Referencias:** `docs/spec.md#godot`, `docs/spec.md#sin-app`
 
-### 5.3 Cliente del hub · Pendiente
+### 5.3 Cliente del hub · Hecho
 
-- [ ] Detectar el hub por `/api/health` del mismo proyecto
-- [ ] Carga por HTTP y cambios por `WebSocketPeer` con reconexión
-- [ ] Pasar de solo lectura a edición (y al revés) según haya hub
+- [x] Detectar el hub por `/api/health` del mismo proyecto
+- [x] Carga por HTTP y cambios por `WebSocketPeer` con reconexión
+- [x] Pasar de solo lectura a edición (y al revés) según haya hub
 
 **Prueba:** Con el hub corriendo, un cambio desde la UI web se ve en el dock al instante.
 
+**Notas:** `hub_client.gd`: detecta el hub por `/api/health` del mismo proyecto, carga por HTTP y aplica eventos del `WebSocketPeer`. Sin hub reintenta cada 3 s y lee compass/. Tests con Godot y un hub reales: un cambio de la web llega al dock en menos de 1 s; el hub se cae y vuelve y el dock se reconecta solo.
+
 **Referencias:** `docs/spec.md#godot`, `docs/spec.md#websocket`
 
-### 5.4 Editar desde el dock · Pendiente
+### 5.4 Editar desde el dock · Hecho
 
-- [ ] Cambiar el estado y tildar pasos
-- [ ] Etag y 409 (en fila por tarea, como la UI web)
-- [ ] "Nueva tarea" y abrir el tablero en el navegador
+- [x] Cambiar el estado y tildar pasos
+- [x] Etag y 409 (en fila por tarea, como la UI web)
+- [x] "Nueva tarea" y abrir el tablero en el navegador
 
 **Prueba:** Mover una tarea desde el dock se ve en la UI web al instante.
+
+**Notas:** Estado y pasos editables, en fila por tarea con el cambio calculado al enviar (como la UI web); `409` toma la versión actual y avisa. "Nueva tarea" en el hito elegido y botón para abrir el tablero en el navegador. Coordinación Godot ↔ Node en los tests por líneas de stdout y un archivo marcador.
 
 **Referencias:** `docs/spec.md#godot`, `docs/spec.md#concurrencia`
 

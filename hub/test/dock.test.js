@@ -60,3 +60,113 @@ test('el pie cuenta los archivos de compass/ sin commitear', { skip }, async () 
   await setTask('m1-02', { status: 'todo' });
   expectOk(await godot('uncommitted', dir, '2'), 'uncommitted');
 });
+
+// --- Con hub (5.3, 5.4) ---
+import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { loadValidators } from '../src/schema.js';
+import { createJsonFilesStore } from '../src/store/json-files.js';
+import { createServer, listen } from '../src/server.js';
+
+const V = loadValidators();
+
+async function startHub(port = 0) {
+  const app = createServer({ projectDir: dir, store: createJsonFilesStore(join(dir, 'compass'), { validators: V }), validators: V, watch: true });
+  const addr = await listen(app, port);
+  const cfgPath = join(dir, 'compass', 'config.json');
+  await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), port: addr.port }));
+  return { app, port: addr.port, base: `http://127.0.0.1:${addr.port}` };
+}
+
+// Godot en vivo: llama a onLine(línea) por cada línea de stdout; resuelve con { code, out } al terminar.
+function godotLive(args, onLine = () => {}) {
+  return new Promise((resolve) => {
+    const p = spawn('godot', ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--', ...args]);
+    let out = '', buf = '';
+    const t = setTimeout(() => p.kill('SIGKILL'), 60000);
+    const feed = (d) => {
+      out += d; buf += d;
+      let i;
+      while ((i = buf.indexOf('\n')) >= 0) { const line = buf.slice(0, i); buf = buf.slice(i + 1); Promise.resolve(onLine(line)).catch((e) => { out += `\nnode: ${e.stack}`; }); }
+    };
+    p.stdout.on('data', feed);
+    p.stderr.on('data', (d) => { out += d; });
+    p.on('close', (code) => { clearTimeout(t); resolve({ code, out }); });
+  });
+}
+const task = async (id) => JSON.parse(await readFile(join(dir, 'compass', 'tasks', `${id}.json`), 'utf8'));
+
+test('con hub: mover desde el dock escribe por la API y la UI web lo ve al instante', { skip }, async () => {
+  const hub = await startHub();
+  const events = [];
+  hub.app.events.on('event', (e) => events.push(e));
+  const r = await godotLive(['online_move', dir, 'm1-04', 'review']);
+  await hub.app.close();
+  expectOk(r, 'online_move');
+  assert.equal((await task('m1-04')).status, 'review');
+  assert.ok(events.some((e) => e.type === 'upsert' && e.id === 'm1-04' && e.doc.status === 'review'), 'se publicó a los clientes (la UI web)');
+});
+
+test('con hub: un cambio desde la UI web llega al dock en menos de 1 s', { skip }, async () => {
+  const hub = await startHub();
+  let t0 = 0;
+  const r = await godotLive(['online_receive', dir, 'm1-04', 'doing'], async (line) => {
+    if (line === 'READY') {
+      t0 = Date.now();
+      await fetch(`${hub.base}/api/tasks/m1-04`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: '{"status":"doing"}' });
+    }
+  });
+  await hub.app.close();
+  expectOk(r, 'online_receive');
+  const ms = Number(/ELAPSED (\d+)/.exec(r.out)?.[1]);
+  assert.ok(ms < 1000, `tardó ${ms} ms`);
+});
+
+test('con hub: tildar varios pasos seguidos se guarda entero, sin 409', { skip }, async () => {
+  const hub = await startHub();
+  const before = (await task('m0-01')).checklist.map((c) => c.done);
+  const r = await godotLive(['toggle_steps', dir, 'm0-01']);
+  await hub.app.close();
+  expectOk(r, 'toggle_steps');
+  assert.deepEqual((await task('m0-01')).checklist.map((c) => c.done), before.map((d) => !d));
+});
+
+test('con hub: 409 si el dock estaba desactualizado; toma la versión actual y no pisa', { skip }, async () => {
+  const hub = await startHub();
+  const r = await godotLive(['conflict', dir, 'm1-04', 'todo', 'cambiado por la web'], async (line) => {
+    if (line === 'READY') {
+      await fetch(`${hub.base}/api/tasks/m1-04`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: '{"notes":"cambiado por la web"}' });
+      await writeFile(join(dir, '.go'), '');
+    }
+  });
+  await hub.app.close();
+  expectOk(r, 'conflict');
+  const t = await task('m1-04');
+  assert.equal(t.notes, 'cambiado por la web');
+  assert.equal(t.status, 'done', 'la escritura vieja no pisó nada');
+});
+
+test('con hub: nueva tarea desde el dock', { skip }, async () => {
+  const hub = await startHub();
+  const r = await godotLive(['create', dir, 'm02', 'Desde el dock']);
+  await hub.app.close();
+  expectOk(r, 'create');
+  const id = /CREATED (\S+)/.exec(r.out)?.[1];
+  assert.ok(id && existsSync(join(dir, 'compass', 'tasks', `${id}.json`)));
+  assert.equal((await task(id)).milestone, 'm02');
+});
+
+test('con hub: si el hub se cae pasa a solo lectura y al volver se reconecta solo', { skip }, async () => {
+  let hub = await startHub();
+  const port = hub.port;
+  const r = await godotLive(['reconnect', dir, 'm1-04', 'review'], async (line) => {
+    if (line === 'READY') await hub.app.close();
+    if (line === 'STATE offline') {
+      const p = join(dir, 'compass', 'tasks', 'm1-04.json');
+      await writeFile(p, canonical({ ...JSON.parse(await readFile(p, 'utf8')), status: 'review' }));
+      hub = await startHub(port);
+    }
+  });
+  await hub.app.close();
+  expectOk(r, 'reconnect');
+});

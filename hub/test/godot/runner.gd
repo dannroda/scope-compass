@@ -34,7 +34,7 @@ func _check(case_name: String, cond: bool, why: String) -> bool:
 func _view(root_dir: String) -> DockView:
 	var v := DockView.new()
 	get_root().add_child(v)
-	v.setup(root_dir)
+	await v.setup(root_dir)
 	await process_frame
 	return v
 
@@ -62,7 +62,7 @@ func test_pick_milestone(a: Array) -> void:
 	var v := DockView.new()
 	v.set_pref = func(k, val): saved[k] = val
 	get_root().add_child(v)
-	v.setup(a[0])
+	await v.setup(a[0])
 	var idx := -1
 	for i in v.milestone_select.item_count:
 		if v.milestone_select.get_item_metadata(i) == a[1]:
@@ -94,3 +94,124 @@ func test_uncommitted(a: Array) -> void:
 	var v := await _view(a[0])
 	var c := "uncommitted"
 	if not _check(c, v.footer_right.text == "compass: %s sin commitear" % a[1], "pie: " + v.footer_right.text): return
+
+
+# --- Con hub ----------------------------------------------------------------------------------
+
+## Espera hasta que cond() sea verdadera o pasen `secs` segundos.
+func _until(cond: Callable, secs := 5.0) -> bool:
+	var t0 := Time.get_ticks_msec()
+	while not cond.call():
+		if Time.get_ticks_msec() - t0 > secs * 1000:
+			return false
+		await process_frame
+	return true
+
+
+## Espera a que Node cree el archivo marcador (coordinación con el test).
+func _wait_file(path: String, secs := 10.0) -> bool:
+	return await _until(func(): return FileAccess.file_exists(path), secs)
+
+
+func _online_view(root_dir: String, c: String):
+	var v := await _view(root_dir)
+	if not _check(c, await _until(func(): return v.online and not v._loading and v.board.tasks.size() > 0 and v.board.tasks[0].has("etag")), "no se conectó al hub"):
+		return null
+	if not _check(c, not v.banner.visible and v.new_row.visible, "sigue en solo lectura"):
+		return null
+	return v
+
+
+func _select(v, id: String) -> void:
+	v.selected_task = id
+	v._render()
+
+
+func _pick_status(v, status: String) -> void:
+	for i in v.status_select.item_count:
+		if v.status_select.get_item_metadata(i) == status:
+			v.status_select.select(i)
+			v.status_select.item_selected.emit(i)
+
+
+# Mover desde el dock: se escribe por la API.
+func test_online_move(a: Array) -> void:
+	var c := "online_move"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	print("READY")
+	_select(v, a[1])
+	if not _check(c, not v.status_select.disabled, "estado deshabilitado con hub"): return
+	_pick_status(v, a[2])
+	if not _check(c, await _until(func(): return v.board.task(a[1]).status == a[2] and v._queues.is_empty()), "no se aplicó el cambio"): return
+
+
+# Un cambio hecho afuera (la UI web, la CLI) llega al dock por el WebSocket.
+func test_online_receive(a: Array) -> void:
+	var c := "online_receive"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	v.current_milestone = v.board.task(a[1]).milestone
+	v._render()
+	print("READY")
+	var t0 := Time.get_ticks_msec()
+	if not _check(c, await _until(func(): return v.board.task(a[1]).status == a[2] and v.listed().has(a[2] + ":" + a[1]), 3.0), "no llegó el cambio"): return
+	print("ELAPSED ", Time.get_ticks_msec() - t0)
+
+
+# Tildar varios pasos seguidos: se guardan todos, sin 409.
+func test_toggle_steps(a: Array) -> void:
+	var c := "toggle_steps"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	_select(v, a[1])
+	var n: int = v.steps_box.get_child_count()
+	if not _check(c, n >= 3, "pocos pasos"): return
+	for i in n:
+		var cb: CheckBox = v.steps_box.get_child(i)
+		cb.button_pressed = not cb.button_pressed
+	if not _check(c, await _until(func(): return v._queues.is_empty()), "la fila no terminó"): return
+	if not _check(c, not v.notice.visible, "aviso inesperado: " + v.notice.text): return
+
+
+# 409: el dock no se enteró del cambio (eventos ignorados); al escribir, toma la versión actual y avisa.
+func test_conflict(a: Array) -> void:
+	var c := "conflict"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	v.client.ignore_events = true
+	_select(v, a[1])
+	print("READY")
+	if not _check(c, await _wait_file(a[0].path_join(".go")), "Node no avisó"): return
+	_pick_status(v, a[2])
+	if not _check(c, await _until(func(): return v.notice.visible), "no hubo aviso de conflicto"): return
+	if not _check(c, v.notice.text.contains("cambió esta tarea"), "aviso: " + v.notice.text): return
+	if not _check(c, v.board.task(a[1]).get("notes") == a[3], "no tomó la versión actual: %s" % v.board.task(a[1]).get("notes")): return
+
+
+# Nueva tarea desde el dock, en el hito elegido.
+func test_create(a: Array) -> void:
+	var c := "create"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	if not _check(c, v.new_row.visible, "falta la fila de nueva tarea"): return
+	v.current_milestone = a[1]
+	v.new_title.text = a[2]
+	v.new_title.text_submitted.emit(a[2])
+	if not _check(c, await _until(func(): return v.board.tasks.any(func(t): return t.title == a[2] and t.milestone == a[1])), "no se creó"): return
+	var made = v.board.tasks.filter(func(t): return t.title == a[2])[0]
+	print("CREATED ", made.id)
+
+
+# El hub se cae: solo lectura; vuelve: edición otra vez, sin reiniciar el editor.
+func test_reconnect(a: Array) -> void:
+	var c := "reconnect"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	print("READY")
+	if not _check(c, await _until(func(): return not v.online, 5.0), "no detectó la caída"): return
+	if not _check(c, v.banner.visible, "falta el aviso sin hub"): return
+	print("STATE offline")
+	if not _check(c, await _until(func(): return v.online and not v._loading, 10.0), "no se reconectó"): return
+	if not _check(c, not v.banner.visible, "el aviso sigue visible"): return
+	if not _check(c, v.board.task(a[1]).status == a[2], "no recargó lo que cambió mientras estaba caído"): return
