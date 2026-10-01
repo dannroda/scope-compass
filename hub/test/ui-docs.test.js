@@ -114,6 +114,8 @@ test('§10.6: la vista Documentos muestra los backlinks correctos por sección',
   const counts = await page.$$eval('.toc a', (as) => as.map((a) => [a.getAttribute('href').split('/').pop(), a.querySelector('.n')?.textContent ?? '0']));
   assert.deepEqual(counts, [['juego', '0'], ['combate', '0'], ['ventanas-ataque', '2'], ['camara', '0']]);
   const bl = await page.$$eval('.backlinks .bl-task', (as) => as.map((a) => a.textContent));
+  // El título es un solo bloque (con `código` adentro no se parte en columnas).
+  assert.deepEqual(await page.$$eval('.backlinks .bl-task', (as) => as.map((a) => a.querySelectorAll(':scope > .t').length)), bl.map(() => 1));
   assert.equal(bl.length, 2);
   assert.match(bl.join(' '), /1\.3/);
   assert.match(bl.join(' '), /1\.4/);

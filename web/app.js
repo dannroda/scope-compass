@@ -677,7 +677,7 @@
         h('aside', { class: 'backlinks', 'aria-label': 'Tareas que referencian esta sección' },
           sec ? [h('div', { class: 'label' }, 'Referenciada por · ' + (counts.get(sec.id) === 1 ? '1 tarea' : counts.get(sec.id) + ' tareas')),
             ...tasksFor(d, sec.id).map((t) => h('a', { href: '#', class: 'bl-task', onclick: (e) => { e.preventDefault(); goToTask(t.id); } },
-              h('span', { class: 'dot', style: 'background:' + STATUSES.find((x) => x.id === t.status).color }), t.code ? h('span', { class: 'code' }, t.code) : null, rich(t.title))),
+              h('span', { class: 'dot', style: 'background:' + STATUSES.find((x) => x.id === t.status).color }), t.code ? h('span', { class: 'code' }, t.code) : null, h('span', { class: 't' }, rich(t.title)))),
             counts.get(sec.id) ? null : h('p', { class: 'muted small' }, 'Ninguna tarea referencia esta sección: parte del diseño todavía sin planificar.')]
             : h('p', { class: 'muted small' }, 'Elegí una sección del índice para ver qué tareas la referencian.'))));
     observeHeadings(article);
