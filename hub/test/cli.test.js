@@ -115,10 +115,19 @@ test('init crea un compass/ válido y no pisa uno existente', async () => {
   await mkdir(p);
   const r = await cli(['--dir', p, 'init', '--project', 'Nuevo']);
   assert.equal(r.code, 0, r.err);
-  assert.deepEqual((await readdir(join(p, 'compass'))).sort(), ['.gdignore', 'README.md', 'config.json', 'milestones', 'schema', 'tasks']);
+  assert.deepEqual((await readdir(join(p, 'compass'))).sort(), ['.gdignore', 'AGENTS.md', 'README.md', 'config.json', 'milestones', 'schema', 'tasks']);
   assert.deepEqual(JSON.parse(await readFile(join(p, 'compass', 'config.json'), 'utf8')), { export_md: 'docs/tareas.md', port: 4711, project: 'Nuevo' });
   assert.equal((await cli(['list', '--json'], { cwd: p })).json().tasks.length, 0);
   assert.equal((await cli(['--dir', p, 'init'])).code, 1);
+  // La guía para agentes se puede regenerar, y nombra comandos que existen.
+  await writeFile(join(p, 'compass', 'AGENTS.md'), 'vieja');
+  assert.equal((await cli(['--dir', p, 'agents'])).code, 0);
+  const guide = await readFile(join(p, 'compass', 'AGENTS.md'), 'utf8');
+  const help = (await cli(['--help'])).out;
+  for (const m of guide.matchAll(/^scompass ([a-z]+)/gm)) assert.ok(help.includes(`\n  ${m[1]} `), `la guía usa un comando que no está en --help: ${m[1]}`);
+  assert.equal((await cli(['--dir', join(dir, 'vacio'), 'agents'])).code, 1);
+  // El addon lleva la misma guía: en un proyecto que solo tiene el plugin, es lo que el agente encuentra.
+  assert.equal(await readFile(new URL('../../addons/scope_compass/AGENTS.md', import.meta.url), 'utf8'), guide, 'addons/scope_compass/AGENTS.md no coincide con hub/templates/compass-AGENTS.md');
 });
 
 test('--etag none: set crea solo si no existe', async () => {

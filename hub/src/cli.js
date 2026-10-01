@@ -26,6 +26,7 @@ const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done
 const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
 
   init [--project <nombre>]                 crea compass/ en el proyecto
+  agents                                    escribe compass/AGENTS.md, la guía del tablero para agentes
   serve [--port 4711] [--open] [--force]    levanta el hub en 127.0.0.1 (uno por proyecto; Ctrl+C para cerrar)
   restart                                   reinicia el hub de este proyecto (para cargar código nuevo)
   hubs                                      hubs activos de todos los proyectos
@@ -61,6 +62,9 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
 Si hay un hub de este proyecto en el puerto de config.json, las lecturas y escrituras pasan por su API.`;
 
 class UsageError extends Error {}
+
+// Los agentes solo cargan solos el AGENTS.md o CLAUDE.md de la raíz: la guía se enlaza desde ahí, a mano.
+const AGENTS_HINT = 'Para que los agentes la usen, agregá al AGENTS.md o CLAUDE.md del proyecto: "El tablero de tareas se maneja con scompass; leé compass/AGENTS.md antes de tocarlo."';
 
 // Campos de una tarea que `set` edita sin --file.
 const FIELDS = ['title', 'notes', 'test', 'code', 'milestone', 'status'];
@@ -107,7 +111,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const validators = loadValidators();
   let store = createJsonFilesStore(compass, { validators, ...(now && { now }) });
   // Con un hub de este proyecto corriendo, todo pasa por su API (eventos al instante, una sola cola de escritura).
-  if (!o.direct && !['init', 'serve', 'restart', 'hubs', 'help'].includes(cmd)) {
+  if (!o.direct && !['init', 'agents', 'serve', 'restart', 'hubs', 'help'].includes(cmd)) {
     const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
     const hub = await detectHub(project, cfg?.port);
     if (hub) store = createHttpStore(hub, compass, { validators });
@@ -136,12 +140,22 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       for (const d of ['milestones', 'tasks', 'schema']) await mkdir(join(compass, d), { recursive: true });
       for (const k of KINDS) await copyFile(join(SCHEMA_DIR, `${k}.schema.json`), join(compass, 'schema', `${k}.schema.json`));
       await copyFile(join(TEMPLATES, 'compass-README.md'), join(compass, 'README.md'));
+      await copyFile(join(TEMPLATES, 'compass-AGENTS.md'), join(compass, 'AGENTS.md'));
       await writeFile(join(compass, '.gdignore'), '');
       const config = { project: o.project || basename(project), export_md: 'docs/tareas.md', port: 4711 };
       const res = parseDoc(JSON.stringify(config), 'config', validators);
       if (!res.ok) throw new StoreError('invalid_argument', res.message);
       await writeFile(join(compass, 'config.json'), canonical(config));
-      return done({ dir: compass, config }, `Creado ${compass}`);
+      return done({ dir: compass, config }, `Creado ${compass}\n${AGENTS_HINT}`);
+    },
+
+    // Hay una copia igual en addons/scope_compass/AGENTS.md (viaja con el plugin; un test las compara).
+    // La guía es generada: se reescribe entera (sirve también para actualizarla tras actualizar Scope Compass).
+    async agents() {
+      if (!existsSync(join(compass, 'config.json'))) throw new StoreError('not_found', `no hay ${compass}: corré \`scompass --dir ${project} init\` para crearla`);
+      const path = join(compass, 'AGENTS.md');
+      await copyFile(join(TEMPLATES, 'compass-AGENTS.md'), path);
+      return done({ path }, `Escrito ${path}\n${AGENTS_HINT}`);
     },
 
     async serve() {

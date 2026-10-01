@@ -7,6 +7,7 @@ Estos archivos **son** las tareas del proyecto, en el formato de [Scope Compass]
 - `schema/`: JSON Schema de cada tipo y de `config.json`, para validar una edición a mano.
 - `config.json`: nombre del proyecto, documentos referenciables, export markdown, puerto del hub.
 - `.gdignore`: hace que Godot ignore esta carpeta.
+- `AGENTS.md`: guía del tablero para agentes de IA (se regenera con `scompass agents`).
 
 Con la CLI: `scompass list`, `scompass show <id>`, `scompass move <id> doing`, `scompass --help`.
 
