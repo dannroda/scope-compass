@@ -10,7 +10,11 @@ const STATUSES := ["todo", "doing", "review", "done"]
 ## Cada documento lleva su "id" (el nombre del archivo), como en la API del hub.
 static func read(project_root: String) -> Dictionary:
 	var compass := project_root.path_join("compass")
-	var out := { "config": null, "milestones": [], "tasks": [], "warnings": [] }
+	var out := { "config": null, "milestones": [], "tasks": [], "warnings": [], "docs": [] }
+	# Proyecto sin compass/ (plugin recién instalado): tablero vacío con un aviso, sin errores en la consola.
+	if not DirAccess.dir_exists_absolute(compass):
+		out.warnings.append({ "code": "missing_compass", "path": "compass/", "message": "no existe" })
+		return out
 	var cfg = _read_doc(compass.path_join("config.json"), "config", out.warnings)
 	if cfg != null:
 		out.config = cfg
@@ -29,6 +33,8 @@ static func read(project_root: String) -> Dictionary:
 
 static func _json_files(dir: String) -> PackedStringArray:
 	var files := PackedStringArray()
+	if not DirAccess.dir_exists_absolute(dir):
+		return files
 	for f in DirAccess.get_files_at(dir):
 		if f.ends_with(".json") and not f.begins_with("."):
 			files.append(f)

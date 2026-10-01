@@ -233,6 +233,21 @@ func test_start_hub(a: Array) -> void:
 	if not _check(c, await _until(func(): return not v.online, 5.0), "el dock sigue en línea"): return
 
 
+# Proyecto sin compass/: el dock ofrece crearla, corre `scompass init` y queda listo para iniciar el hub.
+func test_init_compass(a: Array) -> void:
+	var c := "init_compass"
+	var v := await _view(a[0])
+	v.scompass_setting = func(): return a[1]
+	if not _check(c, v.banner.visible and v.init_button.visible and not v.start_button.visible, "no ofrece crear compass/"): return
+	if not _check(c, v.banner_title.text == "Este proyecto no tiene compass/", "título del aviso: " + v.banner_title.text): return
+	# En una pestaña oculta el dock mide 0 de ancho: los textos no pueden pedir un alto enorme.
+	if not _check(c, v.get_combined_minimum_size().y < 600, "alto mínimo %d" % v.get_combined_minimum_size().y): return
+	if not _check(c, await v.init_compass(), "no se creó: " + v.notice.text): return
+	if not _check(c, FileAccess.file_exists(a[0].path_join("compass/config.json")), "falta compass/config.json"): return
+	if not _check(c, v.start_button.visible and not v.init_button.visible, "no ofrece iniciar el hub"): return
+	if not _check(c, v.board.warnings.is_empty(), "avisos: " + str(v.board.warnings)): return
+
+
 # Sin scompass: avisa en lugar de fallar en silencio.
 func test_start_hub_missing(a: Array) -> void:
 	var c := "start_hub_missing"

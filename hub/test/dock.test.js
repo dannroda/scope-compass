@@ -197,6 +197,14 @@ test('"Iniciar hub" levanta scompass serve, el dock pasa a edición y al cerrarl
   }
 });
 
+test('proyecto sin compass/: el dock no da errores y "Crear compass/" corre scompass init', { skip }, async () => {
+  await rm(join(dir, 'compass'), { recursive: true });
+  const r = await godotLive(['init_compass', dir, join(REPO, 'hub', 'bin', 'scompass.js')]);
+  expectOk(r, 'init_compass');
+  assert.doesNotMatch(r.out, /ERROR/);
+  assert.equal(JSON.parse(await readFile(join(dir, 'compass', 'config.json'), 'utf8')).port, 4711);
+});
+
 test('"Iniciar hub" sin scompass encontrable no inventa un comando', { skip }, async () => {
   expectOk(await godotLive(['start_hub_missing', dir]), 'start_hub_missing');
 });

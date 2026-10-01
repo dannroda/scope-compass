@@ -11,6 +11,10 @@ const Reader := preload("compass_reader.gd")
 const Board := preload("board.gd")
 const HubClient := preload("hub_client.gd")
 
+## Ancho mínimo de los textos con ajuste de línea. Sin esto, mientras el dock está en una pestaña oculta mide 0 de
+## ancho, cada palabra va en su renglón y el alto mínimo (miles de px) desacomoda todo el editor.
+const WRAP_MIN_WIDTH := 140
+
 ## Preferencias por proyecto. El plugin las guarda en la metadata del proyecto del editor.
 var get_pref: Callable = func(_key: String, default): return default
 var set_pref: Callable = func(_key: String, _value): pass
@@ -38,6 +42,10 @@ var hub_kept := false
 
 var banner: PanelContainer
 var banner_title: Label
+var banner_text: Label
+var init_button: Button
+var start_button: Button
+var open_tasks_button: Button
 var warnings_label: Label
 var milestone_select: OptionButton
 var reload_button: Button
@@ -224,6 +232,31 @@ func create_task(title: String) -> void:
 		show_notice("No se pudo crear la tarea.")
 
 
+# --- Crear compass/ ------------------------------------------------------------------------------
+
+## ¿El proyecto ya tiene compass/config.json? (lo mismo que mira `scompass init` para negarse a pisarla).
+func has_compass() -> bool:
+	return FileAccess.file_exists(project_root.path_join("compass/config.json"))
+
+
+## Corre `scompass init` en el proyecto y recarga el tablero.
+func init_compass() -> bool:
+	if has_compass():
+		return true
+	var cmd := scompass_command()
+	if cmd.is_empty():
+		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path.")
+		return false
+	var out := []
+	var args: Array = cmd[1] + ["--dir", project_root, "init"]
+	if OS.execute(cmd[0], PackedStringArray(args), out, true) != 0 or not has_compass():
+		show_notice("No se pudo crear compass/: " + (str(out[0]).strip_edges() if out.size() else "sin salida de scompass"))
+		return false
+	show_notice("Creada compass/. Ya podés iniciar el hub.")
+	await reload()
+	return true
+
+
 # --- Iniciar el hub (5.5) ----------------------------------------------------------------------
 
 ## Dónde está scompass: la opción de Editor Settings, al lado del proyecto, dentro de él o en el PATH.
@@ -392,32 +425,39 @@ func _build() -> void:
 	banner_title = Label.new()
 	banner_title.add_theme_color_override("font_color", Color("#ffde66"))
 	bv.add_child(banner_title)
-	var btext := Label.new()
-	btext.text = "Mostrando las tareas desde compass/ en solo lectura. Para editarlas, iniciá el hub o editá los JSON y commiteá con git."
-	btext.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	bv.add_child(btext)
+	banner_text = Label.new()
+	banner_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	banner_text.custom_minimum_size.x = WRAP_MIN_WIDTH
+	bv.add_child(banner_text)
 	# Los botones bajan de renglón en un dock angosto.
 	var bb := HFlowContainer.new()
 	bv.add_child(bb)
-	var start := Button.new()
-	start.text = "Iniciar hub"
-	start.icon = ICONS.start
-	start.pressed.connect(start_hub)
-	bb.add_child(start)
+	# Proyecto sin compass/: en lugar de "Iniciar hub" se ofrece crearla.
+	init_button = Button.new()
+	init_button.text = "Crear compass/"
+	init_button.tooltip_text = "Corre `scompass init` en este proyecto"
+	init_button.pressed.connect(init_compass)
+	bb.add_child(init_button)
+	start_button = Button.new()
+	start_button.text = "Iniciar hub"
+	start_button.icon = ICONS.start
+	start_button.pressed.connect(start_hub)
+	bb.add_child(start_button)
 	var retry := Button.new()
 	retry.text = "Reintentar"
 	retry.pressed.connect(_on_retry)
 	bb.add_child(retry)
-	var open_tasks := Button.new()
-	open_tasks.text = "Abrir compass/tasks"
-	open_tasks.icon = ICONS.folder
-	open_tasks.pressed.connect(func(): OS.shell_open(project_root.path_join("compass/tasks")))
-	bb.add_child(open_tasks)
+	open_tasks_button = Button.new()
+	open_tasks_button.text = "Abrir compass/tasks"
+	open_tasks_button.icon = ICONS.folder
+	open_tasks_button.pressed.connect(func(): OS.shell_open(project_root.path_join("compass/tasks")))
+	bb.add_child(open_tasks_button)
 	add_child(banner)
 
 	warnings_label = Label.new()
 	warnings_label.add_theme_color_override("font_color", Color("#e8806e"))
 	warnings_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	warnings_label.custom_minimum_size.x = WRAP_MIN_WIDTH
 	add_child(warnings_label)
 
 	var head := HBoxContainer.new()
@@ -488,6 +528,7 @@ func _build() -> void:
 	detail_scroll.add_child(detail)
 	detail_title = Label.new()
 	detail_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail_title.custom_minimum_size.x = WRAP_MIN_WIDTH
 	detail_title.add_theme_font_size_override("font_size", 15)
 	detail.add_child(detail_title)
 	var srow := HBoxContainer.new()
@@ -509,6 +550,7 @@ func _build() -> void:
 
 	notice = Label.new()
 	notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	notice.custom_minimum_size.x = WRAP_MIN_WIDTH
 	notice.add_theme_color_override("font_color", Color("#e0a95a"))
 	notice.visible = false
 	add_child(notice)
@@ -561,7 +603,16 @@ func _exit_tree() -> void:
 
 func _render() -> void:
 	banner.visible = not online
-	banner_title.text = "No hay hub en 127.0.0.1:%d" % board.port() + ((" (" + client.last_error + ")") if client.last_error != "" else "")
+	var compass := has_compass()
+	if compass:
+		banner_title.text = "No hay hub en 127.0.0.1:%d" % board.port() + ((" (" + client.last_error + ")") if client.last_error != "" else "")
+		banner_text.text = "Mostrando las tareas desde compass/ en solo lectura. Para editarlas, iniciá el hub o editá los JSON y commiteá con git."
+	else:
+		banner_title.text = "Este proyecto no tiene compass/"
+		banner_text.text = "Ahí se guardan las tareas y los hitos del proyecto. Creala para empezar a usar el tablero."
+	init_button.visible = not compass
+	start_button.visible = compass
+	open_tasks_button.visible = compass
 	warnings_label.visible = board.warnings.size() > 0
 	warnings_label.text = "\n".join(board.warnings.map(func(w): return "%s · %s" % [w.path, w.message]))
 	browser_button.disabled = not online
@@ -663,6 +714,7 @@ func _render_detail() -> void:
 		label.flat = true
 		label.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.custom_minimum_size.x = WRAP_MIN_WIDTH
 		label.size_flags_horizontal = SIZE_EXPAND_FILL
 		label.text = str(cl[i].get("text", "")).replace("`", "")
 		label.focus_mode = Control.FOCUS_NONE if detail_text == "" else Control.FOCUS_ALL
@@ -690,6 +742,7 @@ func _render_detail() -> void:
 				var detail_label := Label.new()
 				detail_label.text = detail_text.replace("`", "")
 				detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				detail_label.custom_minimum_size.x = WRAP_MIN_WIDTH
 				detail_label.add_theme_color_override("font_color", Color("#a69d8c"))
 				var margin := MarginContainer.new()
 				margin.add_theme_constant_override("margin_left", 28)
@@ -776,6 +829,7 @@ func _fill_section(box: VBoxContainer, d: Dictionary, s: Dictionary) -> void:
 			text.fit_content = true
 			text.selection_enabled = true
 			text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			text.custom_minimum_size.x = WRAP_MIN_WIDTH
 			text.bbcode_enabled = b.has("bbcode")
 			text.text = str(b.get("bbcode", b.get("text", "")))
 			box.add_child(text)

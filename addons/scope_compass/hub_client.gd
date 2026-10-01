@@ -77,6 +77,9 @@ func _probe() -> bool:
 func registry_ports() -> Array:
 	var dir := registry_dir()
 	var out := []
+	# El registro lo crea el primer hub que arranca: hasta entonces no existe.
+	if not DirAccess.dir_exists_absolute(dir):
+		return out
 	for f in DirAccess.get_files_at(dir):
 		if not f.ends_with(".json"):
 			continue
