@@ -205,6 +205,14 @@ test('proyecto sin compass/: el dock no da errores y "Crear compass/" corre scom
   assert.equal(JSON.parse(await readFile(join(dir, 'compass', 'config.json'), 'utf8')).port, 4711);
 });
 
+test('compass/ con el schema viejo: el dock avisa y "Actualizar" corre scompass update', { skip }, async () => {
+  const schema = join(dir, 'compass', 'schema', 'task.schema.json');
+  await writeFile(schema, '{}\n');
+  await cp(join(REPO, 'hub', 'templates', 'compass-AGENTS.md'), join(dir, 'compass', 'AGENTS.md'));
+  expectOk(await godotLive(['update_compass', dir, join(REPO, 'hub', 'bin', 'scompass.js')]), 'update_compass');
+  assert.equal(await readFile(schema, 'utf8'), await readFile(join(REPO, 'schema', 'task.schema.json'), 'utf8'));
+});
+
 test('"Iniciar hub" sin scompass encontrable no inventa un comando', { skip }, async () => {
   expectOk(await godotLive(['start_hub_missing', dir]), 'start_hub_missing');
 });

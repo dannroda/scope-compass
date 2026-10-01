@@ -248,6 +248,18 @@ func test_init_compass(a: Array) -> void:
 	if not _check(c, v.board.warnings.is_empty(), "avisos: " + str(v.board.warnings)): return
 
 
+# compass/ con el schema de una versión anterior: el dock lo avisa y "Actualizar" corre `scompass update`.
+func test_update_compass(a: Array) -> void:
+	var c := "update_compass"
+	var v := await _view(a[0])
+	v.scompass_setting = func(): return a[1]
+	v.check_compass()
+	if not _check(c, v.update_row.visible and v.outdated == ["compass/schema/task.schema.json"], "no avisa el schema viejo: " + str(v.outdated)): return
+	if not _check(c, v.update_label.text.ends_with(": schema/task.schema.json"), "aviso: " + v.update_label.text): return
+	if not _check(c, await v.update_compass(), "no actualizó: " + v.notice.text): return
+	if not _check(c, not v.update_row.visible and v.outdated.is_empty(), "el aviso sigue: " + str(v.outdated)): return
+
+
 # Sin scompass: avisa en lugar de fallar en silencio.
 func test_start_hub_missing(a: Array) -> void:
 	var c := "start_hub_missing"

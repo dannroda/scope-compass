@@ -48,6 +48,11 @@ var init_button: Button
 var start_button: Button
 var open_tasks_button: Button
 var warnings_label: Label
+## Aviso de que compass/ tiene archivos generados viejos (schema/, AGENTS.md), con el botón para actualizarlos.
+var update_row: HFlowContainer
+var update_label: Label
+## Archivos desactualizados según `scompass update --check`.
+var outdated: Array = []
 var milestone_select: OptionButton
 var reload_button: Button
 var browser_button: Button
@@ -99,6 +104,7 @@ func setup(root: String) -> void:
 	project_root = root
 	client.project_root = root
 	await reload()
+	check_compass()
 	await _try_hub()
 
 
@@ -250,14 +256,54 @@ func init_compass() -> bool:
 	if cmd.is_empty():
 		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path.")
 		return false
-	var out := []
-	var args: Array = cmd[1] + ["--dir", project_root, "init"]
-	if OS.execute(cmd[0], PackedStringArray(args), out, true) != 0 or not has_compass():
-		show_notice("No se pudo crear compass/: " + (str(out[0]).strip_edges() if out.size() else "sin salida de scompass"))
+	var r := _scompass(["init"])
+	if r[0] != 0 or not has_compass():
+		show_notice("No se pudo crear compass/: " + (r[1] if r[1] != "" else "sin salida de scompass"))
 		return false
 	show_notice("Creada compass/. Ya podés iniciar el hub.")
 	await reload()
 	return true
+
+
+## Corre scompass en el proyecto y espera. Devuelve [código, salida]; código -1 si no se encontró scompass.
+func _scompass(args: Array) -> Array:
+	var cmd := scompass_command()
+	if cmd.is_empty():
+		return [-1, ""]
+	var out := []
+	var all: Array = cmd[1] + ["--dir", project_root] + args
+	var code := OS.execute(cmd[0], PackedStringArray(all), out, true)
+	return [code, str(out[0]).strip_edges() if out.size() else ""]
+
+
+## ¿compass/ tiene archivos generados de una versión anterior de Scope Compass (schema/, AGENTS.md)?
+## Se mira al abrir el dock; sin scompass a mano no se puede saber y no se avisa nada.
+func check_compass() -> void:
+	outdated = []
+	if has_compass():
+		var r := _scompass(["update", "--check", "--json"])
+		var data = JSON.parse_string(r[1]) if r[0] == 1 else null
+		if data is Dictionary and data.get("outdated") is Array:
+			outdated = data.outdated
+	_render_update()
+
+
+## Corre `scompass update`: copia el schema y la guía para agentes de esta versión de Scope Compass.
+func update_compass() -> bool:
+	var r := _scompass(["update"])
+	if r[0] != 0:
+		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path." if r[0] == -1 \
+			else "No se pudo actualizar compass/: " + r[1])
+		return false
+	var n := outdated.size()
+	check_compass()
+	show_notice("compass/ actualizada (%d archivos). Revisá el cambio y commitealo." % n)
+	return true
+
+
+func _render_update() -> void:
+	update_row.visible = not outdated.is_empty()
+	update_label.text = "compass/ tiene archivos de una versión anterior de Scope Compass: " + ", ".join(outdated.map(func(p): return str(p).trim_prefix("compass/")))
 
 
 # --- Iniciar el hub (5.5) ----------------------------------------------------------------------
@@ -462,6 +508,21 @@ func _build() -> void:
 	warnings_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	warnings_label.custom_minimum_size.x = WRAP_MIN_WIDTH
 	add_child(warnings_label)
+
+	update_row = HFlowContainer.new()
+	update_row.visible = false
+	update_label = Label.new()
+	update_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	update_label.custom_minimum_size.x = WRAP_MIN_WIDTH
+	update_label.size_flags_horizontal = SIZE_EXPAND_FILL
+	update_label.add_theme_color_override("font_color", Color("#e0a95a"))
+	update_row.add_child(update_label)
+	var update_button := Button.new()
+	update_button.text = "Actualizar"
+	update_button.tooltip_text = "Corre `scompass update` en este proyecto"
+	update_button.pressed.connect(update_compass)
+	update_row.add_child(update_button)
+	add_child(update_row)
 
 	var head := HBoxContainer.new()
 	add_child(head)

@@ -27,7 +27,8 @@ const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done
 const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
 
   init [--project <nombre>]                 crea compass/ en el proyecto
-  agents                                    escribe compass/AGENTS.md, la guía del tablero para agentes
+  update [--check]                          pone al día los archivos generados de compass/ (schema/ y AGENTS.md,
+                                            la guía para agentes); --check solo avisa y sale con 1 si hay algo viejo
   serve [--port 4711] [--open] [--force]    levanta el hub en 127.0.0.1 (uno por proyecto; Ctrl+C para cerrar)
   restart                                   reinicia el hub de este proyecto (para cargar código nuevo)
   hubs                                      hubs activos de todos los proyectos
@@ -81,7 +82,7 @@ const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
-  raw: { type: 'boolean' },
+  raw: { type: 'boolean' }, check: { type: 'boolean' },
   port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, force: { type: 'boolean' },
   title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
@@ -119,7 +120,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const validators = loadValidators();
   let store = createJsonFilesStore(compass, { validators, ...(now && { now }) });
   // Con un hub de este proyecto corriendo, todo pasa por su API (eventos al instante, una sola cola de escritura).
-  if (!o.direct && !['init', 'agents', 'serve', 'restart', 'hubs', 'help'].includes(cmd)) {
+  if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'help'].includes(cmd)) {
     const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
     const hub = await detectHub(project, cfg?.port);
     if (hub) store = createHttpStore(hub, compass, { validators });
@@ -157,13 +158,26 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       return done({ dir: compass, config }, `Creado ${compass}\n${AGENTS_HINT}`);
     },
 
-    // Hay una copia igual en addons/scope_compass/AGENTS.md (viaja con el plugin; un test las compara).
-    // La guía es generada: se reescribe entera (sirve también para actualizarla tras actualizar Scope Compass).
-    async agents() {
+    // Los archivos que `init` copia de Scope Compass (schema/ y la guía para agentes) quedan viejos cuando Scope
+    // Compass cambia, por ejemplo con un campo nuevo en las tareas. update los vuelve a copiar; no toca los datos,
+    // config.json ni README.md. De la guía hay una copia igual en addons/scope_compass/AGENTS.md (un test las compara).
+    async update() {
       if (!existsSync(join(compass, 'config.json'))) throw new StoreError('not_found', `no hay ${compass}: corré \`scompass --dir ${project} init\` para crearla`);
-      const path = join(compass, 'AGENTS.md');
-      await copyFile(join(TEMPLATES, 'compass-AGENTS.md'), path);
-      return done({ path }, `Escrito ${path}\n${AGENTS_HINT}`);
+      const files = [...KINDS.map((k) => [join(SCHEMA_DIR, `${k}.schema.json`), `schema/${k}.schema.json`]), [join(TEMPLATES, 'compass-AGENTS.md'), 'AGENTS.md']];
+      const outdated = [];
+      for (const [src, rel] of files) {
+        const cur = await readFile(join(compass, rel), 'utf8').catch(() => null);
+        if (cur !== await readFile(src, 'utf8')) outdated.push([src, rel]);
+      }
+      const names = outdated.map(([, rel]) => `compass/${rel}`);
+      if (o.check) {
+        o.json ? print(JSON.stringify({ outdated: names })) : print(names.length ? `Desactualizados (corré \`scompass update\`):\n${names.map((n) => '  ' + n).join('\n')}` : 'compass/ está al día.');
+        return names.length ? 1 : 0;
+      }
+      await mkdir(join(compass, 'schema'), { recursive: true });
+      for (const [src, rel] of outdated) await copyFile(src, join(compass, rel));
+      const hint = names.includes('compass/AGENTS.md') ? `\n${AGENTS_HINT}` : '';
+      return done({ updated: names }, names.length ? `Actualizados:\n${names.map((n) => '  ' + n).join('\n')}${hint}` : 'compass/ ya estaba al día.');
     },
 
     async serve() {

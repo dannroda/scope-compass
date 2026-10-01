@@ -290,6 +290,7 @@ La usa Claude Code en lugar del `ArtifactData` de hoy, y sirve para scripts:
 
 ```
 scompass init
+scompass update [--check]                    # pone al día compass/schema/ y compass/AGENTS.md
 scompass serve [--port] [--open]
 scompass list [--milestone m00] [--status doing] [--json]
 scompass show <id> [--json]

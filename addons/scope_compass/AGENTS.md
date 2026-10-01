@@ -94,3 +94,4 @@ scompass refs check                # referencias rotas (sale con 1 si hay)
 - `scompass --help`: todos los comandos.
 - `compass/README.md`: formato de los archivos y manejo a mano con git.
 - `compass/schema/`: JSON Schema de tareas, hitos y `config.json`.
+- `scompass update`: pone al día `compass/schema/` y esta guía cuando Scope Compass se actualizó (`--check` solo avisa). El dock de Godot lo ofrece con el botón "Actualizar".
