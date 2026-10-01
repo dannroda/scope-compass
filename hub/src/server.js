@@ -35,6 +35,15 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   // podía quedar esperando una conexión nueva o el cierre educado de un WebSocket.
   const app = Fastify({ logger, forceCloseConnections: true });
   app.decorate('events', new EventEmitter());
+  // Pestañas del tablero que pueden avisar con una notificación (mensaje `presence`, §5.5). focusBoard le pide a
+  // la más reciente que llame la atención y devuelve false si no hay ninguna (entonces hay que abrir una).
+  const boards = new Set();
+  app.decorate('focusBoard', () => {
+    const send = [...boards].at(-1);
+    if (!send) return false;
+    send({ type: 'focus' });
+    return true;
+  });
   const emit = (evt) => app.events.emit('event', evt);
 
   const watcher = watch ? createWatcher(join(projectDir, 'compass'), { validators, emit }) : null;
@@ -102,7 +111,7 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   });
   registerApi(app, { store, projectDir, publish });
   registerDocsApi(app, { store, projectDir });
-  app.register(registerWs, { store, publish, version: VERSION });
+  app.register(registerWs, { store, publish, version: VERSION, boards });
 
   app.get('/api/config', async () => {
     const { config } = await store.loadAll();

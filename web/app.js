@@ -742,6 +742,7 @@
   // Eventos del hub (spec §5.5). El hello llega al abrir y en cada reconexión: dispara una carga completa.
   function onEvent(m) {
     if (m.type === 'hello') { load(); return; }
+    if (m.type === 'focus') { callAttention(); return; }
     if (loading) { eventsDuringLoad = true; return; }
     if (m.type === 'doc_changed') { docChanged(m.alias); return; }
     if (m.type === 'upsert') { clearWarning(m.collection, m.id); apply(m.collection, m.id, m.doc); }
@@ -754,13 +755,29 @@
     }
   }
 
+  // Clic en el ícono de la bandeja con el tablero ya abierto: el hub manda `focus` en lugar de abrir otra pestaña.
+  // Una página no puede enfocarse sola, pero sí desde el clic en una notificación suya.
+  const canNotify = () => 'Notification' in window && Notification.permission === 'granted';
+  function callAttention() {
+    if (!canNotify() || (document.visibilityState === 'visible' && document.hasFocus())) return;
+    const n = new Notification('Scope Compass', { body: `${S.project || 'Tablero'} · tocá para volver al tablero`, tag: 'scompass-focus' });
+    n.onclick = () => { window.focus(); n.close(); };
+  }
+  // El hub solo cuenta las pestañas que pueden notificar; sin permiso, la bandeja abre una pestaña como siempre.
+  let socket = null;
+  const sendPresence = () => { if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'presence', notify: canNotify() })); };
+  // El permiso se pide en el primer clic (el navegador exige un gesto del usuario).
+  if ('Notification' in window && Notification.permission === 'default') {
+    document.addEventListener('click', () => { Promise.resolve(Notification.requestPermission()).then(sendPresence, () => {}); }, { once: true });
+  }
+
   // WebSocket con reconexión: espera creciente de 0,5 s a 10 s, y vuelve a 0,5 s al conectar.
   let retry = 500;
   function connect() {
     const ws = new WebSocket(new URL('/ws', location.href.replace(/^http/, 'ws')));
     // El handler se registra ya: el hello llega apenas se abre la conexión (spec §5.5).
     ws.onmessage = (e) => { try { onEvent(JSON.parse(e.data)); } catch (err) { console.error(err); } };
-    ws.onopen = () => { retry = 500; S.connected = true; renderConn(); };
+    ws.onopen = () => { retry = 500; S.connected = true; socket = ws; sendPresence(); renderConn(); };
     ws.onclose = () => {
       S.connected = false;
       renderConn();

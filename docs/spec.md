@@ -263,15 +263,18 @@ Servidor → cliente:
 {"type": "delete", "collection": "tasks", "id": "m0-03"}
 {"type": "doc_changed", "alias": "gdd"}
 {"type": "warning", "code": "invalid_file", "path": "compass/tasks/x.json", "message": "..."}
+{"type": "focus"}
 ```
 
 Cliente → servidor (opcional; las escrituras también se pueden hacer por REST):
 ```json
 {"type": "update", "req": 7, "collection": "tasks", "id": "m0-03", "etag": "9f2c…", "patch": {"status": "doing"}}
+{"type": "presence", "notify": true}
 ```
 Respuesta: `{"type": "ack", "req": 7, "doc": {...}}` o `{"type": "error", "req": 7, "code": "conflict", "doc": {...}}`.
 
 - `update` solo admite `tasks`, igual que la API (los hitos se editan por CLI, D12). Un `update` exitoso responde `ack` a quien lo mandó y además se publica como `upsert` para todos, incluido quien lo mandó.
+- `presence` lo manda la UI web al conectar y cuando cambia el permiso de notificaciones; no tiene respuesta. Con `notify: true`, el clic en el ícono de la bandeja no abre otra pestaña: el hub le manda `focus` a la pestaña más reciente, que muestra una notificación de escritorio (al tocarla, el navegador enfoca esa pestaña). Sin ninguna pestaña así, la bandeja abre el tablero con `xdg-open`.
 - Un mensaje inválido responde `error` (con `req: null` si no se pudo leer) y la conexión sigue abierta.
 - **Para los clientes:** el `hello` llega apenas se abre la conexión. El handler de mensajes se registra antes de ceder el control (antes de cualquier `await`), o el `hello` se pierde.
 

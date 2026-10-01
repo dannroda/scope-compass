@@ -177,6 +177,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const openBoard = () => spawn(process.env.SCOMPASS_OPEN || 'xdg-open', [url], { detached: true, stdio: 'ignore' })
         .on('error', () => warn(`no se pudo abrir el navegador: ${url}`)).unref();
       if (o.open) openBoard();
+      // Desde la bandeja: si ya hay un tablero abierto que puede notificar, se le pide que llame la atención en
+      // lugar de abrir otra pestaña (el navegador no deja enfocar una pestaña desde afuera).
+      const showBoard = () => { if (!app.focusBoard()) openBoard(); };
       const ac = new AbortController();
       let tray = null;
       if (o.tray) {
@@ -184,8 +187,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
           tray = await startTray({
             title: 'Scope Compass',
             tooltip: `${all.config?.project ?? project} · ${url}`,
-            onActivate: openBoard,
-            items: [{ label: 'Abrir tablero', onClick: openBoard }, { label: 'Reiniciar hub', onClick: () => { restart = true; ac.abort(); } },
+            onActivate: showBoard,
+            items: [{ label: 'Abrir tablero', onClick: showBoard }, { label: 'Reiniciar hub', onClick: () => { restart = true; ac.abort(); } },
               { label: 'Detener hub', onClick: () => ac.abort() }]
           });
         } catch (e) {

@@ -75,6 +75,24 @@ test('serve --tray: se registra en la bandeja, muestra el proyecto y el menú ci
     for (let i = 0; i < 40 && !existsSync(join(dir, 'opened')); i++) await sleep(50);
     assert.equal((await readFile(join(dir, 'opened'), 'utf8')).trim(), url, 'clic en el ícono abre el tablero');
 
+    // Con un tablero abierto que puede notificar: el clic no abre otra pestaña, le manda `focus` a esa.
+    await rm(join(dir, 'opened'));
+    const tab = new WebSocket(url.replace('http', 'ws') + 'ws');
+    const focused = new Promise((r) => tab.addEventListener('message', (e) => { if (JSON.parse(e.data).type === 'focus') r(true); }));
+    await new Promise((r) => tab.addEventListener('open', r));
+    tab.send(JSON.stringify({ type: 'presence', notify: true }));
+    await sleep(100);
+    await call(service, '/StatusNotifierItem', 'org.kde.StatusNotifierItem', 'Activate', 'ii', [0, 0]);
+    assert.equal(await Promise.race([focused, sleep(2000).then(() => false)]), true, 'la pestaña abierta no recibió focus');
+    await sleep(200);
+    assert.ok(!existsSync(join(dir, 'opened')), 'abrió otra pestaña con el tablero ya abierto');
+    // Cerrada esa pestaña, vuelve a abrir el navegador.
+    tab.close();
+    await sleep(200);
+    await call(service, '/StatusNotifierItem', 'org.kde.StatusNotifierItem', 'Activate', 'ii', [0, 0]);
+    for (let i = 0; i < 40 && !existsSync(join(dir, 'opened')); i++) await sleep(50);
+    assert.ok(existsSync(join(dir, 'opened')), 'sin tablero abierto no abrió el navegador');
+
     // "Reiniciar hub": el proceso termina y vuelve otro, que se registra de nuevo en la bandeja.
     await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'Event', 'isvu', [2, 'clicked', ['s', ''], 0]);
     assert.equal(await Promise.race([exited, sleep(3000).then(() => 'sigue vivo')]), 0, 'el viejo terminó');
