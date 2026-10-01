@@ -191,6 +191,37 @@ test('§10.6: borrar una sección referenciada marca la tarea en vivo, y refs ch
   await page.close();
 });
 
+// --- Vínculos entre tareas ---
+
+test('vínculos: "bloqueada por" con el buscador, marca en la tarjeta, se ve desde la otra tarea y se quita', async () => {
+  await setTask('m1-03', { status: 'todo' });
+  await setTask('m1-05', { status: 'doing' });
+  const page = await open();
+  await page.click('.chip:has-text("M1")');
+  await page.click('.card[data-id="m1-03"]');
+  assert.match(await page.textContent('.links'), /Sin vínculos/);
+  await page.click('.links .refs-head button:has-text("Agregar")');
+  await page.fill('#d-linkq', 'm1-05');
+  await page.click('.links .ref-matches button');
+  await page.waitForSelector('.link-row.blocking[data-kind="blockedBy"][data-task="m1-05"]');
+  // Se guarda en la tarea que bloquea; la bloqueada no cambia.
+  assert.deepEqual((await task('m1-05')).links, [{ task: 'm1-03', type: 'blocks' }]);
+  assert.equal((await task('m1-03')).links, undefined);
+  assert.equal(await page.textContent('.card[data-id="m1-03"] .blockmark'), 'Bloqueada');
+  // Desde la otra tarea se ve el inverso; el contrario (ciclo) no se puede agregar: la tarea ya no se ofrece.
+  await page.click('.link-row .link-task');
+  await page.waitForSelector('.link-row[data-kind="blocks"][data-task="m1-03"]');
+  assert.equal(await page.$('.card[data-id="m1-05"] .blockmark'), null);
+  // Terminada la que bloquea, la otra deja de estar bloqueada.
+  await page.click('.seg:not(.small) button:has-text("Hecho")');
+  await page.waitForFunction(() => !document.querySelector('.card[data-id="m1-03"] .blockmark'), null, { timeout: 2000 });
+  await page.click('.link-row .rm');
+  await page.waitForFunction(() => !document.querySelector('.link-row'), null, { timeout: 2000 });
+  assert.equal((await task('m1-05')).links, undefined);
+  assert.deepEqual(pageErrors, []);
+  await page.close();
+});
+
 // --- Arreglos pedidos: "Cerrar" del buscador y ancho del panel ---
 
 test('"+ Agregar" abre el buscador y "Cerrar" lo cierra', async () => {

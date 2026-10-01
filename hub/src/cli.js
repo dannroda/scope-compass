@@ -18,6 +18,7 @@ import { createServer, listen } from './server.js';
 import { startTray } from './tray.js';
 import { hubsOf, listHubs, registerHub, unregisterHub } from './registry.js';
 import { listMilestones, listTasks } from './views.js';
+import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
 
 const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
 const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
@@ -50,6 +51,10 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   refs check                                referencias rotas (sale con 1 si hay) y frágiles
   refs suggest                              propone refs a partir de citas "gdd.md §4.3" (no aplica nada)
   ref add|rm <tarea> <alias>#<id>           agrega o quita una referencia de la tarea
+  link add <tarea> <blocks|blocked-by|related> <otra>
+                                            vincula dos tareas (reemplaza el vínculo que tuvieran)
+  link rm <tarea> <otra>                    quita el vínculo entre las dos
+  link list [<tarea>]                       vínculos de una tarea o de todas; avisa los rotos (sale con 1)
   export md [--out docs/tareas.md]          regenera el markdown (también se hace solo al escribir)
   import artifact <carpeta> [--dry-run] [--overwrite]
                                             migra el export de ArtifactData (milestones/, tasks/)
@@ -62,6 +67,9 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
 Si hay un hub de este proyecto en el puerto de config.json, las lecturas y escrituras pasan por su API.`;
 
 class UsageError extends Error {}
+
+// "m5-02 (5.2 Título)" para mostrar una tarea vinculada; si no existe, se avisa.
+const taskLabel = (tasks, id) => { const t = tasks.find((x) => x.id === id); return t ? `${id} (${[t.code, t.title].filter(Boolean).join(' ')})` : `${id} (no existe)`; };
 
 // Los agentes solo cargan solos el AGENTS.md o CLAUDE.md de la raíz: la guía se enlaza desde ahí, a mano.
 const AGENTS_HINT = 'Para que los agentes la usen, agregá al AGENTS.md o CLAUDE.md del proyecto: "El tablero de tareas se maneja con scompass; leé compass/AGENTS.md antes de tocarlo."';
@@ -245,6 +253,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       showWarnings(all.warnings);
       const ms = new Map(all.milestones);
       const tasks = listTasks(all, { milestone: o.milestone, status: o.status });
+      const everything = listTasks(all);
       if (o.json) {
         print(JSON.stringify({ tasks, warnings: all.warnings }));
         return 0;
@@ -258,7 +267,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         }
         const cl = t.checklist ?? [];
         const steps = cl.length ? `  ${cl.filter((c) => c.done).length}/${cl.length}` : '';
-        print(`  ${t.id.padEnd(9)} ${(t.code || '').padEnd(5)} ${STATUS[t.status].padEnd(9)} ${t.title}${steps}`);
+        const blockers = t.status === 'done' ? [] : openBlockers(everything, t.id);
+        const blocked = blockers.length ? `  [bloqueada por ${blockers.join(', ')}]` : '';
+        print(`  ${t.id.padEnd(9)} ${(t.code || '').padEnd(5)} ${STATUS[t.status].padEnd(9)} ${t.title}${steps}${blocked}`);
       }
       if (!tasks.length) print('Sin tareas.');
       return 0;
@@ -277,7 +288,67 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (d.test) print(`Prueba: ${d.test}`);
       if (d.notes) print(`Notas: ${d.notes}`);
       if (d.refs?.length) print(`Referencias: ${d.refs.map((r) => `${r.doc}#${r.section}`).join(', ')}`);
+      const tasks = listTasks(await store.loadAll());
+      const v = linkView(tasks, t.id);
+      const line = (label, ids) => { if (ids.length) print(`${label}: ${ids.map((id) => taskLabel(tasks, id)).join('; ')}`); };
+      line('Bloquea a', v.blocks);
+      line('Bloqueada por', v.blockedBy);
+      line('Relacionadas', v.related);
       return 0;
+    },
+
+    // Entre dos tareas hay a lo sumo un vínculo: add reemplaza el que hubiera, en cualquiera de las dos.
+    async link() {
+      const sub = rest[0];
+      if (!['add', 'rm', 'list'].includes(sub)) throw new UsageError(`subcomando desconocido: link ${sub ?? ''} (add, rm, list)`);
+      const tasks = listTasks(await store.loadAll());
+      const exists = (id) => { if (!tasks.some((t) => t.id === id)) throw new StoreError('not_found', `no hay una tarea "${id}"`); return id; };
+      if (sub === 'list') {
+        const ids = rest[1] ? [exists(rest[1])] : tasks.map((t) => t.id);
+        const views = ids.map((id) => { const v = linkView(tasks, id); return { id, blocks: v.blocks, blocked_by: v.blockedBy, related: v.related }; })
+          .filter((v) => rest[1] || v.blocks.length || v.blocked_by.length || v.related.length);
+        const broken = brokenLinks(tasks).filter((b) => !rest[1] || b.id === rest[1]);
+        if (o.json) print(JSON.stringify({ links: views, broken }));
+        else {
+          for (const v of views) {
+            print(taskLabel(tasks, v.id));
+            for (const [label, list] of [['bloquea a', v.blocks], ['bloqueada por', v.blocked_by], ['relacionada con', v.related]]) {
+              for (const id of list) print(`  ${label} ${taskLabel(tasks, id)}`);
+            }
+          }
+          if (!views.some((v) => v.blocks.length || v.blocked_by.length || v.related.length)) print('Sin vínculos.');
+          for (const b of broken) warn(`vínculo roto: ${b.id} → ${b.task} (la tarea no existe; quitalo con \`scompass link rm ${b.id} ${b.task}\`)`);
+        }
+        return broken.length ? 1 : 0;
+      }
+      const a = exists(need(rest[1], 'la tarea'));
+      const type = sub === 'add' ? need(rest[2], 'el tipo (blocks, blocked-by, related)') : null;
+      const b = need(sub === 'add' ? rest[3] : rest[2], 'la otra tarea');
+      if (sub === 'add') exists(b); // rm también sirve para quitar un vínculo roto
+      if (a === b) throw new StoreError('invalid_argument', 'una tarea no se vincula consigo misma');
+      if (type && !['blocks', 'blocked-by', 'related'].includes(type)) throw new UsageError(`tipo de vínculo inválido: ${type} (blocks, blocked-by, related)`);
+      // Sin el vínculo actual entre las dos…
+      const next = new Map([a, b].map((id) => [id, linksOf(tasks.find((t) => t.id === id))]));
+      const had = next.get(a).some((l) => l.task === b) || next.get(b).some((l) => l.task === a);
+      next.set(a, next.get(a).filter((l) => l.task !== b));
+      next.set(b, next.get(b).filter((l) => l.task !== a));
+      if (sub === 'rm' && !had) throw new StoreError('not_found', `${a} y ${b} no están vinculadas`);
+      // …y con el nuevo, guardado en la tarea que bloquea (o en la primera, si es "related").
+      if (sub === 'add') {
+        const [from, to] = type === 'blocked-by' ? [b, a] : [a, b];
+        const without = tasks.map((t) => (next.has(t.id) ? { ...t, links: next.get(t.id) } : t));
+        if (type !== 'related' && wouldCycle(without, from, to)) throw new StoreError('conflict', `${to} ya bloquea (directa o indirectamente) a ${from}: sería un ciclo`);
+        next.set(from, [...next.get(from), { type: type === 'related' ? 'related' : 'blocks', task: to }]);
+      }
+      let last;
+      for (const [id, links] of next) {
+        const cur = tasks.find((t) => t.id === id);
+        if (!cur || JSON.stringify(links) === JSON.stringify(linksOf(cur))) continue;
+        last = await store.patch('tasks', id, { links: links.length ? links : null }, { ifMatch: cur.etag });
+      }
+      const text = { blocks: `${a} bloquea a ${b}`, 'blocked-by': `${a} queda bloqueada por ${b}`, related: `${a} y ${b} relacionadas` };
+      const r = last ? { id: last.id, etag: last.etag, ...last.doc } : { id: a };
+      return written(r, sub === 'add' ? text[type] : `${a} y ${b}: vínculo quitado`);
     },
 
     async restart() {

@@ -170,3 +170,12 @@ Godot 4.8 agrega la clase `EditorDock` con `EditorPlugin.add_dock()` / `remove_d
 - **Por qué:** Prism trae GDScript (y JSON, bash, GLSL…); markdown-it es el estándar en Node y con `html: false` muestra como texto cualquier HTML del documento (nada de `<script>`). Las dos salen con 0 avisos de `npm audit` y 11 paquetes en total. Renderizar en el hub deja la UI sin paso de build y permite que el dock pida la misma sección en BBCode.
 - **Detalle:** los comentarios `<!-- id: … -->` se quitan antes de renderizar; cada título recibe `id="sec-<id>"` para enlazar desde el índice y las referencias.
 - **Descartado:** highlight.js (GDScript no viene incluido) y Shiki (gramáticas de VS Code, mucho más pesado).
+
+## D22 · Vínculos entre tareas: `links` en la tarea que bloquea, inverso calculado
+**2026-10-01 · vigente** · spec §4.2 · `hub/src/links.js`
+
+- **Qué:** cada tarea puede tener `links: [{ type, task }]` con `type` `blocks` (esta tarea bloquea a `task`) o `related`. "Bloqueada por" no se guarda: la CLI, la web y el dock lo calculan recorriendo las demás tareas.
+- **Por qué:** guardar el vínculo en un solo lado evita que los dos archivos queden desincronizados tras una edición a mano o un merge de git. El tablero es chico: calcular el inverso es recorrer todas las tareas.
+- **Reglas:** entre dos tareas hay a lo sumo un vínculo (agregar otro lo reemplaza); una tarea no se vincula consigo misma; un `blocks` que cerraría un ciclo se rechaza (CLI y web). Una tarea está **bloqueada** si la bloquea alguna tarea sin terminar y ella misma no está hecha: se marca en la lista de la CLI, en la tarjeta de la web y en el dock.
+- **Límites:** la API valida la forma de `links` (JSON Schema), no que la otra tarea exista ni los ciclos; eso lo cuidan la CLI y la web. Un vínculo a una tarea borrada queda roto: se muestra como tal y `scompass link list` lo avisa y sale con 1. El dock los muestra y permite ir a la otra tarea, pero no los edita.
+- **Descartado:** guardar los dos sentidos en ambas tareas (dos escrituras por vínculo y posibles inconsistencias) y un archivo aparte de vínculos (otra colección que versionar y validar).

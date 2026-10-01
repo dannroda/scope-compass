@@ -29,4 +29,5 @@ Con la CLI: `scompass list`, `scompass show <id>`, `scompass move <id> doing`, `
 - Los archivos no guardan número de versión: no hay nada que incrementar al editar a mano.
 - `updated_at` es opcional en ediciones a mano.
 - En los textos, `` `así` `` se muestra como código.
+- `links` vincula tareas: `{ "type": "blocks", "task": "<id>" }` en la tarea que bloquea a la otra, o `"related"`. "Bloqueada por" no se guarda: se calcula.
 - `refs` apunta a secciones de documentos por su id estable (`<!-- id: ... -->` debajo de cada título).

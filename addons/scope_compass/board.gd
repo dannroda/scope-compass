@@ -74,6 +74,44 @@ func default_milestone() -> String:
 	return milestones[0].id if milestones.size() > 0 else ""
 
 
+# --- Vínculos entre tareas (misma lógica que hub/src/links.js) ---
+
+static func links_of(t) -> Array:
+	var l = t.get("links", []) if t is Dictionary else []
+	return l if l is Array else []
+
+
+## Vínculos de una tarea vistos desde ella: { blocks, blocked_by, related } con ids. Cada tarea guarda solo
+## "blocks" (bloquea a) y "related"; el inverso se calcula acá.
+func link_view(id: String) -> Dictionary:
+	var out := { "blocks": [], "blocked_by": [], "related": [] }
+	var add := func(list: Array, x: String): if x != id and not list.has(x): list.append(x)
+	for l in links_of(task(id)):
+		add.call(out.blocks if l.get("type") == "blocks" else out.related, str(l.get("task", "")))
+	for t in tasks:
+		for l in links_of(t):
+			if str(l.get("task", "")) == id:
+				add.call(out.blocked_by if l.get("type") == "blocks" else out.related, t.id)
+	return out
+
+
+## Tareas sin terminar que bloquean a esta (una tarea hecha no está bloqueada).
+func open_blockers(id: String) -> Array:
+	var me = task(id)
+	if me == null or me.status == "done":
+		return []
+	return link_view(id).blocked_by.filter(func(b): var t = task(b); return t != null and t.status != "done")
+
+
+## "5.2 Título" de una tarea, o su id si no existe.
+func task_name(id: String) -> String:
+	var t = task(id)
+	if t == null:
+		return id + " (no existe)"
+	var code := str(t.get("code", ""))
+	return ((code + " " if code != "" else "") + str(t.title)).replace("`", "")
+
+
 ## Aplica un documento del hub (o lo quita si doc es null). Devuelve si cambió algo.
 func apply(collection: String, id: String, doc) -> bool:
 	var list: Array = milestones if collection == "milestones" else tasks

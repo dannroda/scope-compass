@@ -141,6 +141,19 @@ nav.views a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--
 .card .refmark { font-family: var(--font-mono); font-size: 11px; color: var(--muted); align-self: flex-start; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
 .card .refmark.bad { color: var(--danger); border-color: var(--danger); }
 
+.card .blockmark { font-size: 11px; font-weight: 700; color: var(--danger); align-self: flex-start; border: 1px solid var(--danger); border-radius: 4px; padding: 0 5px; }
+.link-row { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 4px 6px 4px 10px; flex-wrap: wrap; }
+.link-row.broken, .link-row.blocking { border-color: var(--danger); }
+.link-row.broken .link-task { color: var(--danger); }
+.link-kind { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.link-row.blocking .link-kind { color: var(--danger); }
+button.link-task { border: 0; background: none; font-weight: 700; text-align: left; padding: 4px; min-height: 32px; overflow-wrap: anywhere; flex: 1 1 12ch; }
+button.link-task:hover { text-decoration: underline; }
+span.link-task { flex: 1 1 12ch; }
+.link-status { font-size: 12px; font-weight: 700; }
+.link-row .rm { border: 0; background: transparent; color: var(--muted); padding: 0 6px; min-height: 28px; }
+.seg.small { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.seg.small button { min-height: 30px; padding: 3px 8px; font-size: 13px; }
 .refs { display: flex; flex-direction: column; gap: 8px; }
 .refs-head { display: flex; align-items: center; gap: 10px; }
 .refs-head .btn { margin-left: auto; }

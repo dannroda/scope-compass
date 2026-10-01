@@ -3,6 +3,7 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { writeAtomic } from './store/atomic.js';
+import { linkView } from './links.js';
 
 const ST = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
 
@@ -17,7 +18,8 @@ const today = () => {
 
 // milestones / tasks: Map o iterable de [id, doc]. board: URL del artifact si todavía es la fuente de verdad.
 export function renderMarkdown({ milestones, tasks }, { title, board, date = today() }) {
-  const ts = [...tasks].map(([, t]) => t);
+  const ts = [...tasks].map(([id, t]) => ({ id, ...t }));
+  const name = (id) => { const t = ts.find((x) => x.id === id); return t ? [t.code ?? '', t.title].filter(Boolean).join(' ') : `${id} (no existe)`; };
   const L = [`# Tareas — ${title}`, '',
     board
       ? `> Copia local del tablero ${board}. El tablero es la fuente de verdad; este archivo se regenera desde ahí.`
@@ -39,6 +41,10 @@ export function renderMarkdown({ milestones, tasks }, { title, board, date = tod
       if (t.test) L.push(`**Prueba:** ${t.test}`, '');
       if (t.notes) L.push(`**Notas:** ${t.notes}`, '');
       if (t.refs?.length) L.push('**Referencias:** ' + t.refs.map((r) => `\`${r.doc}#${r.section}\``).join(', '), '');
+      const v = linkView(ts, t.id);
+      if (v.blocks.length) L.push('**Bloquea a:** ' + v.blocks.map(name).join('; '), '');
+      if (v.blockedBy.length) L.push('**Bloqueada por:** ' + v.blockedBy.map(name).join('; '), '');
+      if (v.related.length) L.push('**Relacionadas:** ' + v.related.map(name).join('; '), '');
     }
   }
   return L.join('\n').replace(/\s+$/, '') + '\n';

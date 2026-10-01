@@ -300,6 +300,11 @@ test('dock: tocar el texto de un paso despliega su detalle (no lo tilda)', { ski
   expectOk(await godot('step_detail', dir, 'm1-04', 'Detalle con código largo'), 'step_detail');
 });
 
+test('dock: una tarea bloqueada se marca, y el vínculo del detalle lleva a la otra tarea', { skip }, async () => {
+  await setTask('m1-05', { links: [{ task: 'm1-03', type: 'blocks' }] });
+  expectOk(await godot('links', dir, 'm1-03', 'm1-05'), 'links');
+});
+
 test('dock: "Reiniciar hub" vuelve a conectar, y el hub nuevo se cierra con el dock', { skip }, async () => {
   const port = await freePort();
   const cfgPath = join(dir, 'compass', 'config.json');

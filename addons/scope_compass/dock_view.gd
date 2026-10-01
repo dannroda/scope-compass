@@ -14,6 +14,7 @@ const HubClient := preload("hub_client.gd")
 ## Ancho mínimo de los textos con ajuste de línea. Sin esto, mientras el dock está en una pestaña oculta mide 0 de
 ## ancho, cada palabra va en su renglón y el alto mínimo (miles de px) desacomoda todo el editor.
 const WRAP_MIN_WIDTH := 140
+const BLOCKED_COLOR := Color("#e8806e")
 
 ## Preferencias por proyecto. El plugin las guarda en la metadata del proyecto del editor.
 var get_pref: Callable = func(_key: String, default): return default
@@ -63,6 +64,8 @@ var detail_title: Label
 var status_select: OptionButton
 var steps_box: VBoxContainer
 var refs_box: VBoxContainer
+## Vínculos con otras tareas (solo lectura: se editan en la web o con `scompass link`).
+var links_box: VBoxContainer
 ## Referencias desplegadas ("ruta#id") y bloques de las secciones pedidas al hub (6.7).
 var _refs_open := {}
 ## Pasos con el detalle desplegado ("tarea:índice").
@@ -545,6 +548,8 @@ func _build() -> void:
 	srow.add_child(status_select)
 	steps_box = VBoxContainer.new()
 	detail.add_child(steps_box)
+	links_box = VBoxContainer.new()
+	detail.add_child(links_box)
 	refs_box = VBoxContainer.new()
 	detail.add_child(refs_box)
 
@@ -660,6 +665,10 @@ func _render_tree() -> void:
 			it.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
 			it.set_metadata(0, t.id)
 			it.set_tooltip_text(0, str(t.title))
+			var blockers := board.open_blockers(t.id)
+			if not blockers.is_empty():
+				it.set_custom_color(0, BLOCKED_COLOR)
+				it.set_tooltip_text(0, "%s\nBloqueada por: %s" % [t.title, "; ".join(blockers.map(board.task_name))])
 			if t.id == selected_task:
 				it.select(0)
 
@@ -749,7 +758,59 @@ func _render_detail() -> void:
 				margin.add_child(detail_label)
 				row.add_child(margin)
 		steps_box.add_child(row)
+	_render_links(t)
 	_render_refs(t)
+
+
+# --- Vínculos entre tareas -----------------------------------------------------------------------
+
+const LINK_KINDS := [["blocked_by", "Bloqueada por"], ["blocks", "Bloquea a"], ["related", "Relacionada con"]]
+
+
+func _render_links(t: Dictionary) -> void:
+	for c in links_box.get_children():
+		links_box.remove_child(c)
+		c.queue_free()
+	var v := board.link_view(t.id)
+	if v.blocks.is_empty() and v.blocked_by.is_empty() and v.related.is_empty():
+		return
+	var label := Label.new()
+	label.text = "Vínculos"
+	label.add_theme_color_override("font_color", Color("#a69d8c"))
+	links_box.add_child(label)
+	for kind in LINK_KINDS:
+		for id in v[kind[0]]:
+			var other = board.task(id)
+			var b := Button.new()
+			b.flat = true
+			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			b.custom_minimum_size.x = WRAP_MIN_WIDTH
+			var status := ""
+			for s in Board.STATUSES:
+				if other != null and s.id == other.status:
+					status = " · " + s.label
+			b.text = "%s: %s%s" % [kind[1], board.task_name(id), status]
+			# En rojo: el vínculo roto, o la tarea sin terminar que bloquea a esta.
+			if other == null or (kind[0] == "blocked_by" and other.status != "done" and t.status != "done"):
+				b.add_theme_color_override("font_color", BLOCKED_COLOR)
+			if other == null:
+				b.disabled = true
+			else:
+				b.tooltip_text = "Ir a la tarea"
+				b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+				b.pressed.connect(_go_to_task.bind(id))
+			links_box.add_child(b)
+
+
+## Abre otra tarea en el detalle (cambia de hito si hace falta).
+func _go_to_task(id: String) -> void:
+	var t = board.task(id)
+	if t == null:
+		return
+	current_milestone = t.milestone
+	selected_task = id
+	_render()
 
 
 # --- Referencias a documentos (6.7) ----------------------------------------------------------------

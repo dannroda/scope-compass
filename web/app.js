@@ -10,6 +10,8 @@
   const S = { project: '', milestones: [], tasks: [], warnings: [], filter: pref('filter') || 'all', openId: null, confirmDelete: false, loaded: false, offline: false, connected: false,
     // Documentos (M6): índice de /api/docs, vista actual por el hash, referencias desplegadas, HTML en caché.
     docs: [], view: 'board', doc: '', sec: '', refsOpen: new Set(), refSearch: null,
+    // Vínculos entre tareas: buscador abierto ({ type, q }) o null.
+    linkSearch: null,
     // Pasos: detalles desplegados y el paso en edición ("tarea:índice").
     stepsOpen: new Set(), editStep: null };
   const sectionCache = new Map(); // "alias#id" → html
@@ -271,12 +273,13 @@
       h('span', { class: 't' }, rich(t.title, true)),
       refsOf(t).length ? h('span', { class: 'refmark' + (brokenRefs(t).length ? ' bad' : ''), title: brokenRefs(t).length ? 'Tiene referencias rotas' : refsOf(t).length + ' referencias a documentos' },
         brokenRefs(t).length ? '⚠ ' : '§ ', refsOf(t).length) : null,
+      openBlockers(t).length ? h('span', { class: 'blockmark', title: 'Bloqueada por: ' + openBlockers(t).map(taskName).join('; ') }, 'Bloqueada') : null,
       p.total ? h('span', { class: 'cl' }, h('span', { class: 'bar', role: 'img', 'aria-label': p.done + ' de ' + p.total + ' pasos' }, h('i', { style: 'width:' + pct + '%' })), p.done + '/' + p.total) : null);
   }
 
   // Campos editables del detalle. Cada uno guarda en data-orig el valor con el que se dibujó:
   // si el usuario lo cambió y todavía no lo guardó, el valor escrito se conserva al redibujar.
-  const EDITABLE = ['d-title', 'd-addcl', 'd-refq', 'd-step-text', 'd-step-detail', 'd-test', 'd-notes'];
+  const EDITABLE = ['d-title', 'd-addcl', 'd-refq', 'd-linkq', 'd-step-text', 'd-step-detail', 'd-test', 'd-notes'];
   function captureEdits(box) {
     const active = box.contains(document.activeElement) ? document.activeElement : null;
     const dirty = {};
@@ -417,6 +420,7 @@
           h('input', { id: 'd-addcl', placeholder: 'Agregar paso', autocomplete: 'off', 'data-orig': '' }),
           h('button', { class: 'btn', type: 'submit' }, 'Agregar'))),
       renderRefs(t),
+      renderLinks(t),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('label', { class: 'label', for: 'd-test' }, 'Cómo probarlo'),
         h('textarea', { id: 'd-test', 'data-orig': t.test || '', onchange: (e) => updateTask(t.id, { test: e.target.value }) }, t.test || ''),
@@ -518,6 +522,91 @@
         open ? htmlBox('doc-body ref-body', sectionHtml(d, sec.id)) : null));
     });
     return box;
+  }
+
+  // --- Vínculos entre tareas (misma lógica que hub/src/links.js) ---------------------------------
+  // Cada tarea guarda links: [{ type: 'blocks' | 'related', task }]; "bloqueada por" se calcula.
+
+  const taskLinks = (t) => (Array.isArray(t && t.links) ? t.links : []);
+  const taskById = (id) => S.tasks.find((x) => x.id === id);
+  const taskName = (id) => { const t = taskById(id); return t ? [t.code, t.title].filter(Boolean).join(' ') : id + ' (no existe)'; };
+  function linkView(id) {
+    const out = { blocks: [], blockedBy: [], related: [] };
+    const add = (list, x) => { if (x !== id && !list.includes(x)) list.push(x); };
+    for (const l of taskLinks(taskById(id))) add(l.type === 'blocks' ? out.blocks : out.related, l.task);
+    for (const t of S.tasks) for (const l of taskLinks(t)) if (l.task === id) add(l.type === 'blocks' ? out.blockedBy : out.related, t.id);
+    return out;
+  }
+  // Tareas sin terminar que bloquean a esta (una tarea hecha no está bloqueada).
+  const openBlockers = (t) => (t.status === 'done' ? [] : linkView(t.id).blockedBy.filter((b) => { const x = taskById(b); return x && x.status !== 'done'; }));
+  // ¿from bloquea a to cerraría un ciclo? ignore: par cuyo vínculo actual se va a reemplazar.
+  function wouldCycle(from, to) {
+    const seen = new Set();
+    const stack = [to];
+    while (stack.length) {
+      const cur = stack.pop();
+      if (cur === from) return true;
+      if (seen.has(cur)) continue;
+      seen.add(cur);
+      for (const l of taskLinks(taskById(cur))) if (l.type === 'blocks' && !(cur === to && l.task === from)) stack.push(l.task);
+    }
+    return false;
+  }
+  const unlinked = (cur, other) => { const next = taskLinks(cur).filter((l) => l.task !== other); return next.length === taskLinks(cur).length ? null : { links: next.length ? next : null }; };
+  function removeLink(a, b) {
+    updateTask(a, (cur) => unlinked(cur, b));
+    if (taskById(b)) updateTask(b, (cur) => unlinked(cur, a));
+  }
+  // kind: 'blocks' (a bloquea a b), 'blockedBy' (b bloquea a a) o 'related'. Reemplaza el vínculo que hubiera.
+  function setLink(a, kind, b) {
+    const [from, to] = kind === 'blockedBy' ? [b, a] : [a, b];
+    if (kind !== 'related' && wouldCycle(from, to)) { toast('No se puede: ' + taskName(to) + ' ya bloquea a ' + taskName(from) + '.'); return; }
+    updateTask(to, (cur) => unlinked(cur, from));
+    updateTask(from, (cur) => ({ links: [...taskLinks(cur).filter((l) => l.task !== to), { type: kind === 'related' ? 'related' : 'blocks', task: to }] }));
+  }
+
+  const LINK_KINDS = [['blockedBy', 'Bloqueada por'], ['blocks', 'Bloquea a'], ['related', 'Relacionada con']];
+  function renderLinks(t) {
+    const v = linkView(t.id);
+    const total = v.blocks.length + v.blockedBy.length + v.related.length;
+    const box = h('div', { class: 'refs links' },
+      h('div', { class: 'refs-head' }, h('span', { class: 'label' }, 'Vínculos'),
+        h('button', { class: 'btn ghost small', type: 'button', onclick: () => { S.linkSearch = S.linkSearch ? null : { type: 'blockedBy', q: '' }; renderDetail(); document.getElementById('d-linkq')?.focus(); } }, S.linkSearch ? 'Cerrar' : '+ Agregar')));
+    if (S.linkSearch) box.append(linkSearch(t, v));
+    if (!total && !S.linkSearch) box.append(h('p', { class: 'muted small' }, 'Sin vínculos con otras tareas.'));
+    for (const [kind, label] of LINK_KINDS) {
+      for (const id of v[kind]) {
+        const other = taskById(id);
+        const st = other && STATUSES.find((s) => s.id === (other.status || 'todo'));
+        box.append(h('div', { class: 'link-row' + (other ? '' : ' broken') + (kind === 'blockedBy' && other && other.status !== 'done' && t.status !== 'done' ? ' blocking' : ''), 'data-kind': kind, 'data-task': id },
+          h('span', { class: 'link-kind' }, label),
+          other
+            ? h('button', { class: 'link-task', type: 'button', title: 'Abrir la tarea', onclick: () => openTask(id) }, rich(taskName(id), true))
+            : h('span', { class: 'link-task' }, '⚠ ' + taskName(id)),
+          st ? h('span', { class: 'link-status', style: 'color:' + st.color }, st.label) : null,
+          h('button', { class: 'rm', type: 'button', 'aria-label': 'Quitar vínculo', onclick: () => removeLink(t.id, id) }, '×')));
+      }
+    }
+    return box;
+  }
+
+  // Buscador de tareas para vincular: título, código o id.
+  function linkSearch(t, v) {
+    const norm = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const words = norm(S.linkSearch.q).split(/\s+/).filter(Boolean);
+    const have = new Set([t.id, ...v.blocks, ...v.blockedBy, ...v.related]);
+    const matches = S.tasks.filter((x) => !have.has(x.id) && words.every((w) => norm(x.code + ' ' + x.title + ' ' + x.id).includes(w)))
+      .sort((a, b) => (a.milestone === t.milestone ? 0 : 1) - (b.milestone === t.milestone ? 0 : 1) || sortTasks(a, b)).slice(0, 8);
+    return h('div', { class: 'ref-search' },
+      h('div', { class: 'seg small', role: 'group', 'aria-label': 'Tipo de vínculo' }, LINK_KINDS.map(([kind, label]) =>
+        h('button', { type: 'button', 'aria-pressed': S.linkSearch.type === kind ? 'true' : 'false', onclick: () => { S.linkSearch.type = kind; renderDetail(); document.getElementById('d-linkq')?.focus(); } }, label))),
+      h('label', { for: 'd-linkq', class: 'sr' }, 'Buscar tarea'),
+      h('input', { id: 'd-linkq', placeholder: 'Buscar tarea por título o código', autocomplete: 'off', value: S.linkSearch.q, 'data-orig': S.linkSearch.q,
+        oninput: (e) => { S.linkSearch.q = e.target.value; renderDetail(); } }),
+      h('ul', { class: 'ref-matches' }, matches.map((x) => h('li', null,
+        h('button', { type: 'button', onclick: () => { const kind = S.linkSearch.type; S.linkSearch = null; setLink(t.id, kind, x.id); renderDetail(); } },
+          rich(taskName(x.id), true), h('span', { class: 'ref-id' }, x.id))))),
+      words.length && !matches.length ? h('p', { class: 'muted small' }, 'Ninguna tarea coincide.') : null);
   }
 
   // Buscador de secciones: título o id, en todos los documentos.
@@ -646,7 +735,7 @@
   }
 
   function setFilter(id) { S.filter = id; pref('filter', id); render(); }
-  function openTask(id) { S.openId = id; S.confirmDelete = false; render(); const el = document.getElementById('d-title'); if (el) el.focus(); }
+  function openTask(id) { S.openId = id; S.confirmDelete = false; S.linkSearch = null; render(); const el = document.getElementById('d-title'); if (el) el.focus(); }
   function closeTask() { S.openId = null; S.confirmDelete = false; render(); }
   // Soltar una tarjeta sobre otra: toma el estado de esa columna y, si son del mismo hito, queda justo antes.
   function dropBefore(id, target) {

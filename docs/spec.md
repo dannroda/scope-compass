@@ -161,6 +161,7 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `test` | string | "Cómo probarlo" |
 | `notes` | string | |
 | `refs` | `{ doc: string, section: string }[]` | Opcional. Referencias a secciones de documentos (§10). v1 las guarda y las muestra como texto; v2 las resuelve. |
+| `links` | `{ type: "blocks" \| "related", task: string }[]` | Opcional. Vínculos con otras tareas (D22): `blocks` = esta tarea bloquea a `task`; `related` = relacionadas. El inverso ("bloqueada por") no se guarda, se calcula. |
 | `created_at` / `updated_at` | ISO 8601 | `updated_at` es opcional en ediciones a mano; la app lo completa en su próxima escritura |
 
 **Ids:** los hitos usan `m00`…`m99`. Las tareas importadas conservan su id (`m0-01`). Las tareas nuevas usan un id corto aleatorio (por ejemplo 8 caracteres base36), válido como nombre de archivo en Windows y Linux.
@@ -298,6 +299,9 @@ scompass check <id> <n> [--undo]             # n desde 1, como lo muestra `show`
 scompass set <id> --file task.json          # reemplazo completo, para cargas grandes
 scompass set <id> [--title] [--notes] [--test] [--code] [--milestone] [--status]   # solo esos campos
 scompass milestone list | show <id> | set <id> --file m.json
+scompass link add <id> <blocks|blocked-by|related> <otra>   # vínculo entre tareas (D22)
+scompass link rm <id> <otra>
+scompass link list [<id>] [--json]          # sale con 1 si hay vínculos a tareas que no existen
 scompass export md [--out docs/tareas.md]
 scompass import artifact <carpeta-export>   # §8
 ```

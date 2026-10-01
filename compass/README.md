@@ -33,4 +33,5 @@ El tablero en artifact (https://claude.ai/artifact/JAiu8ZznTSLcDk8EzU3Zaj) qued�
 - Los archivos no guardan número de versión: no hay nada que incrementar al editar a mano.
 - `updated_at` es opcional en ediciones a mano.
 - En los textos, `` `así` `` se muestra como código.
+- `links` vincula tareas: `{ "type": "blocks", "task": "<id>" }` en la tarea que bloquea a la otra, o `"related"`. "Bloqueada por" no se guarda: se calcula.
 - `refs` apunta a secciones de documentos por su id estable (`<!-- id: ... -->` debajo de cada título).

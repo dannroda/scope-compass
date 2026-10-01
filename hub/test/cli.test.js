@@ -130,6 +130,48 @@ test('init crea un compass/ válido y no pisa uno existente', async () => {
   assert.equal(await readFile(new URL('../../addons/scope_compass/AGENTS.md', import.meta.url), 'utf8'), guide, 'addons/scope_compass/AGENTS.md no coincide con hub/templates/compass-AGENTS.md');
 });
 
+test('link: bloquea, bloqueada por y relacionada; sin ciclos; el inverso se calcula; rotos', async () => {
+  const [a, b, c] = ['m1-01', 'm1-02', 'm1-03'];
+  for (const id of [a, b, c]) assert.equal((await cli(['move', id, 'todo'])).code, 0);
+  assert.equal((await cli(['link', 'add', a, 'blocks', b])).code, 0);
+  assert.equal((await cli(['link', 'add', c, 'blocked-by', b])).code, 0);
+  // Se guarda en la que bloquea.
+  assert.deepEqual((await cli(['show', a, '--json'])).json().links, [{ task: b, type: 'blocks' }]);
+  assert.deepEqual((await cli(['show', b, '--json'])).json().links, [{ task: c, type: 'blocks' }]);
+  assert.equal((await cli(['show', c, '--json'])).json().links, undefined);
+  // c → a cerraría el ciclo a → b → c.
+  const cyc = await cli(['link', 'add', c, 'blocks', a]);
+  assert.equal(cyc.code, 1);
+  assert.match(cyc.err, /ciclo/);
+  assert.equal((await cli(['link', 'add', a, 'blocks', a])).code, 1);
+  assert.equal((await cli(['link', 'add', a, 'blocks', 'no-existe'])).code, 1);
+  assert.equal((await cli(['link', 'add', a, 'related', c])).code, 0);
+  assert.deepEqual((await cli(['link', 'list', b, '--json'])).json(), { links: [{ id: b, blocks: [c], blocked_by: [a], related: [] }], broken: [] });
+  assert.deepEqual((await cli(['link', 'list', c, '--json'])).json().links[0], { id: c, blocks: [], blocked_by: [b], related: [a] });
+  const shown = (await cli(['show', b])).out;
+  assert.match(shown, /Bloquea a: m1-03 \(/);
+  assert.match(shown, /Bloqueada por: m1-01 \(/);
+  assert.match((await cli(['list', '--milestone', 'm01'])).out, /\[bloqueada por m1-01\]/);
+  // Una tarea terminada ya no bloquea.
+  await cli(['move', a, 'done']);
+  assert.doesNotMatch((await cli(['list', '--milestone', 'm01'])).out, /\[bloqueada por m1-01\]/);
+  const md = await readFile(join(dir, 'docs', 'tareas.md'), 'utf8');
+  assert.match(md, /\*\*Bloqueada por:\*\* /);
+  assert.match(md, /\*\*Relacionadas:\*\* /);
+  // Un vínculo nuevo entre las mismas dos reemplaza al anterior, esté en la tarea que esté.
+  assert.equal((await cli(['link', 'add', c, 'blocked-by', a])).code, 0);
+  assert.deepEqual((await cli(['show', a, '--json'])).json().links, [{ task: b, type: 'blocks' }, { task: c, type: 'blocks' }]);
+  assert.equal((await cli(['link', 'rm', a, c])).code, 0);
+  assert.equal((await cli(['link', 'rm', a, c])).code, 1);
+  // Vínculo a una tarea que ya no existe: link list lo avisa y sale con 1; rm lo limpia.
+  await rm(join(dir, 'compass', 'tasks', `${c}.json`));
+  const broken = await cli(['link', 'list', '--json']);
+  assert.equal(broken.code, 1);
+  assert.deepEqual(broken.json().broken, [{ id: b, type: 'blocks', task: c }]);
+  assert.equal((await cli(['link', 'rm', b, c])).code, 0);
+  assert.equal((await cli(['link', 'list'])).code, 0);
+});
+
 test('--etag none: set crea solo si no existe', async () => {
   await writeFile(join(dir, 't.json'), JSON.stringify({ milestone: 'm02', title: 'Nueva', status: 'todo' }));
   assert.equal((await cli(['set', 'm2-99', '--file', 't.json', '--etag', 'none'])).code, 0);

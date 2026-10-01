@@ -328,6 +328,23 @@ func test_refs_offline(a: Array) -> void:
 	await _refs_check(v, a, "refs_offline", false)
 
 
+# Vínculos: la tarea bloqueada lo muestra en la lista y en el detalle; el vínculo lleva a la otra tarea.
+func test_links(a: Array) -> void:
+	var c := "links"
+	var v := await _view(a[0])
+	_select(v, a[1])
+	if not _check(c, v.links_box.get_child_count() == 2, "vínculos en el detalle: %d" % v.links_box.get_child_count()): return
+	var link: Button = v.links_box.get_child(1)
+	if not _check(c, link.text.begins_with("Bloqueada por: ") and link.text.ends_with(" · Revisión"), "texto: " + link.text): return
+	var item: TreeItem = v.tree.get_selected()
+	if not _check(c, item != null and item.get_tooltip_text(0).contains("Bloqueada por: "), "la lista no marca la tarea bloqueada"): return
+	link.pressed.emit()
+	await process_frame
+	if not _check(c, v.selected_task == a[2], "no fue a la otra tarea: " + v.selected_task): return
+	link = v.links_box.get_child(1)
+	if not _check(c, link.text.begins_with("Bloquea a: "), "texto del inverso: " + link.text): return
+
+
 # Un paso con detalle: tocar el texto (o ▸) lo despliega; tocar el texto no tilda el paso.
 func test_step_detail(a: Array) -> void:
 	var c := "step_detail"

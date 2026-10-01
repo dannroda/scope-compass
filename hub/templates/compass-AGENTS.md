@@ -20,7 +20,8 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
   - `checklist`: pasos `{ text, done, detail? }`. `text` es una línea corta; el cómo y el porqué van en `detail`;
   - `test`: cómo se comprueba que la tarea está terminada;
   - `notes`: notas libres;
-  - `refs`: secciones de documentos del proyecto que la tarea cita.
+  - `refs`: secciones de documentos del proyecto que la tarea cita;
+  - `links`: vínculos con otras tareas (ver "Vínculos entre tareas").
 - En los textos, `` `así` `` se muestra como código.
 
 ## Leer
@@ -52,6 +53,23 @@ scompass milestone set m08 --file hito.json                   # crea o reemplaza
 - Los pasos se numeran desde 1, como los muestra `scompass show`.
 - Para no pisar un cambio ajeno, pasá `--etag <etag>` (el que devuelve `--json`): si la tarea cambió, falla con conflicto. Volvé a leerla y reintentá.
 - Una tarea se borra borrando su archivo en `compass/tasks/`.
+
+## Vínculos entre tareas
+
+Una tarea puede bloquear a otra o estar relacionada con otra. Se guarda en un solo lado (`links` de la tarea que bloquea); "bloqueada por" se calcula.
+
+```sh
+scompass link add m5-02 blocked-by m5-01   # m5-02 no puede avanzar hasta que m5-01 esté hecha
+scompass link add m5-01 blocks m5-02       # lo mismo, dicho desde la otra tarea
+scompass link add m5-02 related m4-03      # relacionadas, sin orden
+scompass link rm m5-02 m5-01               # quita el vínculo entre las dos
+scompass link list m5-02 --json            # { "links": [ { "id", "blocks", "blocked_by", "related" } ], "broken": [] }
+scompass link list                         # todos; sale con 1 si hay vínculos a tareas que no existen
+```
+
+- Entre dos tareas hay un solo vínculo: agregar otro reemplaza al anterior. Un `blocks` que cerraría un ciclo se rechaza.
+- `scompass list` marca `[bloqueada por <ids>]` en las tareas que tienen delante una tarea sin terminar; `scompass show` lista los vínculos.
+- Antes de empezar una tarea, mirá si está bloqueada. Si descubrís que una depende de otra, vinculalas en lugar de anotarlo en `notes`.
 
 ## Uso habitual
 
