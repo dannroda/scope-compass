@@ -148,6 +148,18 @@ func test_online_move(a: Array) -> void:
 
 
 # Un cambio hecho afuera (la UI web, la CLI) llega al dock por el WebSocket.
+# Hub de otra versión que el addon: aviso en el dock; con la misma, nada.
+func test_version_mismatch(a: Array) -> void:
+	var c := "version_mismatch"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	if not _check(c, v.addon_version() != "" and v.client.hub_version == v.addon_version(), "versiones: hub %s, addon %s" % [v.client.hub_version, v.addon_version()]): return
+	if not _check(c, not v.version_label.visible, "avisa con la misma versión"): return
+	v.client.hub_version = "9.9.9"
+	v._render()
+	if not _check(c, v.version_label.visible and v.version_label.text.contains("9.9.9"), "no avisa la versión distinta"): return
+
+
 func test_online_receive(a: Array) -> void:
 	var c := "online_receive"
 	var v = await _online_view(a[0], c)

@@ -51,6 +51,8 @@ var warnings_label: Label
 ## Aviso de que compass/ tiene archivos generados viejos (schema/, AGENTS.md), con el botón para actualizarlos.
 var update_row: HFlowContainer
 var update_label: Label
+## Aviso de que el hub conectado es de otra versión que el addon.
+var version_label: Label
 ## Archivos desactualizados según `scompass update --check`.
 var outdated: Array = []
 var milestone_select: OptionButton
@@ -239,6 +241,14 @@ func create_task(title: String) -> void:
 		_render()
 	else:
 		show_notice("No se pudo crear la tarea.")
+
+
+## Versión del addon (plugin.cfg, al lado de este script).
+func addon_version() -> String:
+	var cfg := ConfigFile.new()
+	if cfg.load((get_script() as Script).resource_path.get_base_dir().path_join("plugin.cfg")) != OK:
+		return ""
+	return str(cfg.get_value("plugin", "version", ""))
 
 
 # --- Crear compass/ ------------------------------------------------------------------------------
@@ -524,6 +534,13 @@ func _build() -> void:
 	update_row.add_child(update_button)
 	add_child(update_row)
 
+	version_label = Label.new()
+	version_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	version_label.custom_minimum_size.x = WRAP_MIN_WIDTH
+	version_label.add_theme_color_override("font_color", Color("#e0a95a"))
+	version_label.visible = false
+	add_child(version_label)
+
 	var head := HBoxContainer.new()
 	add_child(head)
 	milestone_select = OptionButton.new()
@@ -698,6 +715,10 @@ func _render() -> void:
 	footer_dot.color = Color("#6fbf94") if online else Color("#e0655a")
 	footer_label.text = ("127.0.0.1:%d" % client.port) if online else "Sin hub · solo lectura"
 	restart_button.visible = online
+	# Hub y addon de versiones distintas: uno de los dos quedó viejo (o el hub no se reinició tras actualizar).
+	var mine := addon_version()
+	version_label.visible = online and client.hub_version != "" and mine != "" and client.hub_version != mine
+	version_label.text = "El hub es la versión %s y el addon la %s. Reiniciá el hub; si sigue, actualizá el que quedó viejo." % [client.hub_version, mine]
 	footer_right.text = ("compass: %d sin commitear" % _uncommitted) if _uncommitted >= 0 else ""
 
 

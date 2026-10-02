@@ -13,8 +13,8 @@ import { importArtifact } from './import-artifact.js';
 import { KINDS, loadValidators, parseDoc, SCHEMA_DIR } from './schema.js';
 import { canonical } from './store/canonical.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
-import { createHttpStore, detectHub } from './store/http.js';
-import { createServer, listen } from './server.js';
+import { createHttpStore, detectHub, hubVersions } from './store/http.js';
+import { createServer, freePortFrom, listen, VERSION } from './server.js';
 import { startTray } from './tray.js';
 import { hubsOf, listHubs, registerHub, unregisterHub } from './registry.js';
 import { listMilestones, listTasks } from './views.js';
@@ -123,7 +123,12 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'help'].includes(cmd)) {
     const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
     const hub = await detectHub(project, cfg?.port);
-    if (hub) store = createHttpStore(hub, compass, { validators });
+    if (hub) {
+      store = createHttpStore(hub, compass, { validators });
+      // Hub de otra versión (por ejemplo, quedó corriendo de antes de actualizar): puede no conocer campos nuevos.
+      const v = hubVersions.get(hub);
+      if (v && v !== VERSION) warn(`aviso: el hub en ${hub} es la versión ${v} y esta CLI la ${VERSION}; reinicialo con \`scompass restart\``);
+    }
   }
   // --etag none: el documento no tiene que existir.
   const ifMatch = o.etag === undefined ? {} : { ifMatch: o.etag === 'none' ? null : o.etag };
@@ -192,8 +197,17 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         const h = others[0];
         throw new StoreError('conflict', `ya hay un hub de este proyecto: PID ${h.pid} en http://127.0.0.1:${h.port}/ (scompass hubs lista todos; --force para levantar otro igual)`);
       }
-      const port = Number(o.port ?? all.config?.port ?? 4711);
+      let port = Number(o.port ?? all.config?.port ?? 4711);
       if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`puerto inválido: ${o.port}`);
+      // El puerto de la config ocupado (típico: el hub de otro proyecto, todos nacen con 4711): se usa el siguiente
+      // libre. La CLI y el dock encuentran el hub por el registro. Con --port explícito no se cambia: falla.
+      if (o.port === undefined && port !== 0) {
+        const free = await freePortFrom(port);
+        if (free !== null && free !== port) {
+          warn(`aviso: el puerto ${port} está ocupado; este hub usa el ${free}`);
+          port = free;
+        }
+      }
       let restart = false;
       const app = createServer({ projectDir: project, store, validators, watch: true, exportMd: true,
         onRestart: () => { restart = true; ac.abort(); } });

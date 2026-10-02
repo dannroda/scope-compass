@@ -10,6 +10,9 @@ const unflat = ({ id, etag, ...doc }) => ({ id, etag, doc });
 
 // El hub de este proyecto: primero en el puerto de la config y, si no, donde diga el registro de hubs
 // (por si se lanzó con otro --port). Devuelve la URL base o null.
+/** Versión que informó cada hub encontrado (URL base → versión), para avisar si no es la de esta CLI. */
+export const hubVersions = new Map();
+
 export async function detectHub(projectDir, port, opts = {}) {
   const ports = [port, ...hubsOf(projectDir).map((h) => h.port)].filter((p, i, a) => p && a.indexOf(p) === i);
   for (const p of ports) {
@@ -28,6 +31,7 @@ async function probeHub(projectDir, port, { timeoutMs = 300 } = {}) {
     const h = await r.json();
     if (h?.name !== 'scope-compass' || !h.project) return null;
     const [a, b] = await Promise.all([realpath(h.project), realpath(projectDir)]).catch(() => [h.project, projectDir]);
+    if (a === b) hubVersions.set(base, String(h.version ?? ''));
     return a === b ? base : null;
   } catch {
     return null;

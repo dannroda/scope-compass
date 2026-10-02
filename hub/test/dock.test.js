@@ -110,6 +110,13 @@ test('con hub: mover desde el dock escribe por la API y la UI web lo ve al insta
   assert.ok(events.some((e) => e.type === 'upsert' && e.id === 'm1-04' && e.doc.status === 'review'), 'se publicó a los clientes (la UI web)');
 });
 
+test('con hub: el dock avisa si el hub es de otra versión que el addon', { skip }, async () => {
+  const hub = await startHub();
+  const r = await godotLive(['version_mismatch', dir]);
+  await hub.app.close();
+  expectOk(r, 'version_mismatch');
+});
+
 test('con hub: un cambio desde la UI web llega al dock en menos de 1 s', { skip }, async () => {
   const hub = await startHub();
   let t0 = 0;

@@ -1,6 +1,6 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, rm } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer as netServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -85,6 +85,25 @@ test('scompass serve: arranca, responde y se cierra con la señal', async () => 
   s.ac.abort();
   assert.equal(await s.done, 0);
   await assert.rejects(fetch(url + 'api/health'));
+});
+
+test('scompass serve: si el puerto de la config está ocupado usa el siguiente libre y la CLI lo encuentra', async (t) => {
+  const busy = netServer().listen(0, '127.0.0.1');
+  await new Promise((r) => busy.once('listening', r));
+  const taken = busy.address().port;
+  t.after(() => busy.close());
+  const cfg = join(dir, 'compass', 'config.json');
+  await writeFile(cfg, JSON.stringify({ ...JSON.parse(await readFile(cfg, 'utf8')), port: taken }));
+  const s = await serve(['serve', '--json']);
+  for (let i = 0; i < 100 && !s.out(); i++) await new Promise((r) => setTimeout(r, 20));
+  const { port } = JSON.parse(s.out());
+  assert.ok(port > taken && port <= taken + 20, `puerto ${port}`);
+  assert.match(s.err(), /está ocupado; este hub usa el/);
+  // Otra invocación de la CLI llega al hub por el registro, aunque la config diga otro puerto.
+  const { detectHub } = await import('../src/store/http.js');
+  assert.equal(await detectHub(dir, taken), `http://127.0.0.1:${port}`);
+  s.ac.abort();
+  assert.equal(await s.done, 0);
 });
 
 test('scompass serve: puerto ocupado y proyecto sin compass/ fallan con 1', async () => {

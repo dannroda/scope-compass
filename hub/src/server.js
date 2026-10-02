@@ -1,6 +1,7 @@
 // Hub de Scope Compass (spec §5): Fastify sobre el store json-files de un proyecto.
 // createServer arma la app sin escuchar (los tests usan inject); listen la abre solo en 127.0.0.1.
 import { EventEmitter } from 'node:events';
+import { createServer as netServer } from 'node:net';
 import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -135,6 +136,17 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   app.get('/fonts/:file', (req, reply) => serveWeb(reply, 'fonts', req.params.file));
 
   return app;
+}
+
+// El primer puerto libre en 127.0.0.1 desde `port` (hasta `tries` seguidos), o null.
+export async function freePortFrom(port, tries = 20) {
+  const free = (p) => new Promise((resolve) => {
+    const s = netServer();
+    s.once('error', () => resolve(false));
+    s.listen(p, HOST, () => s.close(() => resolve(true)));
+  });
+  for (let p = port; p < port + tries && p <= 65535; p++) if (await free(p)) return p;
+  return null;
 }
 
 export async function listen(app, port) {

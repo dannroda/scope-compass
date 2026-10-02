@@ -35,6 +35,8 @@ Si `scompass` no está en el PATH del editor, indicá su ruta en Editor Settings
 
 - Proyecto sin tablero: en el dock, **Crear compass/** (o `scompass init` en la raíz del proyecto).
 - Para editar: **Iniciar hub** en el dock, o `scompass serve --open` en una terminal.
+- Varios proyectos a la vez: cada hub usa el puerto de su `compass/config.json` (4711 por defecto); si está ocupado, toma el siguiente libre solo.
+- Tras actualizar Scope Compass: reiniciá los hubs que estuvieran corriendo (`scompass restart`, o "Reiniciar hub" en el dock); el dock y la CLI avisan si el hub es de otra versión.
 - Tras actualizar Scope Compass: si el dock avisa que `compass/` tiene archivos de una versión anterior, **Actualizar** (o `scompass update`).
 
 ## Para agentes de IA

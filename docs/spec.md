@@ -311,6 +311,8 @@ scompass import artifact <carpeta-export>   # §8
 - `--json` en todas las lecturas y escrituras, para que los agentes parseen sin adivinar. Cada documento sale con su `etag`.
 - `--etag <e>` en las escrituras: falla con `conflict` (y el documento actual) si alguien lo cambió desde que se leyó. `--etag none` exige que el documento no exista.
 - `add` no calcula el `order`: lo pone el store al crear, al final del hito, dentro de su cola de escritura. Con hub, dos `add` a la vez no repiten `order`.
+- `serve` sin `--port` usa el puerto de `config.json`; si está ocupado (por ejemplo, por el hub de otro proyecto: todos nacen con 4711) usa el siguiente libre y lo avisa. La CLI y el dock encuentran el hub por el registro de hubs. Con `--port` explícito y ocupado, falla.
+- Si el hub que responde es de otra versión que la CLI o el addon, se avisa (stderr en la CLI, una línea en el dock): suele ser un hub que quedó corriendo de antes de actualizar.
 - `--dir <proyecto>`; sin él, busca `compass/config.json` subiendo desde la carpeta actual. `--file -` lee de stdin.
 - Después de cada escritura se regenera el markdown. Se desactiva con `config.json › auto_export_md: false` (D13). Sin hub lo hace la CLI; con hub lo hace el hub, tras cualquier cambio (API, CLI o externo) con un debounce de 200 ms, y relee la config en cada export.
 

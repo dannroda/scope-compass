@@ -21,6 +21,8 @@ var _ws: WebSocketPeer = null
 var _connecting := false
 ## Por qué falló la última búsqueda del hub (para mostrarlo en el aviso del dock).
 var last_error := ""
+## Versión que informó el hub conectado (/api/health).
+var hub_version := ""
 
 
 func base_url() -> String:
@@ -62,6 +64,7 @@ func _probe() -> bool:
 	else:
 		ok = true
 		last_error = ""
+		hub_version = str(r.json.get("version", ""))
 	if ok:
 		_ws = WebSocketPeer.new()
 		if _ws.connect_to_url("ws://%s:%d/ws" % [HOST, port]) != OK:
