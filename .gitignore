@@ -4,6 +4,9 @@
 
 # Node
 node_modules/
+
+# Build interna (tools/build.mjs)
+/dist/
 npm-debug.log*
 
 # Editores y sistema

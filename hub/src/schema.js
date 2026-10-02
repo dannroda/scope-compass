@@ -1,12 +1,16 @@
 // Validación de los documentos de compass/ (spec §4.3, D14): JSON Schema de ../schema con ajv.
 // parseDoc nunca lanza: devuelve el documento o un error con código, para avisar sin tirar el servidor.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 
-export const SCHEMA_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'schema');
+const HUB_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
+// schema/ y web/ viven en la raíz del repo, al lado de hub/. En el paquete instalable (tools/build.mjs) van
+// adentro del paquete: se usa esa copia si está.
+export const resourceDir = (name) => (existsSync(join(HUB_DIR, name)) ? join(HUB_DIR, name) : join(HUB_DIR, '..', name));
+export const SCHEMA_DIR = resourceDir('schema');
 export const KINDS = ['config', 'milestone', 'task'];
 
 export function loadValidators(dir = SCHEMA_DIR) {

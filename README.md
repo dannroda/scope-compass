@@ -42,3 +42,7 @@ El repo es un proyecto de Godot 4.8 para poder editar todo sin salir del editor 
 1. Abrir `project.godot` en Godot.
 2. En *Editor Settings › Docks › FileSystem › TextFile Extensions*, agregar `js,html,css,json,md`.
 3. `compass/` no aparece en el FileSystem a propósito (tiene `.gdignore`).
+
+## Build interna
+
+`node tools/build.mjs` deja en `dist/` el paquete del hub (`scope-compass-<versión>.tgz`, con la CLI, la UI web y los schemas), el zip del addon de Godot y `INSTALAR.md` con los pasos ([docs/instalar.md](docs/instalar.md)). La versión sale de `hub/package.json` y tiene que coincidir con la de `addons/scope_compass/plugin.cfg`.

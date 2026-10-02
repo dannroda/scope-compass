@@ -1,17 +1,26 @@
 {
   "name": "scope-compass",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Hub y CLI de Scope Compass: tablero de tareas por hito con los datos en git.",
   "type": "module",
   "bin": {
     "scompass": "bin/scompass.js"
   },
+  "files": [
+    "bin",
+    "src",
+    "templates",
+    "assets",
+    "web",
+    "schema",
+    "README.md"
+  ],
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "postinstall": "node -e \"require('node:fs').writeFileSync('node_modules/.gdignore', '')\"",
+    "postinstall": "node -e \"try{require('node:fs').writeFileSync('node_modules/.gdignore','')}catch{}\"",
     "test": "SCOMPASS_REGISTRY=\"${TMPDIR:-/tmp}/scompass-test-registry-$$\" node --test"
   },
   "license": "MIT",

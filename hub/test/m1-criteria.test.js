@@ -30,6 +30,14 @@ beforeEach(async () => {
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
 
+test('el hub y el addon de Godot llevan la misma versión (tools/build.mjs lo exige)', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const root = new URL('../../', import.meta.url);
+  const hub = JSON.parse(await readFile(new URL('hub/package.json', root), 'utf8')).version;
+  const addon = /^version="([^"]+)"/m.exec(await readFile(new URL('addons/scope_compass/plugin.cfg', root), 'utf8'))[1];
+  assert.equal(addon, hub);
+});
+
 test('compass/schema/ es copia exacta de schema/', async () => {
   for (const name of await readdir(join(REPO, 'schema'))) {
     assert.equal(await readFile(join(REPO, 'compass', 'schema', name), 'utf8'), await readFile(join(REPO, 'schema', name), 'utf8'), name);

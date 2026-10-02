@@ -14,10 +14,11 @@ import { registerWs } from './ws.js';
 import { StoreError } from './store/json-files.js';
 import { createWatcher } from './watcher.js';
 import { flat } from './views.js';
+import { resourceDir } from './schema.js';
 
 export const VERSION = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8')).version;
 export const HOST = '127.0.0.1';
-export const WEB_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'web');
+export const WEB_DIR = resourceDir('web');
 
 // Archivos de la UI (spec §7). Rutas fijas, sin comodín: un /api/... inexistente sigue siendo un 404 JSON.
 const WEB_TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8' };
