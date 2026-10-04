@@ -1,16 +1,12 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Schema de config: `views` con `board`, `lists`, `docs`"
     },
     {
-      "done": false,
-      "text": "La web muestra solo esas pestañas y abre en la primera"
-    },
-    {
-      "done": false,
-      "text": "Sin `views`: las tres, tablero primero"
+      "done": true,
+      "text": "Sin `views`: las tres, tablero primero (`viewsOf` en `hub/src/views.js`)"
     }
   ],
   "code": "8.6",
@@ -22,7 +18,7 @@
     }
   ],
   "milestone": "m08",
-  "notes": "",
+  "notes": "`/api/config` devuelve la config tal cual: los clientes aplican el mismo default que `viewsOf`. Las pestañas de la web pasaron a 8.4.",
   "order": 6,
   "refs": [
     {
@@ -30,8 +26,8 @@
       "section": "v3-plantillas"
     }
   ],
-  "status": "todo",
-  "test": "Con `views: [\"lists\", \"board\"]` la web abre en Listas y no muestra Documentos.",
+  "status": "done",
+  "test": "Con `views: [\\\"lists\\\", \\\"board\\\"]` el schema la acepta y `viewsOf` la devuelve; repetidas, vacía o desconocidas no validan.",
   "title": "`views` en `config.json`",
-  "updated_at": "2026-10-04T22:16:58.838Z"
+  "updated_at": "2026-10-04T23:47:58.768Z"
 }

@@ -4,6 +4,10 @@ import { etagOf } from './store/json-files.js';
 
 export const STATUSES = ['todo', 'doing', 'review', 'done'];
 
+// Pestañas del proyecto (spec §16.6): config.views en su orden, o todas con el tablero primero.
+export const VIEWS = ['board', 'lists', 'docs'];
+export const viewsOf = (config) => (config?.views?.length ? config.views : VIEWS);
+
 export const flat = (id, doc, etag = etagOf(doc)) => ({ id, etag, ...doc });
 
 const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0) ||

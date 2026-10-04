@@ -725,7 +725,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (4/13)
+## M8 — Inicio, listas y plantillas (v3)  (5/13)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -786,6 +786,7 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 - [ ] Agregar rápido, quitar tildadas, reordenar
 - [ ] Pasar a tarea: crea la tarea y enlaza el ítem
   Guarda el id de la tarea en `task` del ítem.
+- [ ] Pestañas según `config.views` (sin `views`: board, lists, docs) y abrir en la primera
 
 **Prueba:** Dos pestañas: tildar un ítem en una se refleja en la otra en menos de 1 s.
 
@@ -808,13 +809,14 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Bloqueada por:** 8.3 Listas: schema, Store y CLI
 
-### 8.6 `views` en `config.json` · Pendiente
+### 8.6 `views` en `config.json` · Hecho
 
-- [ ] Schema de config: `views` con `board`, `lists`, `docs`
-- [ ] La web muestra solo esas pestañas y abre en la primera
-- [ ] Sin `views`: las tres, tablero primero
+- [x] Schema de config: `views` con `board`, `lists`, `docs`
+- [x] Sin `views`: las tres, tablero primero (`viewsOf` en `hub/src/views.js`)
 
-**Prueba:** Con `views: ["lists", "board"]` la web abre en Listas y no muestra Documentos.
+**Prueba:** Con `views: [\"lists\", \"board\"]` el schema la acepta y `viewsOf` la devuelve; repetidas, vacía o desconocidas no validan.
+
+**Notas:** `/api/config` devuelve la config tal cual: los clientes aplican el mismo default que `viewsOf`. Las pestañas de la web pasaron a 8.4.
 
 **Referencias:** `docs/spec.md#v3-plantillas`
 

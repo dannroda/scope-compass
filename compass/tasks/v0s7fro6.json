@@ -16,6 +16,10 @@
       "detail": "Guarda el id de la tarea en `task` del ítem.",
       "done": false,
       "text": "Pasar a tarea: crea la tarea y enlaza el ítem"
+    },
+    {
+      "done": false,
+      "text": "Pestañas según `config.views` (sin `views`: board, lists, docs) y abrir en la primera"
     }
   ],
   "code": "8.4",
@@ -32,5 +36,5 @@
   "status": "todo",
   "test": "Dos pestañas: tildar un ítem en una se refleja en la otra en menos de 1 s.",
   "title": "Listas: API, WebSocket y vista en la web",
-  "updated_at": "2026-10-04T22:16:39.510Z"
+  "updated_at": "2026-10-04T23:47:58.538Z"
 }

@@ -79,3 +79,14 @@ test('un archivo inválido se reporta, no se carga y queda sin tocar', async () 
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test('config.views: pestañas conocidas, sin repetir, y por defecto las tres con el tablero primero', async () => {
+  const { viewsOf } = await import('../src/views.js');
+  const V = loadValidators();
+  const cfg = (views) => JSON.stringify({ project: 'P', ...(views && { views }) });
+  assert.ok(parseDoc(cfg(['lists', 'board']), 'config', V).ok);
+  for (const bad of [[], ['lists', 'lists'], ['kanban']]) assert.equal(parseDoc(cfg(bad), 'config', V).ok, false, JSON.stringify(bad));
+  assert.deepEqual(viewsOf({ project: 'P' }), ['board', 'lists', 'docs']);
+  assert.deepEqual(viewsOf({ project: 'P', views: ['lists', 'board'] }), ['lists', 'board']);
+  assert.deepEqual(viewsOf(null), ['board', 'lists', 'docs']);
+});
