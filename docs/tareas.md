@@ -454,7 +454,7 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
 **Relacionadas:** 4.2 Una semana de uso diario sin volver al artifact
 
-## M5 — Dock de Godot (v1.5)  (11/11)
+## M5 — Dock de Godot (v1.5)  (12/12)
 
 Addon `scope_compass` con un dock que muestra las tareas del hito actual y las mueve a través del hub.
 
@@ -578,6 +578,16 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 ### 5.11 Dock: el texto del paso despliega su detalle, divisor lista/detalle, bloque de tareas plegable · Hecho
 
 **Notas:** Pedido del usuario. El cuadradito tilda y el texto (o ▸) despliega el detalle: tildar al tocar el texto era contraintuitivo. VSplitContainer entre la lista de tareas y el detalle, con el divisor recordado por proyecto; "▾ Tareas · n" pliega la lista y el detalle usa todo el alto (también recordado). De paso: el selector de hito fijaba el ancho mínimo del dock al del hito más largo (`fit_to_longest_item = false`) y los botones del aviso bajan de renglón.
+
+### 5.12 Bandeja: "Actualizar compass/" cuando el schema o AGENTS.md quedaron viejos · Hecho
+
+- [x] Lógica de `scompass update` en `hub/src/update.js`, compartida por la CLI y el hub
+- [x] Ítem del menú visible solo si hay archivos viejos; se reevalúa al abrir el menú (AboutToShow)
+- [x] Tests en un bus D-Bus privado
+
+**Prueba:** Con `compass/schema/task.schema.json` viejo, el menú muestra "Actualizar compass/ (1 archivo)"; al tocarlo se copia el schema y el ítem desaparece.
+
+**Notas:** Pedido al usar Epiphany. `startTray` ahora acepta `label` y `visible` como funciones y expone `refresh()` (emite LayoutUpdated). Los ids del menú son la posición + 1: Abrir 1, Actualizar 2, Reiniciar 3, Detener 4.
 
 ## M6 — Documentos y referencias (v2)  (12/12)
 
@@ -864,6 +874,7 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 - [ ] El Inicio con `--tray` pone el único ícono
 - [ ] Los hubs con `--tray` lo esconden si hay un `home` vivo y lo vuelven a poner si muere
 - [ ] Menú: un submenú por hub (Abrir, Reiniciar, Detener), Abrir Inicio, Agregar proyecto
+- [ ] El submenú de cada hub incluye "Actualizar compass/" cuando hace falta
 
 **Prueba:** Tres hubs con `--tray` y el Inicio: un solo ícono; al cerrar el Inicio vuelven los tres.
 

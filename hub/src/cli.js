@@ -16,13 +16,13 @@ import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { createHttpStore, detectHub, hubVersions } from './store/http.js';
 import { createServer, freePortFrom, listen, VERSION } from './server.js';
 import { startTray } from './tray.js';
+import { outdatedFiles, TEMPLATES, updateCompass } from './update.js';
 import { hubsOf, listHubs, registerHub, unregisterHub } from './registry.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listTasks } from './views.js';
 import { freeId, isValidDue, slugify } from './lists.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
 
-const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
 const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
 const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
 
@@ -181,24 +181,15 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       return done({ dir: compass, config }, `Creado ${compass}\n${AGENTS_HINT}`);
     },
 
-    // Los archivos que `init` copia de Scope Compass (schema/ y la guía para agentes) quedan viejos cuando Scope
-    // Compass cambia, por ejemplo con un campo nuevo en las tareas. update los vuelve a copiar; no toca los datos,
-    // config.json ni README.md. De la guía hay una copia igual en addons/scope_compass/AGENTS.md (un test las compara).
+    // schema/ y AGENTS.md al día con esta versión de Scope Compass (ver update.js).
     async update() {
       if (!existsSync(join(compass, 'config.json'))) throw new StoreError('not_found', `no hay ${compass}: corré \`scompass --dir ${project} init\` para crearla`);
-      const files = [...KINDS.map((k) => [join(SCHEMA_DIR, `${k}.schema.json`), `schema/${k}.schema.json`]), [join(TEMPLATES, 'compass-AGENTS.md'), 'AGENTS.md']];
-      const outdated = [];
-      for (const [src, rel] of files) {
-        const cur = await readFile(join(compass, rel), 'utf8').catch(() => null);
-        if (cur !== await readFile(src, 'utf8')) outdated.push([src, rel]);
-      }
-      const names = outdated.map(([, rel]) => `compass/${rel}`);
+      const names = outdatedFiles(compass).map((rel) => `compass/${rel}`);
       if (o.check) {
         o.json ? print(JSON.stringify({ outdated: names })) : print(names.length ? `Desactualizados (corré \`scompass update\`):\n${names.map((n) => '  ' + n).join('\n')}` : 'compass/ está al día.');
         return names.length ? 1 : 0;
       }
-      await mkdir(join(compass, 'schema'), { recursive: true });
-      for (const [src, rel] of outdated) await copyFile(src, join(compass, rel));
+      updateCompass(compass);
       const hint = names.includes('compass/AGENTS.md') ? `\n${AGENTS_HINT}` : '';
       return done({ updated: names }, names.length ? `Actualizados:\n${names.map((n) => '  ' + n).join('\n')}${hint}` : 'compass/ ya estaba al día.');
     },
@@ -258,7 +249,16 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
             title: 'Scope Compass',
             tooltip: `${all.config?.project ?? project} · ${url}`,
             onActivate: showBoard,
-            items: [{ label: 'Abrir tablero', onClick: showBoard }, { label: 'Reiniciar hub', onClick: () => { restart = true; ac.abort(); } },
+            items: [{ label: 'Abrir tablero', onClick: showBoard },
+              // Solo se ve si compass/schema o AGENTS.md quedaron viejos; se revisa cada vez que se abre el menú.
+              { label: () => { const n = outdatedFiles(compass).length; return `Actualizar compass/ (${n} archivo${n === 1 ? '' : 's'})`; },
+                visible: () => outdatedFiles(compass).length > 0,
+                onClick: () => {
+                  try { const files = updateCompass(compass); if (!o.json) print(`compass/ actualizado: ${files.join(', ')}`); }
+                  catch (e) { warn(`no se pudo actualizar compass/: ${e.message}`); }
+                  tray?.refresh();
+                } },
+              { label: 'Reiniciar hub', onClick: () => { restart = true; ac.abort(); } },
               { label: 'Detener hub', onClick: () => ac.abort() }]
           });
         } catch (e) {

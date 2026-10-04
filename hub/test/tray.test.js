@@ -41,10 +41,17 @@ const call = (service, path, iface, member, signature, body) => new Promise((res
   watcherBus.invoke({ destination: service, path, interface: iface, member, signature, body }, (err, ...res) => (err ? reject(err) : resolve(res))));
 // Un variant llega como [firma, [valor]]: devuelve el valor.
 const prop = async (service, name) => (await call(service, '/StatusNotifierItem', 'org.freedesktop.DBus.Properties', 'Get', 'ss', ['org.kde.StatusNotifierItem', name]))[0][1][0];
+// Los ítems visibles del menú, como los mostraría el escritorio: [{ id, label }].
+async function menuItems(service) {
+  const [, layout] = await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'GetLayout', 'iias', [0, -1, []]);
+  const get = (v, k) => v[1][0][1].find(([x]) => x === k)[1][1][0];
+  return layout[2].filter((v) => get(v, 'visible')).map((v) => ({ id: v[1][0][0], label: get(v, 'label') }));
+}
 
 test('serve --tray: se registra en la bandeja, muestra el proyecto y el menú cierra el hub', { skip }, async () => {
   const project = join(dir, 'proyecto');
   await cp(FIXTURE, join(project, 'compass'), { recursive: true });
+  await cp(join(REPO, 'hub', 'templates', 'compass-AGENTS.md'), join(project, 'compass', 'AGENTS.md'));
   const opener = join(dir, 'open.sh');
   await writeFile(opener, `#!/bin/sh\necho "$1" > "${join(dir, 'opened')}"\n`);
   await chmod(opener, 0o755);
@@ -67,9 +74,8 @@ test('serve --tray: se registra en la bandeja, muestra el proyecto y el menú ci
     const pixmaps = await prop(service, 'IconPixmap');
     assert.deepEqual(pixmaps.map((p) => [p[0], p[1], p[2].length]), [[22, 22, 22 * 22 * 4], [44, 44, 44 * 44 * 4]]);
 
-    const [, layout] = await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'GetLayout', 'iias', [0, -1, []]);
-    const labels = layout[2].map((v) => v[1][0][1].find(([k]) => k === 'label')[1][1][0]);
-    assert.deepEqual(labels, ['Abrir tablero', 'Reiniciar hub', 'Detener hub']);
+    // Con compass/ al día, "Actualizar compass/" no se ve.
+    assert.deepEqual(await menuItems(service), [{ id: 1, label: 'Abrir tablero' }, { id: 3, label: 'Reiniciar hub' }, { id: 4, label: 'Detener hub' }]);
 
     await call(service, '/StatusNotifierItem', 'org.kde.StatusNotifierItem', 'Activate', 'ii', [0, 0]);
     for (let i = 0; i < 40 && !existsSync(join(dir, 'opened')); i++) await sleep(50);
@@ -94,7 +100,7 @@ test('serve --tray: se registra en la bandeja, muestra el proyecto y el menú ci
     assert.ok(existsSync(join(dir, 'opened')), 'sin tablero abierto no abrió el navegador');
 
     // "Reiniciar hub": el proceso termina y vuelve otro, que se registra de nuevo en la bandeja.
-    await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'Event', 'isvu', [2, 'clicked', ['s', ''], 0]);
+    await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'Event', 'isvu', [3, 'clicked', ['s', ''], 0]);
     assert.equal(await Promise.race([exited, sleep(3000).then(() => 'sigue vivo')]), 0, 'el viejo terminó');
     let again;
     for (let i = 0; i < 60 && !(again = registered.find((s) => !s.includes(String(hub.pid)))); i++) await sleep(50);
@@ -104,9 +110,41 @@ test('serve --tray: se registra en la bandeja, muestra el proyecto y el menú ci
     const health = await fetch(url + 'api/health').then((r) => r.json()).catch((e) => { throw new Error(`sin hub tras reiniciar (${e.cause?.code}); salida: ${out}`); });
     assert.equal(health.pid, newPid, 'mismo puerto, otro PID');
     // "Detener hub" en el nuevo.
-    await call(again, '/MenuBar', 'com.canonical.dbusmenu', 'Event', 'isvu', [3, 'clicked', ['s', ''], 0]);
+    await call(again, '/MenuBar', 'com.canonical.dbusmenu', 'Event', 'isvu', [4, 'clicked', ['s', ''], 0]);
     for (let i = 0; i < 60; i++) { try { process.kill(newPid, 0); await sleep(50); } catch { break; } }
     assert.throws(() => process.kill(newPid, 0), '"Detener hub" cierra el hub');
+  } finally {
+    hub.kill('SIGKILL');
+  }
+});
+
+test('serve --tray: "Actualizar compass/" aparece con el schema viejo y lo pone al día', { skip }, async () => {
+  const project = join(dir, 'viejo');
+  await cp(FIXTURE, join(project, 'compass'), { recursive: true });
+  await cp(join(REPO, 'hub', 'templates', 'compass-AGENTS.md'), join(project, 'compass', 'AGENTS.md'));
+  const schema = join(project, 'compass', 'schema', 'task.schema.json');
+  await writeFile(schema, '{}\n');
+  const hub = spawn(process.execPath, [join(REPO, 'hub', 'bin', 'scompass.js'), '--dir', project, 'serve', '--port', '0', '--tray'], {
+    env: { ...process.env, DBUS_SESSION_BUS_ADDRESS: address }
+  });
+  let out = '';
+  hub.stdout.on('data', (d) => { out += d; });
+  hub.stderr.on('data', (d) => { out += d; });
+  try {
+    let service;
+    for (let i = 0; i < 60 && !(service = registered.find((s) => s.includes(String(hub.pid)))); i++) await sleep(50);
+    assert.ok(service, `no se registró en la bandeja: ${out}`);
+    assert.deepEqual((await menuItems(service)).map((x) => x.label), ['Abrir tablero', 'Actualizar compass/ (1 archivo)', 'Reiniciar hub', 'Detener hub']);
+    await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'Event', 'isvu', [2, 'clicked', ['s', ''], 0]);
+    for (let i = 0; i < 40 && (await readFile(schema, 'utf8')) === '{}\n'; i++) await sleep(50);
+    assert.equal(await readFile(schema, 'utf8'), await readFile(join(REPO, 'schema', 'task.schema.json'), 'utf8'));
+    assert.match(out, /compass\/ actualizado: schema\/task\.schema\.json/);
+    assert.deepEqual((await menuItems(service)).map((x) => x.label), ['Abrir tablero', 'Reiniciar hub', 'Detener hub'], 'el ítem se oculta');
+    // Si vuelve a quedar viejo (otra versión de Scope Compass, o a mano), aparece al abrir el menú otra vez.
+    await writeFile(schema, '{}\n');
+    const [changed] = await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'AboutToShow', 'i', [0]);
+    assert.equal(changed, true);
+    assert.equal((await menuItems(service)).length, 4);
   } finally {
     hub.kill('SIGKILL');
   }

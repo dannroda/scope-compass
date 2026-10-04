@@ -123,4 +123,4 @@ scompass home rm <carpeta>  # lo quita del registro; no toca sus datos
 - `scompass --help`: todos los comandos.
 - `compass/README.md`: formato de los archivos y manejo a mano con git.
 - `compass/schema/`: JSON Schema de tareas, hitos, listas y `config.json`.
-- `scompass update`: pone al día `compass/schema/` y esta guía cuando Scope Compass se actualizó (`--check` solo avisa). El dock de Godot lo ofrece con el botón "Actualizar".
+- `scompass update`: pone al día `compass/schema/` y esta guía cuando Scope Compass se actualizó (`--check` solo avisa). El dock de Godot lo ofrece con el botón "Actualizar", y la bandeja del hub con "Actualizar compass/".

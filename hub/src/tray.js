@@ -48,8 +48,9 @@ const MENU_IFACE = {
 };
 
 /**
- * Muestra el ícono. items: [{ label, onClick }] para el menú; onActivate: clic en el ícono.
- * Devuelve { close(), service }. Falla si no hay bus de sesión.
+ * Muestra el ícono. items: [{ label, onClick, visible? }] para el menú (label y visible pueden ser funciones: se
+ * evalúan al abrir el menú y con refresh()); onActivate: clic en el ícono. Cada ítem tiene id = su posición + 1.
+ * Devuelve { close(), refresh(), service }. Falla si no hay bus de sesión.
  */
 export async function startTray({ title, tooltip, items, onActivate, busAddress = process.env.DBUS_SESSION_BUS_ADDRESS }) {
   if (!busAddress) throw new Error('no hay bus de sesión de D-Bus');
@@ -69,18 +70,33 @@ export async function startTray({ title, tooltip, items, onActivate, busAddress 
     Activate: () => onActivate?.(), SecondaryActivate: () => onActivate?.(), ContextMenu: () => {}, Scroll: () => {}
   };
 
-  // Menú: raíz 0 con los ítems 1..n.
-  const props = (i) => [['label', ['s', items[i].label]], ['enabled', ['b', true]], ['visible', ['b', true]]];
+  // Menú: raíz 0 con los ítems 1..n. La revisión sube cuando cambia un label o un visible.
+  const val = (v) => (typeof v === 'function' ? v() : v);
+  let snapshot = [];
+  let revision = 1;
+  const take = () => items.map((it) => ({ label: String(val(it.label)), visible: it.visible === undefined ? true : !!val(it.visible) }));
+  const recompute = () => {
+    const next = take();
+    const changed = JSON.stringify(next) !== JSON.stringify(snapshot);
+    snapshot = next;
+    if (changed) revision++;
+    return changed;
+  };
+  recompute();
+  const props = (i) => [['label', ['s', snapshot[i].label]], ['enabled', ['b', true]], ['visible', ['b', snapshot[i].visible]]];
   const node = (i) => [i + 1, props(i), []];
   const menu = {
     Version: 3, TextDirection: 'ltr', Status: 'normal', IconThemePath: [],
-    GetLayout: () => [1, [0, [['children-display', ['s', 'submenu']]], items.map((_, i) => ['(ia{sv}av)', node(i)])]],
+    // emit lo reemplaza dbus-native al exportar: así se mandan las señales (LayoutUpdated).
+    emit: () => {},
+    GetLayout: () => [revision, [0, [['children-display', ['s', 'submenu']]], items.map((_, i) => ['(ia{sv}av)', node(i)])]],
     GetGroupProperties: (ids) => ids.filter((id) => id >= 1 && id <= items.length).map((id) => [id, props(id - 1)]),
     GetProperty: (id, name) => { const p = id >= 1 && id <= items.length ? props(id - 1).find(([k]) => k === name) : null; return p ? p[1] : ['s', '']; },
     Event: (id, eventId) => { if (eventId === 'clicked' && id >= 1 && id <= items.length) setImmediate(() => items[id - 1].onClick()); },
     EventGroup: (events) => { for (const [id, eventId] of events) menu.Event(id, eventId); return []; },
-    AboutToShow: () => false,
-    AboutToShowGroup: () => [[], []]
+    // Antes de abrir el menú el escritorio pregunta si cambió: se reevalúan labels y visibles.
+    AboutToShow: () => recompute(),
+    AboutToShowGroup: () => [recompute() ? [0] : [], []]
   };
   bus.exportInterface(item, ITEM_PATH, ITEM_IFACE);
   bus.exportInterface(menu, MENU_PATH, MENU_IFACE);
@@ -98,6 +114,7 @@ export async function startTray({ title, tooltip, items, onActivate, busAddress 
 
   return {
     service,
+    refresh: () => { if (recompute()) menu.emit('LayoutUpdated', revision, 0); },
     close: () => { try { bus.connection.end(); } catch {} }
   };
 }

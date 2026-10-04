@@ -601,7 +601,7 @@ Hay dos registros, con funciones distintas (D23):
 ### 16.3 Bandeja agrupada
 <!-- id: v3-bandeja -->
 
-Si el Inicio corre con `--tray`, **es el único ícono**: los hubs con `--tray` esconden el suyo y aparecen dentro del menú del Inicio, cada uno con Abrir, Reiniciar y Detener, más "Abrir Inicio" y "Agregar proyecto…". Los hubs miran el registro de hubs vivos: cuando aparece un `home`, quitan su ícono; si el `home` muere, lo vuelven a poner. Así no se llena la bandeja.
+Si el Inicio corre con `--tray`, **es el único ícono**: los hubs con `--tray` esconden el suyo y aparecen dentro del menú del Inicio, cada uno con Abrir, Actualizar compass/ (solo si su schema o su `AGENTS.md` quedaron viejos), Reiniciar y Detener, más "Abrir Inicio" y "Agregar proyecto…". Los hubs miran el registro de hubs vivos: cuando aparece un `home`, quitan su ícono; si el `home` muere, lo vuelven a poner. Así no se llena la bandeja.
 
 ### 16.4 Listas
 <!-- id: v3-listas -->
