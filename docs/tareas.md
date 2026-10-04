@@ -715,7 +715,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (0/12)
+## M8 — Inicio, listas y plantillas (v3)  (1/12)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -724,15 +724,17 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 - Un proyecto creado con la plantilla personal abre en Listas, con fechas límite y repetición simple.
 - Con el Inicio en la bandeja hay un solo ícono.
 
-### 8.1 Registro persistente de proyectos · Pendiente
+### 8.1 Registro persistente de proyectos · Hecho
 
-- [ ] `~/.config/scope-compass/projects.json` (`$XDG_CONFIG_HOME`), escritura atómica
-- [ ] `scompass serve` anota o actualiza su proyecto
-- [ ] `scompass home add|rm|list`: importar sin levantar el hub
-- [ ] Carpetas que ya no existen: marcadas como no encontradas
+- [x] `~/.config/scope-compass/projects.json` (`$XDG_CONFIG_HOME`), escritura atómica
+- [x] `scompass serve` anota o actualiza su proyecto
+- [x] `scompass home add|rm|list`: importar sin levantar el hub
+- [x] Carpetas que ya no existen: marcadas como no encontradas
   No se borran solas: el usuario decide.
 
 **Prueba:** Levantar un hub desde el dock lo agrega a `projects.json`; `scompass home add ../otro` lo agrega sin levantar nada.
+
+**Notas:** `hub/src/projects.js`: `{ projects: [{ path, name, added_at, last_seen }] }` en `$SCOMPASS_CONFIG` o `$XDG_CONFIG_HOME/scope-compass/projects.json`, canónico y con escritura atómica. Las rutas se comparan resueltas (un symlink no duplica). Un registro inválido tira error y no se pisa; `serve` avisa y levanta igual. `npm test` usa una config temporal. Los hubs que ya estaban corriendo se anotan recién al reiniciarlos.
 
 **Referencias:** `docs/spec.md#v3-registro`
 

@@ -36,7 +36,9 @@ for (const [name, dir] of [['Scope Compass', join(REPO, 'compass')], ['Project E
     const board = all.config.board_url ?? 'https://claude.ai/artifact/x';
     const expected = await python(dir, board, name);
     if (expected === null) return t.skip('sin python3');
-    assert.equal(renderMarkdown(all, { title: name, board, date: dateOf(expected) }), expected);
+    // El prototipo de Python es anterior a los vínculos (D22): la paridad se mide sin ellos.
+    const noLinks = { ...all, tasks: [...all.tasks].map(([id, { links, ...doc }]) => [id, doc]) };
+    assert.equal(renderMarkdown(noLinks, { title: name, board, date: dateOf(expected) }), expected);
   });
 }
 

@@ -17,6 +17,7 @@ import { createHttpStore, detectHub, hubVersions } from './store/http.js';
 import { createServer, freePortFrom, listen, VERSION } from './server.js';
 import { startTray } from './tray.js';
 import { hubsOf, listHubs, registerHub, unregisterHub } from './registry.js';
+import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
 import { listMilestones, listTasks } from './views.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
 
@@ -32,6 +33,9 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   serve [--port 4711] [--open] [--force]    levanta el hub en 127.0.0.1 (uno por proyecto; Ctrl+C para cerrar)
   restart                                   reinicia el hub de este proyecto (para cargar código nuevo)
   hubs                                      hubs activos de todos los proyectos
+  home list                                 proyectos conocidos en este equipo, con el estado de su hub
+  home add [<carpeta>]                      anota un proyecto sin levantar su hub (por defecto, el de --dir)
+  home rm [<carpeta>]                       lo quita del registro (no toca sus datos)
         [--exit-on-stdin-close]             se cierra cuando se corta su entrada (lo usa el dock de Godot)
         [--tray]                            ícono en la bandeja del sistema, con "Detener hub"
   list [--milestone m00] [--status doing]   tareas (--json para agentes)
@@ -120,7 +124,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const validators = loadValidators();
   let store = createJsonFilesStore(compass, { validators, ...(now && { now }) });
   // Con un hub de este proyecto corriendo, todo pasa por su API (eventos al instante, una sola cola de escritura).
-  if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'help'].includes(cmd)) {
+  if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'home', 'help'].includes(cmd)) {
     const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
     const hub = await detectHub(project, cfg?.port);
     if (hub) {
@@ -221,6 +225,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         throw e;
       }
       registerHub({ port: addr.port, project });
+      // Registro de proyectos (D23): el Inicio lo conoce aunque después se apague. Un registro roto no frena al hub.
+      try { await recordProject(project, { seen: true }); } catch (e) { warn(`aviso: no se anotó el proyecto en ${projectsFile()}: ${e.message}`); }
       const url = `http://${addr.address}:${addr.port}/`;
       o.json ? print(JSON.stringify({ url, port: addr.port, project })) : print(`Scope Compass en ${url} · ${project} · Ctrl+C para cerrar`);
       // SCOMPASS_OPEN reemplaza a xdg-open (los tests lo usan para no abrir el navegador).
@@ -403,6 +409,31 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const dup = hubs.filter((h, i) => hubs.findIndex((x) => x.project === h.project) !== i);
       for (const h of dup) warn(`aviso: más de un hub para ${h.project}`);
       return 0;
+    },
+
+    // Registro de proyectos conocidos (D23). `home` sin subcomando levantará el Inicio (8.8).
+    async home() {
+      const sub = rest[0];
+      if (sub === 'list') {
+        const projects = projectsStatus();
+        if (o.json) return done({ file: projectsFile(), projects });
+        if (!projects.length) print(`No hay proyectos anotados en ${projectsFile()}.`);
+        for (const p of projects) {
+          const state = !p.found ? 'no encontrado' : p.hubs.length ? `hub :${p.hubs.map((h) => h.port).join(', :')}` : 'apagado';
+          print(`${p.name.padEnd(20)} ${state.padEnd(14)} ${p.path}`);
+        }
+        return 0;
+      }
+      if (sub === 'add' || sub === 'rm') {
+        const target = rest[1] ? resolve(cwd, rest[1]) : project;
+        if (sub === 'rm') {
+          const e = await forgetProject(target);
+          return done({ removed: e }, `Quitado del registro: ${e.name} (${e.path})`);
+        }
+        const { entry, added } = await recordProject(target);
+        return done({ project: entry, added }, `${added ? 'Anotado' : 'Ya estaba anotado'}: ${entry.name} (${entry.path})`);
+      }
+      throw new UsageError(`subcomando desconocido: home ${sub ?? ''} (list, add, rm)`);
     },
 
     async doc() {
@@ -647,7 +678,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     return await commands[cmd]();
   } catch (e) {
     if (e instanceof UsageError) { warn(`${e.message}\n\n${USAGE}`); return 2; }
-    if (!(e instanceof StoreError)) throw e;
+    if (!(e instanceof StoreError) && !(e instanceof ProjectsError)) throw e;
     if (o.json) err.write(JSON.stringify({ error: { code: e.code, message: e.message, ...(e.current && { current: e.current }) } }) + '\n');
     else warn(`error [${e.code}]: ${e.message}`);
     return 1;

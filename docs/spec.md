@@ -579,10 +579,11 @@ Hay dos registros, con funciones distintas (D23):
 | Registro | Dónde | Qué guarda | Vida |
 |---|---|---|---|
 | Hubs vivos (ya existe) | `$XDG_RUNTIME_DIR/scope-compass/hubs/<pid>.json` | `{ pid, port, project, startedAt }`, más `kind: "home"` para el Inicio | Se limpia solo; desaparece al reiniciar |
-| Proyectos conocidos (nuevo) | `~/.config/scope-compass/projects.json` (`$XDG_CONFIG_HOME`) | `[{ path, name, added_at, last_seen }]` | Persistente; se edita a mano si hace falta |
+| Proyectos conocidos (nuevo) | `~/.config/scope-compass/projects.json` (`$XDG_CONFIG_HOME`) | `{ projects: [{ path, name, added_at, last_seen }] }` | Persistente; se edita a mano si hace falta |
 
 - **Se anota solo:** cada `scompass serve` agrega o actualiza su proyecto (incluidos los hubs que levanta el dock).
-- **Importar sin levantar:** `scompass home add <carpeta>` (o "Agregar proyecto" en el Inicio) anota una carpeta con `compass/` sin prender su hub. `home rm <carpeta>` la quita del registro; no toca sus datos.
+- **Importar sin levantar:** `scompass home add <carpeta>` (o "Agregar proyecto" en el Inicio) anota una carpeta con `compass/` sin prender su hub. `home rm <carpeta>` la quita del registro; no toca sus datos. `home list` muestra cada proyecto con su estado: `hub :<puerto>`, apagado o no encontrado.
+- El nombre sale de `config.json › project` y se actualiza cada vez que se anota. Un hub que no puede anotarse (registro inválido) avisa y levanta igual.
 - Un proyecto cuya carpeta ya no existe se muestra como "no encontrado" y se puede quitar.
 - Escritura atómica (tmp + rename), como el Store. Un `projects.json` inválido se avisa y no se pisa.
 

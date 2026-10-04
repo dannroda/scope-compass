@@ -12,6 +12,8 @@ src/server.js        Fastify: API REST, WebSocket, estáticos (sirve ../web)
 src/store/           interfaz Store + json-files.js
 src/docs/            interfaz DocSource (v2)
 src/schema.js        carga ../schema
+src/registry.js      hubs vivos ($XDG_RUNTIME_DIR/scope-compass/hubs)
+src/projects.js      proyectos conocidos (~/.config/scope-compass/projects.json, D23)
 src/export-md.js     port de ../tools/artifact_to_md.py
 src/import-artifact.js  port de ../tools/artifact_to_tablero.py
 test/                node:test
@@ -26,7 +28,10 @@ cd hub && npm install && npm link     # deja `scompass` en el PATH
 scompass --help
 scompass list                          # desde cualquier carpeta dentro de un proyecto con compass/
 scompass --dir ../project-epiphany list --json
+scompass home list                     # proyectos conocidos en este equipo y el estado de su hub
 ```
+
+Los tests usan un registro y una config propios (`SCOMPASS_REGISTRY`, `SCOMPASS_CONFIG` en `npm test`): correrlos con `npm test`, no con `node --test` a secas, para no tocar `~/.config/scope-compass/`.
 
 Sin `npm link`: `node hub/bin/scompass.js …`. Por ahora escribe siempre directo en `compass/`; cuando exista el hub (M2), usará la API si está corriendo.
 

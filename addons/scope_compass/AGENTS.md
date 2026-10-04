@@ -90,6 +90,16 @@ scompass ref rm m5-02 spec#godot
 scompass refs check                # referencias rotas (sale con 1 si hay)
 ```
 
+## Proyectos del equipo
+
+Cada hub que se levanta anota su proyecto en `~/.config/scope-compass/projects.json`, para que el Inicio lo muestre aunque después se apague. No hace falta tocarlo para operar el tablero.
+
+```sh
+scompass home list --json   # { "file", "projects": [ { "path", "name", "found", "hubs": [ { "pid", "port" } ] } ] }
+scompass home add           # anota este proyecto sin levantar su hub (o: home add <carpeta>)
+scompass home rm <carpeta>  # lo quita del registro; no toca sus datos
+```
+
 ## Más
 
 - `scompass --help`: todos los comandos.
