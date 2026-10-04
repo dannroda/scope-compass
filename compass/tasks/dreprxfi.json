@@ -1,26 +1,28 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Schema: `due` opcional, `YYYY-MM-DD` o con `THH:MM`"
     },
     {
-      "done": false,
+      "done": true,
       "text": "CLI: `add|set --due` y la fecha en `list` y `show`"
     },
     {
-      "done": false,
-      "text": "Web: elegir y ver la fecha; vencidas marcadas"
-    },
-    {
-      "done": false,
-      "text": "Dock y export md: mostrarla"
+      "done": true,
+      "text": "Export md: `**Vence:**` debajo del título"
     }
   ],
   "code": "8.2",
   "created_at": "2026-10-04T22:16:35.209Z",
+  "links": [
+    {
+      "task": "w1tl96aw",
+      "type": "blocks"
+    }
+  ],
   "milestone": "m08",
-  "notes": "",
+  "notes": "`hub/src/dates.js`: `parseDue`, `isValidDue` (también para las listas), `dueState` (overdue/today/later, hora local; sin hora vence al terminar el día). `list` marca \"(vencida)\" y \"(hoy)\" salvo en las hechas. La parte visual pasó a 8.13.",
   "order": 2,
   "refs": [
     {
@@ -28,8 +30,8 @@
       "section": "v3-fechas"
     }
   ],
-  "status": "todo",
-  "test": "`scompass set <id> --due 2026-10-10` cambia una sola línea del JSON y la fecha aparece en la web, el dock y `docs/tareas.md`.",
+  "status": "done",
+  "test": "`scompass set <id> --due 2026-10-10` cambia una sola línea del JSON (más updated_at) y la fecha aparece en `list`, `show` y `docs/tareas.md`.",
   "title": "Fecha límite (`due`) en tareas",
-  "updated_at": "2026-10-04T22:16:36.495Z"
+  "updated_at": "2026-10-04T23:03:18.072Z"
 }

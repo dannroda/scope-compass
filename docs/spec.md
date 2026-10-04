@@ -163,6 +163,7 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `title` | string | |
 | `status` | `"todo" \| "doing" \| "review" \| "done"` | |
 | `checklist` | `{ text: string, done: boolean, detail?: string }[]` | `text`: el paso en una línea. `detail` (opcional): el cómo y el porqué; se muestra plegado debajo del paso |
+| `due` | string | Opcional. Fecha límite, `YYYY-MM-DD` o `YYYY-MM-DDTHH:MM` en hora local (§16.5, D26) |
 | `test` | string | "Cómo probarlo" |
 | `notes` | string | |
 | `refs` | `{ doc: string, section: string }[]` | Opcional. Referencias a secciones de documentos (§10). v1 las guarda y las muestra como texto; v2 las resuelve. |

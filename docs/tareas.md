@@ -725,7 +725,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (2/12)
+## M8 — Inicio, listas y plantillas (v3)  (3/13)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -750,16 +750,19 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Bloquea a:** 8.8 `scompass home`: proceso y API
 
-### 8.2 Fecha límite (`due`) en tareas · Pendiente
+### 8.2 Fecha límite (`due`) en tareas · Hecho
 
-- [ ] Schema: `due` opcional, `YYYY-MM-DD` o con `THH:MM`
-- [ ] CLI: `add|set --due` y la fecha en `list` y `show`
-- [ ] Web: elegir y ver la fecha; vencidas marcadas
-- [ ] Dock y export md: mostrarla
+- [x] Schema: `due` opcional, `YYYY-MM-DD` o con `THH:MM`
+- [x] CLI: `add|set --due` y la fecha en `list` y `show`
+- [x] Export md: `**Vence:**` debajo del título
 
-**Prueba:** `scompass set <id> --due 2026-10-10` cambia una sola línea del JSON y la fecha aparece en la web, el dock y `docs/tareas.md`.
+**Prueba:** `scompass set <id> --due 2026-10-10` cambia una sola línea del JSON (más updated_at) y la fecha aparece en `list`, `show` y `docs/tareas.md`.
+
+**Notas:** `hub/src/dates.js`: `parseDue`, `isValidDue` (también para las listas), `dueState` (overdue/today/later, hora local; sin hora vence al terminar el día). `list` marca "(vencida)" y "(hoy)" salvo en las hechas. La parte visual pasó a 8.13.
 
 **Referencias:** `docs/spec.md#v3-fechas`
+
+**Bloquea a:** 8.13 Fechas límite en la web y el dock
 
 ### 8.3 Listas: schema, Store y CLI · Hecho
 
@@ -891,3 +894,16 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 **Prueba:** Los criterios de §16.8 tildados con su prueba.
 
 **Referencias:** `docs/spec.md#criterios-v3`
+
+### 8.13 Fechas límite en la web y el dock · Pendiente
+
+- [ ] Web: elegir y ver la fecha en el detalle; vencidas y de hoy marcadas en la tarjeta
+- [ ] Dock: mostrar la fecha y marcar las vencidas
+
+**Prueba:** Una tarea con `due` de ayer se ve como vencida en la web y en el dock; al pasarla a Hecho deja de marcarse.
+
+**Notas:** Parte de frontend de 8.2 (backend primero). Usar `dueState` de `hub/src/dates.js` como referencia de la regla.
+
+**Referencias:** `docs/spec.md#v3-fechas`
+
+**Bloqueada por:** 8.2 Fecha límite (`due`) en tareas

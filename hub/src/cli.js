@@ -20,7 +20,8 @@ import { outdatedFiles, TEMPLATES, updateCompass } from './update.js';
 import { hubsOf, listHubs, registerHub, unregisterHub } from './registry.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listTasks } from './views.js';
-import { freeId, isValidDue, slugify } from './lists.js';
+import { freeId, slugify } from './lists.js';
+import { dueState, isValidDue, showDue } from './dates.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
 
 const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
@@ -41,15 +42,16 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
         [--tray]                            ícono en la bandeja del sistema, con "Detener hub"
   list [--milestone m00] [--status doing]   tareas (--json para agentes)
   show <id>                                 una tarea, con los pasos numerados
-  add "<título>" --milestone m00 [--code 0.11] [--status todo]
+  add "<título>" --milestone m00 [--code 0.11] [--status todo] [--due 2026-10-10]
   move <id> <todo|doing|review|done>
   check <id> <n> [--undo]                   tilda el paso n (desde 1)
   step add <id> "<texto>" [--detail "…"]     agrega un paso (texto corto; el detalle se despliega)
   step set <id> <n> [--text …] [--detail …]  cambia un paso (--detail "" lo quita)
   step rm <id> <n>                          quita un paso
   set <id> --file task.json                 reemplazo completo (--file - lee stdin)
-  set <id> [--title t] [--notes n] [--test p] [--code c] [--milestone m] [--status s]
-                                            cambia solo esos campos
+  set <id> [--title t] [--notes n] [--test p] [--code c] [--milestone m] [--status s] [--due d]
+                                            cambia solo esos campos (--due: fecha límite, YYYY-MM-DD o
+                                            YYYY-MM-DDTHH:MM; --due "" la quita)
   milestone list | show <id> | set <id> --file m.json
   lists                                     listas, con cuántos ítems quedan
   lists show <lista>                        una lista, con los ítems numerados
@@ -94,7 +96,7 @@ const taskLabel = (tasks, id) => { const t = tasks.find((x) => x.id === id); ret
 const AGENTS_HINT = 'Para que los agentes la usen, agregá al AGENTS.md o CLAUDE.md del proyecto: "El tablero de tareas se maneja con scompass; leé compass/AGENTS.md antes de tocarlo."';
 
 // Campos de una tarea que `set` edita sin --file.
-const FIELDS = ['title', 'notes', 'test', 'code', 'milestone', 'status'];
+const FIELDS = ['title', 'notes', 'test', 'code', 'milestone', 'status', 'due'];
 
 const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
@@ -152,6 +154,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const ifMatch = o.etag === undefined ? {} : { ifMatch: o.etag === 'none' ? null : o.etag };
   const showWarnings = (ws) => { for (const w of ws) warn(`aviso [${w.code}] ${w.path}: ${w.message}`); };
   const need = (v, what) => { if (v === undefined || v === '') throw new UsageError(`falta ${what}`); return v; };
+  // Fecha límite (D26): "" sirve para quitarla.
+  const due = (v) => { if (v !== '' && !isValidDue(v)) throw new StoreError('invalid_argument', `fecha inválida: ${v} (YYYY-MM-DD o YYYY-MM-DDTHH:MM)`); return v; };
+  const dueNote = (d, done) => { const s = done ? null : dueState(d); return `vence ${showDue(d)}${s === 'overdue' ? ' (vencida)' : s === 'today' ? ' (hoy)' : ''}`; };
 
   const readJsonFile = async (path) => {
     const text = path === '-' ? await streamText(stdin) : await readFile(resolve(cwd, path), 'utf8');
@@ -317,7 +322,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         const steps = cl.length ? `  ${cl.filter((c) => c.done).length}/${cl.length}` : '';
         const blockers = t.status === 'done' ? [] : openBlockers(everything, t.id);
         const blocked = blockers.length ? `  [bloqueada por ${blockers.join(', ')}]` : '';
-        print(`  ${t.id.padEnd(9)} ${(t.code || '').padEnd(5)} ${STATUS[t.status].padEnd(9)} ${t.title}${steps}${blocked}`);
+        const when = t.due ? `  · ${dueNote(t.due, t.status === 'done')}` : '';
+        print(`  ${t.id.padEnd(9)} ${(t.code || '').padEnd(5)} ${STATUS[t.status].padEnd(9)} ${t.title}${steps}${when}${blocked}`);
       }
       if (!tasks.length) print('Sin tareas.');
       return 0;
@@ -328,7 +334,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (o.json) return done({ id: t.id, etag: t.etag, ...t.doc });
       const d = t.doc;
       print(`${d.code ? d.code + ' ' : ''}${d.title}  [${t.id}]`);
-      print(`Estado: ${STATUS[d.status]} · Hito: ${d.milestone}${d.updated_at ? ' · Actualizada: ' + d.updated_at : ''}`);
+      print(`Estado: ${STATUS[d.status]} · Hito: ${d.milestone}${d.due ? ' · ' + dueNote(d.due, d.status === 'done').replace(/^v/, 'V') : ''}${d.updated_at ? ' · Actualizada: ' + d.updated_at : ''}`);
       (d.checklist ?? []).forEach((c, i) => {
         print(`  ${String(i + 1).padStart(2)}. [${c.done ? 'x' : ' '}] ${c.text}`);
         if (c.detail) for (const l of c.detail.split('\n')) print(`         ${l}`);
@@ -587,7 +593,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const milestone = need(o.milestone, '--milestone');
       await store.get('milestones', milestone);
       const r = await store.create('tasks', {
-        milestone, title, code: o.code ?? '', status: o.status ?? 'todo', checklist: [], test: '', notes: '', refs: []
+        milestone, title, code: o.code ?? '', status: o.status ?? 'todo', checklist: [], test: '', notes: '', refs: [],
+        ...(o.due ? { due: due(o.due) } : {})
       });
       return written({ id: r.id, etag: r.etag, ...r.doc }, `Creada ${r.id}: ${title}`);
     },
@@ -652,6 +659,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (o.file !== undefined && Object.keys(fields).length) throw new UsageError('--file reemplaza la tarea entera: no se combina con campos sueltos');
       if (o.file === undefined && !Object.keys(fields).length) throw new UsageError(`falta --file o algún campo (${FIELDS.map((f) => '--' + f).join(', ')})`);
       if (fields.status && !STATUS[fields.status]) throw new UsageError(`estado inválido: ${fields.status} (todo, doing, review, done)`);
+      if (fields.due !== undefined) fields.due = due(fields.due) || null; // "" → null: patch quita el campo
       const r = o.file !== undefined
         ? await store.put('tasks', id, await readJsonFile(o.file), ifMatch)
         : await store.patch('tasks', id, fields, ifMatch);
@@ -679,7 +687,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         if (o.json) return done({ id: l.id, etag: l.etag, ...l.doc });
         print(`${l.doc.title}  [${l.id}]`);
         if (!l.doc.items.length) print('  (vacía)');
-        l.doc.items.forEach((x, i) => print(`  ${String(i + 1).padStart(2)}. [${x.done ? 'x' : ' '}] ${x.text}${x.due ? `  · vence ${x.due.replace('T', ' ')}` : ''}${x.task ? `  → ${x.task}` : ''}`));
+        l.doc.items.forEach((x, i) => print(`  ${String(i + 1).padStart(2)}. [${x.done ? 'x' : ' '}] ${x.text}${x.due ? `  · ${dueNote(x.due, x.done)}` : ''}${x.task ? `  → ${x.task}` : ''}`));
         return 0;
       }
       if (sub === 'add') {
@@ -709,7 +717,6 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (!['add', 'check', 'set', 'rm', 'clear', 'task'].includes(sub)) throw new UsageError(`subcomando desconocido: item ${sub ?? ''} (add, check, set, rm, clear, task)`);
       const cur = await store.get('lists', need(id, 'la lista'));
       const items = cur.doc.items;
-      const due = (v) => { if (v !== '' && !isValidDue(v)) throw new StoreError('invalid_argument', `fecha inválida: ${v} (YYYY-MM-DD o YYYY-MM-DDTHH:MM)`); return v; };
       const nth = () => {
         const n = Number(need(arg, 'el número de ítem'));
         if (!Number.isInteger(n) || n < 1 || n > items.length) throw new StoreError('invalid_argument', `ítem inexistente: ${arg} (la lista tiene ${items.length})`);

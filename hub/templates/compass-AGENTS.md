@@ -19,6 +19,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
   - `milestone` (id del hito), `title`, `code` (número visible, por ejemplo "5.2"; opcional);
   - `status`: `todo` (Pendiente), `doing` (En curso), `review` (Revisión), `done` (Hecho);
   - `checklist`: pasos `{ text, done, detail? }`. `text` es una línea corta; el cómo y el porqué van en `detail`;
+  - `due`: fecha límite opcional, `YYYY-MM-DD` o `YYYY-MM-DDTHH:MM` (hora local);
   - `test`: cómo se comprueba que la tarea está terminada;
   - `notes`: notas libres;
   - `refs`: secciones de documentos del proyecto que la tarea cita;
@@ -42,6 +43,7 @@ scompass show m5-02 --json
 scompass add "Título de la tarea" --milestone m05 --code 5.9   # imprime el id nuevo
 scompass move m5-02 doing                                     # todo | doing | review | done
 scompass set m5-02 --title "…" --notes "…" --test "…"          # cambia solo esos campos
+scompass set m5-02 --due 2026-10-10                           # fecha límite (--due "" la quita)
 scompass step add m5-02 "Paso corto" --detail "Cómo y por qué"
 scompass step set m5-02 2 --text "…" --detail "…"              # --detail "" quita el detalle
 scompass step rm m5-02 2
