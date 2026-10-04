@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-09-30
+> Generado: 2026-10-04
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -396,7 +396,7 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-## M4 — Adopción en Project Epiphany  (1/2)
+## M4 — Adopción en Project Epiphany  (1/4)
 
 Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
@@ -426,6 +426,33 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 **Prueba:** Una semana sin abrir el artifact de Epiphany.
 
 **Notas:** Depende del usuario.
+
+**Relacionadas:** 4.3 Ids legibles al crear tareas; 4.4 Aviso de cambios sin commitear en compass/
+
+### 4.3 Ids legibles al crear tareas · Pendiente
+
+- [ ] Generar el id a partir del hito: m<N>-<NN> con el siguiente libre
+- [ ] Usarlo desde la CLI, la API (web) y el dock
+- [ ] Mantener el aleatorio solo si hay choque
+  Por ejemplo, si dos ramas crean la misma tarea: el id tiene que seguir siendo único después del merge.
+
+**Prueba:** scompass add en m00 crea m0-NN con el siguiente número libre; la web y el dock hacen lo mismo.
+
+**Notas:** Salió de la consulta a Epiphany (4.2): las tareas importadas son m0-NN y las nuevas reciben un id aleatorio (tagr1kge), que se lee mal en git y en la CLI.
+
+**Relacionadas:** 4.2 Una semana de uso diario sin volver al artifact
+
+### 4.4 Aviso de cambios sin commitear en compass/ · Pendiente
+
+- [ ] El hub detecta archivos de compass/ con cambios (git status)
+- [ ] Mostrar el aviso en la web y en el dock, con la cantidad de archivos
+- [ ] scompass list lo menciona al final
+
+**Prueba:** Mover una tarjeta muestra el aviso en la web y en el dock; después de commitear, desaparece.
+
+**Notas:** Salió de la consulta a Epiphany (4.2): los cambios hechos desde el hub o el dock quedan sin commitear y nada lo recuerda. El commit automático queda para M7 (§12.1); acá solo el aviso.
+
+**Relacionadas:** 4.2 Una semana de uso diario sin volver al artifact
 
 ## M5 — Dock de Godot (v1.5)  (11/11)
 

@@ -1,0 +1,33 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Generar el id a partir del hito: m<N>-<NN> con el siguiente libre"
+    },
+    {
+      "done": false,
+      "text": "Usarlo desde la CLI, la API (web) y el dock"
+    },
+    {
+      "detail": "Por ejemplo, si dos ramas crean la misma tarea: el id tiene que seguir siendo único después del merge.",
+      "done": false,
+      "text": "Mantener el aleatorio solo si hay choque"
+    }
+  ],
+  "code": "4.3",
+  "created_at": "2026-10-04T21:58:20.834Z",
+  "links": [
+    {
+      "task": "m4-02",
+      "type": "related"
+    }
+  ],
+  "milestone": "m04",
+  "notes": "Salió de la consulta a Epiphany (4.2): las tareas importadas son m0-NN y las nuevas reciben un id aleatorio (tagr1kge), que se lee mal en git y en la CLI.",
+  "order": 3,
+  "refs": [],
+  "status": "todo",
+  "test": "scompass add en m00 crea m0-NN con el siguiente número libre; la web y el dock hacen lo mismo.",
+  "title": "Ids legibles al crear tareas",
+  "updated_at": "2026-10-04T21:58:23.021Z"
+}
