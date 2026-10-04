@@ -16,3 +16,14 @@ export function freeId(base, taken) {
 
 // Las fechas límite viven en dates.js (también las usan las tareas).
 export { isValidDue } from './dates.js';
+import { nextDue } from './dates.js';
+
+/**
+ * Tildar (o destildar) un ítem. Uno que se repite no queda tildado: su fecha avanza un período (D26).
+ * Devuelve { item, advanced }; destildar uno que se repite es un error (no hay a qué fecha volver con certeza).
+ */
+export function checkItem(item, { undo = false } = {}) {
+  if (!item.repeat) return { item: { ...item, done: !undo }, advanced: false };
+  if (undo) throw Object.assign(new Error('un ítem que se repite no se destilda: cambiale la fecha con `item set --due`'), { code: 'invalid_argument' });
+  return { item: { ...item, done: false, due: nextDue(item.due, item.repeat.every) }, advanced: true };
+}

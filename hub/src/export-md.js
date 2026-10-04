@@ -4,6 +4,7 @@ import { mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { writeAtomic } from './store/atomic.js';
 import { linkView } from './links.js';
+import { EVERY } from './dates.js';
 
 const ST = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
 
@@ -54,7 +55,7 @@ export function renderMarkdown({ milestones, tasks, lists = [] }, { title, board
   for (const [, l] of ls) {
     const items = l.items ?? [];
     L.push(`### ${l.title}` + (items.length ? `  (${items.filter((x) => x.done).length}/${items.length})` : ''), '');
-    L.push(...items.map((x) => `- [${x.done ? 'x' : ' '}] ${x.text}` + (x.due ? ` · vence ${x.due.replace('T', ' ')}` : '') + (x.task ? ` · → tarea ${ts.find((t) => t.id === x.task)?.code || x.task}` : '')));
+    L.push(...items.map((x) => `- [${x.done ? 'x' : ' '}] ${x.text}` + (x.due ? ` · vence ${x.due.replace('T', ' ')}` : '') + (x.repeat ? ` · se repite ${EVERY[x.repeat.every]}` : '') + (x.task ? ` · → tarea ${ts.find((t) => t.id === x.task)?.code || x.task}` : '')));
     if (items.length) L.push('');
   }
   return L.join('\n').replace(/\s+$/, '') + '\n';

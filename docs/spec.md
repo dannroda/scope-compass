@@ -630,6 +630,9 @@ Solo dos fechas importan (D26): **cuándo se creó** (`created_at`, que ya exist
 
 - `due` es opcional en **tareas e ítems de lista**: `"2026-10-10"` o `"2026-10-10T17:30"` (hora local, sin zona).
 - `repeat` es opcional **solo en ítems de lista**: `{ "every": "day" | "week" | "month" | "year" }`. Requiere `due`. Tildar un ítem que se repite no lo marca hecho: mueve `due` a la próxima fecha a partir de la fecha límite, no de cuando se tildó. Lo que se hizo queda en el historial de git.
+  - Un mes o un año sin ese día usa el último (31/01 → 28/02). Desde ahí queda en ese día (28/02 → 28/03): no se guarda el día original.
+  - Un ítem que se repite no se destilda (no hay una fecha anterior segura): se le cambia `due` a mano.
+  - Atrasado varios períodos, cada tilde avanza uno: cada vez que se hace cuenta como una vez.
 - La forma `{ every }` deja lugar para `{ every: "day", interval: 3 }` (cada x días) más adelante sin migrar.
 - **Sin notificaciones** por ahora: involucran coordinar todos los procesos.
 

@@ -82,20 +82,21 @@ scompass link list                         # todos; sale con 1 si hay vínculos 
 
 ## Listas
 
-Además de las tareas, un proyecto puede tener listas (`compass/lists/<id>.json`): pendientes, compras, ideas, assets a conseguir. Cada ítem es `{ text, done, created_at, due?, task? }`; `due` es la fecha límite (`YYYY-MM-DD` o `YYYY-MM-DDTHH:MM`, hora local) y `task` el id de la tarea creada desde el ítem.
+Además de las tareas, un proyecto puede tener listas (`compass/lists/<id>.json`): pendientes, compras, ideas, assets a conseguir. Cada ítem es `{ text, done, created_at, due?, repeat?, task? }`; `due` es la fecha límite (`YYYY-MM-DD` o `YYYY-MM-DDTHH:MM`, hora local), `repeat` `{ "every": "day" | "week" | "month" | "year" }` (requiere `due`) y `task` el id de la tarea creada desde el ítem.
 
 ```sh
 scompass lists                                      # listas con lo que queda pendiente
 scompass lists show compras --json                  # { "id", "etag", "title", "items": [ … ] }
 scompass lists add "Libros para leer"               # el id sale del título: libros-para-leer
 scompass item add compras "Yerba"
-scompass item add pendientes "Pagar la luz" --due 2026-10-10
+scompass item add pendientes "Pagar la luz" --due 2026-10-10 --repeat month
 scompass item check compras 2                       # ítems numerados desde 1, como en lists show
 scompass item set pendientes 1 --due ""             # quita la fecha
 scompass item clear compras                         # quita los tildados
 scompass item task assets 3 --milestone m06         # pasa el ítem a una tarea y lo enlaza
 ```
 
+- Tildar un ítem que se repite no lo deja tildado: su `due` avanza un período desde la fecha límite (31/01 → 28/02). No se destilda; si hace falta, cambiale la fecha con `item set --due`.
 - Algo con etapas o pasos va como tarea en un hito; algo que solo se tilda va en una lista. Si un ítem crece, pasalo a tarea con `item task`.
 
 ## Documentos y referencias

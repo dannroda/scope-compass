@@ -20,8 +20,8 @@ import { outdatedFiles, TEMPLATES, updateCompass } from './update.js';
 import { hubsOf, listHubs, registerHub, unregisterHub } from './registry.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listTasks } from './views.js';
-import { freeId, slugify } from './lists.js';
-import { dueState, isValidDue, showDue } from './dates.js';
+import { checkItem, freeId, slugify } from './lists.js';
+import { dueState, EVERY, isValidDue, showDue } from './dates.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
 
 const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
@@ -58,10 +58,12 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   lists add "<título>"                      crea una lista (el id sale del título: "Libros para leer" → libros-para-leer)
   lists set <lista> --title "…"              le cambia el título
   lists rm <lista>                          borra la lista
-  item add <lista> "<texto>" [--due 2026-10-10]
-                                            agrega un ítem (--due: fecha límite, YYYY-MM-DD o YYYY-MM-DDTHH:MM)
-  item check <lista> <n> [--undo]           tilda el ítem n (desde 1)
-  item set <lista> <n> [--text …] [--due …]  cambia un ítem (--due "" quita la fecha)
+  item add <lista> "<texto>" [--due 2026-10-10] [--repeat month]
+                                            agrega un ítem (--due: fecha límite, YYYY-MM-DD o YYYY-MM-DDTHH:MM;
+                                            --repeat day|week|month|year, con --due)
+  item check <lista> <n> [--undo]           tilda el ítem n (desde 1); si se repite, su fecha avanza un período
+  item set <lista> <n> [--text …] [--due …] [--repeat …]
+                                            cambia un ítem (--due "" quita la fecha; --repeat "" deja de repetirlo)
   item rm <lista> <n>                       quita un ítem
   item clear <lista>                        quita los ítems tildados
   item task <lista> <n> --milestone m00 [--code 0.12]
@@ -102,7 +104,7 @@ const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
-  raw: { type: 'boolean' }, check: { type: 'boolean' }, due: { type: 'string' },
+  raw: { type: 'boolean' }, check: { type: 'boolean' }, due: { type: 'string' }, repeat: { type: 'string' },
   port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, force: { type: 'boolean' },
   title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
@@ -687,7 +689,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         if (o.json) return done({ id: l.id, etag: l.etag, ...l.doc });
         print(`${l.doc.title}  [${l.id}]`);
         if (!l.doc.items.length) print('  (vacía)');
-        l.doc.items.forEach((x, i) => print(`  ${String(i + 1).padStart(2)}. [${x.done ? 'x' : ' '}] ${x.text}${x.due ? `  · ${dueNote(x.due, x.done)}` : ''}${x.task ? `  → ${x.task}` : ''}`));
+        l.doc.items.forEach((x, i) => print(`  ${String(i + 1).padStart(2)}. [${x.done ? 'x' : ' '}] ${x.text}${x.due ? `  · ${dueNote(x.due, x.done)}` : ''}${x.repeat ? `  ↻ ${EVERY[x.repeat.every]}` : ''}${x.task ? `  → ${x.task}` : ''}`));
         return 0;
       }
       if (sub === 'add') {
@@ -722,13 +724,16 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         if (!Number.isInteger(n) || n < 1 || n > items.length) throw new StoreError('invalid_argument', `ítem inexistente: ${arg} (la lista tiene ${items.length})`);
         return n;
       };
+      const repeat = (v) => { if (v !== '' && !EVERY[v]) throw new StoreError('invalid_argument', `repetición inválida: ${v} (day, week, month, year)`); return v; };
+      const needsDue = (x) => { if (x.repeat && !x.due) throw new StoreError('invalid_argument', 'un ítem que se repite necesita fecha límite (--due)'); return x; };
       const save = async (next, msg) => {
         const r = await store.patch('lists', id, { items: next }, { ifMatch: o.etag ?? cur.etag });
         return written({ id: r.id, etag: r.etag, ...r.doc }, msg);
       };
       if (sub === 'add') {
         const text = need(arg, 'el texto');
-        const item = { text, done: false, created_at: (now ?? (() => new Date().toISOString()))(), ...(o.due ? { due: due(o.due) } : {}) };
+        const item = needsDue({ text, done: false, created_at: (now ?? (() => new Date().toISOString()))(),
+          ...(o.due ? { due: due(o.due) } : {}), ...(o.repeat ? { repeat: { every: repeat(o.repeat) } } : {}) });
         return save([...items, item], `${id}: ítem ${items.length + 1} agregado`);
       }
       if (sub === 'clear') {
@@ -738,13 +743,19 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       const n = nth();
       const it = items[n - 1];
-      if (sub === 'check') return save(items.with(n - 1, { ...it, done: !o.undo }), `${id} ítem ${n} ${o.undo ? 'desmarcado' : 'hecho'}: ${it.text}`);
+      if (sub === 'check') {
+        let r;
+        try { r = checkItem(it, { undo: o.undo }); } catch (e) { throw new StoreError(e.code ?? 'invalid_argument', e.message); }
+        const msg = r.advanced ? `${id} ítem ${n} hecho: ${it.text} · ↻ próxima vez: ${showDue(r.item.due)}` : `${id} ítem ${n} ${o.undo ? 'desmarcado' : 'hecho'}: ${it.text}`;
+        return save(items.with(n - 1, r.item), msg);
+      }
       if (sub === 'rm') return save(items.toSpliced(n - 1, 1), `${id}: ítem ${n} quitado`);
       if (sub === 'set') {
-        if (o.text === undefined && o.due === undefined) throw new UsageError('falta --text o --due');
-        const { due: d, ...others } = it;
+        if (o.text === undefined && o.due === undefined && o.repeat === undefined) throw new UsageError('falta --text, --due o --repeat');
+        const { due: d, repeat: rp, ...others } = it;
         const nd = o.due !== undefined ? due(o.due) : d;
-        const next = { ...others, ...(o.text !== undefined ? { text: o.text } : {}), ...(nd ? { due: nd } : {}) };
+        const nr = o.repeat !== undefined ? (repeat(o.repeat) ? { every: o.repeat } : null) : rp;
+        const next = needsDue({ ...others, ...(o.text !== undefined ? { text: o.text } : {}), ...(nd ? { due: nd } : {}), ...(nr ? { repeat: nr } : {}) });
         return save(items.with(n - 1, next), `${id}: ítem ${n} actualizado`);
       }
       // task: una tarea nueva con el texto del ítem, y el ítem queda apuntando a ella.

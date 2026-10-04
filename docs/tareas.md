@@ -725,7 +725,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (3/13)
+## M8 — Inicio, listas y plantillas (v3)  (4/13)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -793,14 +793,16 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Bloqueada por:** 8.3 Listas: schema, Store y CLI
 
-### 8.5 Repetición simple en ítems de lista · Pendiente
+### 8.5 Repetición simple en ítems de lista · Hecho
 
-- [ ] `repeat: { every: day|week|month|year }`, requiere `due`
-- [ ] Tildar avanza `due` desde la fecha límite
+- [x] `repeat: { every: day|week|month|year }`, requiere `due`
+- [x] Tildar avanza `due` desde la fecha límite
   Fin de mes: 31/01 mensual pasa a 28/02 (o 29/02).
-- [ ] CLI `--repeat` y la repetición visible en la web
+- [x] CLI `--repeat` y la repetición visible en la web
 
 **Prueba:** Un ítem mensual con `due` 2026-01-31 pasa a 2026-02-28 al tildarlo; sigue sin tildar.
+
+**Notas:** `nextDue` en `hub/src/dates.js`; `checkItem` en `hub/src/lists.js` (la van a usar la web y el Inicio, no solo la CLI). Schema: `repeat` con `dependentRequired` → `due`; `interval` todavía no se acepta. Destildar uno que se repite es un error. La parte visible en la web va con 8.4.
 
 **Referencias:** `docs/spec.md#v3-fechas`
 

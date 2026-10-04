@@ -29,3 +29,27 @@ export function dueState(due, now = new Date()) {
 }
 
 export const showDue = (due) => due.replace('T', ' ');
+
+export const EVERY = { day: 'cada día', week: 'cada semana', month: 'cada mes', year: 'cada año' };
+
+const pad = (n) => String(n).padStart(2, '0');
+const daysIn = (y, m) => new Date(y, m + 1, 0).getDate(); // m desde 0
+
+/**
+ * La próxima fecha de algo que se repite, a partir de su fecha límite (no de cuando se hizo): la luz vence el 10
+ * aunque se pague el 12. Un mes o un año que no tiene ese día usa el último (31/01 → 28/02, 29/02 → 28/02).
+ * Mantiene la hora si la tiene. Ese día queda fijo desde ahí (28/02 → 28/03): el schema no guarda el día original.
+ */
+export function nextDue(due, every) {
+  const d = parseDue(due);
+  if (!d || !EVERY[every]) throw new Error(`no se puede repetir ${due} ${every}`);
+  let y = d.getFullYear(), m = d.getMonth(), day = d.getDate();
+  if (every === 'day' || every === 'week') {
+    const n = new Date(y, m, day + (every === 'day' ? 1 : 7));
+    [y, m, day] = [n.getFullYear(), n.getMonth(), n.getDate()];
+  } else {
+    if (every === 'month') { m += 1; if (m === 12) { m = 0; y += 1; } } else y += 1;
+    day = Math.min(day, daysIn(y, m));
+  }
+  return `${y}-${pad(m + 1)}-${pad(day)}${due.includes('T') ? due.slice(10) : ''}`;
+}
