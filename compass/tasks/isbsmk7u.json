@@ -1,0 +1,22 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Elegir juego, personal o vacío antes de crear (por defecto juego, porque es un proyecto de Godot)"
+    },
+    {
+      "done": false,
+      "text": "Pasar `--template` a `scompass init`"
+    }
+  ],
+  "code": "8.14",
+  "created_at": "2026-10-04T23:50:38.558Z",
+  "milestone": "m08",
+  "notes": "Parte de frontend de 8.7.",
+  "order": 14,
+  "refs": [],
+  "status": "todo",
+  "test": "En un proyecto sin compass/, \"Crear compass/\" con la plantilla juego deja el hito M0, las dos listas y docs/gdd.md.",
+  "title": "Dock: \"Crear compass/\" con plantilla",
+  "updated_at": "2026-10-04T23:50:39.209Z"
+}

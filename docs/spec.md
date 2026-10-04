@@ -640,10 +640,11 @@ Solo dos fechas importan (D26): **cuándo se creó** (`created_at`, que ya exist
 <!-- id: v3-plantillas -->
 
 - **`views` en `config.json`:** las pestañas del proyecto, en orden; la primera es la que abre. Valores: `board`, `lists`, `docs`. Sin `views`, se ven las tres con el tablero primero (lo de hoy).
-- **Plantillas:** `scompass init --template juego|personal|vacio`. Una plantilla es un `config.json` prearmado más datos iniciales; no tiene código propio. Viven en `hub/templates/<nombre>/`.
-  - `juego`: `views` = board, lists, docs; hito M0; listas "Ideas sueltas" y "Assets a conseguir".
+- **Plantillas:** `scompass init --template juego|personal|vacio`. Una plantilla es un `config.json` prearmado más datos iniciales; no tiene código propio. Cada una es un archivo `hub/templates/proyectos/<nombre>.json` con `{ description, config?, milestones?, lists?, files? }`: `config` se mezcla con la config base, hitos y listas se escriben con el Store, y `files` crea archivos del proyecto solo si no existen. Una plantilla desconocida no crea nada.
+  - `juego`: `views` = board, lists, docs; hito M0 "Prototipo"; listas "Ideas sueltas" y "Assets a conseguir"; el documento `gdd` (`docs/gdd.md`, con un esqueleto con ids si no existe).
   - `personal`: `views` = lists, board; listas "Pendientes" y "Compras"; un hito "General" para el tablero (en vez de hacer opcionales los hitos).
-  - `vacio`: lo que hace hoy `scompass init`.
+  - `vacio` (por defecto): lo que hacía `scompass init`, sin datos ni export.
+- `init` también anota el proyecto en el registro (§16.1).
 - Más adelante: plantillas propias en `~/.config/scope-compass/templates/`.
 
 ### 16.7 Fuera de v3

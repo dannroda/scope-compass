@@ -1,0 +1,13 @@
+{
+  "description": "Proyecto personal: abre en Listas (pendientes con fechas, compras) y tiene un tablero para proyectos sueltos",
+  "config": {
+    "views": ["lists", "board"]
+  },
+  "milestones": {
+    "m00": { "code": "G", "order": 0, "title": "General", "goal": "Proyectos sueltos con etapas o pasos. Lo que solo se tilda va en una lista.", "done_when": [] }
+  },
+  "lists": {
+    "pendientes": { "title": "Pendientes", "order": 1, "items": [] },
+    "compras": { "title": "Compras", "order": 2, "items": [] }
+  }
+}

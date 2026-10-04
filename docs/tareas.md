@@ -725,7 +725,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (5/13)
+## M8 — Inicio, listas y plantillas (v3)  (6/14)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -822,16 +822,19 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Bloquea a:** 8.7 Plantillas en `scompass init`
 
-### 8.7 Plantillas en `scompass init` · Pendiente
+### 8.7 Plantillas en `scompass init` · Hecho
 
-- [ ] `hub/templates/juego|personal|vacio/`: config y datos iniciales
-- [ ] `scompass init --template <nombre>`
-- [ ] La plantilla personal crea el hito General
-- [ ] El botón "Crear compass/" del dock pregunta la plantilla
+- [x] `hub/templates/proyectos/juego|personal|vacio.json`: config y datos iniciales
+- [x] `scompass init --template <nombre>`
+- [x] La plantilla personal crea el hito General
 
 **Prueba:** `scompass init --template personal --project Vida` en una carpeta vacía crea un proyecto que abre en Listas.
 
+**Notas:** Las plantillas son JSON, no carpetas: más fáciles de revisar en un diff. `juego` crea `docs/gdd.md` solo si no existe. `init` anota el proyecto en el registro. El selector de plantilla del dock pasó a 8.14.
+
 **Referencias:** `docs/spec.md#v3-plantillas`
+
+**Bloquea a:** 8.14 Dock: "Crear compass/" con plantilla
 
 **Bloqueada por:** 8.3 Listas: schema, Store y CLI; 8.6 `views` en `config.json`
 
@@ -911,3 +914,14 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 **Referencias:** `docs/spec.md#v3-fechas`
 
 **Bloqueada por:** 8.2 Fecha límite (`due`) en tareas
+
+### 8.14 Dock: "Crear compass/" con plantilla · Pendiente
+
+- [ ] Elegir juego, personal o vacío antes de crear (por defecto juego, porque es un proyecto de Godot)
+- [ ] Pasar `--template` a `scompass init`
+
+**Prueba:** En un proyecto sin compass/, "Crear compass/" con la plantilla juego deja el hito M0, las dos listas y docs/gdd.md.
+
+**Notas:** Parte de frontend de 8.7.
+
+**Bloqueada por:** 8.7 Plantillas en `scompass init`

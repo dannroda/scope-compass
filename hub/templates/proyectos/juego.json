@@ -1,0 +1,17 @@
+{
+  "description": "Proyecto de juego: tablero por hitos, listas de ideas y assets, y el GDD como documento",
+  "config": {
+    "views": ["board", "lists", "docs"],
+    "docs": [{ "alias": "gdd", "path": "docs/gdd.md" }]
+  },
+  "milestones": {
+    "m00": { "code": "M0", "order": 0, "title": "Prototipo", "goal": "Lo mínimo jugable para probar la idea.", "done_when": [] }
+  },
+  "lists": {
+    "ideas-sueltas": { "title": "Ideas sueltas", "order": 1, "items": [] },
+    "assets-a-conseguir": { "title": "Assets a conseguir", "order": 2, "items": [] }
+  },
+  "files": {
+    "docs/gdd.md": "# Documento de diseño\n<!-- id: gdd -->\n\n## Idea\n<!-- id: idea -->\n\nDe qué se trata el juego, en un párrafo.\n\n## Mecánicas\n<!-- id: mecanicas -->\n\n## Decisiones abiertas\n<!-- id: decisiones-abiertas -->\n"
+  }
+}

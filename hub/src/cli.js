@@ -29,17 +29,19 @@ const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done
 
 const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
 
-  init [--project <nombre>]                 crea compass/ en el proyecto
+  init [--project <nombre>] [--template juego|personal|vacio]
+                                            crea compass/ en el proyecto (la plantilla trae vistas, hitos, listas y
+                                            documentos iniciales; por defecto vacio)
   update [--check]                          pone al día los archivos generados de compass/ (schema/ y AGENTS.md,
                                             la guía para agentes); --check solo avisa y sale con 1 si hay algo viejo
   serve [--port 4711] [--open] [--force]    levanta el hub en 127.0.0.1 (uno por proyecto; Ctrl+C para cerrar)
+        [--exit-on-stdin-close]             se cierra cuando se corta su entrada (lo usa el dock de Godot)
+        [--tray]                            ícono en la bandeja del sistema, con "Detener hub"
   restart                                   reinicia el hub de este proyecto (para cargar código nuevo)
   hubs                                      hubs activos de todos los proyectos
   home list                                 proyectos conocidos en este equipo, con el estado de su hub
   home add [<carpeta>]                      anota un proyecto sin levantar su hub (por defecto, el de --dir)
   home rm [<carpeta>]                       lo quita del registro (no toca sus datos)
-        [--exit-on-stdin-close]             se cierra cuando se corta su entrada (lo usa el dock de Godot)
-        [--tray]                            ícono en la bandeja del sistema, con "Detener hub"
   list [--milestone m00] [--status doing]   tareas (--json para agentes)
   show <id>                                 una tarea, con los pasos numerados
   add "<título>" --milestone m00 [--code 0.11] [--status todo] [--due 2026-10-10]
@@ -104,7 +106,7 @@ const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
-  raw: { type: 'boolean' }, check: { type: 'boolean' }, due: { type: 'string' }, repeat: { type: 'string' },
+  raw: { type: 'boolean' }, check: { type: 'boolean' }, template: { type: 'string' }, due: { type: 'string' }, repeat: { type: 'string' },
   port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, force: { type: 'boolean' },
   title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
@@ -176,16 +178,34 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const commands = {
     async init() {
       if (existsSync(join(compass, 'config.json'))) throw new StoreError('conflict', `ya existe ${join(compass, 'config.json')}`);
+      // Plantilla (spec §16.6, D25): config prearmada + datos iniciales, sin código propio. Se valida antes de crear nada.
+      const tpl = await loadTemplate(o.template ?? 'vacio');
       for (const d of ['milestones', 'tasks', 'schema']) await mkdir(join(compass, d), { recursive: true });
       for (const k of KINDS) await copyFile(join(SCHEMA_DIR, `${k}.schema.json`), join(compass, 'schema', `${k}.schema.json`));
       await copyFile(join(TEMPLATES, 'compass-README.md'), join(compass, 'README.md'));
       await copyFile(join(TEMPLATES, 'compass-AGENTS.md'), join(compass, 'AGENTS.md'));
       await writeFile(join(compass, '.gdignore'), '');
-      const config = { project: o.project || basename(project), export_md: 'docs/tareas.md', port: 4711 };
+      const config = { project: o.project || basename(project), export_md: 'docs/tareas.md', port: 4711, ...tpl.config };
       const res = parseDoc(JSON.stringify(config), 'config', validators);
       if (!res.ok) throw new StoreError('invalid_argument', res.message);
       await writeFile(join(compass, 'config.json'), canonical(config));
-      return done({ dir: compass, config }, `Creado ${compass}\n${AGENTS_HINT}`);
+      for (const [id, doc] of Object.entries(tpl.milestones ?? {})) await store.put('milestones', id, doc, { ifMatch: null });
+      for (const [id, doc] of Object.entries(tpl.lists ?? {})) await store.put('lists', id, doc, { ifMatch: null });
+      // Archivos del proyecto (el GDD de la plantilla juego): solo si no existen.
+      const files = { created: [], kept: [] };
+      for (const [rel, text] of Object.entries(tpl.files ?? {})) {
+        const path = join(project, rel);
+        if (existsSync(path)) { files.kept.push(rel); continue; }
+        await mkdir(dirname(path), { recursive: true });
+        await writeFile(path, text);
+        files.created.push(rel);
+      }
+      // Con datos iniciales, el export ya los muestra; sin datos (vacio) se genera en la primera escritura, como antes.
+      if (Object.keys(tpl.milestones ?? {}).length + Object.keys(tpl.lists ?? {}).length) await exportMarkdown(project, await store.loadAll());
+      try { await recordProject(project); } catch (e) { warn(`aviso: no se anotó el proyecto en ${projectsFile()}: ${e.message}`); }
+      const extra = [...files.created.map((f) => `Creado ${f}`), ...files.kept.map((f) => `Ya existía ${f}: no se tocó`)];
+      return done({ dir: compass, config, template: tpl.name, files },
+        [`Creado ${compass} (plantilla ${tpl.name})`, ...extra, AGENTS_HINT].join('\n'));
     },
 
     // schema/ y AGENTS.md al día con esta versión de Scope Compass (ver update.js).
@@ -806,6 +826,18 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     else warn(`error [${e.code}]: ${e.message}`);
     return 1;
   }
+}
+
+// Plantillas de proyecto: hub/templates/proyectos/<nombre>.json con { description, config?, milestones?, lists?, files? }.
+export async function listTemplates() {
+  const { readdir } = await import('node:fs/promises');
+  return (await readdir(join(TEMPLATES, 'proyectos'))).filter((n) => n.endsWith('.json')).map((n) => n.slice(0, -5)).sort();
+}
+
+async function loadTemplate(name) {
+  const names = await listTemplates();
+  if (!names.includes(name)) throw new UsageError(`plantilla desconocida: ${name} (${names.join(', ')})`);
+  return { name, ...JSON.parse(await readFile(join(TEMPLATES, 'proyectos', `${name}.json`), 'utf8')) };
 }
 
 async function streamText(stream) {
