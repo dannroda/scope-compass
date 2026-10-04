@@ -6,7 +6,7 @@ import { parseDoc } from '../schema.js';
 
 const rel = (compassDir, path) => relative(dirname(compassDir), path);
 
-export const COLLECTIONS = { milestones: 'milestone', tasks: 'task' };
+export const COLLECTIONS = { milestones: 'milestone', tasks: 'task', lists: 'list' };
 
 export async function loadCollection(compassDir, collection, validators) {
   const dir = join(compassDir, collection);
@@ -25,7 +25,7 @@ export async function loadCollection(compassDir, collection, validators) {
 }
 
 export async function loadCompass(compassDir, validators) {
-  const out = { config: null, milestones: new Map(), tasks: new Map(), warnings: [] };
+  const out = { config: null, milestones: new Map(), tasks: new Map(), lists: new Map(), warnings: [] };
   const cfgPath = join(compassDir, 'config.json');
   const cfg = await readFile(cfgPath, 'utf8').catch(() => null);
   if (cfg === null) {

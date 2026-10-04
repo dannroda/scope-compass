@@ -114,6 +114,9 @@ func task_name(id: String) -> String:
 
 ## Aplica un documento del hub (o lo quita si doc es null). Devuelve si cambió algo.
 func apply(collection: String, id: String, doc) -> bool:
+	# Otras colecciones (las listas, D25) el dock no las muestra: no se mezclan con las tareas.
+	if collection != "milestones" and collection != "tasks":
+		return false
 	var list: Array = milestones if collection == "milestones" else tasks
 	var i := -1
 	for j in list.size():

@@ -18,7 +18,8 @@ import { createServer, freePortFrom, listen, VERSION } from './server.js';
 import { startTray } from './tray.js';
 import { hubsOf, listHubs, registerHub, unregisterHub } from './registry.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
-import { listMilestones, listTasks } from './views.js';
+import { listLists, listMilestones, listTasks } from './views.js';
+import { freeId, isValidDue, slugify } from './lists.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
 
 const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
@@ -50,6 +51,19 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   set <id> [--title t] [--notes n] [--test p] [--code c] [--milestone m] [--status s]
                                             cambia solo esos campos
   milestone list | show <id> | set <id> --file m.json
+  lists                                     listas, con cuántos ítems quedan
+  lists show <lista>                        una lista, con los ítems numerados
+  lists add "<título>"                      crea una lista (el id sale del título: "Libros para leer" → libros-para-leer)
+  lists set <lista> --title "…"              le cambia el título
+  lists rm <lista>                          borra la lista
+  item add <lista> "<texto>" [--due 2026-10-10]
+                                            agrega un ítem (--due: fecha límite, YYYY-MM-DD o YYYY-MM-DDTHH:MM)
+  item check <lista> <n> [--undo]           tilda el ítem n (desde 1)
+  item set <lista> <n> [--text …] [--due …]  cambia un ítem (--due "" quita la fecha)
+  item rm <lista> <n>                       quita un ítem
+  item clear <lista>                        quita los ítems tildados
+  item task <lista> <n> --milestone m00 [--code 0.12]
+                                            pasa el ítem a una tarea nueva y lo deja enlazado
   doc list                                  documentos de config.json con su índice de secciones
   doc show <alias>#<id> [--raw]             una sección (--raw: solo el markdown, para agentes)
   doc stamp-ids <alias> [--dry-run]         agrega <!-- id: … --> a las secciones que no tienen
@@ -86,7 +100,7 @@ const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
-  raw: { type: 'boolean' }, check: { type: 'boolean' },
+  raw: { type: 'boolean' }, check: { type: 'boolean' }, due: { type: 'string' },
   port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, force: { type: 'boolean' },
   title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
@@ -642,6 +656,97 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         ? await store.put('tasks', id, await readJsonFile(o.file), ifMatch)
         : await store.patch('tasks', id, fields, ifMatch);
       return written({ id: r.id, etag: r.etag, ...r.doc }, `Guardada ${id}`);
+    },
+
+    // Listas (spec §16.4, D25).
+    async lists() {
+      const sub = rest[0] ?? 'list';
+      if (sub === 'list') {
+        const { items, warnings } = await store.list('lists');
+        showWarnings(warnings);
+        const lists = listLists(items.map((l) => [l.id, l.doc]));
+        if (o.json) return done({ lists, warnings });
+        if (!lists.length) print('Sin listas: scompass lists add "<título>" crea una.');
+        for (const l of lists) {
+          const left = l.items.filter((x) => !x.done).length;
+          const state = !l.items.length ? 'vacía' : left ? `${left} de ${l.items.length} pendiente${left === 1 ? '' : 's'}` : 'todo tildado';
+          print(`  ${l.id.padEnd(20)} ${l.title}  ${state}`);
+        }
+        return 0;
+      }
+      if (sub === 'show') {
+        const l = await store.get('lists', need(rest[1], 'la lista'));
+        if (o.json) return done({ id: l.id, etag: l.etag, ...l.doc });
+        print(`${l.doc.title}  [${l.id}]`);
+        if (!l.doc.items.length) print('  (vacía)');
+        l.doc.items.forEach((x, i) => print(`  ${String(i + 1).padStart(2)}. [${x.done ? 'x' : ' '}] ${x.text}${x.due ? `  · vence ${x.due.replace('T', ' ')}` : ''}${x.task ? `  → ${x.task}` : ''}`));
+        return 0;
+      }
+      if (sub === 'add') {
+        const title = need(rest[1], 'el título');
+        const { items } = await store.list('lists');
+        const id = freeId(slugify(title), items.map((l) => l.id));
+        // order se calcula acá: con hub, crear con id es un PUT y el hub no lo completa.
+        const order = Math.max(0, ...items.map((l) => l.doc.order ?? 0)) + 1;
+        const r = await store.create('lists', { title, order, items: [] }, id);
+        return written({ id: r.id, etag: r.etag, ...r.doc }, `Creada la lista ${r.id}: ${title}`);
+      }
+      if (sub === 'set') {
+        const id = need(rest[1], 'la lista');
+        const r = await store.patch('lists', id, { title: need(o.title, '--title') }, ifMatch);
+        return written({ id: r.id, etag: r.etag, ...r.doc }, `Guardada la lista ${id}`);
+      }
+      if (sub === 'rm') {
+        const id = need(rest[1], 'la lista');
+        await store.delete('lists', id, ifMatch);
+        return written({ id }, `Borrada la lista ${id}`);
+      }
+      throw new UsageError(`subcomando desconocido: lists ${sub} (show, add, set, rm)`);
+    },
+
+    async item() {
+      const [sub, id, arg] = rest;
+      if (!['add', 'check', 'set', 'rm', 'clear', 'task'].includes(sub)) throw new UsageError(`subcomando desconocido: item ${sub ?? ''} (add, check, set, rm, clear, task)`);
+      const cur = await store.get('lists', need(id, 'la lista'));
+      const items = cur.doc.items;
+      const due = (v) => { if (v !== '' && !isValidDue(v)) throw new StoreError('invalid_argument', `fecha inválida: ${v} (YYYY-MM-DD o YYYY-MM-DDTHH:MM)`); return v; };
+      const nth = () => {
+        const n = Number(need(arg, 'el número de ítem'));
+        if (!Number.isInteger(n) || n < 1 || n > items.length) throw new StoreError('invalid_argument', `ítem inexistente: ${arg} (la lista tiene ${items.length})`);
+        return n;
+      };
+      const save = async (next, msg) => {
+        const r = await store.patch('lists', id, { items: next }, { ifMatch: o.etag ?? cur.etag });
+        return written({ id: r.id, etag: r.etag, ...r.doc }, msg);
+      };
+      if (sub === 'add') {
+        const text = need(arg, 'el texto');
+        const item = { text, done: false, created_at: (now ?? (() => new Date().toISOString()))(), ...(o.due ? { due: due(o.due) } : {}) };
+        return save([...items, item], `${id}: ítem ${items.length + 1} agregado`);
+      }
+      if (sub === 'clear') {
+        const left = items.filter((x) => !x.done);
+        const k = items.length - left.length;
+        return save(left, `${id}: ${k} ${k === 1 ? 'tildado quitado' : 'tildados quitados'}`);
+      }
+      const n = nth();
+      const it = items[n - 1];
+      if (sub === 'check') return save(items.with(n - 1, { ...it, done: !o.undo }), `${id} ítem ${n} ${o.undo ? 'desmarcado' : 'hecho'}: ${it.text}`);
+      if (sub === 'rm') return save(items.toSpliced(n - 1, 1), `${id}: ítem ${n} quitado`);
+      if (sub === 'set') {
+        if (o.text === undefined && o.due === undefined) throw new UsageError('falta --text o --due');
+        const { due: d, ...others } = it;
+        const nd = o.due !== undefined ? due(o.due) : d;
+        const next = { ...others, ...(o.text !== undefined ? { text: o.text } : {}), ...(nd ? { due: nd } : {}) };
+        return save(items.with(n - 1, next), `${id}: ítem ${n} actualizado`);
+      }
+      // task: una tarea nueva con el texto del ítem, y el ítem queda apuntando a ella.
+      if (it.task) throw new StoreError('conflict', `el ítem ${n} ya pasó a la tarea ${it.task}`);
+      const milestone = need(o.milestone, '--milestone');
+      await store.get('milestones', milestone);
+      const t = await store.create('tasks', { milestone, title: it.text, code: o.code ?? '', status: 'todo', checklist: [], test: '', notes: '', refs: [] });
+      const r = await store.patch('lists', id, { items: items.with(n - 1, { ...it, task: t.id }) }, { ifMatch: o.etag ?? cur.etag });
+      return written({ id: r.id, etag: r.etag, ...r.doc, task: { id: t.id, etag: t.etag, ...t.doc } }, `${id}: ítem ${n} → tarea ${t.id}`);
     },
 
     async milestone() {

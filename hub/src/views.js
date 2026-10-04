@@ -9,6 +9,10 @@ export const flat = (id, doc, etag = etagOf(doc)) => ({ id, etag, ...doc });
 const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0) ||
   String(a.code ?? '').localeCompare(String(b.code ?? ''), 'es', { numeric: true }) || a.id.localeCompare(b.id);
 
+export function listLists(lists) {
+  return [...lists].map(([id, doc]) => flat(id, doc)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.id.localeCompare(b.id));
+}
+
 export function listMilestones(milestones) {
   return [...milestones].map(([id, doc]) => flat(id, doc)).sort(byOrder);
 }

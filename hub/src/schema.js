@@ -11,7 +11,7 @@ const HUB_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
 // adentro del paquete: se usa esa copia si está.
 export const resourceDir = (name) => (existsSync(join(HUB_DIR, name)) ? join(HUB_DIR, name) : join(HUB_DIR, '..', name));
 export const SCHEMA_DIR = resourceDir('schema');
-export const KINDS = ['config', 'milestone', 'task'];
+export const KINDS = ['config', 'milestone', 'task', 'list'];
 
 export function loadValidators(dir = SCHEMA_DIR) {
   const ajv = new Ajv2020({ allErrors: true, strict: true });

@@ -25,7 +25,7 @@ async function listJson(dir) {
 export async function importArtifact(src, compassDir, { validators, overwrite = false, dryRun = false, now = () => new Date().toISOString() }) {
   const report = { milestones: null, tasks: null, warnings: [] };
   const milestoneIds = new Set();
-  for (const collection of Object.keys(COLLECTIONS)) {
+  for (const collection of ['milestones', 'tasks']) {
     const r = { created: [], unchanged: [], updated: [], different: [], invalid: [] };
     report[collection] = r;
     const kind = COLLECTIONS[collection];

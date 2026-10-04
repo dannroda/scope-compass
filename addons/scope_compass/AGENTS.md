@@ -78,6 +78,24 @@ scompass link list                         # todos; sale con 1 si hay vínculos 
 - Al terminar: completá `test` si está vacío, dejá en `notes` lo que el siguiente necesite saber y pasala a `review` (o a `done` si ya se comprobó).
 - Trabajo nuevo que aparece en el camino: `scompass add` en el hito que corresponda, en lugar de dejarlo solo en el chat.
 
+## Listas
+
+Además de las tareas, un proyecto puede tener listas (`compass/lists/<id>.json`): pendientes, compras, ideas, assets a conseguir. Cada ítem es `{ text, done, created_at, due?, task? }`; `due` es la fecha límite (`YYYY-MM-DD` o `YYYY-MM-DDTHH:MM`, hora local) y `task` el id de la tarea creada desde el ítem.
+
+```sh
+scompass lists                                      # listas con lo que queda pendiente
+scompass lists show compras --json                  # { "id", "etag", "title", "items": [ … ] }
+scompass lists add "Libros para leer"               # el id sale del título: libros-para-leer
+scompass item add compras "Yerba"
+scompass item add pendientes "Pagar la luz" --due 2026-10-10
+scompass item check compras 2                       # ítems numerados desde 1, como en lists show
+scompass item set pendientes 1 --due ""             # quita la fecha
+scompass item clear compras                         # quita los tildados
+scompass item task assets 3 --milestone m06         # pasa el ítem a una tarea y lo enlaza
+```
+
+- Algo con etapas o pasos va como tarea en un hito; algo que solo se tilda va en una lista. Si un ítem crece, pasalo a tarea con `item task`.
+
 ## Documentos y referencias
 
 Los documentos citables están en `compass/config.json` › `docs` (alias y ruta). Una referencia apunta a una sección por su id estable (`<!-- id: … -->` debajo del título).
@@ -104,5 +122,5 @@ scompass home rm <carpeta>  # lo quita del registro; no toca sus datos
 
 - `scompass --help`: todos los comandos.
 - `compass/README.md`: formato de los archivos y manejo a mano con git.
-- `compass/schema/`: JSON Schema de tareas, hitos y `config.json`.
+- `compass/schema/`: JSON Schema de tareas, hitos, listas y `config.json`.
 - `scompass update`: pone al día `compass/schema/` y esta guía cuando Scope Compass se actualizó (`--check` solo avisa). El dock de Godot lo ofrece con el botón "Actualizar".

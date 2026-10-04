@@ -72,9 +72,11 @@ export function createHttpStore(base, compassDir, { validators }) {
     hub: base,
 
     async loadAll() {
-      const [m, t, config] = await Promise.all([call('GET', '/api/milestones'), call('GET', '/api/tasks'), readConfig()]);
+      // Un hub de antes de las listas no tiene /api/lists: se ven vacías (la CLI ya avisa que el hub es viejo).
+      const [m, t, l, config] = await Promise.all([call('GET', '/api/milestones'), call('GET', '/api/tasks'),
+        call('GET', '/api/lists').catch((e) => (e.code === 'not_found' ? { lists: [], warnings: [] } : Promise.reject(e))), readConfig()]);
       const toMap = (list) => new Map(list.map((d) => { const { id, doc } = unflat(d); return [id, doc]; }));
-      return { config, milestones: toMap(m.milestones), tasks: toMap(t.tasks), warnings: [...m.warnings, ...t.warnings] };
+      return { config, milestones: toMap(m.milestones), tasks: toMap(t.tasks), lists: toMap(l.lists), warnings: [...m.warnings, ...t.warnings, ...l.warnings] };
     },
 
     async list(collection) {

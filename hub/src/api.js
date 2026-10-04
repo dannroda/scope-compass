@@ -2,7 +2,7 @@
 // ETag como cabecera HTTP; en escrituras, If-Match exige esa versión e If-None-Match: * exige que no exista.
 import { exportMarkdown } from './export-md.js';
 import { StoreError } from './store/json-files.js';
-import { flat, listMilestones, listTasks, STATUSES } from './views.js';
+import { flat, listLists, listMilestones, listTasks, STATUSES } from './views.js';
 
 const quote = (etag) => `"${etag}"`;
 const unquote = (v) => v.trim().replace(/^W\//, '').replace(/^"(.*)"$/, '$1');
@@ -71,6 +71,26 @@ export function registerApi(app, { store, projectDir, publish }) {
   app.delete('/api/tasks/:id', async (req, reply) => {
     await store.delete('tasks', req.params.id, preconditions(req));
     publish.delete('tasks', req.params.id);
+    return reply.code(204).send();
+  });
+
+  // Listas (D25): el id lo elige el cliente (un slug del título), así que se crean con PUT + If-None-Match: *.
+  app.get('/api/lists', async () => {
+    const { items, warnings } = await store.list('lists');
+    return { lists: listLists(items.map((l) => [l.id, l.doc])), warnings };
+  });
+
+  app.get('/api/lists/:id', async (req, reply) => send(reply, await store.get('lists', req.params.id)));
+
+  app.put('/api/lists/:id', async (req, reply) =>
+    send(reply, wrote('lists', await store.put('lists', req.params.id, body(req), preconditions(req)))));
+
+  app.patch('/api/lists/:id', async (req, reply) =>
+    send(reply, wrote('lists', await store.patch('lists', req.params.id, body(req), preconditions(req)))));
+
+  app.delete('/api/lists/:id', async (req, reply) => {
+    await store.delete('lists', req.params.id, preconditions(req));
+    publish.delete('lists', req.params.id);
     return reply.code(204).send();
   });
 

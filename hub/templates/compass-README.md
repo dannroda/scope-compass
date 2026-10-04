@@ -4,6 +4,7 @@ Estos archivos **son** las tareas del proyecto, en el formato de [Scope Compass]
 
 - `milestones/<id>.json`: un hito (`m00` = M0, …).
 - `tasks/<id>.json`: una tarea. El nombre del archivo es su id.
+- `lists/<id>.json`: una lista (pendientes, compras…), con sus ítems `{ text, done, due? }` adentro. Tildar uno es cambiar `"done"` a `true`.
 - `schema/`: JSON Schema de cada tipo y de `config.json`, para validar una edición a mano. Es una copia del de Scope Compass: `scompass update` la pone al día.
 - `config.json`: nombre del proyecto, documentos referenciables, export markdown, puerto del hub.
 - `.gdignore`: hace que Godot ignore esta carpeta.

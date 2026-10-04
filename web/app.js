@@ -133,6 +133,8 @@
 
   // Aplica al estado un documento que devolvió el hub (o lo quita si doc es null).
   function apply(collection, id, doc) {
+    // Otras colecciones (las listas, D25) todavía no se muestran: no se mezclan con las tareas.
+    if (collection !== 'milestones' && collection !== 'tasks') return;
     const list = collection === 'milestones' ? S.milestones : S.tasks;
     const i = list.findIndex((t) => t.id === id);
     if (doc === null) { if (i >= 0) list.splice(i, 1); }

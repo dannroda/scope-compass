@@ -16,8 +16,8 @@ const today = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-// milestones / tasks: Map o iterable de [id, doc]. board: URL del artifact si todavía es la fuente de verdad.
-export function renderMarkdown({ milestones, tasks }, { title, board, date = today() }) {
+// milestones / tasks / lists: Map o iterable de [id, doc]. board: URL del artifact si todavía es la fuente de verdad.
+export function renderMarkdown({ milestones, tasks, lists = [] }, { title, board, date = today() }) {
   const ts = [...tasks].map(([id, t]) => ({ id, ...t }));
   const name = (id) => { const t = ts.find((x) => x.id === id); return t ? [t.code ?? '', t.title].filter(Boolean).join(' ') : `${id} (no existe)`; };
   const L = [`# Tareas — ${title}`, '',
@@ -47,13 +47,22 @@ export function renderMarkdown({ milestones, tasks }, { title, board, date = tod
       if (v.related.length) L.push('**Relacionadas:** ' + v.related.map(name).join('; '), '');
     }
   }
+  // Listas (D25), después de los hitos: un proyecto sin listas exporta lo mismo que antes.
+  const ls = [...lists].sort(([ia, a], [ib, b]) => cmp(a.order ?? 0, b.order ?? 0) || cmp(ia, ib));
+  if (ls.length) L.push('## Listas', '');
+  for (const [, l] of ls) {
+    const items = l.items ?? [];
+    L.push(`### ${l.title}` + (items.length ? `  (${items.filter((x) => x.done).length}/${items.length})` : ''), '');
+    L.push(...items.map((x) => `- [${x.done ? 'x' : ' '}] ${x.text}` + (x.due ? ` · vence ${x.due.replace('T', ' ')}` : '') + (x.task ? ` · → tarea ${ts.find((t) => t.id === x.task)?.code || x.task}` : '')));
+    if (items.length) L.push('');
+  }
   return L.join('\n').replace(/\s+$/, '') + '\n';
 }
 
 // Escribe el export de un proyecto. out: ruta absoluta o relativa al proyecto (por defecto config.export_md).
-export async function exportMarkdown(projectDir, { config, milestones, tasks }, { out, date } = {}) {
+export async function exportMarkdown(projectDir, { config, milestones, tasks, lists }, { out, date } = {}) {
   const path = resolve(projectDir, out ?? config?.export_md ?? 'docs/tareas.md');
-  const text = renderMarkdown({ milestones, tasks }, { title: config?.project ?? 'Proyecto', board: config?.board_url, date });
+  const text = renderMarkdown({ milestones, tasks, lists }, { title: config?.project ?? 'Proyecto', board: config?.board_url, date });
   await mkdir(dirname(path), { recursive: true });
   await writeAtomic(path, text);
   return path;

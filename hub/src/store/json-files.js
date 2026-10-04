@@ -5,8 +5,8 @@
 // Interfaz Store (la misma para el modo hosteado, spec §3): loadAll, list, get, create, put, patch, delete.
 // Todo devuelve { id, doc, etag } y falla con StoreError; un archivo inválido nunca se sobrescribe.
 import { createHash, randomInt } from 'node:crypto';
-import { readFile, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, readFile, rm } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { canonical } from './canonical.js';
 import { writeAtomic } from './atomic.js';
 import { COLLECTIONS, loadCollection, loadCompass } from './load.js';
@@ -67,13 +67,15 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
   }
 
   async function write(collection, id, doc, current) {
-    if (collection === 'tasks') {
+    if (collection === 'tasks' || collection === 'lists') {
       doc = { ...doc, updated_at: now() };
       doc.created_at = current?.doc.created_at ?? doc.created_at ?? doc.updated_at;
     }
     const res = parseDoc(JSON.stringify(doc), COLLECTIONS[collection], validators);
     if (!res.ok) throw new StoreError('invalid_argument', res.message, { details: res.details });
     try {
+      // La carpeta puede faltar en un proyecto de antes de esa colección (lists/, D25).
+      await mkdir(dirname(pathOf(collection, id)), { recursive: true });
       await writeAtomic(pathOf(collection, id), canonical(res.doc));
     } catch (e) {
       throw new StoreError('io_error', e.message);

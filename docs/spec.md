@@ -618,8 +618,9 @@ Una entidad nueva de la base, disponible en **cualquier** proyecto (D25): `compa
 - Los ítems van dentro del archivo, como los pasos de una tarea: tildar uno cambia una línea.
 - Una lista sin fechas se ve como lista simple. Si algún ítem tiene `due`, la vista agrupa en Vencidos, Hoy, Esta semana, Más adelante y Sin fecha.
 - **Pasar a tarea:** crea una tarea en el hito elegido con el texto del ítem y guarda su id en `task`.
-- CLI: `scompass lists`, `list-add "<título>"`, `item add <lista> "<texto>" [--due 2026-10-10] [--repeat month]`, `item check <lista> <n>`, `item rm`, `item task <lista> <n> --milestone m00`.
-- API y WebSocket: las mismas rutas y mensajes que las tareas (`/api/lists`, `upsert`/`delete` con `kind: "list"`).
+- **Id legible:** sale del título (`"Libros para leer"` → `libros-para-leer`); si ya existe, `-2`, `-3`… Como lo elige el cliente, la API crea con `PUT /api/lists/:id` + `If-None-Match: *`.
+- CLI: `scompass lists`, `lists show|add|set|rm`, `item add <lista> "<texto>" [--due 2026-10-10]`, `item check <lista> <n> [--undo]`, `item set <lista> <n> [--text …] [--due …]`, `item rm`, `item clear` (quita los tildados), `item task <lista> <n> --milestone m00` (y `--repeat` en 8.5).
+- API y WebSocket: `GET/PUT/PATCH/DELETE /api/lists[/:id]`, y los mismos `upsert`/`delete` que las tareas con `collection: "lists"`. La web y el dock ignoran las colecciones que no muestran.
 
 ### 16.5 Fechas y repetición
 <!-- id: v3-fechas -->

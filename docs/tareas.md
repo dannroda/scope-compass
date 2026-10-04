@@ -715,7 +715,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (1/12)
+## M8 — Inicio, listas y plantillas (v3)  (2/12)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -751,14 +751,16 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Referencias:** `docs/spec.md#v3-fechas`
 
-### 8.3 Listas: schema, Store y CLI · Pendiente
+### 8.3 Listas: schema, Store y CLI · Hecho
 
-- [ ] `schema/list.schema.json` y `compass/lists/<id>.json`
-- [ ] Store: cargar, validar y escribir listas con etag
-- [ ] CLI: `lists`, `list-add`, `item add|check|rm`
-- [ ] Export md: una sección por lista
+- [x] `schema/list.schema.json` y `compass/lists/<id>.json`
+- [x] Store: cargar, validar y escribir listas con etag
+- [x] CLI: `lists`, `list-add`, `item add|check|rm`
+- [x] Export md: una sección por lista
 
 **Prueba:** `scompass item check pendientes 2` con y sin hub cambia una sola línea.
+
+**Notas:** `schema/list.schema.json`, colección `lists` en el Store (crea la carpeta si falta), `hub/src/lists.js` (slug del id, `isValidDue`). CLI `lists` y `item` (incluye `item task`, que adelanta un paso de 8.4). Para que la CLI ande con hub hizo falta la API REST de listas (`/api/lists`): queda hecha acá; 8.4 suma la vista web. El watcher ya publica las listas; la web y el dock ignoran colecciones que no muestran. Export: sección "Listas" al final.
 
 **Referencias:** `docs/spec.md#v3-listas`
 
