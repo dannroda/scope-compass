@@ -714,3 +714,165 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Desde el teléfono se ve y se edita el tablero (PWA).
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
+
+## M8 — Inicio, listas y plantillas (v3)  (0/12)
+
+Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
+
+**Hecho cuando:**
+- El Inicio muestra todos los proyectos del equipo, con o sin hub, y los prende y apaga.
+- Un proyecto creado con la plantilla personal abre en Listas, con fechas límite y repetición simple.
+- Con el Inicio en la bandeja hay un solo ícono.
+
+### 8.1 Registro persistente de proyectos · Pendiente
+
+- [ ] `~/.config/scope-compass/projects.json` (`$XDG_CONFIG_HOME`), escritura atómica
+- [ ] `scompass serve` anota o actualiza su proyecto
+- [ ] `scompass home add|rm|list`: importar sin levantar el hub
+- [ ] Carpetas que ya no existen: marcadas como no encontradas
+  No se borran solas: el usuario decide.
+
+**Prueba:** Levantar un hub desde el dock lo agrega a `projects.json`; `scompass home add ../otro` lo agrega sin levantar nada.
+
+**Referencias:** `docs/spec.md#v3-registro`
+
+**Bloquea a:** 8.8 `scompass home`: proceso y API
+
+### 8.2 Fecha límite (`due`) en tareas · Pendiente
+
+- [ ] Schema: `due` opcional, `YYYY-MM-DD` o con `THH:MM`
+- [ ] CLI: `add|set --due` y la fecha en `list` y `show`
+- [ ] Web: elegir y ver la fecha; vencidas marcadas
+- [ ] Dock y export md: mostrarla
+
+**Prueba:** `scompass set <id> --due 2026-10-10` cambia una sola línea del JSON y la fecha aparece en la web, el dock y `docs/tareas.md`.
+
+**Referencias:** `docs/spec.md#v3-fechas`
+
+### 8.3 Listas: schema, Store y CLI · Pendiente
+
+- [ ] `schema/list.schema.json` y `compass/lists/<id>.json`
+- [ ] Store: cargar, validar y escribir listas con etag
+- [ ] CLI: `lists`, `list-add`, `item add|check|rm`
+- [ ] Export md: una sección por lista
+
+**Prueba:** `scompass item check pendientes 2` con y sin hub cambia una sola línea.
+
+**Referencias:** `docs/spec.md#v3-listas`
+
+**Bloquea a:** 8.4 Listas: API, WebSocket y vista en la web; 8.5 Repetición simple en ítems de lista; 8.7 Plantillas en `scompass init`
+
+### 8.4 Listas: API, WebSocket y vista en la web · Pendiente
+
+- [ ] `/api/lists` y mensajes con `kind: "list"`
+- [ ] Pestaña Listas: barra lateral, lista simple y agrupada por fecha
+- [ ] Agregar rápido, quitar tildadas, reordenar
+- [ ] Pasar a tarea: crea la tarea y enlaza el ítem
+  Guarda el id de la tarea en `task` del ítem.
+
+**Prueba:** Dos pestañas: tildar un ítem en una se refleja en la otra en menos de 1 s.
+
+**Referencias:** `docs/spec.md#v3-listas`
+
+**Bloqueada por:** 8.3 Listas: schema, Store y CLI
+
+### 8.5 Repetición simple en ítems de lista · Pendiente
+
+- [ ] `repeat: { every: day|week|month|year }`, requiere `due`
+- [ ] Tildar avanza `due` desde la fecha límite
+  Fin de mes: 31/01 mensual pasa a 28/02 (o 29/02).
+- [ ] CLI `--repeat` y la repetición visible en la web
+
+**Prueba:** Un ítem mensual con `due` 2026-01-31 pasa a 2026-02-28 al tildarlo; sigue sin tildar.
+
+**Referencias:** `docs/spec.md#v3-fechas`
+
+**Bloqueada por:** 8.3 Listas: schema, Store y CLI
+
+### 8.6 `views` en `config.json` · Pendiente
+
+- [ ] Schema de config: `views` con `board`, `lists`, `docs`
+- [ ] La web muestra solo esas pestañas y abre en la primera
+- [ ] Sin `views`: las tres, tablero primero
+
+**Prueba:** Con `views: ["lists", "board"]` la web abre en Listas y no muestra Documentos.
+
+**Referencias:** `docs/spec.md#v3-plantillas`
+
+**Bloquea a:** 8.7 Plantillas en `scompass init`
+
+### 8.7 Plantillas en `scompass init` · Pendiente
+
+- [ ] `hub/templates/juego|personal|vacio/`: config y datos iniciales
+- [ ] `scompass init --template <nombre>`
+- [ ] La plantilla personal crea el hito General
+- [ ] El botón "Crear compass/" del dock pregunta la plantilla
+
+**Prueba:** `scompass init --template personal --project Vida` en una carpeta vacía crea un proyecto que abre en Listas.
+
+**Referencias:** `docs/spec.md#v3-plantillas`
+
+**Bloqueada por:** 8.3 Listas: schema, Store y CLI; 8.6 `views` en `config.json`
+
+### 8.8 `scompass home`: proceso y API · Pendiente
+
+- [ ] Un solo `home` por usuario (`kind: "home"` en el registro de hubs)
+- [ ] Leer cada proyecto de disco con el Store; cruzar con los hubs vivos
+- [ ] WebSocket a los hubs vivos para cambios en vivo
+- [ ] Escrituras por el hub si está vivo, si no directo con etag
+- [ ] `/api/projects` y `/api/today`
+
+**Prueba:** Con un hub vivo y otro proyecto apagado, `GET /api/projects` devuelve los dos con su estado.
+
+**Referencias:** `docs/spec.md#v3-home`
+
+**Bloquea a:** 8.9 Prender y apagar hubs desde el Inicio; 8.10 UI del Inicio; 8.11 Bandeja agrupada en el Inicio
+
+**Bloqueada por:** 8.1 Registro persistente de proyectos
+
+### 8.9 Prender y apagar hubs desde el Inicio · Pendiente
+
+- [ ] Prender: `scompass serve --dir` como hijo del Inicio
+- [ ] Apagar: `SIGTERM` al pid del registro
+- [ ] Avisar antes de apagar un hub del dock
+
+**Prueba:** Prender un proyecto apagado desde el Inicio y apagarlo; al cerrar el Inicio, los hubs que prendió mueren.
+
+**Referencias:** `docs/spec.md#v3-home`
+
+**Bloqueada por:** 8.8 `scompass home`: proceso y API
+
+### 8.10 UI del Inicio · Pendiente
+
+- [ ] Franja Hoy: vencidos, hoy y en curso de todos los proyectos
+- [ ] Tarjetas: estado del hub, hito actual, lo próximo, sin commitear
+- [ ] Agregar proyecto: importar carpeta o crear con plantilla
+- [ ] Pantalla angosta (mockup del teléfono)
+
+**Prueba:** Tildar "Pagar la luz" en Hoy cambia el JSON de la lista de Vida, con su hub prendido o apagado.
+
+**Referencias:** `docs/spec.md#v3-home`
+
+**Bloqueada por:** 8.8 `scompass home`: proceso y API
+
+### 8.11 Bandeja agrupada en el Inicio · Pendiente
+
+- [ ] El Inicio con `--tray` pone el único ícono
+- [ ] Los hubs con `--tray` lo esconden si hay un `home` vivo y lo vuelven a poner si muere
+- [ ] Menú: un submenú por hub (Abrir, Reiniciar, Detener), Abrir Inicio, Agregar proyecto
+
+**Prueba:** Tres hubs con `--tray` y el Inicio: un solo ícono; al cerrar el Inicio vuelven los tres.
+
+**Referencias:** `docs/spec.md#v3-bandeja`
+
+**Bloqueada por:** 8.8 `scompass home`: proceso y API
+
+### 8.12 Tests de M8 y guía para agentes · Pendiente
+
+- [ ] Tests de los criterios de §16.8
+- [ ] `AGENTS.md` (plantilla, addon y `compass/`) con listas, fechas y `home`
+- [ ] README y `compass/README.md`: editar listas a mano
+
+**Prueba:** Los criterios de §16.8 tildados con su prueba.
+
+**Referencias:** `docs/spec.md#criterios-v3`

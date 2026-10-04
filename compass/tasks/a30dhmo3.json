@@ -1,0 +1,35 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Franja Hoy: vencidos, hoy y en curso de todos los proyectos"
+    },
+    {
+      "done": false,
+      "text": "Tarjetas: estado del hub, hito actual, lo próximo, sin commitear"
+    },
+    {
+      "done": false,
+      "text": "Agregar proyecto: importar carpeta o crear con plantilla"
+    },
+    {
+      "done": false,
+      "text": "Pantalla angosta (mockup del teléfono)"
+    }
+  ],
+  "code": "8.10",
+  "created_at": "2026-10-04T22:16:46.816Z",
+  "milestone": "m08",
+  "notes": "",
+  "order": 10,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "v3-home"
+    }
+  ],
+  "status": "todo",
+  "test": "Tildar \"Pagar la luz\" en Hoy cambia el JSON de la lista de Vida, con su hub prendido o apagado.",
+  "title": "UI del Inicio",
+  "updated_at": "2026-10-04T22:16:48.102Z"
+}

@@ -1,0 +1,37 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Schema de config: `views` con `board`, `lists`, `docs`"
+    },
+    {
+      "done": false,
+      "text": "La web muestra solo esas pestañas y abre en la primera"
+    },
+    {
+      "done": false,
+      "text": "Sin `views`: las tres, tablero primero"
+    }
+  ],
+  "code": "8.6",
+  "created_at": "2026-10-04T22:16:41.052Z",
+  "links": [
+    {
+      "task": "8x2ehax0",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m08",
+  "notes": "",
+  "order": 6,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "v3-plantillas"
+    }
+  ],
+  "status": "todo",
+  "test": "Con `views: [\"lists\", \"board\"]` la web abre en Listas y no muestra Documentos.",
+  "title": "`views` en `config.json`",
+  "updated_at": "2026-10-04T22:16:58.838Z"
+}

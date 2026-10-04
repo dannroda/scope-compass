@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Prender: `scompass serve --dir` como hijo del Inicio"
+    },
+    {
+      "done": false,
+      "text": "Apagar: `SIGTERM` al pid del registro"
+    },
+    {
+      "done": false,
+      "text": "Avisar antes de apagar un hub del dock"
+    }
+  ],
+  "code": "8.9",
+  "created_at": "2026-10-04T22:16:45.532Z",
+  "milestone": "m08",
+  "notes": "",
+  "order": 9,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "v3-home"
+    }
+  ],
+  "status": "todo",
+  "test": "Prender un proyecto apagado desde el Inicio y apagarlo; al cerrar el Inicio, los hubs que prendió mueren.",
+  "title": "Prender y apagar hubs desde el Inicio",
+  "updated_at": "2026-10-04T22:16:46.600Z"
+}

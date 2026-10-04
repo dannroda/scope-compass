@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "El Inicio con `--tray` pone el único ícono"
+    },
+    {
+      "done": false,
+      "text": "Los hubs con `--tray` lo esconden si hay un `home` vivo y lo vuelven a poner si muere"
+    },
+    {
+      "done": false,
+      "text": "Menú: un submenú por hub (Abrir, Reiniciar, Detener), Abrir Inicio, Agregar proyecto"
+    }
+  ],
+  "code": "8.11",
+  "created_at": "2026-10-04T22:16:48.324Z",
+  "milestone": "m08",
+  "notes": "",
+  "order": 11,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "v3-bandeja"
+    }
+  ],
+  "status": "todo",
+  "test": "Tres hubs con `--tray` y el Inicio: un solo ícono; al cerrar el Inicio vuelven los tres.",
+  "title": "Bandeja agrupada en el Inicio",
+  "updated_at": "2026-10-04T22:16:49.404Z"
+}

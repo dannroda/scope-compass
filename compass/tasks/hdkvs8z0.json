@@ -1,0 +1,53 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Un solo `home` por usuario (`kind: \"home\"` en el registro de hubs)"
+    },
+    {
+      "done": false,
+      "text": "Leer cada proyecto de disco con el Store; cruzar con los hubs vivos"
+    },
+    {
+      "done": false,
+      "text": "WebSocket a los hubs vivos para cambios en vivo"
+    },
+    {
+      "done": false,
+      "text": "Escrituras por el hub si está vivo, si no directo con etag"
+    },
+    {
+      "done": false,
+      "text": "`/api/projects` y `/api/today`"
+    }
+  ],
+  "code": "8.8",
+  "created_at": "2026-10-04T22:16:43.817Z",
+  "links": [
+    {
+      "task": "z2kqpzy3",
+      "type": "blocks"
+    },
+    {
+      "task": "a30dhmo3",
+      "type": "blocks"
+    },
+    {
+      "task": "q1ukytwa",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m08",
+  "notes": "",
+  "order": 8,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "v3-home"
+    }
+  ],
+  "status": "todo",
+  "test": "Con un hub vivo y otro proyecto apagado, `GET /api/projects` devuelve los dos con su estado.",
+  "title": "`scompass home`: proceso y API",
+  "updated_at": "2026-10-04T22:16:58.607Z"
+}

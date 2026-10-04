@@ -1,0 +1,49 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "`schema/list.schema.json` y `compass/lists/<id>.json`"
+    },
+    {
+      "done": false,
+      "text": "Store: cargar, validar y escribir listas con etag"
+    },
+    {
+      "done": false,
+      "text": "CLI: `lists`, `list-add`, `item add|check|rm`"
+    },
+    {
+      "done": false,
+      "text": "Export md: una sección por lista"
+    }
+  ],
+  "code": "8.3",
+  "created_at": "2026-10-04T22:16:36.708Z",
+  "links": [
+    {
+      "task": "v0s7fro6",
+      "type": "blocks"
+    },
+    {
+      "task": "z4w2glk4",
+      "type": "blocks"
+    },
+    {
+      "task": "8x2ehax0",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m08",
+  "notes": "",
+  "order": 3,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "v3-listas"
+    }
+  ],
+  "status": "todo",
+  "test": "`scompass item check pendientes 2` con y sin hub cambia una sola línea.",
+  "title": "Listas: schema, Store y CLI",
+  "updated_at": "2026-10-04T22:16:59.066Z"
+}

@@ -1,0 +1,42 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "`~/.config/scope-compass/projects.json` (`$XDG_CONFIG_HOME`), escritura atómica"
+    },
+    {
+      "done": false,
+      "text": "`scompass serve` anota o actualiza su proyecto"
+    },
+    {
+      "done": false,
+      "text": "`scompass home add|rm|list`: importar sin levantar el hub"
+    },
+    {
+      "detail": "No se borran solas: el usuario decide.",
+      "done": false,
+      "text": "Carpetas que ya no existen: marcadas como no encontradas"
+    }
+  ],
+  "code": "8.1",
+  "created_at": "2026-10-04T22:16:33.681Z",
+  "links": [
+    {
+      "task": "hdkvs8z0",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m08",
+  "notes": "",
+  "order": 1,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "v3-registro"
+    }
+  ],
+  "status": "todo",
+  "test": "Levantar un hub desde el dock lo agrega a `projects.json`; `scompass home add ../otro` lo agrega sin levantar nada.",
+  "title": "Registro persistente de proyectos",
+  "updated_at": "2026-10-04T22:16:57.930Z"
+}

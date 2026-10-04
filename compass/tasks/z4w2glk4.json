@@ -1,0 +1,32 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "`repeat: { every: day|week|month|year }`, requiere `due`"
+    },
+    {
+      "detail": "Fin de mes: 31/01 mensual pasa a 28/02 (o 29/02).",
+      "done": false,
+      "text": "Tildar avanza `due` desde la fecha límite"
+    },
+    {
+      "done": false,
+      "text": "CLI `--repeat` y la repetición visible en la web"
+    }
+  ],
+  "code": "8.5",
+  "created_at": "2026-10-04T22:16:39.729Z",
+  "milestone": "m08",
+  "notes": "",
+  "order": 5,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "v3-fechas"
+    }
+  ],
+  "status": "todo",
+  "test": "Un ítem mensual con `due` 2026-01-31 pasa a 2026-02-28 al tildarlo; sigue sin tildar.",
+  "title": "Repetición simple en ítems de lista",
+  "updated_at": "2026-10-04T22:16:40.833Z"
+}

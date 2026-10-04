@@ -1,0 +1,11 @@
+{
+  "code": "M8",
+  "done_when": [
+    "El Inicio muestra todos los proyectos del equipo, con o sin hub, y los prende y apaga.",
+    "Un proyecto creado con la plantilla personal abre en Listas, con fechas límite y repetición simple.",
+    "Con el Inicio en la bandeja hay un solo ícono."
+  ],
+  "goal": "Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.",
+  "order": 8,
+  "title": "Inicio, listas y plantillas (v3)"
+}

@@ -93,6 +93,11 @@ Plugin `addons/scopecompass/` conectado al hub por WebSocket. Ver §11.1. Es el 
 
 Visor de documentos (GDD y demás) y referencias entre tareas y secciones. Ver §10. v1 ya guarda el campo `refs` para no tener que migrar datos después.
 
+### v3: inicio, listas y plantillas
+<!-- id: v3-alcance -->
+
+Una página de Inicio con todos los proyectos del equipo, listas con fecha límite y repetición, y plantillas para crear proyectos de juego o personales. Ver §16.
+
 ## 3. Stack
 <!-- id: stack -->
 
@@ -556,3 +561,97 @@ Para respetar el principio de §1 también hosteado, **git sigue siendo el almac
 - [x] Versión mínima de Node: **22** (D11).
 - [x] Editar hitos: **solo CLI en v1**; la UI los muestra (D12).
 - [x] Export markdown: **automático en cada escritura**, desactivable (D13).
+
+## 16. Inicio, listas y plantillas (v3)
+<!-- id: v3 -->
+
+**Objetivo:** que Scope Compass sirva para organizar todo, no solo proyectos de juego. Una página de **Inicio** junta todos los proyectos del equipo, y un proyecto puede usarse para cosas personales ("Vida") con **listas** además del tablero. Todo sigue siendo **local**. El mirror always-on queda para después (§12).
+
+Mockups: https://claude.ai/artifact/H842sKGxHz1oGH7qgZhYvY
+
+**Principio:** cada `compass/` sigue siendo individual y un hub sigue sirviendo un solo proyecto. El Inicio es un proceso aparte que los conoce y los coordina, no un hub que los reemplaza (D24). Un proyecto personal es un proyecto normal creado con otra plantilla (D25).
+
+### 16.1 Registro de proyectos
+<!-- id: v3-registro -->
+
+Hay dos registros, con funciones distintas (D23):
+
+| Registro | Dónde | Qué guarda | Vida |
+|---|---|---|---|
+| Hubs vivos (ya existe) | `$XDG_RUNTIME_DIR/scope-compass/hubs/<pid>.json` | `{ pid, port, project, startedAt }`, más `kind: "home"` para el Inicio | Se limpia solo; desaparece al reiniciar |
+| Proyectos conocidos (nuevo) | `~/.config/scope-compass/projects.json` (`$XDG_CONFIG_HOME`) | `[{ path, name, added_at, last_seen }]` | Persistente; se edita a mano si hace falta |
+
+- **Se anota solo:** cada `scompass serve` agrega o actualiza su proyecto (incluidos los hubs que levanta el dock).
+- **Importar sin levantar:** `scompass home add <carpeta>` (o "Agregar proyecto" en el Inicio) anota una carpeta con `compass/` sin prender su hub. `home rm <carpeta>` la quita del registro; no toca sus datos.
+- Un proyecto cuya carpeta ya no existe se muestra como "no encontrado" y se puede quitar.
+- Escritura atómica (tmp + rename), como el Store. Un `projects.json` inválido se avisa y no se pisa.
+
+### 16.2 `scompass home`
+<!-- id: v3-home -->
+
+`scompass home [--port 4700] [--open] [--tray]`: un proceso aparte, uno solo por usuario (se registra con `kind: "home"`; un segundo `home` abre el que ya corre).
+
+- **Lectura:** lee de disco el `compass/` de cada proyecto conocido con el mismo Store y las mismas vistas que la CLI. Cruza con el registro de hubs vivos para mostrar "hub :4712" o "leído de disco".
+- **En vivo:** se suscribe por WebSocket a los hubs vivos. Los proyectos sin hub se releen al abrir o recargar el Inicio.
+- **Escrituras** (tildar desde "Hoy"): por la API del hub del proyecto si está vivo; si no, directo al Store con etag, igual que la CLI.
+- **Prender y apagar hubs:** el Inicio levanta `scompass serve --dir <proyecto>` como proceso hijo (muere con el Inicio, como los que levanta el dock, tarea 5.8) y apaga cualquier hub vivo con `SIGTERM` al pid del registro. Si el hub es del dock, avisa antes; el dock ya sabe pasar a modo sin hub y reintentar.
+- **API:** `GET /api/projects` (registro + estado + resumen), `POST /api/projects` (importar), `DELETE /api/projects/:i`, `POST /api/projects/:i/start|stop`, `GET /api/today`.
+
+### 16.3 Bandeja agrupada
+<!-- id: v3-bandeja -->
+
+Si el Inicio corre con `--tray`, **es el único ícono**: los hubs con `--tray` esconden el suyo y aparecen dentro del menú del Inicio, cada uno con Abrir, Reiniciar y Detener, más "Abrir Inicio" y "Agregar proyecto…". Los hubs miran el registro de hubs vivos: cuando aparece un `home`, quitan su ícono; si el `home` muere, lo vuelven a poner. Así no se llena la bandeja.
+
+### 16.4 Listas
+<!-- id: v3-listas -->
+
+Una entidad nueva de la base, disponible en **cualquier** proyecto (D25): `compass/lists/<id>.json`.
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `title` | string | |
+| `order` | number | Orden en la barra lateral |
+| `items` | `{ text, done, created_at, due?, repeat?, task? }[]` | `text` en una línea; `task`: id de la tarea creada con "Pasar a tarea" |
+| `created_at` / `updated_at` | ISO 8601 | |
+
+- Los ítems van dentro del archivo, como los pasos de una tarea: tildar uno cambia una línea.
+- Una lista sin fechas se ve como lista simple. Si algún ítem tiene `due`, la vista agrupa en Vencidos, Hoy, Esta semana, Más adelante y Sin fecha.
+- **Pasar a tarea:** crea una tarea en el hito elegido con el texto del ítem y guarda su id en `task`.
+- CLI: `scompass lists`, `list-add "<título>"`, `item add <lista> "<texto>" [--due 2026-10-10] [--repeat month]`, `item check <lista> <n>`, `item rm`, `item task <lista> <n> --milestone m00`.
+- API y WebSocket: las mismas rutas y mensajes que las tareas (`/api/lists`, `upsert`/`delete` con `kind: "list"`).
+
+### 16.5 Fechas y repetición
+<!-- id: v3-fechas -->
+
+Solo dos fechas importan (D26): **cuándo se creó** (`created_at`, que ya existe) y, si tiene, **la fecha límite** (`due`).
+
+- `due` es opcional en **tareas e ítems de lista**: `"2026-10-10"` o `"2026-10-10T17:30"` (hora local, sin zona).
+- `repeat` es opcional **solo en ítems de lista**: `{ "every": "day" | "week" | "month" | "year" }`. Requiere `due`. Tildar un ítem que se repite no lo marca hecho: mueve `due` a la próxima fecha a partir de la fecha límite, no de cuando se tildó. Lo que se hizo queda en el historial de git.
+- La forma `{ every }` deja lugar para `{ every: "day", interval: 3 }` (cada x días) más adelante sin migrar.
+- **Sin notificaciones** por ahora: involucran coordinar todos los procesos.
+
+### 16.6 Vistas y plantillas
+<!-- id: v3-plantillas -->
+
+- **`views` en `config.json`:** las pestañas del proyecto, en orden; la primera es la que abre. Valores: `board`, `lists`, `docs`. Sin `views`, se ven las tres con el tablero primero (lo de hoy).
+- **Plantillas:** `scompass init --template juego|personal|vacio`. Una plantilla es un `config.json` prearmado más datos iniciales; no tiene código propio. Viven en `hub/templates/<nombre>/`.
+  - `juego`: `views` = board, lists, docs; hito M0; listas "Ideas sueltas" y "Assets a conseguir".
+  - `personal`: `views` = lists, board; listas "Pendientes" y "Compras"; un hito "General" para el tablero (en vez de hacer opcionales los hitos).
+  - `vacio`: lo que hace hoy `scompass init`.
+- Más adelante: plantillas propias en `~/.config/scope-compass/templates/`.
+
+### 16.7 Fuera de v3
+<!-- id: v3-fuera -->
+
+Notificaciones y recordatorios, repetición personalizada (cada x días), listas en el dock de Godot, un hub con varios proyectos, mirror always-on (§12).
+
+### 16.8 Criterios de aceptación de v3
+<!-- id: criterios-v3 -->
+
+- [ ] Con el Inicio abierto, levantar un hub desde el dock lo muestra como activo en menos de 1 s, y el proyecto queda en `projects.json`.
+- [ ] Importar una carpeta con `compass/` la muestra en el Inicio sin levantar su hub; prenderlo y apagarlo desde el Inicio funciona.
+- [ ] Tildar un ítem en "Hoy" cambia una sola línea del JSON de la lista, con hub o sin hub.
+- [ ] Un ítem mensual con `due` 2026-01-31 pasa a 2026-02-28 al tildarlo.
+- [ ] `scompass init --template personal` crea un proyecto que abre en Listas.
+- [ ] Con el Inicio en `--tray`, hay un solo ícono en la bandeja aunque haya tres hubs con `--tray`; al cerrar el Inicio vuelven los suyos.
+- [ ] Borrar `~/.config/scope-compass/` no pierde ningún dato: solo hay que volver a importar los proyectos.

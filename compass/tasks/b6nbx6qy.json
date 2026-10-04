@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Tests de los criterios de §16.8"
+    },
+    {
+      "done": false,
+      "text": "`AGENTS.md` (plantilla, addon y `compass/`) con listas, fechas y `home`"
+    },
+    {
+      "done": false,
+      "text": "README y `compass/README.md`: editar listas a mano"
+    }
+  ],
+  "code": "8.12",
+  "created_at": "2026-10-04T22:16:49.626Z",
+  "milestone": "m08",
+  "notes": "",
+  "order": 12,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "criterios-v3"
+    }
+  ],
+  "status": "todo",
+  "test": "Los criterios de §16.8 tildados con su prueba.",
+  "title": "Tests de M8 y guía para agentes",
+  "updated_at": "2026-10-04T22:16:50.717Z"
+}

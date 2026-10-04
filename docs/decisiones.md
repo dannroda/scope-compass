@@ -179,3 +179,34 @@ Godot 4.8 agrega la clase `EditorDock` con `EditorPlugin.add_dock()` / `remove_d
 - **Reglas:** entre dos tareas hay a lo sumo un vínculo (agregar otro lo reemplaza); una tarea no se vincula consigo misma; un `blocks` que cerraría un ciclo se rechaza (CLI y web). Una tarea está **bloqueada** si la bloquea alguna tarea sin terminar y ella misma no está hecha: se marca en la lista de la CLI, en la tarjeta de la web y en el dock.
 - **Límites:** la API valida la forma de `links` (JSON Schema), no que la otra tarea exista ni los ciclos; eso lo cuidan la CLI y la web. Un vínculo a una tarea borrada queda roto: se muestra como tal y `scompass link list` lo avisa y sale con 1. El dock los muestra y permite ir a la otra tarea, pero no los edita.
 - **Descartado:** guardar los dos sentidos en ambas tareas (dos escrituras por vínculo y posibles inconsistencias) y un archivo aparte de vínculos (otra colección que versionar y validar).
+
+## D23 · Registro persistente de proyectos en `~/.config/scope-compass/projects.json`
+**2026-10-04 · vigente** · spec §16.1
+
+Además del registro de hubs vivos (en `$XDG_RUNTIME_DIR`, se borra al reiniciar), un archivo persistente lista los proyectos que se abrieron o se importaron en el equipo. `scompass serve` se anota solo; `scompass home add` importa sin levantar el hub.
+
+- **Por qué:** el Inicio tiene que conocer los proyectos aunque su hub esté apagado, y poder prenderlos. Un archivo en la carpeta de config del sistema se ve, se edita a mano y no vive en ningún repo. Linux primero (D15): `$XDG_CONFIG_HOME`, por defecto `~/.config`.
+- **Regla:** el registro solo tiene rutas y nombres. Borrarlo no pierde datos: todo sigue en cada `compass/`.
+- **Descartado:** escanear carpetas buscando `compass/` (lento e impredecible) y guardar la lista en un repo (es del equipo, no de un proyecto).
+
+## D24 · El Inicio es un proceso aparte, `scompass home`; los hubs siguen siendo uno por proyecto
+**2026-10-04 · vigente** · spec §16.2, §16.3
+
+- **Qué:** `scompass home` lee los proyectos conocidos de disco, habla con los hubs vivos (WebSocket para cambios, API para escrituras) y puede prenderlos (como hijos suyos) y apagarlos (`SIGTERM`). Si corre con `--tray`, es el único ícono de la bandeja y los hubs se agrupan en su menú.
+- **Por qué:** cada `compass/` es individual y el modelo de un hub por proyecto (registro, puertos, dock) ya funciona. El Inicio reutiliza el Store y la lógica de la CLI sin cambiarlo. Agrupar la bandeja evita un ícono por proyecto.
+- **Descartado:** un solo hub con varios proyectos. Es más simple de usar, pero rompe el modelo actual, el registro y el dock. Se puede reconsiderar con el mirror always-on (§12), donde un servidor con todos los proyectos es más natural.
+
+## D25 · Las listas y las vistas son de la base; un proyecto personal es una plantilla
+**2026-10-04 · vigente** · spec §16.4, §16.6
+
+- **Qué:** `compass/lists/<id>.json` existe en cualquier proyecto. `config.json › views` elige las pestañas y la que abre. `scompass init --template juego|personal|vacio` arma la config y los datos iniciales.
+- **Por qué:** "Vida" es un hub normal, solo con otra configuración. Si las funciones fueran por tipo de proyecto, un proyecto de juego no podría tener una lista de assets ni uno personal un tablero. Una plantilla sin código propio no se desincroniza de la base.
+- **Detalle:** la plantilla personal crea un hito "General" en vez de hacer opcionales los hitos: el schema de tareas no cambia.
+- **Descartado:** listas como tareas sin hito (mezcla dos modelos en un schema) y un tipo de hub "personal" con código propio.
+
+## D26 · Fechas: `created_at` y `due`; repetición simple solo en ítems de lista
+**2026-10-04 · vigente** · spec §16.5
+
+- **Qué:** `due` opcional (`YYYY-MM-DD` o con `THH:MM`, hora local) en tareas e ítems. `repeat: { every: day|week|month|year }` solo en ítems, con `due`. Tildar uno que se repite avanza `due` desde la fecha límite (31/01 mensual → 28/02).
+- **Por qué:** de las fechas, solo importan cuándo se creó algo y para cuándo hay que tenerlo. Avanzar desde la fecha límite mantiene los vencimientos fijos (la luz vence el 10 aunque se pague el 12). `{ every }` deja lugar para `interval` (cada x días) sin migrar.
+- **Descartado por ahora:** fecha de inicio, repetición personalizada y notificaciones (requieren coordinar todos los procesos).
