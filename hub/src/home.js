@@ -9,13 +9,15 @@
 //   POST   /api/projects/move-task   { path, id, status, etag? }
 //   POST   /api/projects/start   { path }          levanta su hub como hijo del Inicio (muere con él)
 //   POST   /api/projects/stop    { path, force? }  apaga su hub; uno que abrió otro (el dock) pide force
+//   GET    /api/templates                    plantillas para crear un proyecto
+//   POST   /api/projects/init  { path, template, name? }   crea compass/ con `scompass init` y lo anota
 //   GET    /ws                               { type: 'changed', path, collection?, id? } | { type: 'hubs' } | { type: 'projects' }
 // Las escrituras pasan por el hub del proyecto si está vivo (lo publica a sus pestañas y al dock); si no, van
 // directo a compass/ con etag, como la CLI, y regeneran el export markdown.
 import { spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import { statSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { existsSync, statSync } from 'node:fs';
+import { mkdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
@@ -24,11 +26,12 @@ import { exportMarkdown } from './export-md.js';
 import { checkItem } from './lists.js';
 import { forgetProject, loadProjects, projectsFile, projectsStatus, ProjectsError, recordProject } from './projects.js';
 import { hubsOf, listHubs } from './registry.js';
-import { VERSION } from './server.js';
+import { VERSION, WEB_DIR } from './server.js';
 import { createHttpStore, detectHub } from './store/http.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { loadCompass } from './store/load.js';
 import { summarize, todayOf } from './summary.js';
+import { listTemplates, loadTemplate } from './templates.js';
 import { STATUSES } from './views.js';
 
 const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
@@ -38,7 +41,7 @@ const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { 
 const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, invalid_file: 409, invalid: 409, io_error: 500 };
 
 // now: función que devuelve la fecha "de hoy" (los tests la fijan). pollMs: cada cuánto mira el registro de hubs.
-export function createHomeServer({ validators, now = () => new Date(), pollMs = 1000, logger = false }) {
+export function createHomeServer({ validators, now = () => new Date(), pollMs = 1000, logger = false, webDir = WEB_DIR }) {
   const app = Fastify({ logger, forceCloseConnections: true });
   const events = new EventEmitter();
   app.decorate('events', events);
@@ -86,7 +89,8 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     const base = { path: p.path, name: p.name, found: p.found, hubs: p.hubs, added_at: p.added_at, last_seen: p.last_seen };
     if (!p.found) return base;
     const all = await loadCompass(compassOf(p.path), validators);
-    return { ...base, name: all.config?.project ?? p.name, views: all.config?.views ?? null, warnings: all.warnings.length, summary: summarize(all, now()) };
+    return { ...base, name: all.config?.project ?? p.name, views: all.config?.views ?? null, godot: existsSync(join(p.path, 'project.godot')),
+      warnings: all.warnings.length, summary: summarize(all, now()) };
   }
 
   app.get('/api/health', async () => ({ ok: true, name: 'scope-compass-home', version: VERSION, pid: process.pid, projects_file: projectsFile() }));
@@ -103,6 +107,33 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     const removed = await forgetProject(req.query.path ?? '');
     emit({ type: 'projects' });
     return { removed };
+  });
+
+  app.get('/api/templates', async () => ({
+    templates: await Promise.all((await listTemplates()).map(async (n) => ({ name: n, description: (await loadTemplate(n)).description ?? '' })))
+  }));
+
+  // Crear un proyecto: la misma `scompass init` de la CLI, en otro proceso (crea la carpeta si no existe).
+  app.post('/api/projects/init', async (req, reply) => {
+    const { path, template = 'vacio', name } = req.body ?? {};
+    if (typeof path !== 'string' || !path.startsWith('/')) throw new StoreError('invalid_argument', 'path tiene que ser una ruta absoluta');
+    if (!(await loadTemplate(template))) throw new StoreError('invalid_argument', `plantilla desconocida: ${template}`);
+    await mkdir(path, { recursive: true });
+    const args = [BIN, '--dir', path, 'init', '--template', template, '--json', ...(name ? ['--project', name] : [])];
+    const r = await new Promise((resolve) => {
+      const child = spawn(process.execPath, args, { stdio: ['ignore', 'pipe', 'pipe'], env: process.env });
+      let out = '', err = '';
+      child.stdout.on('data', (d) => { out += d; });
+      child.stderr.on('data', (d) => { err += d; });
+      child.on('exit', (code) => resolve({ code, out, err }));
+    });
+    if (r.code !== 0) {
+      let e = null;
+      try { e = JSON.parse(r.err.trim().split('\n').at(-1)).error; } catch { /* no era JSON */ }
+      throw new StoreError(e?.code ?? 'io_error', e?.message ?? (r.err.trim() || `scompass init salió con ${r.code}`));
+    }
+    emit({ type: 'projects' });
+    return reply.code(201).send(JSON.parse(r.out));
   });
 
   app.get('/api/today', async () => {
@@ -220,6 +251,20 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   app.addHook('onReady', async () => { lastMtime = mtime(); poll(); timer = setInterval(poll, pollMs); });
   app.addHook('onClose', async () => { clearInterval(timer); for (const s of subs.values()) s.ws.close(); subs.clear(); });
   app.decorate('poll', poll);
+
+  // La página del Inicio (web/home.*), con los estilos y las fuentes del tablero. Rutas fijas, como en el hub.
+  const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2' };
+  const serveWeb = async (reply, rel) => {
+    const missing = new StoreError('not_found', `no existe /${rel}`);
+    const ext = rel.slice(rel.lastIndexOf('.'));
+    if (!TYPES[ext] || !/^(fonts\/)?[\w.-]+$/.test(rel) || rel.split('/').pop().startsWith('.')) throw missing;
+    const body = await readFile(join(webDir, rel)).catch(() => null);
+    if (!body) throw missing;
+    return reply.type(TYPES[ext]).header('cache-control', 'no-cache').send(body);
+  };
+  app.get('/', (req, reply) => serveWeb(reply, 'home.html'));
+  for (const f of ['home.js', 'home.css', 'app.css']) app.get('/' + f, (req, reply) => serveWeb(reply, f));
+  app.get('/fonts/:file', (req, reply) => serveWeb(reply, 'fonts/' + req.params.file));
 
   app.register(async (scope) => {
     await scope.register(websocket, {

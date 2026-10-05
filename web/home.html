@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inicio · Scope Compass</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="home.css">
+<script src="home.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Scope Compass <small>Inicio</small></h1>
+    <span class="conn" id="conn" role="status" hidden>Sin conexión con el Inicio · reintentando</span>
+    <span class="today-date" id="date"></span>
+    <button class="btn primary" id="add-btn" type="button" aria-expanded="false" aria-controls="add">Agregar proyecto</button>
+  </header>
+  <section class="add" id="add" hidden aria-label="Agregar proyecto"></section>
+  <section class="hoy" aria-labelledby="hoy-t">
+    <div class="sec-head"><h2 id="hoy-t">Hoy</h2><span class="muted">lo vencido, lo de hoy y lo que está en curso, de todos los proyectos</span></div>
+    <div class="hoy-list" id="hoy" aria-live="polite"></div>
+  </section>
+  <section aria-labelledby="proj-t">
+    <div class="sec-head"><h2 id="proj-t">Proyectos</h2></div>
+    <div class="projects" id="projects"></div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+</body>
+</html>

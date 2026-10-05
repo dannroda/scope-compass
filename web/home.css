@@ -1,0 +1,65 @@
+/* Inicio de Scope Compass (spec §16.2): usa los tokens, las fuentes y los botones de app.css. */
+.today-date { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+header.top h1 { flex: 1 1 auto; }
+.sec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-bottom: 10px; }
+.sec-head h2 { margin: 0; font-family: var(--font-display); font-size: 19px; letter-spacing: .04em; }
+.tag { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.tag .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.tag.live { color: var(--s-done); }
+.tag.overdue { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, var(--surface)); }
+.tag.today { color: var(--s-review); background: color-mix(in srgb, var(--s-review) 14%, var(--surface)); }
+.tag.doing { color: var(--s-doing); background: color-mix(in srgb, var(--s-doing) 14%, var(--surface)); }
+
+.hoy-list { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.hoy-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px; border-top: 1px solid var(--surface-2); min-height: 48px; }
+.hoy-row:first-child { border-top: 0; }
+.hoy-row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; flex: none; }
+.hoy-row .what { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+.hoy-row .mark { width: 20px; text-align: center; color: var(--s-doing); flex: none; }
+.hoy-row .code { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-right: 6px; }
+.hoy-empty { padding: 16px; color: var(--muted); }
+
+.projects { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 16px; }
+.proj { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.proj.missing { opacity: .75; }
+.proj .head { display: flex; align-items: flex-start; gap: 10px; }
+.proj .head > div { flex: 1; min-width: 0; }
+.proj h3 { margin: 0; font-size: 20px; overflow-wrap: anywhere; }
+.proj .kind { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.proj .ms { display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
+.proj .ms .row { display: flex; justify-content: space-between; gap: 8px; }
+.proj .ms .bar { max-width: none; }
+.proj .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.proj ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
+.proj li { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.proj li .k { font-family: var(--font-mono); font-size: 12px; color: var(--muted); flex: none; min-width: 64px; }
+.proj li .k.doing { color: var(--s-doing); }
+.proj li .v { min-width: 0; overflow-wrap: anywhere; }
+.proj .lists li { justify-content: space-between; }
+.proj .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-top: 1px solid var(--surface-2); padding-top: 12px; margin-top: auto; }
+.proj .foot .spacer { flex: 1; }
+.proj .foot .btn { min-height: 36px; padding: 4px 12px; font-size: 14px; }
+.proj .foot a { font-weight: 500; color: var(--accent); }
+
+.add { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+.add h2 { margin: 0; font-size: 18px; }
+.add .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.add form { display: flex; flex-direction: column; gap: 12px; }
+.add .fields { display: flex; flex-wrap: wrap; gap: 12px; }
+.add .field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 240px; min-width: 0; }
+.add .field label { font-size: 14px; font-weight: 700; }
+.add input[type="text"] { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 8px 10px; min-height: 42px; width: 100%; }
+.add .tpls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 10px; border: 0; padding: 0; margin: 0; }
+.add .tpls legend { font-size: 14px; font-weight: 700; padding: 0; margin-bottom: 6px; }
+.add .tpl { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 12px; cursor: pointer; background: var(--bg); }
+.add .tpl:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.add .tpl input { accent-color: var(--accent); margin-top: 3px; width: 18px; height: 18px; flex: none; }
+.add .tpl b { display: block; }
+.add .tpl span { color: var(--muted); font-size: 14px; }
+.add .actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.add .hint { color: var(--muted); font-size: 14px; margin: 0; }
+.add .err { color: var(--danger); margin: 0; }
+/* Alegreya trae números de estilo antiguo: "M0" se leía "Mo". */
+.hoy-list, .proj, .add { font-variant-numeric: lining-nums; }
+/* .bar de app.css es flex: 1; en una columna eso la dejaba sin alto. */
+.proj .ms .bar { flex: none; }

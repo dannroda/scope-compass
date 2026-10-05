@@ -17,6 +17,7 @@ import { createHttpStore, detectHub, hubVersions } from './store/http.js';
 import { createServer, freePortFrom, listen, VERSION } from './server.js';
 import { startTray } from './tray.js';
 import { outdatedFiles, TEMPLATES, updateCompass } from './update.js';
+import { listTemplates, loadTemplate as loadTemplateFile } from './templates.js';
 import { hubsOf, listHubs, liveHome, registerHub, unregisterHub } from './registry.js';
 import { createHomeServer } from './home.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
@@ -932,16 +933,12 @@ function homeTrayItems({ app, url, openUrl, warn, close, refresh }) {
   ];
 }
 
-// Plantillas de proyecto: hub/templates/proyectos/<nombre>.json con { description, config?, milestones?, lists?, files? }.
-export async function listTemplates() {
-  const { readdir } = await import('node:fs/promises');
-  return (await readdir(join(TEMPLATES, 'proyectos'))).filter((n) => n.endsWith('.json')).map((n) => n.slice(0, -5)).sort();
-}
+export { listTemplates };
 
 async function loadTemplate(name) {
-  const names = await listTemplates();
-  if (!names.includes(name)) throw new UsageError(`plantilla desconocida: ${name} (${names.join(', ')})`);
-  return { name, ...JSON.parse(await readFile(join(TEMPLATES, 'proyectos', `${name}.json`), 'utf8')) };
+  const tpl = await loadTemplateFile(name);
+  if (!tpl) throw new UsageError(`plantilla desconocida: ${name} (${(await listTemplates()).join(', ')})`);
+  return tpl;
 }
 
 async function streamText(stream) {

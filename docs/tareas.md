@@ -725,7 +725,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (9/14)
+## M8 — Inicio, listas y plantillas (v3)  (10/14)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -870,14 +870,16 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Bloqueada por:** 8.8 `scompass home`: proceso y API
 
-### 8.10 UI del Inicio · Pendiente
+### 8.10 UI del Inicio · Hecho
 
-- [ ] Franja Hoy: vencidos, hoy y en curso de todos los proyectos
-- [ ] Tarjetas: estado del hub, hito actual, lo próximo, sin commitear
-- [ ] Agregar proyecto: importar carpeta o crear con plantilla
-- [ ] Pantalla angosta (mockup del teléfono)
+- [x] Franja Hoy: vencidos, hoy y en curso de todos los proyectos
+- [x] Tarjetas: estado del hub, hito actual, lo próximo, sin commitear
+- [x] Agregar proyecto: importar carpeta o crear con plantilla
+- [x] Pantalla angosta (mockup del teléfono)
 
-**Prueba:** Tildar "Pagar la luz" en Hoy cambia el JSON de la lista de Vida, con su hub prendido o apagado.
+**Prueba:** Tildar "Pagar la luz" en Hoy cambia el JSON de la lista, con su hub prendido o apagado; un ítem que se repite avanza su fecha (tests de navegador en `hub/test/ui-home.test.js`).
+
+**Notas:** `web/home.*`. Para crear proyectos hizo falta `/api/templates` y `/api/projects/init` (las plantillas pasaron a `hub/src/templates.js`). Un proyecto se marca Godot si tiene `project.godot`, y Personal si abre en Listas. Los cambios hechos sin hub (CLI directa, a mano) se ven al recargar o con el próximo evento: el Inicio no mira los archivos.
 
 **Referencias:** `docs/spec.md#v3-home`
 
