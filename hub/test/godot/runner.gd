@@ -3,6 +3,7 @@ extends SceneTree
 ## Imprime "OK <caso>" o "FAIL <caso>: <motivo>" y sale con 0 o 1.
 
 const DockView := preload("res://addons/scope_compass/dock_view.gd")
+const Board := preload("res://addons/scope_compass/board.gd")
 
 var _failed := false
 
@@ -367,6 +368,30 @@ func test_links(a: Array) -> void:
 	if not _check(c, v.selected_task == a[2], "no fue a la otra tarea: " + v.selected_task): return
 	link = v.links_box.get_child(1)
 	if not _check(c, link.text.begins_with("Bloquea a: "), "texto del inverso: " + link.text): return
+
+
+# Fecha límite (8.13): vencida y de hoy se marcan en la lista y en el detalle; una hecha no.
+func test_due(a: Array) -> void:
+	var c := "due"
+	# La regla, con un "ahora" fijo: 4/10/2026 15:00.
+	var now := float(Time.get_unix_time_from_datetime_string("2026-10-04T15:00:00"))
+	var cases := [["2026-10-03", "overdue"], ["2026-10-04", "today"], ["2026-10-04T14:59", "overdue"], ["2026-10-04T17:30", "today"], ["2026-10-05", "later"]]
+	for k in cases:
+		var got := Board.due_state({ "due": k[0], "status": "todo" }, now)
+		if not _check(c, got == k[1], "%s: %s, esperado %s" % [k[0], got, k[1]]): return
+	if not _check(c, Board.due_state({ "due": "2026-10-03", "status": "done" }, now) == "", "una hecha no se marca"): return
+	var v := await _view(a[0])
+	v.current_milestone = "m01"
+	_select(v, a[1])
+	if not _check(c, v.detail_due.visible and v.detail_due.text == "Vencida · 01/01", "detalle vencida: " + v.detail_due.text): return
+	var row: TreeItem = v.tree.get_selected()
+	if not _check(c, row != null and row.get_text(1).begins_with("01/01") and row.get_custom_color(1) == v.OVERDUE_COLOR, "fila vencida: " + (row.get_text(1) if row else "sin fila")): return
+	_select(v, a[2])
+	if not _check(c, v.detail_due.text.begins_with("Vence hoy · "), "detalle de hoy: " + v.detail_due.text): return
+	_select(v, a[3])
+	if not _check(c, v.detail_due.text == "Vence 01/01", "una hecha no dice vencida: " + v.detail_due.text): return
+	_select(v, a[4])
+	if not _check(c, not v.detail_due.visible, "sin fecha no muestra nada"): return
 
 
 # Un paso con detalle: tocar el texto (o ▸) lo despliega; tocar el texto no tilda el paso.

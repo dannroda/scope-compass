@@ -286,3 +286,10 @@ ul.items > .item:first-child { border-top: 0; }
 .item:hover .acts, .item:focus-within .acts { opacity: 1; }
 .item.editing .item-add { flex: 1; }
 @media (max-width: 760px) { .lists-grid { grid-template-columns: minmax(0, 1fr); } .list-side { position: static; flex-direction: row; flex-wrap: wrap; } .list-link { flex: 1 1 140px; border: 1px solid var(--line); } .list-new { flex-basis: 100%; } .item .acts { opacity: 1; } }
+/* Fecha límite de una tarea (8.13). */
+.duemark { align-self: flex-start; font-family: var(--font-mono); font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; }
+.duemark.bad { color: var(--danger); border-color: var(--danger); }
+.duemark.today { color: var(--s-review); border-color: var(--s-review); font-weight: 700; }
+.due-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.due-row input { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 6px 10px; min-height: 40px; }
+.due-row .duemark { align-self: center; }

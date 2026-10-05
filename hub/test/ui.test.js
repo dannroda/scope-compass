@@ -329,3 +329,26 @@ test('§14: sin la app, todo lo hecho en la UI está en compass/ y en docs/tarea
   assert.ok(tasks.some((t) => t.title === 'Hecha en la UI' && t.milestone === 'm02'));
   assert.match(await readFile(join(dir, 'docs', 'tareas.md'), 'utf8'), /### Hecha en la UI · Pendiente/);
 });
+
+test('fecha límite (8.13): se elige en el detalle, la tarjeta la marca vencida y "Quitar" la saca', async () => {
+  const page = await open();
+  await page.click('.card[data-id="m1-07"]');
+  await page.click('.seg button:has-text("Pendiente")');
+  for (let i = 0; i < 100 && (await task('m1-07')).status !== 'todo'; i++) await new Promise((r) => setTimeout(r, 30));
+  await page.fill('#d-due', '2020-01-01');
+  await page.dispatchEvent('#d-due', 'change');
+  for (let i = 0; i < 100 && (await task('m1-07')).due !== '2020-01-01'; i++) await new Promise((r) => setTimeout(r, 30));
+  assert.equal((await task('m1-07')).due, '2020-01-01');
+  await page.waitForSelector('.card[data-id="m1-07"] .duemark.bad');
+  // Hecha, ya no se marca vencida.
+  await page.click('.seg button:has-text("Hecho")');
+  await page.waitForSelector('.card[data-id="m1-07"] .duemark:not(.bad)');
+  await page.fill('#d-due-time', '09:30');
+  await page.dispatchEvent('#d-due-time', 'change');
+  for (let i = 0; i < 100 && (await task('m1-07')).due !== '2020-01-01T09:30'; i++) await new Promise((r) => setTimeout(r, 30));
+  assert.equal((await task('m1-07')).due, '2020-01-01T09:30');
+  await page.click('.due-row button:has-text("Quitar")');
+  for (let i = 0; i < 100 && (await task('m1-07')).due !== undefined; i++) await new Promise((r) => setTimeout(r, 30));
+  assert.equal((await task('m1-07')).due, undefined);
+  await page.waitForFunction(() => !document.querySelector('.card[data-id="m1-07"] .duemark'));
+});

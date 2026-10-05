@@ -172,6 +172,36 @@ func section(d, id: String):
 	return null
 
 
+## Fecha límite (D26), como dueState de hub/src/dates.js: "overdue", "today", "later" o "" (sin fecha o hecha).
+## Sin hora, vence al terminar el día. now: segundos Unix en hora local (los tests lo fijan).
+static func due_state(t: Dictionary, now: float = -1.0) -> String:
+	var due := str(t.get("due", ""))
+	if due == "" or t.get("status", "") == "done":
+		return ""
+	var re := RegEx.create_from_string("^(\\d{4})-(\\d{2})-(\\d{2})(?:T(\\d{2}):(\\d{2}))?$")
+	var m := re.search(due)
+	if m == null:
+		return ""
+	if now < 0:
+		now = Time.get_unix_time_from_system() + Time.get_time_zone_from_system().bias * 60
+	var today := Time.get_datetime_string_from_unix_time(int(now)).substr(0, 10)
+	var day := due.substr(0, 10)
+	if day < today:
+		return "overdue"
+	if day > today:
+		return "later"
+	if m.get_string(4) != "":
+		var at := Time.get_datetime_string_from_unix_time(int(now)).substr(11, 5)
+		return "overdue" if due.substr(11, 5) < at else "today"
+	return "today"
+
+
+## "2026-10-10T17:30" → "10/10 17:30".
+static func show_due(due: String) -> String:
+	var out := "%s/%s" % [due.substr(8, 2), due.substr(5, 2)]
+	return out + (" " + due.substr(11, 5) if due.length() > 10 else "")
+
+
 static func steps(t: Dictionary) -> Array:
 	var cl = t.get("checklist", [])
 	cl = cl if cl is Array else []

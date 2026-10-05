@@ -15,6 +15,9 @@ const HubClient := preload("hub_client.gd")
 ## ancho, cada palabra va en su renglón y el alto mínimo (miles de px) desacomoda todo el editor.
 const WRAP_MIN_WIDTH := 140
 const BLOCKED_COLOR := Color("#e8806e")
+## Fecha límite: vencida (el mismo rojo) y de hoy.
+const OVERDUE_COLOR := Color("#e8806e")
+const TODAY_COLOR := Color("#e0a95a")
 
 ## Preferencias por proyecto. El plugin las guarda en la metadata del proyecto del editor.
 var get_pref: Callable = func(_key: String, default): return default
@@ -68,6 +71,8 @@ var tasks_collapsed := false
 var detail_scroll: ScrollContainer
 var detail: VBoxContainer
 var detail_title: Label
+## Fecha límite de la tarea abierta (solo lectura: se edita en la web o con `scompass set --due`).
+var detail_due: Label
 var status_select: OptionButton
 var steps_box: VBoxContainer
 var refs_box: VBoxContainer
@@ -612,6 +617,8 @@ func _build() -> void:
 	detail_title.custom_minimum_size.x = WRAP_MIN_WIDTH
 	detail_title.add_theme_font_size_override("font_size", 15)
 	detail.add_child(detail_title)
+	detail_due = Label.new()
+	detail.add_child(detail_due)
 	var srow := HBoxContainer.new()
 	detail.add_child(srow)
 	var slabel := Label.new()
@@ -743,8 +750,16 @@ func _render_tree() -> void:
 			var code := str(t.get("code", ""))
 			it.set_text(0, ((code + "  " if code != "" else "") + str(t.title)).replace("`", ""))
 			var st := Board.steps(t)
-			it.set_text(1, "%d/%d" % st if st[1] > 0 else "")
+			var col1 := "%d/%d" % st if st[1] > 0 else ""
+			var ds := Board.due_state(t)
+			if str(t.get("due", "")) != "":
+				col1 = Board.show_due(str(t.due)) + ("  " + col1 if col1 != "" else "")
+			it.set_text(1, col1)
 			it.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
+			if ds == "overdue":
+				it.set_custom_color(1, OVERDUE_COLOR)
+			elif ds == "today":
+				it.set_custom_color(1, TODAY_COLOR)
 			it.set_metadata(0, t.id)
 			it.set_tooltip_text(0, str(t.title))
 			var blockers := board.open_blockers(t.id)
@@ -772,6 +787,16 @@ func _render_detail() -> void:
 	if t == null:
 		return
 	detail_title.text = (((str(t.code) + " ") if str(t.get("code", "")) != "" else "") + str(t.title)).replace("`", "")
+	var due := str(t.get("due", ""))
+	var ds := Board.due_state(t)
+	detail_due.visible = due != ""
+	detail_due.text = ("Vencida · " if ds == "overdue" else "Vence hoy · " if ds == "today" else "Vence ") + Board.show_due(due) if due != "" else ""
+	if ds == "overdue":
+		detail_due.add_theme_color_override("font_color", OVERDUE_COLOR)
+	elif ds == "today":
+		detail_due.add_theme_color_override("font_color", TODAY_COLOR)
+	else:
+		detail_due.remove_theme_color_override("font_color")
 	for i in status_select.item_count:
 		if status_select.get_item_metadata(i) == t.status:
 			status_select.select(i)

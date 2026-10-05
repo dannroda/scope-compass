@@ -315,6 +315,15 @@ test('dock: tocar el texto de un paso despliega su detalle (no lo tilda)', { ski
   expectOk(await godot('step_detail', dir, 'm1-04', 'Detalle con código largo'), 'step_detail');
 });
 
+test('dock: la fecha límite se ve en la lista y en el detalle; vencida y de hoy se marcan', { skip }, async () => {
+  const pad = (n) => String(n).padStart(2, '0');
+  const d = new Date();
+  await setTask('m1-04', { status: 'todo', due: '2020-01-01' });
+  await setTask('m1-05', { status: 'todo', due: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T23:59` });
+  await setTask('m1-03', { status: 'done', due: '2020-01-01' });
+  expectOk(await godot('due', dir, 'm1-04', 'm1-05', 'm1-03', 'm1-07'), 'due');
+});
+
 test('dock: una tarea bloqueada se marca, y el vínculo del detalle lleva a la otra tarea', { skip }, async () => {
   await setTask('m1-05', { links: [{ task: 'm1-03', type: 'blocks' }] });
   expectOk(await godot('links', dir, 'm1-03', 'm1-05'), 'links');

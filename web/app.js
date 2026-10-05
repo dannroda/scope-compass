@@ -263,6 +263,31 @@
     }
   }
 
+  // Fecha límite de una tarea (8.13, D26): vencida u hoy se marcan, salvo en las hechas.
+  function dueMark(t) {
+    const g = t.status === 'done' ? null : dueGroup(t.due);
+    const cls = g === 'overdue' ? ' bad' : g === 'today' ? ' today' : '';
+    return h('span', { class: 'duemark' + cls, title: g === 'overdue' ? 'Vencida' : g === 'today' ? 'Vence hoy' : 'Fecha límite' }, (g === 'overdue' ? 'Vencida · ' : '') + showDue(t.due));
+  }
+
+  // Fecha y hora opcionales; vaciar la fecha la quita (null borra el campo en el PATCH).
+  function dueField(t) {
+    const [date, time] = t.due ? [t.due.slice(0, 10), t.due.slice(11)] : ['', ''];
+    const save = () => {
+      const d = document.getElementById('d-due').value, hm = document.getElementById('d-due-time').value;
+      const next = d ? d + (hm ? 'T' + hm : '') : null;
+      if (next !== (t.due ?? null)) updateTask(t.id, { due: next });
+    };
+    return h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
+      h('label', { class: 'label', for: 'd-due' }, 'Fecha límite'),
+      h('div', { class: 'due-row' },
+        h('input', { type: 'date', id: 'd-due', value: date, 'data-orig': date, onchange: save }),
+        h('label', { for: 'd-due-time', class: 'sr' }, 'Hora'),
+        h('input', { type: 'time', id: 'd-due-time', value: time, 'data-orig': time, disabled: !date, onchange: save }),
+        t.due ? dueMark(t) : null,
+        t.due ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => updateTask(t.id, { due: null }) }, 'Quitar') : null));
+  }
+
   function cardFor(t, s) {
     const p = clProgress(t);
     const m = msById(t.milestone);
@@ -285,6 +310,7 @@
       refsOf(t).length ? h('span', { class: 'refmark' + (brokenRefs(t).length ? ' bad' : ''), title: brokenRefs(t).length ? 'Tiene referencias rotas' : refsOf(t).length + ' referencias a documentos' },
         brokenRefs(t).length ? '⚠ ' : '§ ', refsOf(t).length) : null,
       openBlockers(t).length ? h('span', { class: 'blockmark', title: 'Bloqueada por: ' + openBlockers(t).map(taskName).join('; ') }, 'Bloqueada') : null,
+      t.due ? dueMark(t) : null,
       p.total ? h('span', { class: 'cl' }, h('span', { class: 'bar', role: 'img', 'aria-label': p.done + ' de ' + p.total + ' pasos' }, h('i', { style: 'width:' + pct + '%' })), p.done + '/' + p.total) : null);
   }
 
@@ -423,6 +449,7 @@
         h('label', { class: 'label', for: 'd-ms' }, 'Hito'),
         h('select', { id: 'd-ms', onchange: (e) => updateTask(t.id, { milestone: e.target.value }) },
           S.milestones.map((x) => h('option', { value: x.id, selected: x.id === t.milestone }, x.code + ' · ' + x.title)))),
+      dueField(t),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('span', { class: 'label' }, 'Pasos ' + (p.total ? '(' + p.done + '/' + p.total + ')' : '')),
         cl.length ? h('ul', { class: 'checklist' }, cl.map((c, i) => stepItem(t, c, i))) : h('p', { style: 'margin:0;color:var(--muted);font-size:14px' }, 'Sin pasos todavía.'),
