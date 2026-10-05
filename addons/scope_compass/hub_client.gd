@@ -13,6 +13,8 @@ var project_root := ""
 ## Puerto de config.json; `port` es el que se usa (puede ser otro, si el registro dice que el hub está ahí).
 var config_port := 4711
 var port := 4711
+## Ruta delante de la API: "" en un hub suelto, "/p/<clave>" si el proyecto lo sirve el Inicio (D29).
+var base := ""
 var online := false
 ## Solo para tests: no aplicar los eventos del WebSocket (simula una vista desactualizada).
 var ignore_events := false
@@ -26,7 +28,7 @@ var hub_version := ""
 
 
 func base_url() -> String:
-	return "http://%s:%d" % [HOST, port]
+	return "http://%s:%d%s" % [HOST, port, base]
 
 
 ## ¿Hay un hub de este mismo proyecto? Primero en el puerto de la config y, si no, donde diga el registro de
@@ -35,18 +37,20 @@ func detect() -> bool:
 	if _connecting or online:
 		return online
 	_connecting = true
-	var ports := [config_port]
-	for p in registry_ports():
-		if not ports.has(p):
-			ports.append(p)
+	# Primero lo que dice el registro (un hub suelto o el Inicio con su base), después el puerto de la config.
+	var targets := registry_targets()
+	if not targets.any(func(t): return t[0] == config_port and t[1] == ""):
+		targets.append([config_port, ""])
 	var first_error := ""
-	for p in ports:
-		port = p
+	for t in targets:
+		port = t[0]
+		base = t[1]
 		if await _probe():
 			return true
 		if first_error == "":
 			first_error = last_error
 	port = config_port
+	base = ""
 	last_error = first_error
 	_connecting = false
 	return false
@@ -67,7 +71,7 @@ func _probe() -> bool:
 		hub_version = str(r.json.get("version", ""))
 	if ok:
 		_ws = WebSocketPeer.new()
-		if _ws.connect_to_url("ws://%s:%d/ws" % [HOST, port]) != OK:
+		if _ws.connect_to_url("ws://%s:%d%s/ws" % [HOST, port, base]) != OK:
 			_ws = null
 			ok = false
 			last_error = "no se pudo abrir el WebSocket"
@@ -76,8 +80,32 @@ func _probe() -> bool:
 	return ok
 
 
-## Puertos de los hubs de este proyecto según el registro ($XDG_RUNTIME_DIR/scope-compass/hubs/<pid>.json).
+## Dónde está el hub de este proyecto según el registro ($XDG_RUNTIME_DIR/scope-compass/hubs/*.json): pares
+## [puerto, base]. Un hub suelto tiene base ""; un proyecto que sirve el Inicio, "/p/<clave>" (D29).
+func registry_targets() -> Array:
+	var out := []
+	for h in _registry():
+		if _same_path(str(h.get("project", "")), project_root) and h.get("port") != null:
+			out.append([int(h.port), str(h.get("base", ""))])
+	return out
+
+
+## Puertos de los hubs de este proyecto (sin la base).
 func registry_ports() -> Array:
+	return registry_targets().map(func(t): return t[0])
+
+
+## El puerto del Inicio según el registro (kind "home"), o -1. No se puede saber desde Godot si el proceso sigue
+## vivo (is_process_running es solo para hijos): si la entrada quedó vieja, el pedido al Inicio falla y el dock
+## levanta su propio hub.
+func home_port() -> int:
+	for h in _registry():
+		if h.get("kind", "") == "home" and h.get("port") != null:
+			return int(h.port)
+	return -1
+
+
+func _registry() -> Array:
 	var dir := registry_dir()
 	var out := []
 	# El registro lo crea el primer hub que arranca: hasta entonces no existe.
@@ -87,8 +115,8 @@ func registry_ports() -> Array:
 		if not f.ends_with(".json"):
 			continue
 		var h = JSON.parse_string(FileAccess.get_file_as_string(dir.path_join(f)))
-		if h is Dictionary and _same_path(str(h.get("project", "")), project_root) and h.get("port") != null:
-			out.append(int(h.port))
+		if h is Dictionary:
+			out.append(h)
 	return out
 
 
@@ -142,6 +170,11 @@ func close() -> void:
 
 ## Una request al hub. Devuelve { code, json } (code 0 si no hubo respuesta).
 func request(method: String, path: String, body = null, headers: Array = [], timeout := 5.0) -> Dictionary:
+	return await request_url(method, base_url() + path, body, headers, timeout)
+
+
+## Una request a cualquier URL (el Inicio, para activar el proyecto). Misma respuesta que request().
+func request_url(method: String, url: String, body = null, headers: Array = [], timeout := 5.0) -> Dictionary:
 	var http := HTTPRequest.new()
 	http.timeout = timeout
 	add_child(http)
@@ -152,7 +185,7 @@ func request(method: String, path: String, body = null, headers: Array = [], tim
 		data = JSON.stringify(body)
 	var methods := { "GET": HTTPClient.METHOD_GET, "POST": HTTPClient.METHOD_POST, "PUT": HTTPClient.METHOD_PUT,
 		"PATCH": HTTPClient.METHOD_PATCH, "DELETE": HTTPClient.METHOD_DELETE }
-	if http.request(base_url() + path, h, methods[method], data) != OK:
+	if http.request(url, h, methods[method], data) != OK:
 		http.queue_free()
 		return { "code": 0, "json": null }
 	var res: Array = await http.request_completed

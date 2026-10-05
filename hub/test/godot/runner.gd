@@ -246,6 +246,23 @@ func test_start_hub(a: Array) -> void:
 	if not _check(c, await _until(func(): return not v.online, 5.0), "el dock sigue en línea"): return
 
 
+# Con el Inicio corriendo, "Iniciar hub" no levanta un proceso: el Inicio sirve el proyecto en /p/<clave> (D29).
+func test_start_hub_home(a: Array) -> void:
+	var c := "start_hub_home"
+	var v := await _view(a[0])
+	v.scompass_setting = func(): return a[1]
+	if not _check(c, not v.online and v.client.home_port() > 0, "no ve el Inicio en el registro"): return
+	if not _check(c, await v.start_hub(), "no se conectó: " + v.notice.text): return
+	if not _check(c, await _until(func(): return v.online and not v._loading and not v.banner.visible), "no pasó a edición"): return
+	if not _check(c, v.client.base.begins_with("/p/") and v.client.port == v.client.home_port(), "base %s puerto %d" % [v.client.base, v.client.port]): return
+	if not _check(c, v.hub_pid == -1, "levantó un proceso propio: %d" % v.hub_pid): return
+	# Una escritura del dock pasa por el Inicio.
+	var t = v.board.tasks[0]
+	var r = await v.client.request("PATCH", "/api/tasks/" + str(t.id), { "status": "review" }, ["If-Match: \"%s\"" % t.etag])
+	if not _check(c, r.code == 200, "PATCH por el Inicio: HTTP %d" % r.code): return
+	print("TASK ", t.id)
+
+
 # Proyecto sin compass/: el dock ofrece crearla, corre `scompass init` y queda listo para iniciar el hub.
 func test_init_compass(a: Array) -> void:
 	var c := "init_compass"

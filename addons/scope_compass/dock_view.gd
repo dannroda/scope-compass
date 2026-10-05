@@ -355,10 +355,18 @@ func scompass_command() -> Array:
 	return []
 
 
-## Levanta `scompass serve` para este proyecto y espera a conectarse (hasta 8 s).
+## Levanta `scompass serve` para este proyecto y espera a conectarse (hasta 8 s). Con el Inicio corriendo no
+## levanta otro proceso: le pide al Inicio que sirva el proyecto (D29) y se conecta ahí.
 func start_hub() -> bool:
 	if online:
 		return true
+	var home := client.home_port()
+	if home > 0:
+		var r := await client.request_url("POST", "http://%s:%d/api/projects/activate" % [client.HOST, home], { "path": project_root })
+		if r.code == 200 and await client.detect():
+			show_notice("Conectado al Inicio, que sirve este proyecto.")
+			return true
+		show_notice("El Inicio no pudo servir el proyecto (%s); se levanta un hub propio." % (r.json.get("error", {}).get("message", "HTTP %d" % r.code) if r.json is Dictionary else "sin respuesta"))
 	var cmd := scompass_command()
 	if cmd.is_empty():
 		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path.")

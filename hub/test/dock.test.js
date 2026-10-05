@@ -231,6 +231,26 @@ test('compass/ con el schema viejo: el dock avisa y "Actualizar" corre scompass 
   assert.equal(await readFile(schema, 'utf8'), await readFile(join(REPO, 'schema', 'task.schema.json'), 'utf8'));
 });
 
+test('con el Inicio corriendo, "Iniciar hub" se conecta al Inicio (sin levantar otro proceso) y escribe por ahí', { skip }, async () => {
+  const bin = join(REPO, 'hub', 'bin', 'scompass.js');
+  execFileSync(process.execPath, [bin, 'home', 'add', dir], { env: process.env });
+  const home = spawn(process.execPath, [bin, 'home', '--port', '0', '--json'], { env: process.env });
+  let out = '';
+  home.stdout.on('data', (d) => { out += d; });
+  try {
+    for (let i = 0; i < 100 && !out.includes('url'); i++) await new Promise((r) => setTimeout(r, 50));
+    const url = JSON.parse(out.split('\n')[0]).url;
+    let id = '';
+    const r = await godotLive(['start_hub_home', dir, bin], (line) => { const m = /^TASK (\S+)/.exec(line); if (m) id = m[1]; });
+    expectOk(r, 'start_hub_home');
+    assert.equal(JSON.parse(await readFile(join(dir, 'compass', 'tasks', `${id}.json`), 'utf8')).status, 'review');
+    const p = (await (await fetch(url + 'api/projects')).json()).projects.find((x) => x.path === dir);
+    assert.equal(p.served, 'home');
+  } finally {
+    home.kill('SIGKILL');
+  }
+});
+
 test('"Iniciar hub" sin scompass encontrable no inventa un comando', { skip }, async () => {
   expectOk(await godotLive(['start_hub_missing', dir]), 'start_hub_missing');
 });

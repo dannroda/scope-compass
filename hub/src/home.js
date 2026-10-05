@@ -17,9 +17,9 @@
 // directo a compass/ con etag, como la CLI, y regeneran el export markdown.
 import { execFile, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, realpathSync, statSync } from 'node:fs';
 import { mkdir, readFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import websocket from '@fastify/websocket';
@@ -187,6 +187,20 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
       return r.out ? { path: r.out } : { cancelled: true };
     }
     throw new StoreError('not_found', 'no hay un selector de carpetas (instalá kdialog o zenity); escribí la ruta');
+  });
+
+  // Que el Inicio sirva un proyecto ya (el "Iniciar hub" del dock con el Inicio corriendo, D29). Si no estaba en
+  // el registro, se anota. Devuelve su base.
+  app.post('/api/projects/activate', async (req) => {
+    if (typeof req.body?.path !== 'string' || !req.body.path) throw new StoreError('invalid_argument', 'falta path');
+    // El dock puede mandarla con "/" al final o con un symlink en el camino: la del registro es la resuelta.
+    let path = resolve(req.body.path);
+    try { path = realpathSync(path); } catch { /* no existe: known() lo dice */ }
+    if (!projectsStatus().some((p) => p.path === path)) { await recordProject(path); emit({ type: 'projects' }); }
+    const p = known(path);
+    const standalone = standaloneOf(p.path)[0];
+    if (standalone) return { base: '', port: standalone.port, standalone: true };
+    return { base: await serving.activate(p.path), served: true };
   });
 
   app.get('/api/today', async () => {
