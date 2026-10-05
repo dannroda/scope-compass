@@ -210,6 +210,17 @@ test('proyecto sin compass/: el dock no da errores y "Crear compass/" corre scom
   expectOk(r, 'init_compass');
   assert.doesNotMatch(r.out, /ERROR/);
   assert.equal(JSON.parse(await readFile(join(dir, 'compass', 'config.json'), 'utf8')).port, 4711);
+  // Por defecto, la plantilla juego: el hito M0, las listas y el GDD.
+  assert.equal(JSON.parse(await readFile(join(dir, 'compass', 'milestones', 'm00.json'), 'utf8')).title, 'Prototipo');
+  assert.ok(existsSync(join(dir, 'compass', 'lists', 'assets-a-conseguir.json')));
+  assert.ok(existsSync(join(dir, 'docs', 'gdd.md')));
+});
+
+test('"Crear compass/" con la plantilla vacío no trae datos', { skip }, async () => {
+  await rm(join(dir, 'compass'), { recursive: true });
+  expectOk(await godotLive(['init_compass', dir, join(REPO, 'hub', 'bin', 'scompass.js'), 'vacio']), 'init_compass');
+  assert.ok(!existsSync(join(dir, 'compass', 'lists')));
+  assert.ok(!existsSync(join(dir, 'docs', 'gdd.md')));
 });
 
 test('compass/ con el schema viejo: el dock avisa y "Actualizar" corre scompass update', { skip }, async () => {

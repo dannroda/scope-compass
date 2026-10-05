@@ -48,6 +48,9 @@ var banner: PanelContainer
 var banner_title: Label
 var banner_text: Label
 var init_button: Button
+## Plantilla para "Crear compass/" (8.14): juego por defecto, porque desde el dock es un proyecto de Godot.
+var template_select: OptionButton
+const TEMPLATES := [["juego", "Juego"], ["personal", "Personal"], ["vacio", "Vacío"]]
 var start_button: Button
 var open_tasks_button: Button
 var warnings_label: Label
@@ -263,7 +266,12 @@ func has_compass() -> bool:
 	return FileAccess.file_exists(project_root.path_join("compass/config.json"))
 
 
-## Corre `scompass init` en el proyecto y recarga el tablero.
+## La plantilla elegida para crear compass/ ("juego", "personal" o "vacio").
+func selected_template() -> String:
+	return str(template_select.get_item_metadata(template_select.selected)) if template_select.selected >= 0 else "juego"
+
+
+## Corre `scompass init --template <elegida>` en el proyecto y recarga el tablero.
 func init_compass() -> bool:
 	if has_compass():
 		return true
@@ -271,11 +279,11 @@ func init_compass() -> bool:
 	if cmd.is_empty():
 		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path.")
 		return false
-	var r := _scompass(["init"])
+	var r := _scompass(["init", "--template", selected_template()])
 	if r[0] != 0 or not has_compass():
 		show_notice("No se pudo crear compass/: " + (r[1] if r[1] != "" else "sin salida de scompass"))
 		return false
-	show_notice("Creada compass/. Ya podés iniciar el hub.")
+	show_notice("Creada compass/ (plantilla %s). Ya podés iniciar el hub." % template_select.get_item_text(template_select.selected))
 	await reload()
 	return true
 
@@ -501,6 +509,12 @@ func _build() -> void:
 	init_button.text = "Crear compass/"
 	init_button.tooltip_text = "Corre `scompass init` en este proyecto"
 	init_button.pressed.connect(init_compass)
+	template_select = OptionButton.new()
+	template_select.tooltip_text = "Plantilla: Juego trae el hito M0, listas de ideas y assets, y docs/gdd.md (si no existe)"
+	for t in TEMPLATES:
+		template_select.add_item(t[1])
+		template_select.set_item_metadata(template_select.item_count - 1, t[0])
+	bb.add_child(template_select)
 	bb.add_child(init_button)
 	start_button = Button.new()
 	start_button.text = "Iniciar hub"
@@ -701,6 +715,7 @@ func _render() -> void:
 		banner_title.text = "Este proyecto no tiene compass/"
 		banner_text.text = "Ahí se guardan las tareas y los hitos del proyecto. Creala para empezar a usar el tablero."
 	init_button.visible = not compass
+	template_select.visible = not compass
 	start_button.visible = compass
 	open_tasks_button.visible = compass
 	warnings_label.visible = board.warnings.size() > 0

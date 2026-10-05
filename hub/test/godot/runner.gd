@@ -255,9 +255,15 @@ func test_init_compass(a: Array) -> void:
 	if not _check(c, v.banner_title.text == "Este proyecto no tiene compass/", "título del aviso: " + v.banner_title.text): return
 	# En una pestaña oculta el dock mide 0 de ancho: los textos no pueden pedir un alto enorme.
 	if not _check(c, v.get_combined_minimum_size().y < 600, "alto mínimo %d" % v.get_combined_minimum_size().y): return
+	# Plantilla: juego por defecto; el caso puede pedir otra (a[2]).
+	if not _check(c, v.template_select.visible and v.selected_template() == "juego", "plantilla por defecto: " + v.selected_template()): return
+	if a.size() > 2:
+		for i in v.template_select.item_count:
+			if v.template_select.get_item_metadata(i) == a[2]:
+				v.template_select.select(i)
 	if not _check(c, await v.init_compass(), "no se creó: " + v.notice.text): return
 	if not _check(c, FileAccess.file_exists(a[0].path_join("compass/config.json")), "falta compass/config.json"): return
-	if not _check(c, v.start_button.visible and not v.init_button.visible, "no ofrece iniciar el hub"): return
+	if not _check(c, v.start_button.visible and not v.init_button.visible and not v.template_select.visible, "no ofrece iniciar el hub"): return
 	if not _check(c, v.board.warnings.is_empty(), "avisos: " + str(v.board.warnings)): return
 
 
