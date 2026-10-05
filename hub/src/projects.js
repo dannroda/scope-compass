@@ -17,10 +17,17 @@ export function projectsFile() {
 
 /**
  * Dónde se crean los proyectos nuevos del Inicio si no se elige otra carpeta (D28): la carpeta de datos del
- * usuario, $XDG_DATA_HOME/scope-compass/proyectos (~/.local/share/…), el equivalente de AppData en Linux.
+ * usuario, $XDG_DATA_HOME/scope-compass (~/.local/share/scope-compass), el equivalente de AppData en Linux.
+ * Cada proyecto es una carpeta con su nombre: …/scope-compass/Vida.
  */
 export function projectsDataDir() {
-  return process.env.SCOMPASS_DATA ?? join(process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share'), 'scope-compass', 'proyectos');
+  return process.env.SCOMPASS_DATA ?? join(process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share'), 'scope-compass');
+}
+
+/** El nombre del proyecto como nombre de carpeta, o null si no sirve (vacío, con "/", ".", ".."). */
+export function folderName(name) {
+  const n = String(name ?? '').trim();
+  return !n || n.includes('/') || n.includes('\0') || n === '.' || n === '..' ? null : n;
 }
 
 export class ProjectsError extends Error {

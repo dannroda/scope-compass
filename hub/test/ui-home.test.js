@@ -105,24 +105,33 @@ test('agregar: importar una carpeta y crear un proyecto con plantilla', async ()
   // Crear: sin carpeta va a la carpeta de datos del usuario, con su repo de git (D28).
   await page.click('#add .tabs button:has-text("Crear con plantilla")');
   await page.fill('#new-name', 'Vida dos');
-  assert.match(await page.textContent('#new-where'), new RegExp(`Se guarda en ${process.env.SCOMPASS_DATA}/vida-dos`));
+  assert.equal(await page.textContent('#new-where'), `Se crea en ${process.env.SCOMPASS_DATA}/Vida dos, con su propio repo de git.`);
   await page.check('input[name="tpl"][value="personal"]');
   await page.click('#add button[type="submit"]');
   await page.waitForSelector('article.proj[aria-label="Vida dos"]');
-  const nueva = join(process.env.SCOMPASS_DATA, 'vida-dos');
+  const nueva = join(process.env.SCOMPASS_DATA, 'Vida dos');
   assert.ok(existsSync(join(nueva, 'compass', 'lists', 'pendientes.json')));
   assert.ok(existsSync(join(nueva, '.git')), 'git init');
   assert.deepEqual(JSON.parse(await readFile(join(nueva, 'compass', 'config.json'), 'utf8')).views, ['lists', 'board']);
-  // Otra carpeta, elegida a mano.
-  await page.click('#add-btn');
-  await page.click('#add .tabs button:has-text("Crear con plantilla")');
-  await page.fill('#new-name', 'Juego');
-  await page.click('#add .other-dir summary');
-  const otra = join(root, 'mi-juego');
-  await page.fill('#new-path', otra);
-  await page.click('#add button[type="submit"]');
-  await page.waitForSelector('article.proj[aria-label="Juego"]');
-  assert.ok(existsSync(join(otra, 'compass', 'milestones', 'm00.json')));
+  // Otra carpeta, con el selector del escritorio (acá, un script que "elige" una).
+  const { writeFile: wf, chmod } = await import('node:fs/promises');
+  const otra = join(root, 'Juegos');
+  const picker = join(root, 'picker.sh');
+  await wf(picker, `#!/bin/sh\necho "${otra}"\n`);
+  await chmod(picker, 0o755);
+  process.env.SCOMPASS_PICKER = picker;
+  try {
+    await page.click('#add-btn');
+    await page.click('#add .tabs button:has-text("Crear con plantilla")');
+    await page.fill('#new-name', 'Mi juego');
+    await page.click('#add button:has-text("Elegir otra carpeta…")');
+    await page.waitForFunction((d) => document.getElementById('new-where').textContent === `Se crea en ${d}/Mi juego.`, otra);
+    await page.click('#add button[type="submit"]');
+    await page.waitForSelector('article.proj[aria-label="Mi juego"]');
+    assert.ok(existsSync(join(otra, 'Mi juego', 'compass', 'milestones', 'm00.json')));
+  } finally {
+    delete process.env.SCOMPASS_PICKER;
+  }
 });
 
 test('en el teléfono no hay scroll horizontal', async () => {

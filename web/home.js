@@ -179,7 +179,7 @@
   }
 
   function openAdd(mode) {
-    S.add = { open: true, mode, err: '', busy: false };
+    S.add = { open: true, mode, err: '', busy: false, parent: '', manual: false };
     render();
     document.getElementById('add').scrollIntoView({ block: 'nearest' });
     document.getElementById(mode === 'import' ? 'add-path' : 'new-name')?.focus();
@@ -212,29 +212,41 @@
         h('div', { class: 'actions' }, h('button', { class: 'btn ghost', type: 'button', onclick: closeAdd }, 'Cancelar'), h('button', { class: 'btn primary', type: 'submit' }, 'Agregar')));
     } else {
       const tpls = S.templates.length ? S.templates : [{ name: 'vacio', description: '' }];
-      // Sin carpeta: el Inicio lo crea en la carpeta de datos del usuario (D28), con git.
-      const slug = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'proyecto';
+      // La carpeta es <dónde>/<nombre>; <dónde> es la carpeta de datos del usuario (D28) salvo que se elija otra.
       const where = h('p', { class: 'hint', id: 'new-where' });
       const showWhere = () => {
-        const custom = document.getElementById('new-path')?.value.trim();
-        const name = document.getElementById('new-name')?.value.trim();
-        where.textContent = custom ? `Se crea en ${custom}.` : S.dataDir ? `Se guarda en ${S.dataDir}/${slug(name || 'nombre')}, con su propio repo de git.` : '';
+        const name = document.getElementById('new-name')?.value.trim() || 'Nombre';
+        const parent = S.add.parent || S.dataDir;
+        where.textContent = parent ? `Se crea en ${parent}/${name}` + (S.add.parent ? '.' : ', con su propio repo de git.') : '';
+        const reset = document.getElementById('new-reset');
+        if (reset) reset.hidden = !S.add.parent;
+      };
+      const pick = async () => {
+        try {
+          const r = await call('POST', '/api/pick-folder', { start: S.add.parent || S.dataDir });
+          if (r.path) { S.add.parent = r.path; showWhere(); }
+        } catch (e) {
+          // Sin selector en el escritorio: se escribe la ruta.
+          S.add.manual = true; box.dataset.mode = ''; S.add.err = e.message; render();
+        }
       };
       form = h('form', { onsubmit: (e) => submit(e, async () => {
         const template = box.querySelector('input[name="tpl"]:checked')?.value ?? 'vacio';
-        const path = document.getElementById('new-path').value.trim();
-        const r = await call('POST', '/api/projects/init', { name: document.getElementById('new-name').value.trim(), template, ...(path && { path }) });
+        const typed = document.getElementById('new-parent')?.value.trim();
+        const parent = typed || S.add.parent;
+        const r = await call('POST', '/api/projects/init', { name: document.getElementById('new-name').value.trim(), template, ...(parent && { parent }) });
         toast(`Creado: ${r.config.project} (plantilla ${r.template}) en ${r.path}`);
       }) },
         h('div', { class: 'fields' },
-          h('div', { class: 'field' }, h('label', { for: 'new-name' }, 'Nombre'),
+          h('div', { class: 'field' }, h('label', { for: 'new-name' }, 'Nombre (también es el nombre de la carpeta)'),
             h('input', { type: 'text', id: 'new-name', required: true, placeholder: 'Vida', autocomplete: 'off', oninput: showWhere }))),
         h('fieldset', { class: 'tpls' }, h('legend', null, 'Plantilla'),
           tpls.map((t, i) => h('label', { class: 'tpl' }, h('input', { type: 'radio', name: 'tpl', value: t.name, checked: i === 0 }), h('span', null, h('b', null, TPL_NAMES[t.name] ?? t.name), t.description)))),
-        h('details', { class: 'other-dir' }, h('summary', null, 'Otra carpeta (opcional)'),
-          h('div', { class: 'field' }, h('label', { for: 'new-path' }, 'Ruta absoluta (se crea si no existe; por ejemplo, la de un proyecto de Godot)'),
-            h('input', { type: 'text', id: 'new-path', placeholder: '/home/…/mi-juego', autocomplete: 'off', spellcheck: 'false', oninput: showWhere }))),
-        where,
+        h('div', { class: 'where-row' }, where,
+          S.add.manual ? null : h('button', { class: 'btn', type: 'button', onclick: pick }, 'Elegir otra carpeta…'),
+          h('button', { class: 'btn ghost', type: 'button', id: 'new-reset', hidden: true, onclick: () => { S.add.parent = ''; showWhere(); } }, 'Usar la de siempre')),
+        S.add.manual ? h('div', { class: 'field' }, h('label', { for: 'new-parent' }, 'Dónde crearla (ruta absoluta de la carpeta que la va a contener)'),
+          h('input', { type: 'text', id: 'new-parent', placeholder: S.dataDir || '/home/…', autocomplete: 'off', spellcheck: 'false', 'data-keep': '1' })) : null,
         h('p', { class: 'err', role: 'alert' }, S.add.err),
         h('div', { class: 'actions' }, h('button', { class: 'btn ghost', type: 'button', onclick: closeAdd }, 'Cancelar'), h('button', { class: 'btn primary', type: 'submit' }, 'Crear proyecto')));
     }

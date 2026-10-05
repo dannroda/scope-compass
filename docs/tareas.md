@@ -953,8 +953,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Notas:** Plasma pregunta AboutToShow antes de abrir el menú; si un refresh() ya había visto el cambio, respondía "no cambió" y Plasma mostraba su copia vieja. Ahora compara con la última revisión que el escritorio pidió (GetLayout), y refresh() manda también ItemsPropertiesUpdated.
 
-### 8.17 Crear proyecto desde el Inicio sin ruta: carpeta de datos del usuario, con git · Hecho
+### 8.17 Crear proyecto desde el Inicio: ~/.local/share/scope-compass/<nombre>, o elegir otra carpeta · Hecho
 
-**Prueba:** Crear "Vida dos" sin carpeta lo deja en …/proyectos/vida-dos con .git; con otra carpeta, ahí (ui-home y home tests).
+**Prueba:** "Vida dos" queda en …/scope-compass/Vida dos con .git; con el selector, en <elegida>/Mi juego (ui-home y home tests).
 
-**Notas:** D28. `projectsDataDir`: `$SCOMPASS_DATA` o `$XDG_DATA_HOME/scope-compass/proyectos`. El formulario pide nombre y plantilla; "Otra carpeta" plegada.
+**Notas:** D28. `projectsDataDir`: `$SCOMPASS_DATA` o `$XDG_DATA_HOME/scope-compass`. El nombre es la carpeta, tal cual; si existe, 409. "Elegir otra carpeta…" usa `POST /api/pick-folder` (kdialog o zenity; `SCOMPASS_PICKER` en tests); sin selector, campo de texto.

@@ -63,5 +63,5 @@ header.top h1 { flex: 1 1 auto; }
 .hoy-list, .proj, .add { font-variant-numeric: lining-nums; }
 /* .bar de app.css es flex: 1; en una columna eso la dejaba sin alto. */
 .proj .ms .bar { flex: none; }
-.add .other-dir summary { cursor: pointer; color: var(--muted); font-size: 14px; }
-.add .other-dir[open] summary { margin-bottom: 8px; }
+.add .where-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.add .where-row .hint { flex: 1 1 280px; overflow-wrap: anywhere; }

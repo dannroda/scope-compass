@@ -181,22 +181,43 @@ test('CLI: un solo Inicio por usuario', async () => {
   assert.equal(liveHome(), null, 'se desanota al cerrar');
 });
 
-test('init sin carpeta: en la carpeta de datos, con git init; sin nombre ni carpeta, 400', async () => {
+test('init: <carpeta de datos>/<nombre> con git init, o <otra>/<nombre>; una que ya existe no se usa', async () => {
   const saved = process.env.SCOMPASS_DATA;
   process.env.SCOMPASS_DATA = join(root, 'datos');
   try {
     let r = await api('POST', '/api/projects/init', { name: 'Vida', template: 'personal' });
     assert.equal(r.status, 201, JSON.stringify(r.body));
-    assert.equal(r.body.path, join(root, 'datos', 'vida'));
+    assert.equal(r.body.path, join(root, 'datos', 'Vida'), 'el nombre es la carpeta, tal cual');
     assert.equal(r.body.git_init, true);
     r = await api('POST', '/api/projects/init', { name: 'Vida', template: 'vacio' });
-    assert.equal(r.body.path, join(root, 'datos', 'vida-2'), 'el mismo nombre no pisa');
-    assert.equal((await api('POST', '/api/projects/init', { template: 'vacio' })).status, 400);
+    assert.equal(r.status, 409, 'ya existe');
+    assert.match(r.body.error.message, /ya existe/);
+    assert.equal((await api('POST', '/api/projects/init', { template: 'vacio' })).status, 400, 'sin nombre');
+    assert.equal((await api('POST', '/api/projects/init', { name: 'a/b' })).status, 400, 'con /');
     assert.equal((await api('GET', '/api/templates')).body.data_dir, join(root, 'datos'));
-    // Dentro de un repo existente no se hace otro.
-    r = await api('POST', '/api/projects/init', { name: 'Sub', path: join(root, 'datos', 'vida', 'sub') });
+    // Otra carpeta: el proyecto queda adentro, con su nombre; dentro de un repo no se hace otro.
+    r = await api('POST', '/api/projects/init', { name: 'Sub', parent: join(root, 'datos', 'Vida') });
+    assert.equal(r.body.path, join(root, 'datos', 'Vida', 'Sub'));
     assert.equal(r.body.git_init, false);
   } finally {
     if (saved === undefined) delete process.env.SCOMPASS_DATA; else process.env.SCOMPASS_DATA = saved;
+  }
+});
+
+test('pick-folder: lo que elige el selector del escritorio; cancelar no es un error', async () => {
+  const { writeFile: wf, chmod } = await import('node:fs/promises');
+  const picker = join(root, 'picker.sh');
+  const saved = process.env.SCOMPASS_PICKER;
+  process.env.SCOMPASS_PICKER = picker;
+  try {
+    await wf(picker, `#!/bin/sh\necho "${root}/elegida"\n`);
+    await chmod(picker, 0o755);
+    assert.deepEqual((await api('POST', '/api/pick-folder', {})).body, { path: join(root, 'elegida') });
+    await wf(picker, '#!/bin/sh\nexit 1\n');
+    assert.deepEqual((await api('POST', '/api/pick-folder', {})).body, { cancelled: true });
+    process.env.SCOMPASS_PICKER = join(root, 'no-existe');
+    assert.equal((await api('POST', '/api/pick-folder', {})).status, 404);
+  } finally {
+    if (saved === undefined) delete process.env.SCOMPASS_PICKER; else process.env.SCOMPASS_PICKER = saved;
   }
 });

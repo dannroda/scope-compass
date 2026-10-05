@@ -18,15 +18,14 @@
 import { execFile, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { existsSync, statSync } from 'node:fs';
-import { mkdir, readdir, readFile } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import websocket from '@fastify/websocket';
 import { exportMarkdown } from './export-md.js';
 import { checkItem } from './lists.js';
-import { forgetProject, loadProjects, projectsDataDir, projectsFile, projectsStatus, ProjectsError, recordProject } from './projects.js';
-import { freeId, slugify } from './lists.js';
+import { folderName, forgetProject, loadProjects, projectsDataDir, projectsFile, projectsStatus, ProjectsError, recordProject } from './projects.js';
 import { hubsOf, listHubs } from './registry.js';
 import { VERSION, WEB_DIR } from './server.js';
 import { createHttpStore, detectHub } from './store/http.js';
@@ -119,24 +118,23 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     data_dir: projectsDataDir()
   }));
 
-  // Crear un proyecto: la misma `scompass init` de la CLI, en otro proceso. Sin path, en la carpeta de datos (D28)
-  // con el nombre como carpeta ("Vida" → …/proyectos/vida, o vida-2 si ya hay una). Una carpeta nueva fuera de
-  // todo repo recibe `git init` (los datos viven en git, D1), sin remoto ni commits.
+  // Crear un proyecto: la misma `scompass init` de la CLI, en otro proceso. La carpeta es <parent>/<nombre>, y
+  // parent es por defecto la carpeta de datos del usuario (D28): "Vida" → ~/.local/share/scope-compass/Vida.
+  // Una carpeta que ya existe no se usa. Fuera de todo repo, la carpeta nueva recibe `git init` (los datos viven
+  // en git, D1), sin remoto ni commits.
   app.post('/api/projects/init', async (req, reply) => {
     const { template = 'vacio' } = req.body ?? {};
     const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
-    let path = typeof req.body?.path === 'string' ? req.body.path.trim() : '';
+    const dirName = folderName(name);
+    if (!dirName) throw new StoreError('invalid_argument', name ? `"${name}" no sirve como nombre de carpeta (sin "/")` : 'falta el nombre del proyecto');
+    const parent = typeof req.body?.parent === 'string' && req.body.parent.trim() ? req.body.parent.trim() : projectsDataDir();
+    if (!parent.startsWith('/')) throw new StoreError('invalid_argument', 'la carpeta tiene que ser una ruta absoluta');
     if (!(await loadTemplate(template))) throw new StoreError('invalid_argument', `plantilla desconocida: ${template}`);
-    if (!path) {
-      if (!name) throw new StoreError('invalid_argument', 'falta el nombre del proyecto');
-      const base = projectsDataDir();
-      const taken = await readdir(base).catch(() => []);
-      path = join(base, freeId(slugify(name), taken));
-    } else if (!path.startsWith('/')) throw new StoreError('invalid_argument', 'la carpeta tiene que ser una ruta absoluta');
-    const fresh = !existsSync(path);
+    const path = join(parent, dirName);
+    if (existsSync(path)) throw new StoreError('conflict', `ya existe ${path}: elegí otro nombre u otra carpeta`);
     await mkdir(path, { recursive: true });
     const inRepo = await new Promise((r) => execFile('git', ['-C', path, 'rev-parse', '--is-inside-work-tree'], (err) => r(!err)));
-    const gitInit = fresh && !inRepo && await new Promise((r) => execFile('git', ['-C', path, 'init', '-q'], (err) => r(!err)));
+    const gitInit = !inRepo && await new Promise((r) => execFile('git', ['-C', path, 'init', '-q'], (err) => r(!err)));
     const args = [BIN, '--dir', path, 'init', '--template', template, '--json', ...(name ? ['--project', name] : [])];
     const r = await new Promise((resolve) => {
       const child = spawn(process.execPath, args, { stdio: ['ignore', 'pipe', 'pipe'], env: process.env });
@@ -152,6 +150,22 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     }
     emit({ type: 'projects' });
     return reply.code(201).send({ ...JSON.parse(r.out), path, git_init: !!gitInit });
+  });
+
+  // Elegir una carpeta (el botón "Elegir otra carpeta…"): el navegador no puede darle una ruta al servidor, así que
+  // el diálogo lo abre el Inicio con el del escritorio (kdialog o zenity; SCOMPASS_PICKER lo reemplaza en tests).
+  app.post('/api/pick-folder', async (req) => {
+    const start = typeof req.body?.start === 'string' ? req.body.start : projectsDataDir();
+    const tries = process.env.SCOMPASS_PICKER ? [[process.env.SCOMPASS_PICKER, [start]]]
+      : [['kdialog', ['--getexistingdirectory', start, '--title', 'Dónde crear el proyecto']],
+        ['zenity', ['--file-selection', '--directory', '--title=Dónde crear el proyecto', `--filename=${start}/`]]];
+    for (const [cmd, args] of tries) {
+      const r = await new Promise((done) => execFile(cmd, args, { timeout: 10 * 60 * 1000 }, (err, stdout) => done({ err, out: stdout.trim() })));
+      if (r.err?.code === 'ENOENT') continue;
+      // Cancelar sale con código 1 y sin salida.
+      return r.out ? { path: r.out } : { cancelled: true };
+    }
+    throw new StoreError('not_found', 'no hay un selector de carpetas (instalá kdialog o zenity); escribí la ruta');
   });
 
   app.get('/api/today', async () => {
