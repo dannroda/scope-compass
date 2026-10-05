@@ -396,7 +396,7 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-## M4 — Adopción en Project Epiphany  (1/4)
+## M4 — Adopción en Project Epiphany  (2/4)
 
 Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
@@ -429,16 +429,16 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
 **Relacionadas:** 4.3 Ids legibles al crear tareas; 4.4 Aviso de cambios sin commitear en compass/
 
-### 4.3 Ids legibles al crear tareas · Pendiente
+### 4.3 Ids legibles al crear tareas · Hecho
 
-- [ ] Generar el id a partir del hito: m<N>-<NN> con el siguiente libre
-- [ ] Usarlo desde la CLI, la API (web) y el dock
-- [ ] Mantener el aleatorio solo si hay choque
+- [x] Generar el id a partir del hito: m<N>-<NN> con el siguiente libre
+- [x] Usarlo desde la CLI, la API (web) y el dock
+- [x] Mantener el aleatorio solo si hay choque
   Por ejemplo, si dos ramas crean la misma tarea: el id tiene que seguir siendo único después del merge.
 
 **Prueba:** scompass add en m00 crea m0-NN con el siguiente número libre; la web y el dock hacen lo mismo.
 
-**Notas:** Salió de la consulta a Epiphany (4.2): las tareas importadas son m0-NN y las nuevas reciben un id aleatorio (tagr1kge), que se lee mal en git y en la CLI.
+**Notas:** `taskIdFor` en el Store: lo usan la CLI, la API (web, dock, Inicio) y `item task`. El paso 3 quedó como: un hito con id no numérico usa aleatorio, y si otro proceso tomó el número entre la lectura y la escritura, el siguiente. Choques entre ramas: conflicto add/add de git (D27).
 
 **Relacionadas:** 4.2 Una semana de uso diario sin volver al artifact
 

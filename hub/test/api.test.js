@@ -85,7 +85,7 @@ test('POST /api/tasks: 201, Location, ETag e id nuevo', async () => {
   const r = await req('POST', '/api/tasks', { milestone: 'm02', title: 'Nueva', status: 'todo' });
   assert.equal(r.statusCode, 201);
   const t = r.json();
-  assert.match(t.id, /^[0-9a-z]{8}$/);
+  assert.match(t.id, /^m2-\d{2}$/, 'id legible del hito m02');
   assert.equal(r.headers.location, `/api/tasks/${t.id}`);
   assert.equal(r.headers.etag, `"${t.etag}"`);
   assert.ok(existsSync(file('tasks', t.id)));

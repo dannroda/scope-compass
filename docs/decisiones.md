@@ -210,3 +210,11 @@ Además del registro de hubs vivos (en `$XDG_RUNTIME_DIR`, se borra al reiniciar
 - **Qué:** `due` opcional (`YYYY-MM-DD` o con `THH:MM`, hora local) en tareas e ítems. `repeat: { every: day|week|month|year }` solo en ítems, con `due`. Tildar uno que se repite avanza `due` desde la fecha límite (31/01 mensual → 28/02).
 - **Por qué:** de las fechas, solo importan cuándo se creó algo y para cuándo hay que tenerlo. Avanzar desde la fecha límite mantiene los vencimientos fijos (la luz vence el 10 aunque se pague el 12). `{ every }` deja lugar para `interval` (cada x días) sin migrar.
 - **Descartado por ahora:** fecha de inicio, repetición personalizada y notificaciones (requieren coordinar todos los procesos).
+
+## D27 · Ids de tareas legibles: `m<N>-<NN>` con el siguiente número del hito
+**2026-10-04 · vigente** · spec §4.2 · `hub/src/store/json-files.js` (`taskIdFor`) · reemplaza el id aleatorio de §4.2
+
+- **Qué:** una tarea nueva en `m05` recibe `m5-12` (el número más alto del hito + 1), igual que las importadas. El Store lo calcula dentro de su cola, así que la CLI, la web, el dock y el Inicio dan el mismo resultado. Un hito con otro tipo de id sigue usando uno aleatorio de 8 caracteres.
+- **Por qué:** salió del primer uso en Epiphany (4.2): con ids al azar (`tagr1kge`) las tareas nuevas se leían mal en git y en la CLI al lado de las importadas (`m0-03`).
+- **Costo aceptado:** dos ramas que crean una tarea en el mismo hito a la vez generan el mismo nombre de archivo y git lo marca como conflicto add/add; se resuelve renombrando una. Con un solo usuario trabajando en una rama a la vez es raro. Las tareas que ya tienen id aleatorio no se renombran (cambiaría su historial en git y las referencias).
+- **Descartado:** renumerar ids al mover una tarea de hito (rompe `links`, referencias e historial).

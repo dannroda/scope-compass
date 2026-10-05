@@ -75,9 +75,12 @@ test('patch: los arrays se reemplazan enteros y null borra el campo', async () =
   assert.equal(await readFile(file('tasks', 'm0-01'), 'utf8'), canonical(r.doc));
 });
 
-test('create: id nuevo de 8 caracteres base36 y created_at = updated_at', async () => {
+test('create: id legible del hito (el siguiente número) y created_at = updated_at', async () => {
+  const before = (await store.list('tasks')).items.map((t) => t.id).filter((id) => id.startsWith('m1-')).map((id) => Number(id.slice(3)));
   const r = await store.create('tasks', { milestone: 'm01', title: 'Nueva', status: 'todo' });
-  assert.match(r.id, /^[0-9a-z]{8}$/);
+  assert.equal(r.id, 'm1-' + String(Math.max(...before) + 1).padStart(2, '0'));
+  const r2 = await store.create('tasks', { milestone: 'm01', title: 'Otra', status: 'todo' });
+  assert.equal(Number(r2.id.slice(3)), Number(r.id.slice(3)) + 1);
   assert.equal(r.doc.created_at, NOW);
   assert.equal(r.doc.updated_at, NOW);
   assert.deepEqual((await store.get('tasks', r.id)).doc, r.doc);
@@ -150,6 +153,16 @@ test('escrituras concurrentes del mismo proceso no se pisan', async () => {
   assert.deepEqual(results.map((r) => r.status), ['fulfilled', 'fulfilled', 'fulfilled', 'fulfilled', 'fulfilled', 'rejected']);
   for (const id of ids) assert.equal((await store.get('tasks', id)).doc.status, 'review');
   assert.equal((await store.get('tasks', 'm1-05')).doc.notes, 'a');
+});
+
+test('taskIdFor: m<N>-<NN> por hito; otros hitos, aleatorio', async () => {
+  const { taskIdFor } = await import('../src/store/json-files.js');
+  assert.equal(taskIdFor('m00', ['m0-01', 'm0-10', 'tagr1kge', 'm0-x']), 'm0-11');
+  assert.equal(taskIdFor('m10', ['m1-05']), 'm10-01', 'm1- no cuenta para m10');
+  assert.equal(taskIdFor('m08', ['m8-99']), 'm8-100');
+  assert.equal(taskIdFor('extra', []), null);
+  // Un hito con otro tipo de id: aleatorio (el store no exige que el hito exista).
+  assert.match((await store.create('tasks', { milestone: 'extra', title: 'x', status: 'todo' })).id, /^[0-9a-z]{8}$/);
 });
 
 test('randomId: 8 caracteres base36', () => {

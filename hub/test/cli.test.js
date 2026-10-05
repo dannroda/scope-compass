@@ -59,7 +59,7 @@ test('add → move → check → show, escribiendo en compass/', async () => {
   const a = await cli(['add', 'Probar la CLI', '--milestone', 'm01', '--code', '1.8', '--json']);
   assert.equal(a.code, 0, a.err);
   const { id, order } = a.json();
-  assert.match(id, /^[0-9a-z]{8}$/);
+  assert.equal(id, 'm1-08', 'el siguiente número del hito');
   assert.equal(order, 8);
   assert.equal((await task(id)).created_at, NOW);
 

@@ -15,7 +15,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
 ## Modelo
 
 - **Hito** (`compass/milestones/<id>.json`): id `m00`, `m01`, …; campos `code` ("M0"), `title`, `order`, `goal`, `done_when`.
-- **Tarea** (`compass/tasks/<id>.json`): el id es el nombre del archivo. `scompass add` asigna uno al azar (por ejemplo `sd3tg577`) y lo imprime; las tareas viejas pueden tener ids como `m5-02`. No se renombra. Campos:
+- **Tarea** (`compass/tasks/<id>.json`): el id es el nombre del archivo. `scompass add` le da el siguiente número de su hito (`m5-12` en `m05`) y lo imprime; las tareas de antes pueden tener ids al azar como `sd3tg577`. No se renombra, aunque la tarea cambie de hito. Campos:
   - `milestone` (id del hito), `title`, `code` (número visible, por ejemplo "5.2"; opcional);
   - `status`: `todo` (Pendiente), `doing` (En curso), `review` (Revisión), `done` (Hecho);
   - `checklist`: pasos `{ text, done, detail? }`. `text` es una línea corta; el cómo y el porqué van en `detail`;

@@ -5,7 +5,7 @@
 // Interfaz Store (la misma para el modo hosteado, spec §3): loadAll, list, get, create, put, patch, delete.
 // Todo devuelve { id, doc, etag } y falla con StoreError; un archivo inválido nunca se sobrescribe.
 import { createHash, randomInt } from 'node:crypto';
-import { mkdir, readFile, rm } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { canonical } from './canonical.js';
 import { writeAtomic } from './atomic.js';
@@ -27,6 +27,17 @@ const ID = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 export const isValidId = (id) => typeof id === 'string' && ID.test(id);
 const B36 = '0123456789abcdefghijklmnopqrstuvwxyz';
 export const randomId = () => Array.from({ length: 8 }, () => B36[randomInt(36)]).join('');
+
+// Id legible para una tarea nueva (4.3): m<N>-<NN> con el siguiente número del hito, como las importadas
+// (m00 → m0-12, m10 → m10-03). Un hito con otro tipo de id usa uno aleatorio. Dos ramas que crean la misma
+// tarea a la vez chocan en git (add/add): se resuelve renombrando una (el id es el nombre del archivo).
+export function taskIdFor(milestone, ids) {
+  const m = /^m(\d{1,2})$/.exec(milestone ?? '');
+  if (!m) return null;
+  const prefix = `m${Number(m[1])}-`;
+  const nums = [...ids].map((id) => (id.startsWith(prefix) && /^\d+$/.test(id.slice(prefix.length)) ? Number(id.slice(prefix.length)) : 0));
+  return prefix + String(Math.max(0, ...nums) + 1).padStart(2, '0');
+}
 
 export function createJsonFilesStore(compassDir, { validators, now = () => new Date().toISOString() }) {
   let queue = Promise.resolve();
@@ -99,8 +110,17 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
       return cur;
     }),
 
-    // Crea con id nuevo (tareas) o con el id dado; falla si ya existe. Una tarea sin order va al final de su hito.
+    // Crea con id nuevo (tareas: legible por hito, ver taskIdFor) o con el id dado; falla si ya existe. Una tarea
+    // sin order va al final de su hito.
     create: (collection, doc, id) => serial(async () => {
+      if (id === undefined && collection === 'tasks') {
+        const names = await readdir(join(compassDir, 'tasks')).catch(() => []);
+        const ids = names.filter((n) => n.endsWith('.json')).map((n) => n.slice(0, -5));
+        let next = taskIdFor(doc.milestone, ids);
+        // Si otro proceso lo creó recién (entre el readdir y acá), el siguiente número.
+        while (next && await readCurrent(collection, next).catch(() => true)) { ids.push(next); next = taskIdFor(doc.milestone, ids); }
+        id = next ?? undefined;
+      }
       if (id === undefined) {
         do id = randomId(); while (await readCurrent(collection, id).catch(() => true));
       } else if (await readCurrent(collection, id).catch(() => true)) {

@@ -170,7 +170,7 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `links` | `{ type: "blocks" \| "related", task: string }[]` | Opcional. Vínculos con otras tareas (D22): `blocks` = esta tarea bloquea a `task`; `related` = relacionadas. El inverso ("bloqueada por") no se guarda, se calcula. |
 | `created_at` / `updated_at` | ISO 8601 | `updated_at` es opcional en ediciones a mano; la app lo completa en su próxima escritura |
 
-**Ids:** los hitos usan `m00`…`m99`. Las tareas importadas conservan su id (`m0-01`). Las tareas nuevas usan un id corto aleatorio (por ejemplo 8 caracteres base36), válido como nombre de archivo en Windows y Linux.
+**Ids:** los hitos usan `m00`…`m99`. Las tareas importadas conservan su id (`m0-01`). Las tareas nuevas usan el mismo formato con el siguiente número de su hito (`m0-12`; D27); si el hito tiene otro tipo de id, uno corto aleatorio (8 caracteres base36). Un id no cambia aunque la tarea pase a otro hito.
 
 ### 4.3 Validación
 <!-- id: validacion -->
