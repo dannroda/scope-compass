@@ -602,7 +602,7 @@ Hay dos registros, con funciones distintas (D23):
   - `POST /api/projects { path }` importa; `DELETE /api/projects?path=…` quita del registro.
   - `GET /api/today`: ítems y tareas vencidos o de hoy (sin terminar) y tareas en curso, de todos los proyectos; vencido primero.
   - `POST /api/projects/check-item { path, list, n, etag? }` (usa la misma regla que la CLI: lo que se repite avanza) y `POST /api/projects/move-task { path, id, status, etag? }`. Responden `via: "hub" | "disk"`.
-  - `POST /api/projects/start|stop { path }` (8.9).
+  - `POST /api/projects/start { path }`: levanta `scompass serve --exit-on-stdin-close` como hijo del Inicio y espera a que se anote (si ya hay hub, lo devuelve). `POST /api/projects/stop { path, force? }`: `SIGTERM` y espera a que cierre. El registro marca `attached` y `parent` en los hubs atados a otro proceso; si no es un hijo del Inicio (el dock), `stop` responde `409` con `foreign: true` hasta que se confirme con `force`.
   - `GET /ws`: `changed { path, collection, id }` (reenviado de los hubs o de una escritura directa), `hubs` (cambió el conjunto de hubs vivos) y `projects` (cambió el registro). El Inicio mira el registro de hubs cada segundo y se suscribe al WebSocket de cada hub vivo.
 - Un segundo `scompass home` no levanta otro: dice dónde corre el primero (y lo abre con `--open`). Puerto 4700, o el siguiente libre.
 

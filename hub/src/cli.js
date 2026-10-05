@@ -295,7 +295,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         if (e.code === 'EADDRINUSE') throw new StoreError('io_error', `el puerto ${port} está ocupado (¿ya hay un hub corriendo?)`);
         throw e;
       }
-      registerHub({ port: addr.port, project });
+      registerHub({ port: addr.port, project, attached: !!o['exit-on-stdin-close'] });
       // Registro de proyectos (D23): el Inicio lo conoce aunque después se apague. Un registro roto no frena al hub.
       try { await recordProject(project, { seen: true }); } catch (e) { warn(`aviso: no se anotó el proyecto en ${projectsFile()}: ${e.message}`); }
       const url = `http://${addr.address}:${addr.port}/`;

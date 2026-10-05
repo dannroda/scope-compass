@@ -32,10 +32,13 @@ export const hubsOf = (project) => listHubs().filter((h) => h.kind !== 'home' &&
 /** El Inicio que esté corriendo (uno por usuario), o null. */
 export const liveHome = () => listHubs().find((h) => h.kind === 'home') ?? null;
 
-export function registerHub({ port, project, pid = process.pid, kind }) {
+// attached: el hub se cierra cuando se corta su entrada (--exit-on-stdin-close: lo lanzó el dock o el Inicio);
+// parent: el pid de quien lo lanzó. El Inicio los usa para avisar antes de apagar un hub que no es suyo.
+export function registerHub({ port, project, pid = process.pid, kind, attached = false, parent = process.ppid }) {
   const dir = registryDir();
   mkdirSync(dir, { recursive: true });
-  const entry = kind === 'home' ? { pid, port, kind, startedAt: new Date().toISOString() } : { pid, port, project: real(project), startedAt: new Date().toISOString() };
+  const entry = kind === 'home' ? { pid, port, kind, startedAt: new Date().toISOString() }
+    : { pid, port, project: real(project), startedAt: new Date().toISOString(), ...(attached && { attached, parent }) };
   writeFileSync(join(dir, `${pid}.json`), JSON.stringify(entry) + '\n');
   return entry;
 }

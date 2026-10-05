@@ -7,25 +7,33 @@
 //   GET    /api/today                        vencido, de hoy y en curso, de todos los proyectos
 //   POST   /api/projects/check-item  { path, list, n, etag? }   tildar un ítem (los que se repiten avanzan)
 //   POST   /api/projects/move-task   { path, id, status, etag? }
+//   POST   /api/projects/start   { path }          levanta su hub como hijo del Inicio (muere con él)
+//   POST   /api/projects/stop    { path, force? }  apaga su hub; uno que abrió otro (el dock) pide force
 //   GET    /ws                               { type: 'changed', path, collection?, id? } | { type: 'hubs' } | { type: 'projects' }
 // Las escrituras pasan por el hub del proyecto si está vivo (lo publica a sus pestañas y al dock); si no, van
 // directo a compass/ con etag, como la CLI, y regeneran el export markdown.
+import { spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { statSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import websocket from '@fastify/websocket';
 import { exportMarkdown } from './export-md.js';
 import { checkItem } from './lists.js';
 import { forgetProject, loadProjects, projectsFile, projectsStatus, ProjectsError, recordProject } from './projects.js';
-import { listHubs } from './registry.js';
+import { hubsOf, listHubs } from './registry.js';
 import { VERSION } from './server.js';
 import { createHttpStore, detectHub } from './store/http.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { loadCompass } from './store/load.js';
 import { summarize, todayOf } from './summary.js';
 import { STATUSES } from './views.js';
+
+const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
 
 const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, invalid_file: 409, invalid: 409, io_error: 500 };
 
@@ -40,6 +48,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     if (err instanceof StoreError || err instanceof ProjectsError) {
       const body = { error: { code: err.code, message: err.message } };
       if (err.current) body.error.current = err.current;
+      if (err.foreign) body.error.foreign = true;
       return reply.code(HTTP_STATUS[err.code] ?? 500).send(body);
     }
     if (err.statusCode >= 400 && err.statusCode < 500) return reply.code(err.statusCode).send({ error: { code: 'invalid_argument', message: err.message } });
@@ -130,6 +139,46 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     await afterWrite(path, store, 'tasks', id);
     return { task: { id: w.id, etag: w.etag, ...w.doc }, via: store.hub ? 'hub' : 'disk' };
   });
+
+  // Prender y apagar hubs (8.9). Los que prende el Inicio son hijos suyos con la entrada en una tubería
+  // (--exit-on-stdin-close, como los del dock): si el Inicio se cierra o muere, se cierran solos.
+  const children = new Map(); // pid → ChildProcess
+  app.post('/api/projects/start', async (req, reply) => {
+    const { path } = req.body ?? {};
+    known(path);
+    const running = hubsOf(path);
+    if (running.length) return reply.code(200).send({ hub: running[0], already: true });
+    const child = spawn(process.execPath, [BIN, '--dir', path, 'serve', '--exit-on-stdin-close'], { stdio: ['pipe', 'ignore', 'pipe'], env: process.env });
+    let err = '';
+    child.stderr.on('data', (d) => { err += d; });
+    children.set(child.pid, child);
+    child.on('exit', () => { children.delete(child.pid); poll(); });
+    for (let i = 0; i < 100; i++) {
+      const h = hubsOf(path).find((x) => x.pid === child.pid);
+      if (h) { poll(); return reply.code(201).send({ hub: h, already: false }); }
+      if (child.exitCode !== null) break;
+      await sleep(50);
+    }
+    child.kill('SIGTERM');
+    throw new StoreError('io_error', `el hub no arrancó${err.trim() ? `: ${err.trim().split('\n').at(-1)}` : ''}`);
+  });
+
+  app.post('/api/projects/stop', async (req) => {
+    const { path, force } = req.body ?? {};
+    known(path);
+    const running = hubsOf(path);
+    if (!running.length) throw new StoreError('not_found', `${path} no tiene un hub corriendo`);
+    // Uno atado a otro proceso (el dock de Godot) se apaga solo con force: el editor se queda sin hub.
+    const foreign = running.filter((h) => h.attached && !children.has(h.pid));
+    if (foreign.length && !force) throw new StoreError('conflict', 'ese hub lo abrió el dock de Godot (u otro programa): el editor se queda sin hub hasta que lo vuelva a iniciar', { foreign: true });
+    for (const h of running) { try { process.kill(h.pid, 'SIGTERM'); } catch { /* ya no estaba */ } }
+    for (let i = 0; i < 100 && running.some((h) => alive(h.pid)); i++) await sleep(50);
+    const still = running.filter((h) => alive(h.pid));
+    if (still.length) throw new StoreError('io_error', `el hub (PID ${still.map((h) => h.pid).join(', ')}) no se cerró en 5 s`);
+    poll();
+    return { stopped: running.map((h) => ({ pid: h.pid, port: h.port })) };
+  });
+  app.addHook('onClose', async () => { for (const c of children.values()) c.kill('SIGTERM'); });
 
   // En vivo: el Inicio se suscribe al WebSocket de cada hub vivo de un proyecto conocido y reenvía sus cambios.
   const subs = new Map(); // `${pid}` → { ws, path }

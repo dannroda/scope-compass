@@ -725,7 +725,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (7/14)
+## M8 — Inicio, listas y plantillas (v3)  (8/14)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -856,13 +856,15 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Bloqueada por:** 8.1 Registro persistente de proyectos
 
-### 8.9 Prender y apagar hubs desde el Inicio · Pendiente
+### 8.9 Prender y apagar hubs desde el Inicio · Hecho
 
-- [ ] Prender: `scompass serve --dir` como hijo del Inicio
-- [ ] Apagar: `SIGTERM` al pid del registro
-- [ ] Avisar antes de apagar un hub del dock
+- [x] Prender: `scompass serve --dir` como hijo del Inicio
+- [x] Apagar: `SIGTERM` al pid del registro
+- [x] Avisar antes de apagar un hub del dock
 
 **Prueba:** Prender un proyecto apagado desde el Inicio y apagarlo; al cerrar el Inicio, los hubs que prendió mueren.
+
+**Notas:** Los hijos van sin `--tray`: la bandeja agrupada del Inicio (8.11) los va a mostrar. El dock no cambió: el registro detecta que su hub está atado (`--exit-on-stdin-close`) y que su padre no es el Inicio.
 
 **Referencias:** `docs/spec.md#v3-home`
 
