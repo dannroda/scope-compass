@@ -20,6 +20,7 @@ import { outdatedFiles, TEMPLATES, updateCompass } from './update.js';
 import { listTemplates, loadTemplate as loadTemplateFile } from './templates.js';
 import { hubsOf, listHubs, liveHome, registerHub, unregisterHub } from './registry.js';
 import { createHomeServer } from './home.js';
+import { boardStatus } from './git.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
@@ -400,8 +401,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const ms = new Map(all.milestones);
       const tasks = listTasks(all, { milestone: o.milestone, status: o.status });
       const everything = listTasks(all);
+      const git = await boardStatus(project, all.config);
       if (o.json) {
-        print(JSON.stringify({ tasks, warnings: all.warnings }));
+        print(JSON.stringify({ tasks, warnings: all.warnings, ...(git.repo && { uncommitted: git.uncommitted }) }));
         return 0;
       }
       let last;
@@ -419,6 +421,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         print(`  ${t.id.padEnd(9)} ${(t.code || '').padEnd(5)} ${STATUS[t.status].padEnd(9)} ${t.title}${steps}${when}${blocked}`);
       }
       if (!tasks.length) print('Sin tareas.');
+      // Recordatorio (4.4): la app no commitea en local.
+      if (git.uncommitted) print(`\n${git.uncommitted === 1 ? '1 archivo' : git.uncommitted + ' archivos'} del tablero sin commitear (git status -- ${['compass', all.config?.export_md].filter(Boolean).join(' ')})`);
       return 0;
     },
 

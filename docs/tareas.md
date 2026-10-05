@@ -396,7 +396,7 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 **Referencias:** `docs/spec.md#criterios-v1`
 
-## M4 — Adopción en Project Epiphany  (2/4)
+## M4 — Adopción en Project Epiphany  (3/4)
 
 Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
@@ -442,15 +442,15 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
 **Relacionadas:** 4.2 Una semana de uso diario sin volver al artifact
 
-### 4.4 Aviso de cambios sin commitear en compass/ · Pendiente
+### 4.4 Aviso de cambios sin commitear en compass/ · Hecho
 
-- [ ] El hub detecta archivos de compass/ con cambios (git status)
-- [ ] Mostrar el aviso en la web y en el dock, con la cantidad de archivos
-- [ ] scompass list lo menciona al final
+- [x] El hub detecta archivos de compass/ con cambios (git status)
+- [x] Mostrar el aviso en la web y en el dock, con la cantidad de archivos
+- [x] scompass list lo menciona al final
 
 **Prueba:** Mover una tarjeta muestra el aviso en la web y en el dock; después de commitear, desaparece.
 
-**Notas:** Salió de la consulta a Epiphany (4.2): los cambios hechos desde el hub o el dock quedan sin commitear y nada lo recuerda. El commit automático queda para M7 (§12.1); acá solo el aviso.
+**Notas:** `hub/src/git.js` (`boardStatus`: compass/ + export_md). El hub publica `git` tras cada cambio y recuenta cada 3 s mientras haya algo pendiente (un commit no toca compass/). Web: aviso en la cabecera con los archivos en el tooltip. Dock: el pie se resalta y toma el número del hub. Inicio: la tarjeta lo muestra. CLI: línea al final de `list`.
 
 **Relacionadas:** 4.2 Una semana de uso diario sin volver al artifact
 

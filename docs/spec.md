@@ -203,6 +203,7 @@ Reglas que hacen esto posible:
 - **Un archivo por tarea** hace que dos ramas que tocan tareas distintas nunca choquen.
 - Si dos ramas cambian la misma tarea, el conflicto es de git y se resuelve como cualquier otro. Mientras el archivo tenga marcadores de conflicto, la app lo marca como inválido (§4.3) y no lo pisa.
 - La app **nunca hace commits por su cuenta en local**: los cambios quedan en el working tree y se commitean cuando vos decidís, junto con el código si corresponde.
+- Para que no se olviden, la app **recuerda** cuántos archivos del tablero (`compass/` y el export markdown) están sin commitear: `GET /api/git` y el evento `git` del hub (después de cada cambio, y cada 3 s mientras haya algo pendiente, porque un commit no toca `compass/`), un aviso en la cabecera de la web, el pie del dock, la tarjeta del Inicio y una línea al final de `scompass list` (4.4).
 
 ## 5. Servidor
 <!-- id: servidor -->

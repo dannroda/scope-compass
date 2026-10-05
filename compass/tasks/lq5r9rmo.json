@@ -1,15 +1,15 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "El hub detecta archivos de compass/ con cambios (git status)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Mostrar el aviso en la web y en el dock, con la cantidad de archivos"
     },
     {
-      "done": false,
+      "done": true,
       "text": "scompass list lo menciona al final"
     }
   ],
@@ -22,11 +22,11 @@
     }
   ],
   "milestone": "m04",
-  "notes": "Salió de la consulta a Epiphany (4.2): los cambios hechos desde el hub o el dock quedan sin commitear y nada lo recuerda. El commit automático queda para M7 (§12.1); acá solo el aviso.",
+  "notes": "`hub/src/git.js` (`boardStatus`: compass/ + export_md). El hub publica `git` tras cada cambio y recuenta cada 3 s mientras haya algo pendiente (un commit no toca compass/). Web: aviso en la cabecera con los archivos en el tooltip. Dock: el pie se resalta y toma el número del hub. Inicio: la tarjeta lo muestra. CLI: línea al final de `list`.",
   "order": 4,
   "refs": [],
-  "status": "todo",
+  "status": "done",
   "test": "Mover una tarjeta muestra el aviso en la web y en el dock; después de commitear, desaparece.",
   "title": "Aviso de cambios sin commitear en compass/",
-  "updated_at": "2026-10-04T21:58:23.257Z"
+  "updated_at": "2026-10-05T01:02:39.030Z"
 }

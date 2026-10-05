@@ -192,6 +192,10 @@ func _on_event(msg: Dictionary) -> void:
 				if str(k).begins_with(str(msg.get("alias", "")) + "#"):
 					_blocks.erase(k)
 			await reload()
+		"git":
+			# El hub recuenta después de cada cambio (y mientras haya algo sin commitear, por si se commitea).
+			_uncommitted = int(msg.get("uncommitted", 0)) if msg.get("repo", false) else -1
+			_render()
 		"warning":
 			board.warn(msg)
 			if board.task(selected_task) == null:
@@ -742,6 +746,11 @@ func _render() -> void:
 	version_label.visible = online and client.hub_version != "" and mine != "" and client.hub_version != mine
 	version_label.text = "El hub es la versión %s y el addon la %s. Reiniciá el hub; si sigue, actualizá el que quedó viejo." % [client.hub_version, mine]
 	footer_right.text = ("compass: %d sin commitear" % _uncommitted) if _uncommitted >= 0 else ""
+	footer_right.tooltip_text = "Cambios del tablero que todavía no están en git: commitealos cuando quieras." if _uncommitted > 0 else ""
+	if _uncommitted > 0:
+		footer_right.add_theme_color_override("font_color", TODAY_COLOR)
+	else:
+		footer_right.remove_theme_color_override("font_color")
 
 
 func _render_tree() -> void:
@@ -1125,12 +1134,17 @@ func _on_item_collapsed(it: TreeItem) -> void:
 		_collapsed[m.trim_prefix("status:")] = it.collapsed
 
 
-## Archivos de compass/ con cambios sin commitear; -1 si no hay git o no es un repo.
+## Archivos de compass/ (y del export markdown) con cambios sin commitear; -1 si no hay git o no es un repo.
+## Lo mismo que cuenta el hub (hub/src/git.js); con hub, el número llega por el evento `git`.
 func _count_uncommitted() -> int:
 	if project_root == "":
 		return -1
+	var paths := ["compass"]
+	var export_md := str(board.config.get("export_md", "")) if board.config is Dictionary else ""
+	if export_md != "" and not export_md.begins_with("..") and not export_md.begins_with("/"):
+		paths.append(export_md)
 	var out := []
-	var code := OS.execute("git", ["-C", project_root, "status", "--porcelain", "--", "compass"], out)
+	var code := OS.execute("git", ["-C", project_root, "status", "--porcelain", "--untracked-files=all", "--"] + paths, out)
 	if code != 0 or out.is_empty():
 		return -1
 	var lines := str(out[0]).strip_edges()

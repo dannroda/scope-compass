@@ -135,6 +135,7 @@
     if (p.found && !s?.milestone && !s?.lists?.length) body.push(h('p', { class: 'muted', style: 'margin:0' }, 'Sin hitos ni listas todavía.'));
     if (p.warnings) body.push(h('p', { class: 'muted', style: 'margin:0' }, `⚠ ${p.warnings} archivo${p.warnings > 1 ? 's' : ''} con problemas (abrí el tablero para verlos)`));
 
+    if (p.git?.uncommitted) body.push(h('p', { style: 'margin:0' }, h('span', { class: 'tag today', title: 'La app no commitea sola: commiteá compass/ cuando quieras' }, p.git.uncommitted === 1 ? '1 archivo sin commitear' : p.git.uncommitted + ' archivos sin commitear')));
     const foot = h('div', { class: 'foot' });
     if (p.found) {
       if (p.hubs.length) {

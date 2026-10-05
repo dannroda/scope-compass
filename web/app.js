@@ -15,7 +15,9 @@
     // Pasos: detalles desplegados y el paso en edición ("tarea:índice").
     stepsOpen: new Set(), editStep: null,
     // Listas (D25): las del proyecto, la abierta, el ítem en edición ("lista:n") y las pestañas de config.views.
-    lists: [], list: '', editItem: null, views: ['board', 'lists', 'docs'], viewsApplied: false };
+    lists: [], list: '', editItem: null, views: ['board', 'lists', 'docs'], viewsApplied: false,
+    // Cambios sin commitear en compass/ y el export (4.4), de /api/git y el evento `git`.
+    git: null };
   const sectionCache = new Map(); // "alias#id" → html
   const docCache = new Map(); // alias → html
 
@@ -58,6 +60,7 @@
     doc: (alias) => call('GET', '/api/docs/' + encodeURIComponent(alias)),
     section: (alias, id) => call('GET', '/api/docs/' + encodeURIComponent(alias) + '/sections/' + encodeURIComponent(id)),
     lists: () => call('GET', '/api/lists'),
+    git: () => call('GET', '/api/git'),
     listCreate: (title) => call('POST', '/api/lists', { title }),
     listPatch: (id, patch, etag) => call('PATCH', '/api/lists/' + encodeURIComponent(id), patch, etag),
     listDelete: (id, etag) => call('DELETE', '/api/lists/' + encodeURIComponent(id), undefined, etag),
@@ -973,7 +976,17 @@
     try { await navigator.clipboard.writeText(text); toast('Copiado: ' + text); } catch (e) { toast(text); }
   }
 
+  // "3 cambios sin commitear": la app nunca commitea en local (spec §4.5), solo lo recuerda.
+  function renderGit() {
+    const el = document.getElementById('git');
+    const n = S.git?.repo ? S.git.uncommitted : 0;
+    el.hidden = !n;
+    el.textContent = n === 1 ? '1 cambio sin commitear' : n + ' cambios sin commitear';
+    el.title = n ? 'Sin commitear en git:\n' + S.git.files.join('\n') : '';
+  }
+
   function render() {
+    renderGit();
     renderMiles(); renderSummary(); renderWarnings(); renderBoard(); renderDetail(); renderDocs(); renderLists(); renderConn();
     // La vista se aplica al final: renderSummary muestra su caja por su cuenta.
     const boardView = S.view === 'board';
@@ -1065,6 +1078,7 @@
         const [config, m, t, d, l] = await Promise.all([api.config(), api.milestones(), api.tasks(), api.docs().catch(() => ({ docs: [] })),
           // Un hub de antes de las listas no tiene /api/lists.
           api.lists().catch(() => ({ lists: [], warnings: [] }))]);
+        S.git = await api.git().catch(() => null);
         S.lists = l.lists;
         S.views = Array.isArray(config.views) && config.views.length ? config.views : ['board', 'lists', 'docs'];
         S.docs = d.docs;
@@ -1101,6 +1115,7 @@
     if (m.type === 'focus') { callAttention(); return; }
     if (loading) { eventsDuringLoad = true; return; }
     if (m.type === 'doc_changed') { docChanged(m.alias); return; }
+    if (m.type === 'git') { S.git = m; renderGit(); return; }
     if (m.type === 'upsert') { clearWarning(m.collection, m.id); apply(m.collection, m.id, m.doc); }
     else if (m.type === 'delete') { clearWarning(m.collection, m.id); apply(m.collection, m.id, null); }
     else if (m.type === 'warning') {

@@ -16,6 +16,7 @@ import { StoreError } from './store/json-files.js';
 import { createWatcher } from './watcher.js';
 import { flat } from './views.js';
 import { resourceDir } from './schema.js';
+import { boardStatus } from './git.js';
 
 export const VERSION = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8')).version;
 export const HOST = '127.0.0.1';
@@ -32,7 +33,7 @@ const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, inva
 // app.events emite 'event' con los mensajes del protocolo WebSocket (§5.5): upsert, delete, warning.
 // webDir: carpeta de la UI (por defecto web/ del repo).
 // onRestart: si se pasa, POST /api/restart lo llama (serve cierra y se vuelve a lanzar).
-export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false, webDir = WEB_DIR, onRestart = null }) {
+export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false, webDir = WEB_DIR, onRestart = null, gitPollMs = 3000 }) {
   // Al cerrar se cortan todas las conexiones: con la UI abierta (que reintenta cada 0,5 s) el cierre
   // podía quedar esperando una conexión nueva o el cierre educado de un WebSocket.
   const app = Fastify({ logger, forceCloseConnections: true });
@@ -114,6 +115,28 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   registerApi(app, { store, projectDir, publish });
   registerDocsApi(app, { store, projectDir });
   app.register(registerWs, { store, publish, version: VERSION, boards });
+
+  // Cambios sin commitear (4.4): GET /api/git, y un evento `git` cuando el número cambia después de una escritura
+  // (del hub o de afuera). Se calcula después del export markdown, que también cuenta.
+  let lastGit = null;
+  const gitNow = async () => boardStatus(projectDir, (await store.loadAll()).config);
+  app.get('/api/git', async () => { lastGit = await gitNow(); return lastGit; });
+  // Un `git commit` no toca compass/: mientras haya algo sin commitear se vuelve a mirar cada gitPollMs.
+  let gitTimer = null;
+  let gitClosed = false;
+  const checkGit = async () => {
+    const s = await gitNow().catch(() => null);
+    if (gitClosed || !s) return;
+    // La primera vez solo toma la referencia: los clientes la piden con GET /api/git al cargar.
+    if (lastGit && (s.uncommitted !== lastGit.uncommitted || s.files.join() !== lastGit.files.join())) emit({ type: 'git', ...s });
+    lastGit = s;
+    if (s.uncommitted > 0) gitTimer = setTimeout(checkGit, gitPollMs);
+  };
+  const recheckGit = () => { clearTimeout(gitTimer); gitTimer = setTimeout(checkGit, 400); };
+  app.events.on('event', (e) => { if (e.type === 'upsert' || e.type === 'delete') recheckGit(); });
+  app.events.on('exported', recheckGit);
+  app.addHook('onReady', async () => { if (watch) recheckGit(); });
+  app.addHook('onClose', async () => { gitClosed = true; clearTimeout(gitTimer); });
 
   app.get('/api/config', async () => {
     const { config } = await store.loadAll();

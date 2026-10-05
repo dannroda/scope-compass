@@ -31,6 +31,7 @@ import { createHttpStore, detectHub } from './store/http.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { loadCompass } from './store/load.js';
 import { summarize, todayOf } from './summary.js';
+import { boardStatus } from './git.js';
 import { listTemplates, loadTemplate } from './templates.js';
 import { STATUSES } from './views.js';
 
@@ -90,8 +91,9 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     const base = { path: p.path, name: p.name, found: p.found, hubs: p.hubs, added_at: p.added_at, last_seen: p.last_seen };
     if (!p.found) return base;
     const all = await loadCompass(compassOf(p.path), validators);
+    const git = await boardStatus(p.path, all.config);
     return { ...base, name: all.config?.project ?? p.name, views: all.config?.views ?? null, godot: existsSync(join(p.path, 'project.godot')),
-      warnings: all.warnings.length, summary: summarize(all, now()) };
+      warnings: all.warnings.length, summary: summarize(all, now()), git: git.repo ? { uncommitted: git.uncommitted } : null };
   }
 
   app.get('/api/health', async () => ({ ok: true, name: 'scope-compass-home', version: VERSION, pid: process.pid, projects_file: projectsFile() }));
