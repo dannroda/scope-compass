@@ -1,23 +1,23 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Un solo `home` por usuario (`kind: \"home\"` en el registro de hubs)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Leer cada proyecto de disco con el Store; cruzar con los hubs vivos"
     },
     {
-      "done": false,
+      "done": true,
       "text": "WebSocket a los hubs vivos para cambios en vivo"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Escrituras por el hub si está vivo, si no directo con etag"
     },
     {
-      "done": false,
+      "done": true,
       "text": "`/api/projects` y `/api/today`"
     }
   ],
@@ -38,7 +38,7 @@
     }
   ],
   "milestone": "m08",
-  "notes": "",
+  "notes": "`hub/src/home.js` (servidor), `hub/src/summary.js` (resumen y Hoy, funciones puras). El registro de hubs anota el Inicio con `kind: \\\"home\\\"`; `hubsOf` lo excluye. Los proyectos se nombran por ruta en la API, no por índice. Todavía no sirve una página: la UI es 8.10.",
   "order": 8,
   "refs": [
     {
@@ -46,8 +46,8 @@
       "section": "v3-home"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "Con un hub vivo y otro proyecto apagado, `GET /api/projects` devuelve los dos con su estado.",
   "title": "`scompass home`: proceso y API",
-  "updated_at": "2026-10-04T22:16:58.607Z"
+  "updated_at": "2026-10-05T00:08:46.065Z"
 }

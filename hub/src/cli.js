@@ -17,7 +17,8 @@ import { createHttpStore, detectHub, hubVersions } from './store/http.js';
 import { createServer, freePortFrom, listen, VERSION } from './server.js';
 import { startTray } from './tray.js';
 import { outdatedFiles, TEMPLATES, updateCompass } from './update.js';
-import { hubsOf, listHubs, registerHub, unregisterHub } from './registry.js';
+import { hubsOf, listHubs, liveHome, registerHub, unregisterHub } from './registry.js';
+import { createHomeServer } from './home.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
@@ -39,6 +40,8 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
         [--tray]                            ícono en la bandeja del sistema, con "Detener hub"
   restart                                   reinicia el hub de este proyecto (para cargar código nuevo)
   hubs                                      hubs activos de todos los proyectos
+  home [--port 4700] [--open]               levanta el Inicio: todos los proyectos del equipo (uno solo por usuario;
+                                            si ya corre, dice dónde)
   home list                                 proyectos conocidos en este equipo, con el estado de su hub
   home add [<carpeta>]                      anota un proyecto sin levantar su hub (por defecto, el de --dir)
   home rm [<carpeta>]                       lo quita del registro (no toca sus datos)
@@ -174,6 +177,42 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     if (all.config?.export_md && all.config.auto_export_md !== false) await exportMarkdown(project, all);
     return done(r, msg);
   };
+
+  // El Inicio: un proceso por usuario (kind "home" en el registro de hubs). Si ya hay uno, dice dónde está.
+  async function serveHome() {
+    const openUrl = (url) => spawn(process.env.SCOMPASS_OPEN || 'xdg-open', [url], { detached: true, stdio: 'ignore' })
+      .on('error', () => warn(`no se pudo abrir el navegador: ${url}`)).unref();
+    const running = liveHome();
+    if (running) {
+      const url = `http://127.0.0.1:${running.port}/`;
+      if (o.open) openUrl(url);
+      return done({ url, port: running.port, pid: running.pid, already: true }, `El Inicio ya corre en ${url} (PID ${running.pid})`);
+    }
+    let port = Number(o.port ?? 4700);
+    if (!Number.isInteger(port) || port < 0 || port > 65535) throw new UsageError(`puerto inválido: ${o.port}`);
+    if (o.port === undefined) {
+      const free = await freePortFrom(port);
+      if (free !== null && free !== port) { warn(`aviso: el puerto ${port} está ocupado; el Inicio usa el ${free}`); port = free; }
+    }
+    const app = createHomeServer({ validators });
+    let addr;
+    try { addr = await listen(app, port); } catch (e) {
+      await app.close();
+      if (e.code === 'EADDRINUSE') throw new StoreError('io_error', `el puerto ${port} está ocupado`);
+      throw e;
+    }
+    registerHub({ port: addr.port, kind: 'home' });
+    const url = `http://${addr.address}:${addr.port}/`;
+    o.json ? print(JSON.stringify({ url, port: addr.port })) : print(`Inicio de Scope Compass en ${url} · ${projectsFile()} · Ctrl+C para cerrar`);
+    if (o.open) openUrl(url);
+    const ac = new AbortController();
+    if (signal) signal.addEventListener('abort', () => ac.abort(), { once: true });
+    else { process.once('SIGINT', () => ac.abort()); process.once('SIGTERM', () => ac.abort()); }
+    if (!ac.signal.aborted && !signal?.aborted) await new Promise((res) => ac.signal.addEventListener('abort', res, { once: true }));
+    await app.close();
+    unregisterHub();
+    return 0;
+  }
 
   const commands = {
     async init() {
@@ -447,15 +486,16 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const hubs = listHubs();
       if (o.json) return done({ hubs });
       if (!hubs.length) print('No hay hubs de Scope Compass corriendo.');
-      for (const h of hubs) print(`PID ${String(h.pid).padEnd(8)} http://127.0.0.1:${h.port}/  ${h.project}  (desde ${new Date(h.startedAt).toLocaleString('es-AR')})`);
-      const dup = hubs.filter((h, i) => hubs.findIndex((x) => x.project === h.project) !== i);
+      for (const h of hubs) print(`PID ${String(h.pid).padEnd(8)} http://127.0.0.1:${h.port}/  ${h.kind === 'home' ? 'Inicio (scompass home)' : h.project}  (desde ${new Date(h.startedAt).toLocaleString('es-AR')})`);
+      const dup = hubs.filter((h, i) => h.kind !== 'home' && hubs.findIndex((x) => x.project === h.project) !== i);
       for (const h of dup) warn(`aviso: más de un hub para ${h.project}`);
       return 0;
     },
 
-    // Registro de proyectos conocidos (D23). `home` sin subcomando levantará el Inicio (8.8).
+    // Registro de proyectos conocidos (D23); sin subcomando, el Inicio (D24).
     async home() {
       const sub = rest[0];
+      if (sub === undefined) return serveHome();
       if (sub === 'list') {
         const projects = projectsStatus();
         if (o.json) return done({ file: projectsFile(), projects });

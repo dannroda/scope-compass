@@ -725,7 +725,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (6/14)
+## M8 — Inicio, listas y plantillas (v3)  (7/14)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -838,15 +838,17 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Bloqueada por:** 8.3 Listas: schema, Store y CLI; 8.6 `views` en `config.json`
 
-### 8.8 `scompass home`: proceso y API · Pendiente
+### 8.8 `scompass home`: proceso y API · Hecho
 
-- [ ] Un solo `home` por usuario (`kind: "home"` en el registro de hubs)
-- [ ] Leer cada proyecto de disco con el Store; cruzar con los hubs vivos
-- [ ] WebSocket a los hubs vivos para cambios en vivo
-- [ ] Escrituras por el hub si está vivo, si no directo con etag
-- [ ] `/api/projects` y `/api/today`
+- [x] Un solo `home` por usuario (`kind: "home"` en el registro de hubs)
+- [x] Leer cada proyecto de disco con el Store; cruzar con los hubs vivos
+- [x] WebSocket a los hubs vivos para cambios en vivo
+- [x] Escrituras por el hub si está vivo, si no directo con etag
+- [x] `/api/projects` y `/api/today`
 
 **Prueba:** Con un hub vivo y otro proyecto apagado, `GET /api/projects` devuelve los dos con su estado.
+
+**Notas:** `hub/src/home.js` (servidor), `hub/src/summary.js` (resumen y Hoy, funciones puras). El registro de hubs anota el Inicio con `kind: \"home\"`; `hubsOf` lo excluye. Los proyectos se nombran por ruta en la API, no por índice. Todavía no sirve una página: la UI es 8.10.
 
 **Referencias:** `docs/spec.md#v3-home`
 

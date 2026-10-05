@@ -119,6 +119,7 @@ Cada hub que se levanta anota su proyecto en `~/.config/scope-compass/projects.j
 scompass home list --json   # { "file", "projects": [ { "path", "name", "found", "hubs": [ { "pid", "port" } ] } ] }
 scompass home add           # anota este proyecto sin levantar su hub (o: home add <carpeta>)
 scompass home rm <carpeta>  # lo quita del registro; no toca sus datos
+scompass home               # levanta el Inicio (uno por usuario): GET /api/today junta lo vencido, de hoy y en curso
 ```
 
 ## Más

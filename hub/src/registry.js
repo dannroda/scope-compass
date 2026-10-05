@@ -1,5 +1,5 @@
 // Registro de hubs activos: un archivo por hub en $XDG_RUNTIME_DIR/scope-compass/hubs/<pid>.json con
-// { pid, port, project, startedAt }. Sirve para no levantar dos hubs del mismo proyecto y para encontrar el hub
+// { pid, port, project, startedAt }. El Inicio (`scompass home`, D24) se anota igual, con kind: "home" y sin project. Sirve para no levantar dos hubs del mismo proyecto y para encontrar el hub
 // de un proyecto aunque no esté en el puerto de su config. Los registros de procesos muertos se limpian solos.
 import { mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir, userInfo } from 'node:os';
@@ -28,12 +28,14 @@ export function listHubs() {
   return out.sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 }
 
-export const hubsOf = (project) => listHubs().filter((h) => real(h.project) === real(project));
+export const hubsOf = (project) => listHubs().filter((h) => h.kind !== 'home' && real(h.project) === real(project));
+/** El Inicio que esté corriendo (uno por usuario), o null. */
+export const liveHome = () => listHubs().find((h) => h.kind === 'home') ?? null;
 
-export function registerHub({ port, project, pid = process.pid }) {
+export function registerHub({ port, project, pid = process.pid, kind }) {
   const dir = registryDir();
   mkdirSync(dir, { recursive: true });
-  const entry = { pid, port, project: real(project), startedAt: new Date().toISOString() };
+  const entry = kind === 'home' ? { pid, port, kind, startedAt: new Date().toISOString() } : { pid, port, project: real(project), startedAt: new Date().toISOString() };
   writeFileSync(join(dir, `${pid}.json`), JSON.stringify(entry) + '\n');
   return entry;
 }

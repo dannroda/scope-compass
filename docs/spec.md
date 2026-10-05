@@ -597,7 +597,14 @@ Hay dos registros, con funciones distintas (D23):
 - **En vivo:** se suscribe por WebSocket a los hubs vivos. Los proyectos sin hub se releen al abrir o recargar el Inicio.
 - **Escrituras** (tildar desde "Hoy"): por la API del hub del proyecto si está vivo; si no, directo al Store con etag, igual que la CLI.
 - **Prender y apagar hubs:** el Inicio levanta `scompass serve --dir <proyecto>` como proceso hijo (muere con el Inicio, como los que levanta el dock, tarea 5.8) y apaga cualquier hub vivo con `SIGTERM` al pid del registro. Si el hub es del dock, avisa antes; el dock ya sabe pasar a modo sin hub y reintentar.
-- **API:** `GET /api/projects` (registro + estado + resumen), `POST /api/projects` (importar), `DELETE /api/projects/:i`, `POST /api/projects/:i/start|stop`, `GET /api/today`.
+- **API** (`hub/src/home.js`). Los proyectos se nombran por su ruta, y solo se actúa sobre los del registro:
+  - `GET /api/projects`: registro + estado del hub + resumen (hito actual con su avance, en curso, las 3 que siguen, listas con pendientes, de hoy y vencidos).
+  - `POST /api/projects { path }` importa; `DELETE /api/projects?path=…` quita del registro.
+  - `GET /api/today`: ítems y tareas vencidos o de hoy (sin terminar) y tareas en curso, de todos los proyectos; vencido primero.
+  - `POST /api/projects/check-item { path, list, n, etag? }` (usa la misma regla que la CLI: lo que se repite avanza) y `POST /api/projects/move-task { path, id, status, etag? }`. Responden `via: "hub" | "disk"`.
+  - `POST /api/projects/start|stop { path }` (8.9).
+  - `GET /ws`: `changed { path, collection, id }` (reenviado de los hubs o de una escritura directa), `hubs` (cambió el conjunto de hubs vivos) y `projects` (cambió el registro). El Inicio mira el registro de hubs cada segundo y se suscribe al WebSocket de cada hub vivo.
+- Un segundo `scompass home` no levanta otro: dice dónde corre el primero (y lo abre con `--open`). Puerto 4700, o el siguiente libre.
 
 ### 16.3 Bandeja agrupada
 <!-- id: v3-bandeja -->
