@@ -23,7 +23,7 @@ export function listHubs() {
     let h = null;
     try { h = JSON.parse(readFileSync(join(dir, n), 'utf8')); } catch { /* a medio escribir o roto */ }
     if (h && Number.isInteger(h.pid) && alive(h.pid)) out.push(h);
-    else if (!h || !alive(Number(n.slice(0, -5)))) rmSync(join(dir, n), { force: true });
+    else if (!h || !alive(parseInt(n, 10))) rmSync(join(dir, n), { force: true });
   }
   return out.sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 }
@@ -48,4 +48,21 @@ export function registerHub({ port, project, pid = process.pid, kind, attached =
 
 export function unregisterHub(pid = process.pid) {
   rmSync(join(registryDir(), `${pid}.json`), { force: true });
+}
+
+// Proyectos que sirve el Inicio (D29): una entrada por proyecto, <pid>-<clave>.json, con base: "/p/<clave>". Para
+// la CLI y el dock es un hub más (hubsOf los incluye), en el puerto del Inicio y con esa base delante de las rutas.
+export function registerServed({ port, project, base, key, pid = process.pid }) {
+  const dir = registryDir();
+  mkdirSync(dir, { recursive: true });
+  const entry = { pid, port, project: real(project), base, kind: 'served', startedAt: new Date().toISOString() };
+  writeFileSync(join(dir, `${pid}-${key}.json`), JSON.stringify(entry) + '\n');
+  return entry;
+}
+
+/** Quita todas las entradas de proyectos servidos por este proceso. */
+export function unregisterServed(pid = process.pid) {
+  let names = [];
+  try { names = readdirSync(registryDir()); } catch { return; }
+  for (const n of names) if (n.startsWith(`${pid}-`) && n.endsWith('.json')) rmSync(join(registryDir(), n), { force: true });
 }

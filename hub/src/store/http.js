@@ -13,18 +13,21 @@ const unflat = ({ id, etag, ...doc }) => ({ id, etag, doc });
 /** Versión que informó cada hub encontrado (URL base → versión), para avisar si no es la de esta CLI. */
 export const hubVersions = new Map();
 
+// Las entradas del registro pueden traer una base (el Inicio sirve el proyecto en /p/<clave>, D29): la URL
+// devuelta ya la incluye, así el store HTTP no cambia.
 export async function detectHub(projectDir, port, opts = {}) {
-  const ports = [port, ...hubsOf(projectDir).map((h) => h.port)].filter((p, i, a) => p && a.indexOf(p) === i);
-  for (const p of ports) {
-    const base = await probeHub(projectDir, p, opts);
+  const candidates = [...hubsOf(projectDir).map((h) => [h.port, h.base ?? '']), [port, '']]
+    .filter(([p, b], i, a) => p && a.findIndex(([q, c]) => q === p && c === b) === i);
+  for (const [p, b] of candidates) {
+    const base = await probeHub(projectDir, p, { ...opts, prefix: b });
     if (base) return base;
   }
   return null;
 }
 
-async function probeHub(projectDir, port, { timeoutMs = 300 } = {}) {
+async function probeHub(projectDir, port, { timeoutMs = 300, prefix = '' } = {}) {
   if (!port) return null;
-  const base = `http://127.0.0.1:${port}`;
+  const base = `http://127.0.0.1:${port}${prefix}`;
   try {
     const r = await fetch(`${base}/api/health`, { signal: AbortSignal.timeout(timeoutMs) });
     if (!r.ok) return null;

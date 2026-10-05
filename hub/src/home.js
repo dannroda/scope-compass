@@ -88,12 +88,17 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   const readConfig = (path) => readFile(join(path, 'compass', 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
 
   // El store del proyecto: su hub si está vivo, o compass/ directo.
+  // El store del proyecto: el del hub que lo sirve acá mismo (D29), el de su hub suelto, o compass/ directo.
   async function storeFor(path) {
+    const local = serving.local(path);
+    if (local) return Object.assign(Object.create(local.store), { local });
     const hub = await detectHub(path, (await readConfig(path))?.port);
     return hub ? createHttpStore(hub, compassOf(path), { validators }) : createJsonFilesStore(compassOf(path), { validators });
   }
-  // Después de escribir directo: export markdown y aviso a las pestañas del Inicio (con hub, lo hacen el hub y su WS).
-  async function afterWrite(path, store, collection, id) {
+  // Después de escribir: si lo sirve este Inicio, se publica como cualquier escritura del hub (pestañas, export);
+  // si fue directo a compass/, export markdown y aviso a las pestañas del Inicio. Con un hub suelto lo hace él.
+  async function afterWrite(path, store, collection, id, w) {
+    if (store.local) { store.local.publish.upsert(collection, w); return; }
     if (!store.hub) {
       const all = await store.loadAll();
       if (all.config?.export_md && all.config.auto_export_md !== false) await exportMarkdown(path, all);
@@ -205,8 +210,8 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     let r;
     try { r = checkItem(items[n - 1], { undo: !!undo }); } catch (e) { throw new StoreError(e.code ?? 'invalid_argument', e.message); }
     const w = await store.patch('lists', list, { items: items.with(n - 1, r.item) }, { ifMatch: cur.etag });
-    await afterWrite(path, store, 'lists', list);
-    return { list: { id: w.id, etag: w.etag, ...w.doc }, advanced: r.advanced, via: store.hub ? 'hub' : 'disk' };
+    await afterWrite(path, store, 'lists', list, w);
+    return { list: { id: w.id, etag: w.etag, ...w.doc }, advanced: r.advanced, via: store.local ? 'home' : store.hub ? 'hub' : 'disk' };
   });
 
   app.post('/api/projects/move-task', async (req) => {
@@ -215,16 +220,18 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     if (!STATUSES.includes(status)) throw new StoreError('invalid_argument', `estado inválido: ${status}`);
     const store = await storeFor(path);
     const w = await store.patch('tasks', id, { status }, etag === undefined ? {} : { ifMatch: etag });
-    await afterWrite(path, store, 'tasks', id);
-    return { task: { id: w.id, etag: w.etag, ...w.doc }, via: store.hub ? 'hub' : 'disk' };
+    await afterWrite(path, store, 'tasks', id, w);
+    return { task: { id: w.id, etag: w.etag, ...w.doc }, via: store.local ? 'home' : store.hub ? 'hub' : 'disk' };
   });
 
+  // Los hubs sueltos de un proyecto: sin las entradas de proyectos que sirve este mismo Inicio (D29).
+  const standaloneOf = (path) => hubsOf(path).filter((h) => h.pid !== process.pid);
   // Prender y apagar hubs (8.9). Los que prende el Inicio son hijos suyos con la entrada en una tubería
   // (--exit-on-stdin-close, como los del dock): si el Inicio se cierra o muere, se cierran solos.
   const children = new Map(); // pid → ChildProcess
   async function startHub(path) {
     known(path);
-    const running = hubsOf(path);
+    const running = standaloneOf(path);
     if (running.length) return { hub: running[0], already: true };
     const child = spawn(process.execPath, [BIN, '--dir', path, 'serve', '--exit-on-stdin-close'], { stdio: ['pipe', 'ignore', 'pipe'], env: { ...process.env, SCOMPASS_LAUNCHED_BY: 'home' } });
     let err = '';
@@ -232,7 +239,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     children.set(child.pid, child);
     child.on('exit', () => { children.delete(child.pid); poll(); });
     for (let i = 0; i < 100; i++) {
-      const h = hubsOf(path).find((x) => x.pid === child.pid);
+      const h = standaloneOf(path).find((x) => x.pid === child.pid);
       if (h) { poll(); return { hub: h, already: false }; }
       if (child.exitCode !== null) break;
       await sleep(50);
@@ -246,7 +253,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
 
   async function stopHub(path, { force = false } = {}) {
     known(path);
-    const running = hubsOf(path);
+    const running = standaloneOf(path);
     if (!running.length) throw new StoreError('not_found', `${path} no tiene un hub corriendo`);
     // Uno atado a otro proceso (el dock de Godot) se apaga solo con force: el editor se queda sin hub.
     const foreign = running.filter(isForeign);
@@ -275,7 +282,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   const mtime = () => { try { return statSync(projectsFile()).mtimeMs; } catch { return null; } };
   function poll() {
     const paths = new Set(loadProjectsSafe().map((p) => p.path));
-    const live = listHubs().filter((h) => h.kind !== 'home' && paths.has(h.project));
+    const live = listHubs().filter((h) => h.kind !== 'home' && h.pid !== process.pid && paths.has(h.project));
     const key = live.map((h) => `${h.pid}:${h.port}`).sort().join(',');
     for (const [pid, s] of subs) if (!live.some((h) => String(h.pid) === pid)) { s.ws.close(); subs.delete(pid); }
     for (const h of live) {

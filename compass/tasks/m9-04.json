@@ -1,18 +1,18 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "El store HTTP con la base"
     },
     {
-      "done": false,
+      "done": true,
       "text": "scompass hubs y home list muestran quién sirve cada proyecto"
     }
   ],
   "code": "9.4",
   "created_at": "2026-10-05T01:29:51.993Z",
   "milestone": "m09",
-  "notes": "",
+  "notes": "detectHub prueba cada entrada con su base: la URL del store HTTP ya la incluye. `serve` se niega si el Inicio sirve el proyecto; `hubs` lo muestra.",
   "order": 4,
   "refs": [
     {
@@ -20,8 +20,8 @@
       "section": "v4"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "",
   "title": "CLI: usar la base del registro",
-  "updated_at": "2026-10-05T01:29:52.695Z"
+  "updated_at": "2026-10-05T01:44:52.104Z"
 }

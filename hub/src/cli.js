@@ -284,6 +284,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const others = hubsOf(project).filter((h) => h.pid !== process.pid);
       if (others.length && !o.force) {
         const h = others[0];
+        if (h.kind === 'served') throw new StoreError('conflict', `este proyecto lo sirve el Inicio en http://127.0.0.1:${h.port}${h.base}/ (D29): no hace falta otro hub`);
         throw new StoreError('conflict', `ya hay un hub de este proyecto: PID ${h.pid} en http://127.0.0.1:${h.port}/ (scompass hubs lista todos; --force para levantar otro igual)`);
       }
       let port = Number(o.port ?? all.config?.port ?? 4711);
@@ -522,7 +523,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const hubs = listHubs();
       if (o.json) return done({ hubs });
       if (!hubs.length) print('No hay hubs de Scope Compass corriendo.');
-      for (const h of hubs) print(`PID ${String(h.pid).padEnd(8)} http://127.0.0.1:${h.port}/  ${h.kind === 'home' ? 'Inicio (scompass home)' : h.project}  (desde ${new Date(h.startedAt).toLocaleString('es-AR')})`);
+      for (const h of hubs) print(`PID ${String(h.pid).padEnd(8)} http://127.0.0.1:${h.port}${h.base ?? ''}/  ${h.kind === 'home' ? 'Inicio (scompass home)' : h.kind === 'served' ? `${h.project}  (lo sirve el Inicio)` : h.project}  (desde ${new Date(h.startedAt).toLocaleString('es-AR')})`);
       const dup = hubs.filter((h, i) => h.kind !== 'home' && hubs.findIndex((x) => x.project === h.project) !== i);
       for (const h of dup) warn(`aviso: más de un hub para ${h.project}`);
       return 0;

@@ -113,3 +113,33 @@ test('una clave que no existe: 404', async () => {
   await project('Vida');
   assert.equal((await fetch(base + '/p/otra/api/tasks')).status, 404);
 });
+
+test('registro: un proyecto que sirve el Inicio queda anotado con su base; la CLI pasa por ahí y serve no levanta otro', async () => {
+  const { run } = await import('../src/cli.js');
+  const { hubsOf } = await import('../src/registry.js');
+  const p = await project('Vida');
+  await fetch(base + '/p/vida/api/tasks'); // lo activa
+  const [entry] = hubsOf(p);
+  assert.deepEqual([entry.kind, entry.base, entry.port], ['served', '/p/vida', Number(new URL(base).port)]);
+  // La CLI encuentra el proyecto en el Inicio: la escritura llega por el WebSocket del tablero.
+  const ws = socket(base.replace('http', 'ws') + '/p/vida/ws');
+  await ws.open;
+  let out = '', err = '';
+  const io = { cwd: p, out: { write: (s) => { out += s; } }, err: { write: (s) => { err += s; } } };
+  assert.equal(await run(['move', 'm1-04', 'review'], io), 0, err);
+  assert.ok(await until(() => ws.got.some((e) => e.type === 'upsert' && e.id === 'm1-04' && e.doc.status === 'review')), 'no pasó por el Inicio');
+  // serve en otro proceso (como en la realidad: el Inicio es otro proceso) no levanta un segundo hub.
+  const { execFile } = await import('node:child_process');
+  const bin = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
+  const r = await new Promise((done) => execFile(process.execPath, [bin, '--dir', p, 'serve', '--port', '0'], { env: process.env, timeout: 10000 }, (e, so, se) => done({ code: e?.code ?? 0, se })));
+  assert.equal(r.code, 1, r.se);
+  assert.match(r.se, /lo sirve el Inicio en http:\/\/127\.0\.0\.1:\d+\/p\/vida\//);
+  out = '';
+  await run(['hubs'], io);
+  assert.match(out, /\/p\/vida\/ .*lo sirve el Inicio/);
+  ws.ws.close();
+  await home.close();
+  assert.equal(hubsOf(p).length, 0, 'al cerrar el Inicio se desanota');
+  home = createHomeServer({ validators: V, pollMs: 50 }); // para el afterEach
+  await listen(home, 0);
+});

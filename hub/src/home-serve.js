@@ -4,7 +4,7 @@
 // dock, `scompass serve`), el Inicio le reenvía HTTP y WebSocket en lugar de servirlo él.
 import { basename, join } from 'node:path';
 import { slugify, freeId } from './lists.js';
-import { hubsOf } from './registry.js';
+import { hubsOf, registerServed, unregisterServed } from './registry.js';
 import { createServer } from './server.js';
 import { createJsonFilesStore } from './store/json-files.js';
 import { attachSocket } from './ws.js';
@@ -25,7 +25,7 @@ const OUT = ['content-type', 'etag', 'location', 'cache-control'];
  * (projectsStatus). onChange(path, evt): un cambio en un proyecto que sirve el Inicio (para avisar a sus pestañas).
  * Devuelve { served(path), close() }.
  */
-export function registerProjectRoutes(app, { validators, projects, onChange }) {
+export function registerProjectRoutes(app, { validators, projects, onChange, port: portOf = () => app.server?.address()?.port }) {
   const live = new Map(); // path → { key, hub, ready }
   const keyed = () => {
     const list = projects().filter((p) => p.found);
@@ -44,7 +44,7 @@ export function registerProjectRoutes(app, { validators, projects, onChange }) {
     if (!entry) {
       const hub = createServer({ projectDir: p.path, store: createJsonFilesStore(join(p.path, 'compass'), { validators }), validators, watch: true, exportMd: true });
       hub.events.on('event', (e) => onChange?.(p.path, e));
-      entry = { key: p.key, hub, ready: hub.ready() };
+      entry = { key: p.key, hub, ready: hub.ready().then(() => registerServed({ port: portOf(), project: p.path, base: `/p/${p.key}`, key: p.key })) };
       live.set(p.path, entry);
     }
     await entry.ready;
@@ -52,7 +52,7 @@ export function registerProjectRoutes(app, { validators, projects, onChange }) {
   }
   // Quién sirve el proyecto ahora: un hub suelto (se le reenvía) o el Inicio.
   const route = (p) => {
-    const standalone = hubsOf(p.path)[0];
+    const standalone = hubsOf(p.path).find((h) => h.pid !== process.pid);
     return standalone && !live.has(p.path) ? { port: standalone.port } : null;
   };
 
@@ -110,8 +110,12 @@ export function registerProjectRoutes(app, { validators, projects, onChange }) {
   });
 
   return {
-    served: (path) => (live.has(path) ? 'home' : hubsOf(path).length ? 'hub' : null),
+    served: (path) => (live.has(path) ? 'home' : hubsOf(path).some((h) => h.pid !== process.pid) ? 'hub' : null),
     keyOf: (path) => keyed().keys.get(path) ?? null,
-    async close() { for (const e of live.values()) await e.hub.close().catch(() => {}); live.clear(); }
+    // El store y el publish de un proyecto que sirve este Inicio (para escribir sin pasar por HTTP), o null.
+    local: (path) => (live.has(path) ? { store: live.get(path).hub.hub.store, publish: live.get(path).hub.hub.publish } : null),
+    // Activar un proyecto sin pedirle nada (el "Iniciar hub" del dock con el Inicio corriendo, 9.5).
+    activate: async (path) => { const { list, keys } = keyed(); const p = list.find((x) => x.path === path); if (!p) return null; await activate({ ...p, key: keys.get(path) }); return `/p/${keys.get(path)}`; },
+    async close() { unregisterServed(); for (const e of live.values()) await e.hub.close().catch(() => {}); live.clear(); }
   };
 }

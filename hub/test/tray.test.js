@@ -150,7 +150,8 @@ test('serve --tray: "Actualizar compass/" aparece con el schema viejo y lo pone 
   }
 });
 
-test('§16.8 home --tray: con tres hubs con --tray hay un solo ícono; al cerrar el Inicio vuelven los tres', { skip }, async () => {
+// Esperas generosas: con la suite entera en paralelo, arrancar tres hubs y que miren el registro (cada 1 s) tarda.
+test('§16.8 home --tray: con tres hubs con --tray hay un solo ícono; al cerrar el Inicio vuelven los tres', { skip, timeout: 60000 }, async () => {
   const env = { ...process.env, DBUS_SESSION_BUS_ADDRESS: address, SCOMPASS_REGISTRY: join(dir, 'reg-agrupado'), SCOMPASS_CONFIG: join(dir, 'cfg-agrupado') };
   const bin = join(REPO, 'hub', 'bin', 'scompass.js');
   const owns = async (name) => (await call('org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus', 'NameHasOwner', 's', [name]))[0];
@@ -168,17 +169,17 @@ test('§16.8 home --tray: con tres hubs con --tray hay un solo ícono; al cerrar
       hubs.push(hub);
     }
     const services = hubs.map((h) => `org.kde.StatusNotifierItem-${h.pid}-1`);
-    for (let i = 0; i < 100 && !services.every((s) => registered.includes(s)); i++) await sleep(50);
+    for (let i = 0; i < 200 && !services.every((s) => registered.includes(s)); i++) await sleep(50);
     assert.ok(services.every((s) => registered.includes(s)), `los hubs no pusieron su ícono: ${out}`);
     const ports = [...out.matchAll(/127\.0\.0\.1:(\d+)/g)].map((m) => Number(m[1]));
 
     home = spawn(process.execPath, [bin, 'home', '--port', '0', '--tray'], { env });
     home.stderr.on('data', (d) => { out += d; });
     const homeService = `org.kde.StatusNotifierItem-${home.pid}-1`;
-    for (let i = 0; i < 60 && !registered.includes(homeService); i++) await sleep(50);
+    for (let i = 0; i < 160 && !registered.includes(homeService); i++) await sleep(50);
     assert.ok(registered.includes(homeService), `el Inicio no puso su ícono: ${out}`);
     // Los hubs quitan el suyo (lo revisan cada segundo): queda uno solo, el del Inicio.
-    for (let i = 0; i < 60 && (await Promise.all(services.map(owns))).some(Boolean); i++) await sleep(50);
+    for (let i = 0; i < 160 && (await Promise.all(services.map(owns))).some(Boolean); i++) await sleep(50);
     assert.deepEqual(await Promise.all(services.map(owns)), [false, false, false], 'algún hub sigue con su ícono');
 
     // El menú del Inicio: los tres proyectos con su submenú.
@@ -195,7 +196,7 @@ test('§16.8 home --tray: con tres hubs con --tray hay un solo ícono; al cerrar
     // Al cerrar el Inicio, los tres vuelven a la bandeja.
     home.kill('SIGTERM');
     await new Promise((r) => home.on('exit', r));
-    for (let i = 0; i < 60 && !(await Promise.all(services.map(owns))).every(Boolean); i++) await sleep(50);
+    for (let i = 0; i < 160 && !(await Promise.all(services.map(owns))).every(Boolean); i++) await sleep(50);
     assert.deepEqual(await Promise.all(services.map(owns)), [true, true, true], 'no volvieron todos');
   } finally {
     home?.kill('SIGKILL');
