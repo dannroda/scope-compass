@@ -221,3 +221,17 @@ test('pick-folder: lo que elige el selector del escritorio; cancelar no es un er
     if (saved === undefined) delete process.env.SCOMPASS_PICKER; else process.env.SCOMPASS_PICKER = saved;
   }
 });
+
+test('actualizar compass/ desde el Inicio, sin hub: la tarjeta lo marca y la API lo copia', async () => {
+  const { writeFile: wf, readFile: rf } = await import('node:fs/promises');
+  const schema = join(b, 'compass', 'schema', 'task.schema.json');
+  await wf(schema, '{}\n');
+  const card = (await api('GET', '/api/projects')).body.projects.find((x) => x.path === b);
+  assert.ok(card.outdated.includes('schema/task.schema.json'), JSON.stringify(card.outdated));
+  const r = await api('POST', '/api/projects/update', { path: b });
+  assert.equal(r.status, 200);
+  assert.ok(r.body.updated.includes('compass/schema/task.schema.json'));
+  assert.notEqual(await rf(schema, 'utf8'), '{}\n');
+  assert.ok(!(await api('GET', '/api/projects')).body.projects.find((x) => x.path === b).outdated.includes('schema/task.schema.json'));
+  assert.equal((await api('POST', '/api/projects/update', { path: join(root, 'otro') })).status, 404);
+});

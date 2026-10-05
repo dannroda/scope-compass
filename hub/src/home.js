@@ -33,6 +33,7 @@ import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { loadCompass } from './store/load.js';
 import { summarize, todayOf } from './summary.js';
 import { registerProjectRoutes } from './home-serve.js';
+import { outdatedFiles, updateCompass } from './update.js';
 import { boardStatus } from './git.js';
 import { listTemplates, loadTemplate } from './templates.js';
 import { STATUSES } from './views.js';
@@ -45,7 +46,7 @@ const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, inva
 
 // now: función que devuelve la fecha "de hoy" (los tests la fijan). pollMs: cada cuánto mira el registro de hubs
 // (medio segundo: un hub que se levanta se ve en el Inicio en menos de 1 s, §16.8).
-export function createHomeServer({ validators, now = () => new Date(), pollMs = 500, logger = false, webDir = WEB_DIR }) {
+export function createHomeServer({ validators, now = () => new Date(), pollMs = 500, logger = false, webDir = WEB_DIR, onRestart = null }) {
   const app = Fastify({ logger, forceCloseConnections: true });
   const events = new EventEmitter();
   app.decorate('events', events);
@@ -115,12 +116,30 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     const all = await loadCompass(compassOf(p.path), validators);
     const git = await boardStatus(p.path, all.config);
     return { ...base, name: all.config?.project ?? p.name, views: all.config?.views ?? null, godot: existsSync(join(p.path, 'project.godot')),
-      warnings: all.warnings.length, summary: summarize(all, now()), git: git.repo ? { uncommitted: git.uncommitted } : null };
+      warnings: all.warnings.length, summary: summarize(all, now()), git: git.repo ? { uncommitted: git.uncommitted } : null,
+      // schema/ o AGENTS.md de una versión anterior de Scope Compass (9.9): la tarjeta ofrece actualizarlos.
+      outdated: outdatedFiles(compassOf(p.path)) };
   }
 
   app.get('/api/health', async () => ({ ok: true, name: 'scope-compass-home', version: VERSION, pid: process.pid, projects_file: projectsFile() }));
 
   app.get('/api/projects', async () => ({ projects: await Promise.all(projectsStatus().map(projectView)) }));
+
+  // Actualizar compass/ de un proyecto sin hub (9.9): lo mismo que `scompass update` (schema y AGENTS.md).
+  app.post('/api/projects/update', async (req) => {
+    const p = known(req.body?.path);
+    const updated = updateCompass(compassOf(p.path));
+    emit({ type: 'projects' });
+    return { updated: updated.map((f) => 'compass/' + f) };
+  });
+
+  // Reiniciar el Inicio (9.8): responde antes de cerrar; el nuevo toma el mismo puerto (lo hace `scompass home`).
+  app.post('/api/restart', async (req, reply) => {
+    if (!onRestart) throw new StoreError('invalid_argument', 'este Inicio no se puede reiniciar desde la API');
+    reply.code(202).send({ ok: true, restarting: true });
+    setImmediate(onRestart);
+    return reply;
+  });
 
   app.post('/api/projects', async (req, reply) => {
     const { entry, added } = await recordProject(req.body?.path ?? '');
@@ -252,7 +271,8 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     child.stderr.on('data', (d) => { err += d; });
     children.set(child.pid, child);
     child.on('exit', () => { children.delete(child.pid); poll(); });
-    for (let i = 0; i < 100; i++) {
+    // Hasta 15 s: con la máquina cargada (o el disco frío) Node tarda en arrancar.
+    for (let i = 0; i < 300; i++) {
       const h = standaloneOf(path).find((x) => x.pid === child.pid);
       if (h) { poll(); return { hub: h, already: false }; }
       if (child.exitCode !== null) break;

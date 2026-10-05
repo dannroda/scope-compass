@@ -44,6 +44,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   hubs                                      hubs activos de todos los proyectos
   home [--port 4700] [--open] [--tray]      levanta el Inicio: todos los proyectos del equipo (uno solo por usuario;
                                             si ya corre, dice dónde)
+  home restart                              reinicia el Inicio (para cargar código nuevo), en el mismo puerto
   home list                                 proyectos conocidos en este equipo, con el estado de su hub
   home add [<carpeta>]                      anota un proyecto sin levantar su hub (por defecto, el de --dir)
   home rm [<carpeta>]                       lo quita del registro (no toca sus datos)
@@ -196,7 +197,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const free = await freePortFrom(port);
       if (free !== null && free !== port) { warn(`aviso: el puerto ${port} está ocupado; el Inicio usa el ${free}`); port = free; }
     }
-    const app = createHomeServer({ validators });
+    // Reiniciar (9.8): se cierra y se vuelve a lanzar el mismo comando en el mismo puerto (carga código nuevo).
+    let restart = false;
+    const app = createHomeServer({ validators, onRestart: () => { restart = true; ac.abort(); } });
     let addr;
     try { addr = await listen(app, port); } catch (e) {
       await app.close();
@@ -211,7 +214,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     let tray = null;
     if (o.tray) {
       try {
-        tray = await startTray({ title: 'Scope Compass', tooltip: `Inicio · ${url}`, onActivate: () => openUrl(url), items: () => homeTrayItems({ app, url, openUrl, warn, close: () => ac.abort(), refresh: () => tray?.refresh() }) });
+        tray = await startTray({ title: 'Scope Compass', tooltip: `Inicio · ${url}`, onActivate: () => openUrl(url),
+          items: () => homeTrayItems({ app, url, openUrl, warn, close: () => ac.abort(), restart: () => { restart = true; ac.abort(); }, refresh: () => tray?.refresh() }) });
         // Recién con el ícono puesto los hubs esconden el suyo.
         registerHub({ port: addr.port, kind: 'home', tray: true });
         app.events.on('event', (e) => { if (e.type === 'hubs' || e.type === 'projects') tray?.refresh(); });
@@ -225,7 +229,27 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     tray?.close();
     await app.close();
     unregisterHub();
+    if (restart) {
+      const again = argv.filter((x, i) => x !== '--port' && argv[i - 1] !== '--port' && !x.startsWith('--port=') && x !== '--open');
+      spawn(process.execPath, [BIN, ...again, '--port', String(addr.port)], { cwd, env: process.env, stdio: 'inherit', detached: true }).unref();
+      if (!o.json) print('Reiniciando el Inicio…');
+    }
     return 0;
+  }
+
+  // `scompass home restart`: le pide al Inicio que se reinicie y espera al nuevo (mismo puerto, otro PID).
+  async function restartHome() {
+    const h = liveHome();
+    if (!h) throw new StoreError('not_found', 'el Inicio no está corriendo (scompass home lo levanta)');
+    const url = `http://127.0.0.1:${h.port}`;
+    const r = await fetch(url + '/api/restart', { method: 'POST' }).catch(() => null);
+    if (r?.status !== 202) throw new StoreError('io_error', `el Inicio no aceptó reiniciarse (${r ? 'HTTP ' + r.status : 'sin respuesta'})`);
+    for (let i = 0; i < 100; i++) {
+      await new Promise((res) => setTimeout(res, 100));
+      const health = await fetch(url + '/api/health', { signal: AbortSignal.timeout(300) }).then((x) => x.json()).catch(() => null);
+      if (health?.pid && health.pid !== h.pid) return done({ url: url + '/', pid: health.pid, previous: h.pid }, `Inicio reiniciado en ${url}/ (PID ${h.pid} → ${health.pid})`);
+    }
+    throw new StoreError('io_error', 'el Inicio se cerró pero no volvió en 10 s');
   }
 
   const commands = {
@@ -533,6 +557,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     async home() {
       const sub = rest[0];
       if (sub === undefined) return serveHome();
+      if (sub === 'restart') return restartHome();
       if (sub === 'list') {
         const projects = projectsStatus();
         if (o.json) return done({ file: projectsFile(), projects });
@@ -552,7 +577,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         const { entry, added } = await recordProject(target);
         return done({ project: entry, added }, `${added ? 'Anotado' : 'Ya estaba anotado'}: ${entry.name} (${entry.path})`);
       }
-      throw new UsageError(`subcomando desconocido: home ${sub ?? ''} (list, add, rm)`);
+      throw new UsageError(`subcomando desconocido: home ${sub ?? ''} (restart, list, add, rm)`);
     },
 
     async doc() {
@@ -907,7 +932,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
 
 // Menú de la bandeja del Inicio (§16.3): un submenú por proyecto del registro, con lo mismo que la bandeja de un
 // hub (Abrir, Actualizar compass/ si hace falta, Reiniciar, Detener) o Prender si está apagado.
-function homeTrayItems({ app, url, openUrl, warn, close, refresh }) {
+function homeTrayItems({ app, url, openUrl, warn, close, restart, refresh }) {
   const act = (fn) => async () => { try { await fn(); } catch (e) { warn(`bandeja: ${e.message}`); } refresh(); };
   const projects = (() => { try { return projectsStatus(); } catch (e) { warn(`bandeja: ${e.message}`); return []; } })();
   // D29: el Inicio sirve los proyectos, así que no hay nada que prender; un hub suelto (el del dock) se puede detener.
@@ -933,6 +958,7 @@ function homeTrayItems({ app, url, openUrl, warn, close, refresh }) {
     ...projects.map(project),
     ...(projects.length ? [{ separator: true }] : []),
     { label: 'Agregar proyecto…', onClick: () => openUrl(url) },
+    { label: 'Reiniciar Inicio', onClick: restart },
     { label: 'Cerrar Inicio', onClick: close }
   ];
 }

@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Scope Compass</title>
 <link rel="stylesheet" href="app.css">
+<script>
+  // Transiciones entre páginas (D29): si el navegador cancela una, sus promesas se rechazan; se atienden acá, en el
+  // <head>, porque pagereveal llega antes que los scripts con defer.
+  (function () { var q = function (e) { var t = e.viewTransition; if (t) [t.ready, t.finished, t.updateCallbackDone].forEach(function (p) { if (p) p.catch(function () {}); }); };
+    addEventListener('pageswap', q); addEventListener('pagereveal', q); })();
+</script>
 <script src="app.js" defer></script>
 </head>
 <body>

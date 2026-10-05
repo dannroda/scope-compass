@@ -68,3 +68,5 @@ header.top h1 { flex: 1 1 auto; }
 /* Transiciones entre el Inicio y los tableros (mismo origen, D29). */
 @view-transition { navigation: auto; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 160ms; }
+.proj .outdated { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.btn.small { min-height: 30px; padding: 2px 10px; font-size: 14px; }

@@ -191,7 +191,7 @@ test('§16.8 home --tray: con tres hubs con --tray hay un solo ícono; al cerrar
     const entries = top.filter((v) => /^Scope Compass · hub suelto :\d+$/.test(label(v) ?? ''));
     assert.deepEqual(entries.map((v) => Number(label(v).split(':')[1])).sort(), ports.sort(), `proyectos en el menú: ${top.map(label).join(' | ')}`);
     assert.deepEqual(entries[0][1][0][2].filter(visible).map(label), ['Abrir tablero', 'Detener hub suelto']);
-    assert.deepEqual(top.filter((v) => label(v)).slice(-2).map(label), ['Agregar proyecto…', 'Cerrar Inicio']);
+    assert.deepEqual(top.filter((v) => label(v)).slice(-3).map(label), ['Agregar proyecto…', 'Reiniciar Inicio', 'Cerrar Inicio']);
 
     // Al cerrar el Inicio, los tres vuelven a la bandeja.
     home.kill('SIGTERM');

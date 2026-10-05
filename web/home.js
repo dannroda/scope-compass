@@ -135,6 +135,9 @@
           l.today ? h('span', { class: 'tag today' }, l.today + ' hoy') : null, ' ', h('span', { class: 'n' }, l.left ? String(l.left) : '✓'))))));
     }
     if (p.found && !s?.milestone && !s?.lists?.length) body.push(h('p', { class: 'muted', style: 'margin:0' }, 'Sin hitos ni listas todavía.'));
+    if (p.outdated?.length) body.push(h('p', { style: 'margin:0', class: 'outdated' },
+      h('span', { class: 'tag today', title: p.outdated.map((f) => 'compass/' + f).join('\n') }, `compass/ desactualizado (${p.outdated.length} archivo${p.outdated.length > 1 ? 's' : ''})`), ' ',
+      h('button', { class: 'btn small', type: 'button', onclick: () => act('upd:' + p.path, () => call('POST', '/api/projects/update', { path: p.path }), (r) => `Actualizado: ${r.updated.join(', ')}`) }, 'Actualizar')));
     if (p.warnings) body.push(h('p', { class: 'muted', style: 'margin:0' }, `⚠ ${p.warnings} archivo${p.warnings > 1 ? 's' : ''} con problemas (abrí el tablero para verlos)`));
 
     if (p.git?.uncommitted) body.push(h('p', { style: 'margin:0' }, h('span', { class: 'tag today', title: 'La app no commitea sola: commiteá compass/ cuando quieras' }, p.git.uncommitted === 1 ? '1 archivo sin commitear' : p.git.uncommitted + ' archivos sin commitear')));
