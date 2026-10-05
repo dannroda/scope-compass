@@ -1,0 +1,27 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Abrir tablero dentro del Inicio"
+    },
+    {
+      "done": false,
+      "text": "La bandeja: un submenú por proyecto sin prender ni apagar (salvo hubs sueltos)"
+    }
+  ],
+  "code": "9.7",
+  "created_at": "2026-10-05T01:29:55.078Z",
+  "milestone": "m09",
+  "notes": "",
+  "order": 7,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "v4"
+    }
+  ],
+  "status": "todo",
+  "test": "",
+  "title": "Tarjetas, Hoy y bandeja apuntan a /p/…",
+  "updated_at": "2026-10-05T01:29:55.793Z"
+}

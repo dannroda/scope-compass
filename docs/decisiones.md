@@ -228,3 +228,12 @@ Además del registro de hubs vivos (en `$XDG_RUNTIME_DIR`, se borra al reiniciar
 - **Una carpeta que ya existe no se usa** (`409`): con el nombre como carpeta, sumarle `-2` daría un nombre que nadie eligió.
 - **Git:** una carpeta nueva fuera de todo repo recibe `git init` (sin remoto ni commits), así los datos siguen en git (D1) y el aviso de cambios sin commitear funciona desde el principio. Dentro de un repo existente no se crea otro.
 - **Descartado:** guardarlos en `~/.config` (es para configuración, no datos), o un slug del nombre como carpeta.
+
+## D29 · Con el Inicio corriendo, el Inicio sirve los proyectos (multi-hub)
+**2026-10-04 · vigente** · spec §17 · reemplaza la parte de D24 que pedía un hub aparte por proyecto con el Inicio
+
+- **Qué:** el Inicio monta el servidor del hub de cada proyecto bajo `/p/<clave>/`, en su mismo proceso y puerto, y lo activa al primer pedido. Sin Inicio, el hub suelto (`scompass serve`, el dock) sigue como siempre.
+- **Por qué:** el Inicio tiene que sentirse como una app: el tablero en otro puerto recargaba todo de cero, y prender un hub aparte agregaba una espera. Un proceso con todos los proyectos también es lo que necesita el mirror always-on (M7).
+- **Regla:** un solo proceso escribe cada `compass/`. El registro de hubs dice quién sirve cada proyecto (un hub suelto, o el Inicio con `base`). Si hay un hub suelto, el Inicio le reenvía los pedidos.
+- **Costo aceptado:** si el Inicio se cae, se caen todos sus proyectos a la vez (los datos están en disco y en git). El dock y la CLI aprenden a usar la `base` del registro.
+- **Descartado:** el Inicio como proxy de hubs separados (cada proyecto seguía siendo un proceso y había que esperar que arrancara), y sacarles el puerto TCP a los hubs (Godot no se conecta a sockets locales).

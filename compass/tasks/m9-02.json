@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Clave por proyecto (nombre de la carpeta, sin repetir)"
+    },
+    {
+      "done": false,
+      "text": "Activar al primer pedido: store, watcher, export y WebSocket"
+    },
+    {
+      "done": false,
+      "text": "Si hay un hub suelto del proyecto, reenviarle HTTP y WebSocket"
+    }
+  ],
+  "code": "9.2",
+  "created_at": "2026-10-05T01:29:49.894Z",
+  "milestone": "m09",
+  "notes": "",
+  "order": 2,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "v4"
+    }
+  ],
+  "status": "todo",
+  "test": "",
+  "title": "El Inicio sirve los proyectos en /p/<clave>/",
+  "updated_at": "2026-10-05T01:29:50.851Z"
+}

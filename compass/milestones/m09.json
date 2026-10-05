@@ -1,0 +1,11 @@
+{
+  "code": "M9",
+  "done_when": [
+    "Abrir un tablero desde el Inicio no cambia de puerto ni levanta procesos.",
+    "Un solo proceso escribe cada compass/ (hub suelto o Inicio).",
+    "El Inicio se reinicia y actualiza compass/ de cualquier proyecto sin hub."
+  ],
+  "goal": "Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con el código del hub: un puerto, sin esperas, todo editable (§17, D29).",
+  "order": 9,
+  "title": "Inicio como app (multi-hub)"
+}

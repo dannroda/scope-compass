@@ -682,3 +682,26 @@ Cada uno tiene su test en `hub/test/m8-criteria.test.js`, salvo el de la bandeja
 - [x] `scompass init --template personal` crea un proyecto que abre en Listas.
 - [x] Con el Inicio en `--tray`, hay un solo ícono en la bandeja aunque haya tres hubs con `--tray`; al cerrar el Inicio vuelven los suyos.
 - [x] Borrar `~/.config/scope-compass/` no pierde ningún dato: solo hay que volver a importar los proyectos.
+
+## 17. El Inicio como app: multi-hub (v4)
+<!-- id: v4 -->
+
+**Objetivo:** que el Inicio se sienta como una sola app. Un solo puerto, ningún proceso que esperar, y todo proyecto del registro editable al instante. Reemplaza la parte de D24 que pedía un hub aparte por proyecto aun con el Inicio corriendo (D29).
+
+- **Con el Inicio corriendo, el Inicio sirve cada proyecto** en `/p/<clave>/`: tablero, API, WebSocket, detección de cambios y export. Es el mismo código del hub, montado bajo esa ruta, y se activa la primera vez que se lo pide. La clave sale del nombre de la carpeta (`vida`, `project-epiphany`), sin repetirse.
+- **Sin Inicio, el hub suelto sigue igual** (`scompass serve`, el dock).
+- **Un solo proceso escribe cada `compass/`.** El registro de hubs anota quién sirve cada proyecto: un hub suelto, o el Inicio con su ruta (`base: "/p/<clave>"`). Si ya hay un hub suelto de un proyecto, el Inicio le reenvía los pedidos (HTTP y WebSocket) en lugar de servirlo él.
+- **CLI y dock** encuentran el proyecto en el registro y usan su `base`. El "Iniciar hub" del dock, con el Inicio corriendo, activa el proyecto en el Inicio en lugar de levantar otro proceso.
+- **Tablero web:** llamadas relativas a su ruta, así funciona igual en un hub suelto (`/`) y en el Inicio (`/p/<clave>/`). Barra superior compartida con el Inicio (volver, cambiar de proyecto) y transiciones entre páginas (View Transitions).
+- **Reiniciar el Inicio:** `POST /api/restart`, `scompass home restart` y la bandeja. Vuelve en el mismo puerto.
+- **Actualizar `compass/` desde el Inicio,** sin hub: el schema y `AGENTS.md` de cualquier proyecto del registro, desde su tarjeta o desde la bandeja (`POST /api/projects/update`).
+- **Lo que queda de 8.9:** prender y apagar hubs sueltos sigue para los que existan (por ejemplo, el del dock), pero el Inicio ya no los crea.
+
+### 17.1 Criterios de aceptación de v4
+<!-- id: criterios-v4 -->
+
+- [ ] Con el Inicio corriendo, abrir un tablero desde una tarjeta no cambia de puerto ni levanta procesos, y se puede editar enseguida.
+- [ ] Un cambio hecho desde la CLI o el dock en un proyecto que sirve el Inicio se ve en vivo en su tablero del Inicio.
+- [ ] Con un hub suelto del dock corriendo, el tablero en el Inicio pasa por ese hub (un solo proceso escribe).
+- [ ] `scompass home restart` y "Reiniciar Inicio" de la bandeja vuelven en el mismo puerto, con los proyectos.
+- [ ] "Actualizar compass/" en la tarjeta de un proyecto sin hub copia el schema nuevo.
