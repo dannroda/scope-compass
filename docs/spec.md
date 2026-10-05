@@ -603,7 +603,7 @@ Hay dos registros, con funciones distintas (D23):
   - `GET /api/today`: ítems y tareas vencidos o de hoy (sin terminar) y tareas en curso, de todos los proyectos; vencido primero.
   - `POST /api/projects/check-item { path, list, n, etag? }` (usa la misma regla que la CLI: lo que se repite avanza) y `POST /api/projects/move-task { path, id, status, etag? }`. Responden `via: "hub" | "disk"`.
   - `POST /api/projects/start { path }`: levanta `scompass serve --exit-on-stdin-close` como hijo del Inicio y espera a que se anote (si ya hay hub, lo devuelve). `POST /api/projects/stop { path, force? }`: `SIGTERM` y espera a que cierre. El registro marca `attached` y `parent` en los hubs atados a otro proceso; si no es un hijo del Inicio (el dock), `stop` responde `409` con `foreign: true` hasta que se confirme con `force`.
-  - `GET /ws`: `changed { path, collection, id }` (reenviado de los hubs o de una escritura directa), `hubs` (cambió el conjunto de hubs vivos) y `projects` (cambió el registro). El Inicio mira el registro de hubs cada segundo y se suscribe al WebSocket de cada hub vivo.
+  - `GET /ws`: `changed { path, collection, id }` (reenviado de los hubs o de una escritura directa), `hubs` (cambió el conjunto de hubs vivos) y `projects` (cambió el registro). El Inicio mira el registro de hubs cada medio segundo y se suscribe al WebSocket de cada hub vivo.
 - `GET /api/templates` y `POST /api/projects/init { path, template, name? }`: crear un proyecto desde el Inicio, con la misma `scompass init` (en otro proceso; crea la carpeta si falta).
 - **Página** (`web/home.html`, `home.js`, `home.css`, con los tokens y las fuentes de `app.css`): la franja Hoy (tildar ítems; las tareas enlazan al tablero si su hub está vivo), una tarjeta por proyecto (hub, hito actual con su avance, en curso y lo que sigue, listas con vencidos y de hoy, Prender o Apagar, Quitar, Abrir tablero) y Agregar proyecto (importar carpeta o crear con plantilla). Se recarga con los eventos del WebSocket.
 - Un segundo `scompass home` no levanta otro: dice dónde corre el primero (y lo abre con `--open`). Puerto 4700, o el siguiente libre.
@@ -670,10 +670,12 @@ Notificaciones y recordatorios, repetición personalizada (cada x días), listas
 ### 16.8 Criterios de aceptación de v3
 <!-- id: criterios-v3 -->
 
-- [ ] Con el Inicio abierto, levantar un hub desde el dock lo muestra como activo en menos de 1 s, y el proyecto queda en `projects.json`.
-- [ ] Importar una carpeta con `compass/` la muestra en el Inicio sin levantar su hub; prenderlo y apagarlo desde el Inicio funciona.
-- [ ] Tildar un ítem en "Hoy" cambia una sola línea del JSON de la lista, con hub o sin hub.
-- [ ] Un ítem mensual con `due` 2026-01-31 pasa a 2026-02-28 al tildarlo.
-- [ ] `scompass init --template personal` crea un proyecto que abre en Listas.
-- [ ] Con el Inicio en `--tray`, hay un solo ícono en la bandeja aunque haya tres hubs con `--tray`; al cerrar el Inicio vuelven los suyos.
-- [ ] Borrar `~/.config/scope-compass/` no pierde ningún dato: solo hay que volver a importar los proyectos.
+Cada uno tiene su test en `hub/test/m8-criteria.test.js`, salvo el de la bandeja, que está en `hub/test/tray.test.js` (con un bus D-Bus de prueba).
+
+- [x] Con el Inicio abierto, levantar un hub desde el dock lo muestra como activo en menos de 1 s, y el proyecto queda en `projects.json`.
+- [x] Importar una carpeta con `compass/` la muestra en el Inicio sin levantar su hub; prenderlo y apagarlo desde el Inicio funciona.
+- [x] Tildar un ítem en "Hoy" cambia una sola línea del JSON de la lista, con hub o sin hub.
+- [x] Un ítem mensual con `due` 2026-01-31 pasa a 2026-02-28 al tildarlo.
+- [x] `scompass init --template personal` crea un proyecto que abre en Listas.
+- [x] Con el Inicio en `--tray`, hay un solo ícono en la bandeja aunque haya tres hubs con `--tray`; al cerrar el Inicio vuelven los suyos.
+- [x] Borrar `~/.config/scope-compass/` no pierde ningún dato: solo hay que volver a importar los proyectos.

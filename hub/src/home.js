@@ -40,8 +40,9 @@ const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { 
 
 const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, invalid_file: 409, invalid: 409, io_error: 500 };
 
-// now: función que devuelve la fecha "de hoy" (los tests la fijan). pollMs: cada cuánto mira el registro de hubs.
-export function createHomeServer({ validators, now = () => new Date(), pollMs = 1000, logger = false, webDir = WEB_DIR }) {
+// now: función que devuelve la fecha "de hoy" (los tests la fijan). pollMs: cada cuánto mira el registro de hubs
+// (medio segundo: un hub que se levanta se ve en el Inicio en menos de 1 s, §16.8).
+export function createHomeServer({ validators, now = () => new Date(), pollMs = 500, logger = false, webDir = WEB_DIR }) {
   const app = Fastify({ logger, forceCloseConnections: true });
   const events = new EventEmitter();
   app.decorate('events', events);

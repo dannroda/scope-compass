@@ -1,22 +1,22 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Tests de los criterios de §16.8"
     },
     {
-      "done": false,
+      "done": true,
       "text": "`AGENTS.md` (plantilla, addon y `compass/`) con listas, fechas y `home`"
     },
     {
-      "done": false,
+      "done": true,
       "text": "README y `compass/README.md`: editar listas a mano"
     }
   ],
   "code": "8.12",
   "created_at": "2026-10-04T22:16:49.626Z",
   "milestone": "m08",
-  "notes": "",
+  "notes": "`hub/test/m8-criteria.test.js` (un test por criterio de §16.8) y la bandeja con tres hubs en `tray.test.js`. El Inicio mira el registro cada 0,5 s (antes 1 s) para que un hub nuevo se vea en menos de 1 s. README, docs/instalar.md y el spec al día.",
   "order": 12,
   "refs": [
     {
@@ -24,8 +24,8 @@
       "section": "criterios-v3"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "Los criterios de §16.8 tildados con su prueba.",
   "title": "Tests de M8 y guía para agentes",
-  "updated_at": "2026-10-04T22:16:50.717Z"
+  "updated_at": "2026-10-05T00:53:32.955Z"
 }

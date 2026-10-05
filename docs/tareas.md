@@ -725,7 +725,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (11/14)
+## M8 — Inicio, listas y plantillas (v3)  (14/14)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -902,36 +902,38 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Bloqueada por:** 8.8 `scompass home`: proceso y API
 
-### 8.12 Tests de M8 y guía para agentes · Pendiente
+### 8.12 Tests de M8 y guía para agentes · Hecho
 
-- [ ] Tests de los criterios de §16.8
-- [ ] `AGENTS.md` (plantilla, addon y `compass/`) con listas, fechas y `home`
-- [ ] README y `compass/README.md`: editar listas a mano
+- [x] Tests de los criterios de §16.8
+- [x] `AGENTS.md` (plantilla, addon y `compass/`) con listas, fechas y `home`
+- [x] README y `compass/README.md`: editar listas a mano
 
 **Prueba:** Los criterios de §16.8 tildados con su prueba.
 
+**Notas:** `hub/test/m8-criteria.test.js` (un test por criterio de §16.8) y la bandeja con tres hubs en `tray.test.js`. El Inicio mira el registro cada 0,5 s (antes 1 s) para que un hub nuevo se vea en menos de 1 s. README, docs/instalar.md y el spec al día.
+
 **Referencias:** `docs/spec.md#criterios-v3`
 
-### 8.13 Fechas límite en la web y el dock · Pendiente
+### 8.13 Fechas límite en la web y el dock · Hecho
 
-- [ ] Web: elegir y ver la fecha en el detalle; vencidas y de hoy marcadas en la tarjeta
-- [ ] Dock: mostrar la fecha y marcar las vencidas
+- [x] Web: elegir y ver la fecha en el detalle; vencidas y de hoy marcadas en la tarjeta
+- [x] Dock: mostrar la fecha y marcar las vencidas
 
 **Prueba:** Una tarea con `due` de ayer se ve como vencida en la web y en el dock; al pasarla a Hecho deja de marcarse.
 
-**Notas:** Parte de frontend de 8.2 (backend primero). Usar `dueState` de `hub/src/dates.js` como referencia de la regla.
+**Notas:** Web: `dueField` en el detalle (fecha, hora, Quitar) y `dueMark` en la tarjeta. Dock: `Board.due_state` y `show_due` (misma regla que `hub/src/dates.js`), la fecha en la columna derecha de la lista y una línea en el detalle; el dock no la edita.
 
 **Referencias:** `docs/spec.md#v3-fechas`
 
 **Bloqueada por:** 8.2 Fecha límite (`due`) en tareas
 
-### 8.14 Dock: "Crear compass/" con plantilla · Pendiente
+### 8.14 Dock: "Crear compass/" con plantilla · Hecho
 
-- [ ] Elegir juego, personal o vacío antes de crear (por defecto juego, porque es un proyecto de Godot)
-- [ ] Pasar `--template` a `scompass init`
+- [x] Elegir juego, personal o vacío antes de crear (por defecto juego, porque es un proyecto de Godot)
+- [x] Pasar `--template` a `scompass init`
 
 **Prueba:** En un proyecto sin compass/, "Crear compass/" con la plantilla juego deja el hito M0, las dos listas y docs/gdd.md.
 
-**Notas:** Parte de frontend de 8.7.
+**Notas:** Un OptionButton al lado de "Crear compass/" (Juego, Personal, Vacío), visible solo sin compass/. Tests: plantilla juego por defecto (hito M0, listas y docs/gdd.md) y vacío sin datos.
 
 **Bloqueada por:** 8.7 Plantillas en `scompass init`

@@ -150,52 +150,56 @@ test('serve --tray: "Actualizar compass/" aparece con el schema viejo y lo pone 
   }
 });
 
-test('home --tray: un solo ícono; los hubs se esconden en su menú y vuelven al cerrarlo', { skip }, async () => {
-  const project = join(dir, 'agrupado');
-  await cp(FIXTURE, join(project, 'compass'), { recursive: true });
-  await cp(join(REPO, 'hub', 'templates', 'compass-AGENTS.md'), join(project, 'compass', 'AGENTS.md'));
+test('§16.8 home --tray: con tres hubs con --tray hay un solo ícono; al cerrar el Inicio vuelven los tres', { skip }, async () => {
   const env = { ...process.env, DBUS_SESSION_BUS_ADDRESS: address, SCOMPASS_REGISTRY: join(dir, 'reg-agrupado'), SCOMPASS_CONFIG: join(dir, 'cfg-agrupado') };
   const bin = join(REPO, 'hub', 'bin', 'scompass.js');
   const owns = async (name) => (await call('org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus', 'NameHasOwner', 's', [name]))[0];
-  const hub = spawn(process.execPath, [bin, '--dir', project, 'serve', '--port', '0', '--tray'], { env });
+  const hubs = [];
   let home = null;
   let out = '';
-  hub.stdout.on('data', (d) => { out += d; });
-  hub.stderr.on('data', (d) => { out += d; });
   try {
-    const hubService = `org.kde.StatusNotifierItem-${hub.pid}-1`;
-    for (let i = 0; i < 60 && !registered.includes(hubService); i++) await sleep(50);
-    assert.ok(registered.includes(hubService), `el hub no puso su ícono: ${out}`);
-    const port = Number(/127\.0\.0\.1:(\d+)/.exec(out)[1]);
+    for (const name of ['uno', 'dos', 'tres']) {
+      const project = join(dir, 'agrupado-' + name);
+      await cp(FIXTURE, join(project, 'compass'), { recursive: true });
+      await cp(join(REPO, 'hub', 'templates', 'compass-AGENTS.md'), join(project, 'compass', 'AGENTS.md'));
+      const hub = spawn(process.execPath, [bin, '--dir', project, 'serve', '--port', '0', '--tray'], { env });
+      hub.stdout.on('data', (d) => { out += d; });
+      hub.stderr.on('data', (d) => { out += d; });
+      hubs.push(hub);
+    }
+    const services = hubs.map((h) => `org.kde.StatusNotifierItem-${h.pid}-1`);
+    for (let i = 0; i < 100 && !services.every((s) => registered.includes(s)); i++) await sleep(50);
+    assert.ok(services.every((s) => registered.includes(s)), `los hubs no pusieron su ícono: ${out}`);
+    const ports = [...out.matchAll(/127\.0\.0\.1:(\d+)/g)].map((m) => Number(m[1]));
 
     home = spawn(process.execPath, [bin, 'home', '--port', '0', '--tray'], { env });
     home.stderr.on('data', (d) => { out += d; });
     const homeService = `org.kde.StatusNotifierItem-${home.pid}-1`;
     for (let i = 0; i < 60 && !registered.includes(homeService); i++) await sleep(50);
     assert.ok(registered.includes(homeService), `el Inicio no puso su ícono: ${out}`);
-    // El hub quita el suyo (lo revisa cada segundo).
-    for (let i = 0; i < 60 && await owns(hubService); i++) await sleep(50);
-    assert.equal(await owns(hubService), false, 'el hub sigue con su ícono');
+    // Los hubs quitan el suyo (lo revisan cada segundo): queda uno solo, el del Inicio.
+    for (let i = 0; i < 60 && (await Promise.all(services.map(owns))).some(Boolean); i++) await sleep(50);
+    assert.deepEqual(await Promise.all(services.map(owns)), [false, false, false], 'algún hub sigue con su ícono');
 
-    // El menú del Inicio: el proyecto con su submenú.
+    // El menú del Inicio: los tres proyectos con su submenú.
     const [, layout] = await call(homeService, '/MenuBar', 'com.canonical.dbusmenu', 'GetLayout', 'iias', [0, -1, []]);
     const label = (v) => v[1][0][1].find(([k]) => k === 'label')?.[1][1][0];
     const visible = (v) => v[1][0][1].find(([k]) => k === 'visible')?.[1][1][0] !== false;
     const top = layout[2];
     assert.equal(label(top[0]), 'Abrir Inicio');
-    const entry = top.find((v) => label(v) === `Scope Compass · :${port}`);
-    assert.ok(entry, `sin el proyecto en el menú: ${top.map(label).join(' | ')}`);
-    assert.deepEqual(entry[1][0][2].filter(visible).map(label), ['Abrir tablero', 'Reiniciar hub', 'Detener hub']);
+    const entries = top.filter((v) => /^Scope Compass · :\d+$/.test(label(v) ?? ''));
+    assert.deepEqual(entries.map((v) => Number(label(v).split(':')[1])).sort(), ports.sort(), `proyectos en el menú: ${top.map(label).join(' | ')}`);
+    assert.deepEqual(entries[0][1][0][2].filter(visible).map(label), ['Abrir tablero', 'Reiniciar hub', 'Detener hub']);
     assert.deepEqual(top.filter((v) => label(v)).slice(-2).map(label), ['Agregar proyecto…', 'Cerrar Inicio']);
 
-    // Al cerrar el Inicio, el hub vuelve a poner su ícono.
+    // Al cerrar el Inicio, los tres vuelven a la bandeja.
     home.kill('SIGTERM');
     await new Promise((r) => home.on('exit', r));
-    for (let i = 0; i < 60 && !(await owns(hubService)); i++) await sleep(50);
-    assert.equal(await owns(hubService), true, 'el hub no volvió a la bandeja');
+    for (let i = 0; i < 60 && !(await Promise.all(services.map(owns))).every(Boolean); i++) await sleep(50);
+    assert.deepEqual(await Promise.all(services.map(owns)), [true, true, true], 'no volvieron todos');
   } finally {
     home?.kill('SIGKILL');
-    hub.kill('SIGKILL');
+    for (const h of hubs) h.kill('SIGKILL');
   }
 });
 
