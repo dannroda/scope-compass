@@ -78,6 +78,11 @@ export async function startTray({ title, tooltip, items, onActivate, busAddress 
   let byId = new Map();
   let shape = '';
   let revision = 1;
+  // La revisión que el escritorio pidió por última vez con GetLayout. AboutToShow compara contra esta, no contra el
+  // último recompute: si un refresh() ya vio el cambio (y el escritorio no hizo caso del LayoutUpdated), igual hay
+  // que decirle que el menú cambió. Si no, Plasma muestra su copia vieja (un hub prendido desde la web seguía
+  // "apagado" en el menú del Inicio).
+  let served = 0;
   const build = () => {
     let next = 1;
     const map = new Map();
@@ -111,14 +116,14 @@ export async function startTray({ title, tooltip, items, onActivate, busAddress 
     Version: 3, TextDirection: 'ltr', Status: 'normal', IconThemePath: [],
     // emit lo reemplaza dbus-native al exportar: así se mandan las señales (LayoutUpdated).
     emit: () => {},
-    GetLayout: (parentId) => [revision, layout(nodeOf(parentId) ?? root)],
+    GetLayout: (parentId) => { served = revision; return [revision, layout(nodeOf(parentId) ?? root)]; },
     GetGroupProperties: (ids) => ids.map((id) => nodeOf(id)).filter(Boolean).map((n) => [n.id, props(n)]),
     GetProperty: (id, name) => { const n = nodeOf(id); const p = n ? props(n).find(([k]) => k === name) : null; return p ? p[1] : ['s', '']; },
     Event: (id, eventId) => { const n = byId.get(id); if (eventId === 'clicked' && n?.item.onClick) setImmediate(() => n.item.onClick()); },
     EventGroup: (events) => { for (const [id, eventId] of events) menu.Event(id, eventId); return []; },
     // Antes de abrir el menú el escritorio pregunta si cambió: se reevalúan labels, visibles y la lista de ítems.
-    AboutToShow: () => recompute(),
-    AboutToShowGroup: () => [recompute() ? [0] : [], []]
+    AboutToShow: () => { recompute(); return revision !== served; },
+    AboutToShowGroup: (ids) => { recompute(); return [revision !== served ? ids : [], []]; }
   };
   bus.exportInterface(item, ITEM_PATH, ITEM_IFACE);
   bus.exportInterface(menu, MENU_PATH, MENU_IFACE);
@@ -136,7 +141,13 @@ export async function startTray({ title, tooltip, items, onActivate, busAddress 
 
   return {
     service,
-    refresh: () => { if (recompute()) menu.emit('LayoutUpdated', revision, 0); },
+    // Las dos señales: LayoutUpdated (cambió la estructura) e ItemsPropertiesUpdated (labels y visibles), porque
+    // no todos los escritorios vuelven a pedir el menú con la primera.
+    refresh: () => {
+      if (!recompute()) return;
+      menu.emit('LayoutUpdated', revision, 0);
+      menu.emit('ItemsPropertiesUpdated', [...byId.values()].map((n) => [n.id, props(n)]), []);
+    },
     close: () => { try { bus.connection.end(); } catch {} }
   };
 }

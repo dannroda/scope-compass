@@ -203,6 +203,44 @@ test('§16.8 home --tray: con tres hubs con --tray hay un solo ícono; al cerrar
   }
 });
 
+test('home --tray: un hub que se prende desde la web (API del Inicio) cambia el menú y avisa con LayoutUpdated', { skip }, async () => {
+  const env = { ...process.env, DBUS_SESSION_BUS_ADDRESS: address, SCOMPASS_REGISTRY: join(dir, 'reg-web'), SCOMPASS_CONFIG: join(dir, 'cfg-web') };
+  const bin = join(REPO, 'hub', 'bin', 'scompass.js');
+  const project = join(dir, 'desde-web');
+  await cp(FIXTURE, join(project, 'compass'), { recursive: true });
+  execFileSync(process.execPath, [bin, 'home', 'add', project], { env });
+  const home = spawn(process.execPath, [bin, 'home', '--port', '0', '--tray', '--json'], { env });
+  let out = '';
+  home.stdout.on('data', (d) => { out += d; });
+  home.stderr.on('data', (d) => { out += d; });
+  const updates = [];
+  const onSignal = (m) => { if (m.member === 'LayoutUpdated') updates.push(m.body); };
+  watcherBus.connection.on('message', onSignal);
+  try {
+    const service = `org.kde.StatusNotifierItem-${home.pid}-1`;
+    for (let i = 0; i < 60 && !registered.includes(service); i++) await sleep(50);
+    assert.ok(registered.includes(service), `el Inicio no puso su ícono: ${out}`);
+    await new Promise((r, j) => watcherBus.addMatch(`type='signal',sender='${service}',member='LayoutUpdated'`, (e) => (e ? j(e) : r())));
+    const label = (v) => v[1][0][1].find(([k]) => k === 'label')?.[1][1][0];
+    const labels = async () => (await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'GetLayout', 'iias', [0, -1, []]))[1][2].map(label);
+    assert.ok((await labels()).includes('Scope Compass · apagado'));
+    const url = JSON.parse(out.split('\n')[0]).url;
+    const r = await fetch(url + 'api/projects/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: project }) });
+    const { hub } = await r.json();
+    for (let i = 0; i < 60 && !updates.length; i++) await sleep(50);
+    assert.ok(updates.length, 'no avisó LayoutUpdated');
+    // Un escritorio que no hizo caso del LayoutUpdated pregunta al abrir el menú: tiene que oír que cambió.
+    const [changed] = await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'AboutToShow', 'i', [0]);
+    assert.equal(changed, true, 'AboutToShow dijo que no cambió');
+    assert.ok((await labels()).includes(`Scope Compass · :${hub.port}`), (await labels()).join(' | '));
+    const [again] = await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'AboutToShow', 'i', [0]);
+    assert.equal(again, false, 'ya lo pidió: no cambió');
+  } finally {
+    watcherBus.connection.off('message', onSignal);
+    home.kill('SIGKILL');
+  }
+});
+
 test('serve --tray sin bus de sesión: avisa y el hub funciona igual', async () => {
   const project = await mkdtemp(join(tmpdir(), 'scompass-tray-nobus-'));
   try {

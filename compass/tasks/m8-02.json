@@ -1,0 +1,13 @@
+{
+  "checklist": [],
+  "code": "8.16",
+  "created_at": "2026-10-05T01:17:10.797Z",
+  "milestone": "m08",
+  "notes": "Plasma pregunta AboutToShow antes de abrir el menú; si un refresh() ya había visto el cambio, respondía \"no cambió\" y Plasma mostraba su copia vieja. Ahora compara con la última revisión que el escritorio pidió (GetLayout), y refresh() manda también ItemsPropertiesUpdated.",
+  "order": 16,
+  "refs": [],
+  "status": "done",
+  "test": "Test en bus privado: hub prendido por la API del Inicio → LayoutUpdated, AboutToShow dice que cambió y el menú muestra el puerto.",
+  "title": "Bandeja del Inicio: el estado de los hubs prendidos desde la web no se actualizaba",
+  "updated_at": "2026-10-05T01:17:11.403Z"
+}
