@@ -48,8 +48,9 @@ const MENU_IFACE = {
 };
 
 /**
- * Muestra el ícono. items: [{ label, onClick, visible? }] para el menú (label y visible pueden ser funciones: se
- * evalúan al abrir el menú y con refresh()); onActivate: clic en el ícono. Cada ítem tiene id = su posición + 1.
+ * Muestra el ícono. items: [{ label, onClick?, visible?, enabled?, children?, separator? }] para el menú; items,
+ * children, label, visible y enabled pueden ser funciones: se evalúan al abrir el menú y con refresh(). En un menú
+ * plano, cada ítem tiene id = su posición + 1. onActivate: clic en el ícono.
  * Devuelve { close(), refresh(), service }. Falla si no hay bus de sesión.
  */
 export async function startTray({ title, tooltip, items, onActivate, busAddress = process.env.DBUS_SESSION_BUS_ADDRESS }) {
@@ -70,31 +71,52 @@ export async function startTray({ title, tooltip, items, onActivate, busAddress 
     Activate: () => onActivate?.(), SecondaryActivate: () => onActivate?.(), ContextMenu: () => {}, Scroll: () => {}
   };
 
-  // Menú: raíz 0 con los ítems 1..n. La revisión sube cuando cambia un label o un visible.
+  // Menú: raíz 0 y los ítems numerados en orden (primero cada ítem, después sus hijos). La revisión sube cuando
+  // cambia algo visible: un label, un visible o la lista de ítems (los proyectos del Inicio van y vienen).
   const val = (v) => (typeof v === 'function' ? v() : v);
-  let snapshot = [];
+  let root = { id: 0, children: [] };
+  let byId = new Map();
+  let shape = '';
   let revision = 1;
-  const take = () => items.map((it) => ({ label: String(val(it.label)), visible: it.visible === undefined ? true : !!val(it.visible) }));
+  const build = () => {
+    let next = 1;
+    const map = new Map();
+    const walk = (list) => (val(list) ?? []).map((it) => {
+      const node = { id: next++, item: it, separator: !!it.separator, label: it.separator ? '' : String(val(it.label)),
+        visible: it.visible === undefined ? true : !!val(it.visible), enabled: it.enabled === undefined ? true : !!val(it.enabled) };
+      map.set(node.id, node);
+      node.children = it.children ? walk(it.children) : [];
+      return node;
+    });
+    return { root: { id: 0, children: walk(items) }, map };
+  };
+  const strip = (n) => ({ l: n.label, v: n.visible, e: n.enabled, s: n.separator, c: n.children.map(strip) });
   const recompute = () => {
-    const next = take();
-    const changed = JSON.stringify(next) !== JSON.stringify(snapshot);
-    snapshot = next;
+    const b = build();
+    const next = JSON.stringify(strip(b.root));
+    root = b.root;
+    byId = b.map;
+    const changed = next !== shape;
+    shape = next;
     if (changed) revision++;
     return changed;
   };
   recompute();
-  const props = (i) => [['label', ['s', snapshot[i].label]], ['enabled', ['b', true]], ['visible', ['b', snapshot[i].visible]]];
-  const node = (i) => [i + 1, props(i), []];
+  const props = (n) => n.id === 0 ? [['children-display', ['s', 'submenu']]]
+    : n.separator ? [['type', ['s', 'separator']], ['visible', ['b', n.visible]]]
+      : [['label', ['s', n.label]], ['enabled', ['b', n.enabled]], ['visible', ['b', n.visible]], ...(n.children.length ? [['children-display', ['s', 'submenu']]] : [])];
+  const layout = (n) => [n.id, props(n), n.children.map((c) => ['(ia{sv}av)', layout(c)])];
+  const nodeOf = (id) => (id === 0 ? root : byId.get(id));
   const menu = {
     Version: 3, TextDirection: 'ltr', Status: 'normal', IconThemePath: [],
     // emit lo reemplaza dbus-native al exportar: así se mandan las señales (LayoutUpdated).
     emit: () => {},
-    GetLayout: () => [revision, [0, [['children-display', ['s', 'submenu']]], items.map((_, i) => ['(ia{sv}av)', node(i)])]],
-    GetGroupProperties: (ids) => ids.filter((id) => id >= 1 && id <= items.length).map((id) => [id, props(id - 1)]),
-    GetProperty: (id, name) => { const p = id >= 1 && id <= items.length ? props(id - 1).find(([k]) => k === name) : null; return p ? p[1] : ['s', '']; },
-    Event: (id, eventId) => { if (eventId === 'clicked' && id >= 1 && id <= items.length) setImmediate(() => items[id - 1].onClick()); },
+    GetLayout: (parentId) => [revision, layout(nodeOf(parentId) ?? root)],
+    GetGroupProperties: (ids) => ids.map((id) => nodeOf(id)).filter(Boolean).map((n) => [n.id, props(n)]),
+    GetProperty: (id, name) => { const n = nodeOf(id); const p = n ? props(n).find(([k]) => k === name) : null; return p ? p[1] : ['s', '']; },
+    Event: (id, eventId) => { const n = byId.get(id); if (eventId === 'clicked' && n?.item.onClick) setImmediate(() => n.item.onClick()); },
     EventGroup: (events) => { for (const [id, eventId] of events) menu.Event(id, eventId); return []; },
-    // Antes de abrir el menú el escritorio pregunta si cambió: se reevalúan labels y visibles.
+    // Antes de abrir el menú el escritorio pregunta si cambió: se reevalúan labels, visibles y la lista de ítems.
     AboutToShow: () => recompute(),
     AboutToShowGroup: () => [recompute() ? [0] : [], []]
   };

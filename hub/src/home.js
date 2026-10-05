@@ -143,33 +143,34 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   // Prender y apagar hubs (8.9). Los que prende el Inicio son hijos suyos con la entrada en una tubería
   // (--exit-on-stdin-close, como los del dock): si el Inicio se cierra o muere, se cierran solos.
   const children = new Map(); // pid → ChildProcess
-  app.post('/api/projects/start', async (req, reply) => {
-    const { path } = req.body ?? {};
+  async function startHub(path) {
     known(path);
     const running = hubsOf(path);
-    if (running.length) return reply.code(200).send({ hub: running[0], already: true });
-    const child = spawn(process.execPath, [BIN, '--dir', path, 'serve', '--exit-on-stdin-close'], { stdio: ['pipe', 'ignore', 'pipe'], env: process.env });
+    if (running.length) return { hub: running[0], already: true };
+    const child = spawn(process.execPath, [BIN, '--dir', path, 'serve', '--exit-on-stdin-close'], { stdio: ['pipe', 'ignore', 'pipe'], env: { ...process.env, SCOMPASS_LAUNCHED_BY: 'home' } });
     let err = '';
     child.stderr.on('data', (d) => { err += d; });
     children.set(child.pid, child);
     child.on('exit', () => { children.delete(child.pid); poll(); });
     for (let i = 0; i < 100; i++) {
       const h = hubsOf(path).find((x) => x.pid === child.pid);
-      if (h) { poll(); return reply.code(201).send({ hub: h, already: false }); }
+      if (h) { poll(); return { hub: h, already: false }; }
       if (child.exitCode !== null) break;
       await sleep(50);
     }
     child.kill('SIGTERM');
     throw new StoreError('io_error', `el hub no arrancó${err.trim() ? `: ${err.trim().split('\n').at(-1)}` : ''}`);
-  });
+  }
 
-  app.post('/api/projects/stop', async (req) => {
-    const { path, force } = req.body ?? {};
+  // Un hub atado a otro proceso que no lanzó el Inicio (el dock de Godot).
+  const isForeign = (h) => !!h.attached && !children.has(h.pid) && h.by !== 'home';
+
+  async function stopHub(path, { force = false } = {}) {
     known(path);
     const running = hubsOf(path);
     if (!running.length) throw new StoreError('not_found', `${path} no tiene un hub corriendo`);
     // Uno atado a otro proceso (el dock de Godot) se apaga solo con force: el editor se queda sin hub.
-    const foreign = running.filter((h) => h.attached && !children.has(h.pid));
+    const foreign = running.filter(isForeign);
     if (foreign.length && !force) throw new StoreError('conflict', 'ese hub lo abrió el dock de Godot (u otro programa): el editor se queda sin hub hasta que lo vuelva a iniciar', { foreign: true });
     for (const h of running) { try { process.kill(h.pid, 'SIGTERM'); } catch { /* ya no estaba */ } }
     for (let i = 0; i < 100 && running.some((h) => alive(h.pid)); i++) await sleep(50);
@@ -177,7 +178,15 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     if (still.length) throw new StoreError('io_error', `el hub (PID ${still.map((h) => h.pid).join(', ')}) no se cerró en 5 s`);
     poll();
     return { stopped: running.map((h) => ({ pid: h.pid, port: h.port })) };
+  }
+
+  app.post('/api/projects/start', async (req, reply) => {
+    const r = await startHub(req.body?.path);
+    return reply.code(r.already ? 200 : 201).send(r);
   });
+  app.post('/api/projects/stop', async (req) => stopHub(req.body?.path, { force: !!req.body?.force }));
+  // Para la bandeja del Inicio (CLI): las mismas operaciones sin pasar por HTTP.
+  app.decorate('hubs', { start: startHub, stop: stopHub, isForeign });
   app.addHook('onClose', async () => { for (const c of children.values()) c.kill('SIGTERM'); });
 
   // En vivo: el Inicio se suscribe al WebSocket de cada hub vivo de un proyecto conocido y reenvía sus cambios.

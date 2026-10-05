@@ -609,7 +609,11 @@ Hay dos registros, con funciones distintas (D23):
 ### 16.3 Bandeja agrupada
 <!-- id: v3-bandeja -->
 
-Si el Inicio corre con `--tray`, **es el único ícono**: los hubs con `--tray` esconden el suyo y aparecen dentro del menú del Inicio, cada uno con Abrir, Actualizar compass/ (solo si su schema o su `AGENTS.md` quedaron viejos), Reiniciar y Detener, más "Abrir Inicio" y "Agregar proyecto…". Los hubs miran el registro de hubs vivos: cuando aparece un `home`, quitan su ícono; si el `home` muere, lo vuelven a poner. Así no se llena la bandeja.
+Si el Inicio corre con `--tray`, **es el único ícono**: los hubs con `--tray` esconden el suyo y aparecen dentro del menú del Inicio, cada uno con Abrir, Actualizar compass/ (solo si su schema o su `AGENTS.md` quedaron viejos), Reiniciar y Detener, más "Abrir Inicio" y "Agregar proyecto…". Los hubs miran el registro de hubs vivos cada segundo: cuando aparece un `home` con `tray: true`, quitan su ícono; si el `home` muere, lo vuelven a poner. Así no se llena la bandeja.
+
+- Cada proyecto del registro es un submenú `Nombre · :puerto` (o `· apagado` con "Prender", o `· no encontrado` deshabilitado). La lista se arma de nuevo cada vez que se abre el menú.
+- Desde el menú no hay forma de confirmar, así que "Detener hub" de un hub que abrió el dock lo dice en el label ("lo abrió el dock") y lo apaga igual.
+- Un hub que prendió el Inicio queda anotado con `by: "home"` (variable `SCOMPASS_LAUNCHED_BY`, que se hereda al reiniciarlo): no cuenta como del dock.
 
 ### 16.4 Listas
 <!-- id: v3-listas -->

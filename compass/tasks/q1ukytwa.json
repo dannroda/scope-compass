@@ -1,26 +1,26 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "El Inicio con `--tray` pone el único ícono"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Los hubs con `--tray` lo esconden si hay un `home` vivo y lo vuelven a poner si muere"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Menú: un submenú por hub (Abrir, Reiniciar, Detener), Abrir Inicio, Agregar proyecto"
     },
     {
-      "done": false,
+      "done": true,
       "text": "El submenú de cada hub incluye \"Actualizar compass/\" cuando hace falta"
     }
   ],
   "code": "8.11",
   "created_at": "2026-10-04T22:16:48.324Z",
   "milestone": "m08",
-  "notes": "",
+  "notes": "`startTray` acepta submenús, separadores e ítems dinámicos (la lista de proyectos se arma al abrir el menú). El Inicio se anota con `tray: true` recién con el ícono puesto. Agregar proyecto… abre el Inicio (la UI de importar es 8.10).",
   "order": 11,
   "refs": [
     {
@@ -28,8 +28,8 @@
       "section": "v3-bandeja"
     }
   ],
-  "status": "todo",
-  "test": "Tres hubs con `--tray` y el Inicio: un solo ícono; al cerrar el Inicio vuelven los tres.",
+  "status": "done",
+  "test": "`home --tray` con un hub con `--tray`: el hub quita su ícono, el Inicio lo muestra como submenú, y al cerrar el Inicio el hub vuelve a la bandeja (test en un bus D-Bus privado, con un hub).",
   "title": "Bandeja agrupada en el Inicio",
-  "updated_at": "2026-10-04T22:58:08.318Z"
+  "updated_at": "2026-10-05T00:15:38.158Z"
 }

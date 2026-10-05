@@ -725,7 +725,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (8/14)
+## M8 — Inicio, listas y plantillas (v3)  (9/14)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -883,14 +883,16 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Bloqueada por:** 8.8 `scompass home`: proceso y API
 
-### 8.11 Bandeja agrupada en el Inicio · Pendiente
+### 8.11 Bandeja agrupada en el Inicio · Hecho
 
-- [ ] El Inicio con `--tray` pone el único ícono
-- [ ] Los hubs con `--tray` lo esconden si hay un `home` vivo y lo vuelven a poner si muere
-- [ ] Menú: un submenú por hub (Abrir, Reiniciar, Detener), Abrir Inicio, Agregar proyecto
-- [ ] El submenú de cada hub incluye "Actualizar compass/" cuando hace falta
+- [x] El Inicio con `--tray` pone el único ícono
+- [x] Los hubs con `--tray` lo esconden si hay un `home` vivo y lo vuelven a poner si muere
+- [x] Menú: un submenú por hub (Abrir, Reiniciar, Detener), Abrir Inicio, Agregar proyecto
+- [x] El submenú de cada hub incluye "Actualizar compass/" cuando hace falta
 
-**Prueba:** Tres hubs con `--tray` y el Inicio: un solo ícono; al cerrar el Inicio vuelven los tres.
+**Prueba:** `home --tray` con un hub con `--tray`: el hub quita su ícono, el Inicio lo muestra como submenú, y al cerrar el Inicio el hub vuelve a la bandeja (test en un bus D-Bus privado, con un hub).
+
+**Notas:** `startTray` acepta submenús, separadores e ítems dinámicos (la lista de proyectos se arma al abrir el menú). El Inicio se anota con `tray: true` recién con el ícono puesto. Agregar proyecto… abre el Inicio (la UI de importar es 8.10).
 
 **Referencias:** `docs/spec.md#v3-bandeja`
 

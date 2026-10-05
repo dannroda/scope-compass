@@ -150,6 +150,55 @@ test('serve --tray: "Actualizar compass/" aparece con el schema viejo y lo pone 
   }
 });
 
+test('home --tray: un solo ícono; los hubs se esconden en su menú y vuelven al cerrarlo', { skip }, async () => {
+  const project = join(dir, 'agrupado');
+  await cp(FIXTURE, join(project, 'compass'), { recursive: true });
+  await cp(join(REPO, 'hub', 'templates', 'compass-AGENTS.md'), join(project, 'compass', 'AGENTS.md'));
+  const env = { ...process.env, DBUS_SESSION_BUS_ADDRESS: address, SCOMPASS_REGISTRY: join(dir, 'reg-agrupado'), SCOMPASS_CONFIG: join(dir, 'cfg-agrupado') };
+  const bin = join(REPO, 'hub', 'bin', 'scompass.js');
+  const owns = async (name) => (await call('org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus', 'NameHasOwner', 's', [name]))[0];
+  const hub = spawn(process.execPath, [bin, '--dir', project, 'serve', '--port', '0', '--tray'], { env });
+  let home = null;
+  let out = '';
+  hub.stdout.on('data', (d) => { out += d; });
+  hub.stderr.on('data', (d) => { out += d; });
+  try {
+    const hubService = `org.kde.StatusNotifierItem-${hub.pid}-1`;
+    for (let i = 0; i < 60 && !registered.includes(hubService); i++) await sleep(50);
+    assert.ok(registered.includes(hubService), `el hub no puso su ícono: ${out}`);
+    const port = Number(/127\.0\.0\.1:(\d+)/.exec(out)[1]);
+
+    home = spawn(process.execPath, [bin, 'home', '--port', '0', '--tray'], { env });
+    home.stderr.on('data', (d) => { out += d; });
+    const homeService = `org.kde.StatusNotifierItem-${home.pid}-1`;
+    for (let i = 0; i < 60 && !registered.includes(homeService); i++) await sleep(50);
+    assert.ok(registered.includes(homeService), `el Inicio no puso su ícono: ${out}`);
+    // El hub quita el suyo (lo revisa cada segundo).
+    for (let i = 0; i < 60 && await owns(hubService); i++) await sleep(50);
+    assert.equal(await owns(hubService), false, 'el hub sigue con su ícono');
+
+    // El menú del Inicio: el proyecto con su submenú.
+    const [, layout] = await call(homeService, '/MenuBar', 'com.canonical.dbusmenu', 'GetLayout', 'iias', [0, -1, []]);
+    const label = (v) => v[1][0][1].find(([k]) => k === 'label')?.[1][1][0];
+    const visible = (v) => v[1][0][1].find(([k]) => k === 'visible')?.[1][1][0] !== false;
+    const top = layout[2];
+    assert.equal(label(top[0]), 'Abrir Inicio');
+    const entry = top.find((v) => label(v) === `Scope Compass · :${port}`);
+    assert.ok(entry, `sin el proyecto en el menú: ${top.map(label).join(' | ')}`);
+    assert.deepEqual(entry[1][0][2].filter(visible).map(label), ['Abrir tablero', 'Reiniciar hub', 'Detener hub']);
+    assert.deepEqual(top.filter((v) => label(v)).slice(-2).map(label), ['Agregar proyecto…', 'Cerrar Inicio']);
+
+    // Al cerrar el Inicio, el hub vuelve a poner su ícono.
+    home.kill('SIGTERM');
+    await new Promise((r) => home.on('exit', r));
+    for (let i = 0; i < 60 && !(await owns(hubService)); i++) await sleep(50);
+    assert.equal(await owns(hubService), true, 'el hub no volvió a la bandeja');
+  } finally {
+    home?.kill('SIGKILL');
+    hub.kill('SIGKILL');
+  }
+});
+
 test('serve --tray sin bus de sesión: avisa y el hub funciona igual', async () => {
   const project = await mkdtemp(join(tmpdir(), 'scompass-tray-nobus-'));
   try {

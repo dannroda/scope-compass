@@ -40,7 +40,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
         [--tray]                            ícono en la bandeja del sistema, con "Detener hub"
   restart                                   reinicia el hub de este proyecto (para cargar código nuevo)
   hubs                                      hubs activos de todos los proyectos
-  home [--port 4700] [--open]               levanta el Inicio: todos los proyectos del equipo (uno solo por usuario;
+  home [--port 4700] [--open] [--tray]      levanta el Inicio: todos los proyectos del equipo (uno solo por usuario;
                                             si ya corre, dice dónde)
   home list                                 proyectos conocidos en este equipo, con el estado de su hub
   home add [<carpeta>]                      anota un proyecto sin levantar su hub (por defecto, el de --dir)
@@ -206,9 +206,21 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     o.json ? print(JSON.stringify({ url, port: addr.port })) : print(`Inicio de Scope Compass en ${url} · ${projectsFile()} · Ctrl+C para cerrar`);
     if (o.open) openUrl(url);
     const ac = new AbortController();
+    let tray = null;
+    if (o.tray) {
+      try {
+        tray = await startTray({ title: 'Scope Compass', tooltip: `Inicio · ${url}`, onActivate: () => openUrl(url), items: () => homeTrayItems({ app, url, openUrl, warn, close: () => ac.abort(), refresh: () => tray?.refresh() }) });
+        // Recién con el ícono puesto los hubs esconden el suyo.
+        registerHub({ port: addr.port, kind: 'home', tray: true });
+        app.events.on('event', (e) => { if (e.type === 'hubs' || e.type === 'projects') tray?.refresh(); });
+      } catch (e) {
+        warn(`sin ícono en la bandeja: ${e.message}`);
+      }
+    }
     if (signal) signal.addEventListener('abort', () => ac.abort(), { once: true });
     else { process.once('SIGINT', () => ac.abort()); process.once('SIGTERM', () => ac.abort()); }
     if (!ac.signal.aborted && !signal?.aborted) await new Promise((res) => ac.signal.addEventListener('abort', res, { once: true }));
+    tray?.close();
     await app.close();
     unregisterHub();
     return 0;
@@ -309,7 +321,14 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const showBoard = () => { if (!app.focusBoard()) openBoard(); };
       const ac = new AbortController();
       let tray = null;
-      if (o.tray) {
+      // Con un Inicio con bandeja (D24, §16.3) el ícono de este hub se esconde: el Inicio lo muestra en su menú.
+      // Se revisa cada segundo; si el Inicio se va, el ícono vuelve.
+      const homeHasTray = () => !!liveHome()?.tray;
+      let trayBusy = false;
+      let trayWarned = false;
+      const showTray = async () => {
+        if (trayBusy || tray) return;
+        trayBusy = true;
         try {
           tray = await startTray({
             title: 'Scope Compass',
@@ -328,8 +347,19 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
               { label: 'Detener hub', onClick: () => ac.abort() }]
           });
         } catch (e) {
-          warn(`sin ícono en la bandeja: ${e.message}`);
+          if (!trayWarned) warn(`sin ícono en la bandeja: ${e.message}`);
+          trayWarned = true;
+        } finally {
+          trayBusy = false;
         }
+      };
+      let traySync = null;
+      if (o.tray) {
+        if (!homeHasTray()) await showTray();
+        traySync = setInterval(() => {
+          if (homeHasTray()) { if (tray) { tray.close(); tray = null; } }
+          else if (!tray && !trayWarned) showTray();
+        }, 1000);
       }
       if (signal) signal.addEventListener('abort', () => ac.abort(), { once: true });
       else {
@@ -346,6 +376,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const stop = ac.signal;
       if (!stop.aborted && !signal?.aborted) await new Promise((res) => stop.addEventListener('abort', res, { once: true }));
       if (o['exit-on-stdin-close'] && !restart) stdin.pause?.();
+      clearInterval(traySync);
       tray?.close();
       await app.close();
       unregisterHub();
@@ -866,6 +897,39 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     else warn(`error [${e.code}]: ${e.message}`);
     return 1;
   }
+}
+
+// Menú de la bandeja del Inicio (§16.3): un submenú por proyecto del registro, con lo mismo que la bandeja de un
+// hub (Abrir, Actualizar compass/ si hace falta, Reiniciar, Detener) o Prender si está apagado.
+function homeTrayItems({ app, url, openUrl, warn, close, refresh }) {
+  const act = (fn) => async () => { try { await fn(); } catch (e) { warn(`bandeja: ${e.message}`); } refresh(); };
+  const projects = (() => { try { return projectsStatus(); } catch (e) { warn(`bandeja: ${e.message}`); return []; } })();
+  const project = (p) => {
+    const h = p.hubs[0] && listHubs().find((x) => x.pid === p.hubs[0].pid);
+    if (!p.found) return { label: `${p.name} · no encontrado`, enabled: false };
+    if (!h) return { label: `${p.name} · apagado`, children: [{ label: 'Prender', onClick: act(() => app.hubs.start(p.path)) }] };
+    const hubUrl = `http://127.0.0.1:${h.port}/`;
+    const compass = join(p.path, 'compass');
+    const stale = outdatedFiles(compass).length;
+    return {
+      label: `${p.name} · :${h.port}`,
+      children: [
+        { label: 'Abrir tablero', onClick: () => openUrl(hubUrl) },
+        { label: `Actualizar compass/ (${stale} archivo${stale === 1 ? '' : 's'})`, visible: stale > 0, onClick: act(() => updateCompass(compass)) },
+        { label: 'Reiniciar hub', onClick: act(() => fetch(hubUrl + 'api/restart', { method: 'POST' })) },
+        // El de un hub que abrió el dock: desde el menú no hay confirmación, así que el label lo avisa.
+        { label: app.hubs.isForeign(h) ? 'Detener hub (lo abrió el dock)' : 'Detener hub', onClick: act(() => app.hubs.stop(p.path, { force: true })) }
+      ]
+    };
+  };
+  return [
+    { label: 'Abrir Inicio', onClick: () => openUrl(url) },
+    { separator: true },
+    ...projects.map(project),
+    ...(projects.length ? [{ separator: true }] : []),
+    { label: 'Agregar proyecto…', onClick: () => openUrl(url) },
+    { label: 'Cerrar Inicio', onClick: close }
+  ];
 }
 
 // Plantillas de proyecto: hub/templates/proyectos/<nombre>.json con { description, config?, milestones?, lists?, files? }.

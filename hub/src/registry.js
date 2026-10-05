@@ -34,11 +34,14 @@ export const liveHome = () => listHubs().find((h) => h.kind === 'home') ?? null;
 
 // attached: el hub se cierra cuando se corta su entrada (--exit-on-stdin-close: lo lanzó el dock o el Inicio);
 // parent: el pid de quien lo lanzó. El Inicio los usa para avisar antes de apagar un hub que no es suyo.
-export function registerHub({ port, project, pid = process.pid, kind, attached = false, parent = process.ppid }) {
+// tray (solo el Inicio): tiene ícono en la bandeja, así que los hubs esconden el suyo.
+export function registerHub({ port, project, pid = process.pid, kind, attached = false, parent = process.ppid, tray = false }) {
   const dir = registryDir();
   mkdirSync(dir, { recursive: true });
-  const entry = kind === 'home' ? { pid, port, kind, startedAt: new Date().toISOString() }
-    : { pid, port, project: real(project), startedAt: new Date().toISOString(), ...(attached && { attached, parent }) };
+  const entry = kind === 'home' ? { pid, port, kind, startedAt: new Date().toISOString(), ...(tray && { tray }) }
+    : { pid, port, project: real(project), startedAt: new Date().toISOString(), ...(attached && { attached, parent }),
+      // SCOMPASS_LAUNCHED_BY=home: lo prendió el Inicio (se hereda al reiniciar el hub, que cambia de padre).
+      ...(process.env.SCOMPASS_LAUNCHED_BY && { by: process.env.SCOMPASS_LAUNCHED_BY }) };
   writeFileSync(join(dir, `${pid}.json`), JSON.stringify(entry) + '\n');
   return entry;
 }
