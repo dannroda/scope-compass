@@ -17,6 +17,7 @@ import { createWatcher } from './watcher.js';
 import { flat } from './views.js';
 import { resourceDir } from './schema.js';
 import { boardStatus } from './git.js';
+import { liveHome } from './registry.js';
 
 export const VERSION = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8')).version;
 export const HOST = '127.0.0.1';
@@ -137,6 +138,12 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   app.events.on('exported', recheckGit);
   app.addHook('onReady', async () => { if (watch) recheckGit(); });
   app.addHook('onClose', async () => { gitClosed = true; clearTimeout(gitTimer); });
+
+  // El Inicio, si está corriendo (D24): la web del tablero muestra "← Inicio" para volver a todos los proyectos.
+  app.get('/api/home', async () => {
+    const h = liveHome();
+    return { url: h ? `http://127.0.0.1:${h.port}/` : null };
+  });
 
   app.get('/api/config', async () => {
     const { config } = await store.loadAll();

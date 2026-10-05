@@ -61,6 +61,7 @@
     section: (alias, id) => call('GET', '/api/docs/' + encodeURIComponent(alias) + '/sections/' + encodeURIComponent(id)),
     lists: () => call('GET', '/api/lists'),
     git: () => call('GET', '/api/git'),
+    home: () => call('GET', '/api/home'),
     listCreate: (title) => call('POST', '/api/lists', { title }),
     listPatch: (id, patch, etag) => call('PATCH', '/api/lists/' + encodeURIComponent(id), patch, etag),
     listDelete: (id, etag) => call('DELETE', '/api/lists/' + encodeURIComponent(id), undefined, etag),
@@ -1161,6 +1162,18 @@
     // Sin mostrarlo en el primer instante de la carga: solo si se perdió o nunca llegó.
     el.hidden = S.connected || !S.loaded;
   }
+
+  // "← Inicio" solo si el Inicio está corriendo. Se revisa cada 10 s y al volver a la pestaña: puede abrirse o
+  // cerrarse en cualquier momento.
+  async function checkHome() {
+    const r = await api.home().catch(() => null);
+    const a = document.getElementById('home-link');
+    a.hidden = !r?.url;
+    if (r?.url) a.href = r.url;
+  }
+  checkHome();
+  setInterval(checkHome, 10000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkHome(); });
 
   readHash();
   window.addEventListener('hashchange', () => { readHash(); render(); scrollToSection(); });

@@ -295,3 +295,6 @@ ul.items > .item:first-child { border-top: 0; }
 .due-row .duemark { align-self: center; }
 .gitmark { font-family: var(--font-mono); font-size: 12px; color: var(--s-review); border: 1px solid var(--s-review); border-radius: 999px; padding: 4px 10px; margin-left: auto; cursor: help; }
 .conn:not([hidden]) + .gitmark { margin-left: 0; }
+/* "← Inicio" (con el Inicio corriendo): arriba del título, como en los mockups. */
+.home-link { flex-basis: 100%; font-size: 14px; color: var(--accent); text-decoration: none; margin-bottom: -8px; }
+.home-link:hover { text-decoration: underline; }

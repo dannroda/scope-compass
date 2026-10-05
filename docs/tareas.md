@@ -725,7 +725,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (14/14)
+## M8 — Inicio, listas y plantillas (v3)  (14/15)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -937,3 +937,12 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 **Notas:** Un OptionButton al lado de "Crear compass/" (Juego, Personal, Vacío), visible solo sin compass/. Tests: plantilla juego por defecto (hito M0, listas y docs/gdd.md) y vacío sin datos.
 
 **Bloqueada por:** 8.7 Plantillas en `scompass init`
+
+### 8.15 Tablero: enlace "← Inicio" si el Inicio está corriendo · Pendiente
+
+- [x] `GET /api/home` en el hub (el Inicio del registro, o null)
+- [x] Web: "← Inicio" arriba del título; se revisa cada 10 s y al volver a la pestaña
+
+**Prueba:** Sin Inicio no aparece; con uno anotado en el registro, el enlace apunta a su puerto (hub/test/ui.test.js).
+
+**Notas:** Pedido al usar el Inicio.

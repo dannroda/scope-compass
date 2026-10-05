@@ -352,3 +352,17 @@ test('fecha límite (8.13): se elige en el detalle, la tarjeta la marca vencida 
   assert.equal((await task('m1-07')).due, undefined);
   await page.waitForFunction(() => !document.querySelector('.card[data-id="m1-07"] .duemark'));
 });
+
+test('"← Inicio": aparece solo si el Inicio está corriendo, y apunta a él', async () => {
+  const { registerHub, unregisterHub } = await import('../src/registry.js');
+  const page = await open();
+  assert.equal(await page.isVisible('#home-link'), false);
+  registerHub({ port: 4999, kind: 'home', pid: process.ppid });
+  try {
+    await page.reload();
+    await page.waitForSelector('#home-link:not([hidden])');
+    assert.equal(await page.getAttribute('#home-link', 'href'), 'http://127.0.0.1:4999/');
+  } finally {
+    unregisterHub(process.ppid);
+  }
+});
