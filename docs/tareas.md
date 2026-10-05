@@ -959,7 +959,7 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Notas:** D28. `projectsDataDir`: `$SCOMPASS_DATA` o `$XDG_DATA_HOME/scope-compass`. El nombre es la carpeta, tal cual; si existe, 409. "Elegir otra carpeta…" usa `POST /api/pick-folder` (kdialog o zenity; `SCOMPASS_PICKER` en tests); sin selector, campo de texto.
 
-## M9 — Inicio como app (multi-hub)  (0/10)
+## M9 — Inicio como app (multi-hub)  (10/10)
 
 Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con el código del hub: un puerto, sin esperas, todo editable (§17, D29).
 
@@ -968,75 +968,95 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 - Un solo proceso escribe cada compass/ (hub suelto o Inicio).
 - El Inicio se reinicia y actualiza compass/ de cualquier proyecto sin hub.
 
-### 9.1 Servidor del hub montable bajo una ruta · Pendiente
+### 9.1 Servidor del hub montable bajo una ruta · Hecho
 
-- [ ] createServer pasa a ser un plugin que se monta en / (hub suelto) o en /p/<clave> (Inicio)
-- [ ] El hub suelto sigue igual: mismos tests
+- [x] La app de un hub expone lo que necesita su WebSocket (`app.hub`) y `attachSocket` se puede usar desde otra app
+- [x] El hub suelto sigue igual: mismos tests
 
-**Referencias:** `docs/spec.md#v4`
-
-### 9.2 El Inicio sirve los proyectos en /p/<clave>/ · Pendiente
-
-- [ ] Clave por proyecto (nombre de la carpeta, sin repetir)
-- [ ] Activar al primer pedido: store, watcher, export y WebSocket
-- [ ] Si hay un hub suelto del proyecto, reenviarle HTTP y WebSocket
+**Notas:** Fastify no deja agregar rutas ni plugins después de arrancar, así que montar cada proyecto como plugin impediría activarlos o importarlos con el Inicio corriendo. En su lugar: cada proyecto es una app de createServer sin listen; el Inicio le pasa los pedidos con inject() y atiende su WebSocket con attachSocket.
 
 **Referencias:** `docs/spec.md#v4`
 
-### 9.3 Registro: quién sirve cada proyecto · Pendiente
+### 9.2 El Inicio sirve los proyectos en /p/<clave>/ · Hecho
 
-- [ ] El Inicio anota los proyectos que sirve con su base
-- [ ] hubsOf y detectHub entienden la base
+- [x] Clave por proyecto (nombre de la carpeta, sin repetir)
+- [x] Activar al primer pedido: store, watcher, export y WebSocket
+- [x] Si hay un hub suelto del proyecto, reenviarle HTTP y WebSocket
 
-**Referencias:** `docs/spec.md#v4`
+**Prueba:** hub/test/home-serve.test.js: tablero, API con etag, POST con Location, WebSocket con watcher, y reenvío a un hub suelto.
 
-### 9.4 CLI: usar la base del registro · Pendiente
-
-- [ ] El store HTTP con la base
-- [ ] scompass hubs y home list muestran quién sirve cada proyecto
+**Notas:** `hub/src/home-serve.js`: `projectKeys`, rutas /p/:key, /p/:key/* (inject o fetch al hub suelto, Location con la base) y /p/:key/ws (attachSocket o puente). El plugin de WebSocket se registra una vez en la raíz del Inicio. /api/projects suma key, url y served. Falta que un hub suelto no arranque si el Inicio ya sirve el proyecto (9.3).
 
 **Referencias:** `docs/spec.md#v4`
 
-### 9.5 Dock: usar la base, e "Iniciar hub" delega en el Inicio · Pendiente
+### 9.3 Registro: quién sirve cada proyecto · Hecho
 
-- [ ] Cliente HTTP y WebSocket con la base
-- [ ] Con el Inicio corriendo, "Iniciar hub" activa el proyecto en el Inicio
+- [x] El Inicio anota los proyectos que sirve con su base
+- [x] hubsOf y detectHub entienden la base
 
-**Referencias:** `docs/spec.md#v4`
-
-### 9.6 Tablero web dentro del Inicio · Pendiente
-
-- [ ] Llamadas relativas a su ruta
-- [ ] Barra superior compartida: volver al Inicio y cambiar de proyecto
-- [ ] Transiciones entre páginas (View Transitions)
+**Notas:** `registerServed` / `unregisterServed`: <pid>-<clave>.json con kind "served" y base. hubsOf los incluye; el Inicio se excluye a sí mismo (standaloneOf) para no reenviarse ni apagarse. Sus escrituras (Hoy) usan el store del hub en memoria y publican como el hub.
 
 **Referencias:** `docs/spec.md#v4`
 
-### 9.7 Tarjetas, Hoy y bandeja apuntan a /p/… · Pendiente
+### 9.4 CLI: usar la base del registro · Hecho
 
-- [ ] Abrir tablero dentro del Inicio
-- [ ] La bandeja: un submenú por proyecto sin prender ni apagar (salvo hubs sueltos)
+- [x] El store HTTP con la base
+- [x] scompass hubs y home list muestran quién sirve cada proyecto
 
-**Referencias:** `docs/spec.md#v4`
-
-### 9.8 Reiniciar el Inicio · Pendiente
-
-- [ ] POST /api/restart del Inicio: vuelve en el mismo puerto
-- [ ] scompass home restart
-- [ ] "Reiniciar Inicio" en la bandeja
+**Notas:** detectHub prueba cada entrada con su base: la URL del store HTTP ya la incluye. `serve` se niega si el Inicio sirve el proyecto; `hubs` lo muestra.
 
 **Referencias:** `docs/spec.md#v4`
 
-### 9.9 Actualizar compass/ desde el Inicio, sin hub · Pendiente
+### 9.5 Dock: usar la base, e "Iniciar hub" delega en el Inicio · Hecho
 
-- [ ] POST /api/projects/update (schema y AGENTS.md)
-- [ ] Botón en la tarjeta cuando está desactualizado, y en la bandeja
+- [x] Cliente HTTP y WebSocket con la base
+- [x] Con el Inicio corriendo, "Iniciar hub" activa el proyecto en el Inicio
+
+**Notas:** hub_client.gd: `base` y `registry_targets()` ([puerto, base]); `request_url`; `home_port()` (sin chequear el pid: Godot solo puede con sus hijos). start_hub: con el Inicio, POST /api/projects/activate (lo anota si hace falta) y se conecta a /p/<clave>; si falla, levanta su hub como antes.
 
 **Referencias:** `docs/spec.md#v4`
 
-### 9.10 Tests de M9, spec y guía · Pendiente
+### 9.6 Tablero web dentro del Inicio · Hecho
 
-- [ ] Tests de los criterios de §17.1
-- [ ] AGENTS.md, README e instalar.md
+- [x] Llamadas relativas a su ruta
+- [x] Barra superior compartida: volver al Inicio y cambiar de proyecto
+- [x] Transiciones entre páginas (View Transitions)
+
+**Notas:** app.js: BASE = la carpeta de la página ("/" o "/p/<clave>/"); IN_HOME muestra la barra con "← Inicio" y el selector (lista de /api/projects del Inicio). View Transitions en app.css y home.css. Chromium headless avisa "Transition was aborted… opt-in disabled" al cambiar de proyecto con el selector: la navegación anda; revisar en un navegador real.
+
+**Referencias:** `docs/spec.md#v4`
+
+### 9.7 Tarjetas, Hoy y bandeja apuntan a /p/… · Hecho
+
+- [x] Abrir tablero dentro del Inicio
+- [x] La bandeja: un submenú por proyecto sin prender ni apagar (salvo hubs sueltos)
+
+**Notas:** Tarjetas: "Abrir tablero" → /p/<clave>/, etiqueta "abierto" o "hub suelto :puerto"; ya no hay Prender. Hoy enlaza al tablero. Bandeja: un submenú por proyecto (Abrir tablero, Actualizar compass/, y Detener hub suelto si hay uno).
+
+**Referencias:** `docs/spec.md#v4`
+
+### 9.8 Reiniciar el Inicio · Hecho
+
+- [x] POST /api/restart del Inicio: vuelve en el mismo puerto
+- [x] scompass home restart
+- [x] "Reiniciar Inicio" en la bandeja
+
+**Notas:** POST /api/restart del Inicio (onRestart), `scompass home restart` (espera el PID nuevo en el mismo puerto) y "Reiniciar Inicio" en la bandeja. Se relanza el mismo comando con --port fijo.
+
+**Referencias:** `docs/spec.md#v4`
+
+### 9.9 Actualizar compass/ desde el Inicio, sin hub · Hecho
+
+- [x] POST /api/projects/update (schema y AGENTS.md)
+- [x] Botón en la tarjeta cuando está desactualizado, y en la bandeja
+
+**Notas:** POST /api/projects/update (updateCompass, sin hub); /api/projects trae `outdated`; la tarjeta muestra "compass/ desactualizado" con Actualizar. La bandeja ya lo tenía por proyecto.
+
+**Referencias:** `docs/spec.md#v4`
+
+### 9.10 Tests de M9, spec y guía · Hecho
+
+- [x] Tests de los criterios de §17.1
+- [x] AGENTS.md, README e instalar.md
 
 **Referencias:** `docs/spec.md#v4`

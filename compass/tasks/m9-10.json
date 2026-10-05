@@ -1,11 +1,11 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Tests de los criterios de §17.1"
     },
     {
-      "done": false,
+      "done": true,
       "text": "AGENTS.md, README e instalar.md"
     }
   ],
@@ -20,8 +20,8 @@
       "section": "v4"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "",
   "title": "Tests de M9, spec y guía",
-  "updated_at": "2026-10-05T01:29:58.892Z"
+  "updated_at": "2026-10-05T01:57:43.972Z"
 }

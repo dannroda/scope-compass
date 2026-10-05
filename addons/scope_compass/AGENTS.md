@@ -8,7 +8,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
 - Corré los comandos desde cualquier carpeta del proyecto (busca `compass/` hacia arriba) o con `--dir <proyecto>`.
 - Si `scompass` no está en el PATH: `node <carpeta de scope-compass>/hub/bin/scompass.js`.
 - Agregá `--json` para leer la salida desde un programa. Código de salida 0 si anduvo; el error va por stderr.
-- No hace falta que el hub esté corriendo: sin hub, la CLI escribe directo en `compass/`.
+- No hace falta que el hub esté corriendo: sin hub, la CLI escribe directo en `compass/`. Con el Inicio corriendo (`scompass home`), la CLI pasa por él solo (lo encuentra en el registro).
 - Si la CLI avisa que el hub es de otra versión, reinicialo con `scompass restart` antes de seguir: un hub viejo puede no conocer campos nuevos.
 - Los cambios quedan como archivos modificados en `compass/` (y en el export markdown). Commitealos solo si te lo piden. `scompass list` termina con cuántos hay sin commitear (`uncommitted` en `--json`).
 

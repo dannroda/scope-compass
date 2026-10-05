@@ -700,8 +700,10 @@ Cada uno tiene su test en `hub/test/m8-criteria.test.js`, salvo el de la bandeja
 ### 17.1 Criterios de aceptación de v4
 <!-- id: criterios-v4 -->
 
-- [ ] Con el Inicio corriendo, abrir un tablero desde una tarjeta no cambia de puerto ni levanta procesos, y se puede editar enseguida.
-- [ ] Un cambio hecho desde la CLI o el dock en un proyecto que sirve el Inicio se ve en vivo en su tablero del Inicio.
-- [ ] Con un hub suelto del dock corriendo, el tablero en el Inicio pasa por ese hub (un solo proceso escribe).
-- [ ] `scompass home restart` y "Reiniciar Inicio" de la bandeja vuelven en el mismo puerto, con los proyectos.
-- [ ] "Actualizar compass/" en la tarjeta de un proyecto sin hub copia el schema nuevo.
+Tests: el primero en `hub/test/m9-criteria.test.js`; los cambios en vivo y el hub suelto en `home-serve.test.js`; el dock con el Inicio en `dock.test.js`; reiniciar en `home-restart.test.js`; actualizar en `home.test.js`.
+
+- [x] Con el Inicio corriendo, abrir un tablero desde una tarjeta no cambia de puerto ni levanta procesos, y se puede editar enseguida.
+- [x] Un cambio hecho desde la CLI o el dock en un proyecto que sirve el Inicio se ve en vivo en su tablero del Inicio.
+- [x] Con un hub suelto del dock corriendo, el tablero en el Inicio pasa por ese hub (un solo proceso escribe).
+- [x] `scompass home restart` y "Reiniciar Inicio" de la bandeja vuelven en el mismo puerto, con los proyectos.
+- [x] "Actualizar compass/" en la tarjeta de un proyecto sin hub copia el schema nuevo.
