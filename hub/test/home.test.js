@@ -180,3 +180,23 @@ test('CLI: un solo Inicio por usuario', async () => {
   }
   assert.equal(liveHome(), null, 'se desanota al cerrar');
 });
+
+test('init sin carpeta: en la carpeta de datos, con git init; sin nombre ni carpeta, 400', async () => {
+  const saved = process.env.SCOMPASS_DATA;
+  process.env.SCOMPASS_DATA = join(root, 'datos');
+  try {
+    let r = await api('POST', '/api/projects/init', { name: 'Vida', template: 'personal' });
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    assert.equal(r.body.path, join(root, 'datos', 'vida'));
+    assert.equal(r.body.git_init, true);
+    r = await api('POST', '/api/projects/init', { name: 'Vida', template: 'vacio' });
+    assert.equal(r.body.path, join(root, 'datos', 'vida-2'), 'el mismo nombre no pisa');
+    assert.equal((await api('POST', '/api/projects/init', { template: 'vacio' })).status, 400);
+    assert.equal((await api('GET', '/api/templates')).body.data_dir, join(root, 'datos'));
+    // Dentro de un repo existente no se hace otro.
+    r = await api('POST', '/api/projects/init', { name: 'Sub', path: join(root, 'datos', 'vida', 'sub') });
+    assert.equal(r.body.git_init, false);
+  } finally {
+    if (saved === undefined) delete process.env.SCOMPASS_DATA; else process.env.SCOMPASS_DATA = saved;
+  }
+});

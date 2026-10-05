@@ -725,7 +725,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (14/15)
+## M8 — Inicio, listas y plantillas (v3)  (17/17)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -938,7 +938,7 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Bloqueada por:** 8.7 Plantillas en `scompass init`
 
-### 8.15 Tablero: enlace "← Inicio" si el Inicio está corriendo · Pendiente
+### 8.15 Tablero: enlace "← Inicio" si el Inicio está corriendo · Hecho
 
 - [x] `GET /api/home` en el hub (el Inicio del registro, o null)
 - [x] Web: "← Inicio" arriba del título; se revisa cada 10 s y al volver a la pestaña
@@ -946,3 +946,15 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 **Prueba:** Sin Inicio no aparece; con uno anotado en el registro, el enlace apunta a su puerto (hub/test/ui.test.js).
 
 **Notas:** Pedido al usar el Inicio.
+
+### 8.16 Bandeja del Inicio: el estado de los hubs prendidos desde la web no se actualizaba · Hecho
+
+**Prueba:** Test en bus privado: hub prendido por la API del Inicio → LayoutUpdated, AboutToShow dice que cambió y el menú muestra el puerto.
+
+**Notas:** Plasma pregunta AboutToShow antes de abrir el menú; si un refresh() ya había visto el cambio, respondía "no cambió" y Plasma mostraba su copia vieja. Ahora compara con la última revisión que el escritorio pidió (GetLayout), y refresh() manda también ItemsPropertiesUpdated.
+
+### 8.17 Crear proyecto desde el Inicio sin ruta: carpeta de datos del usuario, con git · Hecho
+
+**Prueba:** Crear "Vida dos" sin carpeta lo deja en …/proyectos/vida-dos con .git; con otra carpeta, ahí (ui-home y home tests).
+
+**Notas:** D28. `projectsDataDir`: `$SCOMPASS_DATA` o `$XDG_DATA_HOME/scope-compass/proyectos`. El formulario pide nombre y plantilla; "Otra carpeta" plegada.

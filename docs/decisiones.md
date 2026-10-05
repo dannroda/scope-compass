@@ -218,3 +218,11 @@ Además del registro de hubs vivos (en `$XDG_RUNTIME_DIR`, se borra al reiniciar
 - **Por qué:** salió del primer uso en Epiphany (4.2): con ids al azar (`tagr1kge`) las tareas nuevas se leían mal en git y en la CLI al lado de las importadas (`m0-03`).
 - **Costo aceptado:** dos ramas que crean una tarea en el mismo hito a la vez generan el mismo nombre de archivo y git lo marca como conflicto add/add; se resuelve renombrando una. Con un solo usuario trabajando en una rama a la vez es raro. Las tareas que ya tienen id aleatorio no se renombran (cambiaría su historial en git y las referencias).
 - **Descartado:** renumerar ids al mover una tarea de hito (rompe `links`, referencias e historial).
+
+## D28 · Los proyectos que se crean desde el Inicio van, por defecto, a la carpeta de datos del usuario
+**2026-10-04 · vigente** · spec §16.2 · `hub/src/projects.js` (`projectsDataDir`), `hub/src/home.js`
+
+- **Qué:** "Crear con plantilla" pide el nombre y la plantilla; la carpeta es `$XDG_DATA_HOME/scope-compass/proyectos/<nombre>` (`~/.local/share/…`, el equivalente de AppData en Linux). "Otra carpeta" sigue disponible, plegada, para un proyecto que vive en otro lado (un repo de Godot).
+- **Por qué:** un proyecto personal ("Vida") no tiene una carpeta natural; pedir una ruta absoluta era fricción sin valor.
+- **Git:** una carpeta nueva fuera de todo repo recibe `git init` (sin remoto ni commits), así los datos siguen en git (D1) y el aviso de cambios sin commitear funciona desde el principio. Dentro de un repo existente no se crea otro.
+- **Descartado:** guardarlos en `~/.config` (es para configuración, no datos) o sin git.

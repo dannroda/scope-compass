@@ -28,6 +28,8 @@ beforeEach(async () => {
   saved = { reg: process.env.SCOMPASS_REGISTRY, cfg: process.env.SCOMPASS_CONFIG };
   process.env.SCOMPASS_REGISTRY = join(root, 'registro');
   process.env.SCOMPASS_CONFIG = join(root, 'config');
+  saved.data = process.env.SCOMPASS_DATA;
+  process.env.SCOMPASS_DATA = join(root, 'datos');
   vida = join(root, 'vida');
   juego = join(root, 'juego');
   await cp(FIXTURE, join(vida, 'compass'), { recursive: true });
@@ -47,7 +49,7 @@ beforeEach(async () => {
 afterEach(async () => {
   for (const p of [vida, juego]) for (const h of hubsOf(p)) { try { process.kill(h.pid, 'SIGKILL'); } catch {} }
   await home.close();
-  for (const [k, v] of [['SCOMPASS_REGISTRY', saved.reg], ['SCOMPASS_CONFIG', saved.cfg]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+  for (const [k, v] of [['SCOMPASS_REGISTRY', saved.reg], ['SCOMPASS_CONFIG', saved.cfg], ['SCOMPASS_DATA', saved.data]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
   await rm(root, { recursive: true, force: true });
   assert.deepEqual(pageErrors, [], 'errores en la página');
 });
@@ -100,15 +102,27 @@ test('agregar: importar una carpeta y crear un proyecto con plantilla', async ()
   await page.fill('#add-path', join(root, 'nada'));
   await page.click('#add button[type="submit"]');
   await page.waitForFunction(() => document.querySelector('#add .err')?.textContent.length > 0);
+  // Crear: sin carpeta va a la carpeta de datos del usuario, con su repo de git (D28).
   await page.click('#add .tabs button:has-text("Crear con plantilla")');
-  const nueva = join(root, 'Vida2');
-  await page.fill('#new-path', nueva);
   await page.fill('#new-name', 'Vida dos');
+  assert.match(await page.textContent('#new-where'), new RegExp(`Se guarda en ${process.env.SCOMPASS_DATA}/vida-dos`));
   await page.check('input[name="tpl"][value="personal"]');
   await page.click('#add button[type="submit"]');
   await page.waitForSelector('article.proj[aria-label="Vida dos"]');
+  const nueva = join(process.env.SCOMPASS_DATA, 'vida-dos');
   assert.ok(existsSync(join(nueva, 'compass', 'lists', 'pendientes.json')));
+  assert.ok(existsSync(join(nueva, '.git')), 'git init');
   assert.deepEqual(JSON.parse(await readFile(join(nueva, 'compass', 'config.json'), 'utf8')).views, ['lists', 'board']);
+  // Otra carpeta, elegida a mano.
+  await page.click('#add-btn');
+  await page.click('#add .tabs button:has-text("Crear con plantilla")');
+  await page.fill('#new-name', 'Juego');
+  await page.click('#add .other-dir summary');
+  const otra = join(root, 'mi-juego');
+  await page.fill('#new-path', otra);
+  await page.click('#add button[type="submit"]');
+  await page.waitForSelector('article.proj[aria-label="Juego"]');
+  assert.ok(existsSync(join(otra, 'compass', 'milestones', 'm00.json')));
 });
 
 test('en el teléfono no hay scroll horizontal', async () => {

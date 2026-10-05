@@ -1,7 +1,7 @@
 // Inicio de Scope Compass (spec §16.2, mockups en https://claude.ai/artifact/H842sKGxHz1oGH7qgZhYvY): la franja
 // "Hoy" y una tarjeta por proyecto del registro. Los datos vienen de la API del Inicio (hub/src/home.js).
 (function () {
-  const S = { projects: [], today: [], templates: [], loaded: false, offline: false, connected: false,
+  const S = { projects: [], today: [], templates: [], dataDir: '', loaded: false, offline: false, connected: false,
     add: { open: false, mode: 'import', err: '', busy: false }, busy: new Set() };
   const EVERY = { day: 'cada día', week: 'cada semana', month: 'cada mes', year: 'cada año' };
   const TPL_NAMES = { juego: 'Juego', personal: 'Personal', vacio: 'Vacío' };
@@ -182,7 +182,7 @@
     S.add = { open: true, mode, err: '', busy: false };
     render();
     document.getElementById('add').scrollIntoView({ block: 'nearest' });
-    document.getElementById(mode === 'import' ? 'add-path' : 'new-path')?.focus();
+    document.getElementById(mode === 'import' ? 'add-path' : 'new-name')?.focus();
   }
   function closeAdd() { S.add.open = false; render(); document.getElementById('add-btn').focus(); }
 
@@ -212,21 +212,34 @@
         h('div', { class: 'actions' }, h('button', { class: 'btn ghost', type: 'button', onclick: closeAdd }, 'Cancelar'), h('button', { class: 'btn primary', type: 'submit' }, 'Agregar')));
     } else {
       const tpls = S.templates.length ? S.templates : [{ name: 'vacio', description: '' }];
+      // Sin carpeta: el Inicio lo crea en la carpeta de datos del usuario (D28), con git.
+      const slug = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'proyecto';
+      const where = h('p', { class: 'hint', id: 'new-where' });
+      const showWhere = () => {
+        const custom = document.getElementById('new-path')?.value.trim();
+        const name = document.getElementById('new-name')?.value.trim();
+        where.textContent = custom ? `Se crea en ${custom}.` : S.dataDir ? `Se guarda en ${S.dataDir}/${slug(name || 'nombre')}, con su propio repo de git.` : '';
+      };
       form = h('form', { onsubmit: (e) => submit(e, async () => {
         const template = box.querySelector('input[name="tpl"]:checked')?.value ?? 'vacio';
-        const r = await call('POST', '/api/projects/init', { path: document.getElementById('new-path').value.trim(), template, name: document.getElementById('new-name').value.trim() || undefined });
-        toast(`Creado: ${r.config.project} (plantilla ${r.template})`);
+        const path = document.getElementById('new-path').value.trim();
+        const r = await call('POST', '/api/projects/init', { name: document.getElementById('new-name').value.trim(), template, ...(path && { path }) });
+        toast(`Creado: ${r.config.project} (plantilla ${r.template}) en ${r.path}`);
       }) },
         h('div', { class: 'fields' },
-          h('div', { class: 'field', style: 'flex-grow:2' }, h('label', { for: 'new-path' }, 'Carpeta (ruta absoluta; se crea si no existe)'),
-            h('input', { type: 'text', id: 'new-path', required: true, placeholder: '/home/…/Vida', autocomplete: 'off', spellcheck: 'false' })),
-          h('div', { class: 'field' }, h('label', { for: 'new-name' }, 'Nombre'), h('input', { type: 'text', id: 'new-name', placeholder: 'el de la carpeta', autocomplete: 'off' }))),
+          h('div', { class: 'field' }, h('label', { for: 'new-name' }, 'Nombre'),
+            h('input', { type: 'text', id: 'new-name', required: true, placeholder: 'Vida', autocomplete: 'off', oninput: showWhere }))),
         h('fieldset', { class: 'tpls' }, h('legend', null, 'Plantilla'),
           tpls.map((t, i) => h('label', { class: 'tpl' }, h('input', { type: 'radio', name: 'tpl', value: t.name, checked: i === 0 }), h('span', null, h('b', null, TPL_NAMES[t.name] ?? t.name), t.description)))),
+        h('details', { class: 'other-dir' }, h('summary', null, 'Otra carpeta (opcional)'),
+          h('div', { class: 'field' }, h('label', { for: 'new-path' }, 'Ruta absoluta (se crea si no existe; por ejemplo, la de un proyecto de Godot)'),
+            h('input', { type: 'text', id: 'new-path', placeholder: '/home/…/mi-juego', autocomplete: 'off', spellcheck: 'false', oninput: showWhere }))),
+        where,
         h('p', { class: 'err', role: 'alert' }, S.add.err),
         h('div', { class: 'actions' }, h('button', { class: 'btn ghost', type: 'button', onclick: closeAdd }, 'Cancelar'), h('button', { class: 'btn primary', type: 'submit' }, 'Crear proyecto')));
     }
     box.replaceChildren(h('h2', null, 'Agregar proyecto'), h('div', { class: 'tabs' }, tab('import', 'Importar carpeta'), tab('create', 'Crear con plantilla')), form);
+    document.getElementById('new-name')?.dispatchEvent(new Event('input'));
   }
 
   function renderConn() {
@@ -252,6 +265,7 @@
         S.projects = p.projects;
         S.today = t.items;
         S.templates = tp.templates;
+        if (tp.data_dir) S.dataDir = tp.data_dir;
         S.offline = false;
       } catch (e) {
         S.offline = true;

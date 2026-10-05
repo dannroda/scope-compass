@@ -21,7 +21,7 @@
   },
   "scripts": {
     "postinstall": "node -e \"try{require('node:fs').writeFileSync('node_modules/.gdignore','')}catch{}\"",
-    "test": "SCOMPASS_REGISTRY=\"${TMPDIR:-/tmp}/scompass-test-registry-$$\" SCOMPASS_CONFIG=\"${TMPDIR:-/tmp}/scompass-test-config-$$\" node --test"
+    "test": "SCOMPASS_REGISTRY=\"${TMPDIR:-/tmp}/scompass-test-registry-$$\" SCOMPASS_CONFIG=\"${TMPDIR:-/tmp}/scompass-test-config-$$\" SCOMPASS_DATA=\"${TMPDIR:-/tmp}/scompass-test-data-$$\" node --test"
   },
   "license": "MIT",
   "dependencies": {

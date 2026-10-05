@@ -10,21 +10,23 @@
 //   POST   /api/projects/start   { path }          levanta su hub como hijo del Inicio (muere con él)
 //   POST   /api/projects/stop    { path, force? }  apaga su hub; uno que abrió otro (el dock) pide force
 //   GET    /api/templates                    plantillas para crear un proyecto
-//   POST   /api/projects/init  { path, template, name? }   crea compass/ con `scompass init` y lo anota
+//   POST   /api/projects/init  { name, template, path? }   crea compass/ con `scompass init` y lo anota (sin path:
+//                                            en la carpeta de datos del usuario, D28)
 //   GET    /ws                               { type: 'changed', path, collection?, id? } | { type: 'hubs' } | { type: 'projects' }
 // Las escrituras pasan por el hub del proyecto si está vivo (lo publica a sus pestañas y al dock); si no, van
 // directo a compass/ con etag, como la CLI, y regeneran el export markdown.
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { existsSync, statSync } from 'node:fs';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import websocket from '@fastify/websocket';
 import { exportMarkdown } from './export-md.js';
 import { checkItem } from './lists.js';
-import { forgetProject, loadProjects, projectsFile, projectsStatus, ProjectsError, recordProject } from './projects.js';
+import { forgetProject, loadProjects, projectsDataDir, projectsFile, projectsStatus, ProjectsError, recordProject } from './projects.js';
+import { freeId, slugify } from './lists.js';
 import { hubsOf, listHubs } from './registry.js';
 import { VERSION, WEB_DIR } from './server.js';
 import { createHttpStore, detectHub } from './store/http.js';
@@ -113,15 +115,28 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   });
 
   app.get('/api/templates', async () => ({
-    templates: await Promise.all((await listTemplates()).map(async (n) => ({ name: n, description: (await loadTemplate(n)).description ?? '' })))
+    templates: await Promise.all((await listTemplates()).map(async (n) => ({ name: n, description: (await loadTemplate(n)).description ?? '' }))),
+    data_dir: projectsDataDir()
   }));
 
-  // Crear un proyecto: la misma `scompass init` de la CLI, en otro proceso (crea la carpeta si no existe).
+  // Crear un proyecto: la misma `scompass init` de la CLI, en otro proceso. Sin path, en la carpeta de datos (D28)
+  // con el nombre como carpeta ("Vida" → …/proyectos/vida, o vida-2 si ya hay una). Una carpeta nueva fuera de
+  // todo repo recibe `git init` (los datos viven en git, D1), sin remoto ni commits.
   app.post('/api/projects/init', async (req, reply) => {
-    const { path, template = 'vacio', name } = req.body ?? {};
-    if (typeof path !== 'string' || !path.startsWith('/')) throw new StoreError('invalid_argument', 'path tiene que ser una ruta absoluta');
+    const { template = 'vacio' } = req.body ?? {};
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    let path = typeof req.body?.path === 'string' ? req.body.path.trim() : '';
     if (!(await loadTemplate(template))) throw new StoreError('invalid_argument', `plantilla desconocida: ${template}`);
+    if (!path) {
+      if (!name) throw new StoreError('invalid_argument', 'falta el nombre del proyecto');
+      const base = projectsDataDir();
+      const taken = await readdir(base).catch(() => []);
+      path = join(base, freeId(slugify(name), taken));
+    } else if (!path.startsWith('/')) throw new StoreError('invalid_argument', 'la carpeta tiene que ser una ruta absoluta');
+    const fresh = !existsSync(path);
     await mkdir(path, { recursive: true });
+    const inRepo = await new Promise((r) => execFile('git', ['-C', path, 'rev-parse', '--is-inside-work-tree'], (err) => r(!err)));
+    const gitInit = fresh && !inRepo && await new Promise((r) => execFile('git', ['-C', path, 'init', '-q'], (err) => r(!err)));
     const args = [BIN, '--dir', path, 'init', '--template', template, '--json', ...(name ? ['--project', name] : [])];
     const r = await new Promise((resolve) => {
       const child = spawn(process.execPath, args, { stdio: ['ignore', 'pipe', 'pipe'], env: process.env });
@@ -136,7 +151,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
       throw new StoreError(e?.code ?? 'io_error', e?.message ?? (r.err.trim() || `scompass init salió con ${r.code}`));
     }
     emit({ type: 'projects' });
-    return reply.code(201).send(JSON.parse(r.out));
+    return reply.code(201).send({ ...JSON.parse(r.out), path, git_init: !!gitInit });
   });
 
   app.get('/api/today', async () => {

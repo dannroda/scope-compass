@@ -15,6 +15,14 @@ export function projectsFile() {
   return join(base, 'projects.json');
 }
 
+/**
+ * Dónde se crean los proyectos nuevos del Inicio si no se elige otra carpeta (D28): la carpeta de datos del
+ * usuario, $XDG_DATA_HOME/scope-compass/proyectos (~/.local/share/…), el equivalente de AppData en Linux.
+ */
+export function projectsDataDir() {
+  return process.env.SCOMPASS_DATA ?? join(process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share'), 'scope-compass', 'proyectos');
+}
+
 export class ProjectsError extends Error {
   constructor(code, message) { super(message); this.code = code; }
 }
