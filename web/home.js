@@ -61,8 +61,8 @@
   }
   const dueTag = (x) => x.due_state === 'overdue' ? h('span', { class: 'tag overdue' }, 'vencido · ' + showDue(x.due))
     : x.due_state === 'today' ? h('span', { class: 'tag today' }, x.due.includes('T') ? 'hoy ' + x.due.split('T')[1] : 'hoy') : null;
-  const hubUrl = (port) => `${location.protocol}//${location.hostname}:${port}/`;
-  const liveHub = (path) => S.projects.find((p) => p.path === path)?.hubs?.[0] ?? null;
+  // El tablero de un proyecto vive dentro del Inicio, en /p/<clave>/ (D29).
+  const boardUrl = (path) => S.projects.find((p) => p.path === path)?.url ?? null;
 
   async function act(key, fn, okMsg) {
     if (S.busy.has(key)) return;
@@ -96,20 +96,22 @@
           h('label', { for: id, class: 'what' }, x.text),
           dueTag(x), x.repeat ? h('span', { class: 'tag' }, '↻ ' + EVERY[x.repeat.every]) : null, where);
       }
-      const hub = liveHub(x.project.path);
+      const url = boardUrl(x.project.path);
       const [code, ...rest] = x.text.split(' ');
       const title = /^\d/.test(code) ? h('span', null, h('span', { class: 'code' }, code), rich(rest.join(' '))) : rich(x.text);
       return h('div', { class: 'hoy-row' },
         h('span', { class: 'mark', 'aria-hidden': 'true' }, x.status === 'doing' ? '●' : '○'),
-        h('span', { class: 'what' }, hub ? h('a', { href: hubUrl(hub.port) + '#' }, title) : title),
+        h('span', { class: 'what' }, url ? h('a', { href: url }, title) : title),
         dueTag(x), x.status === 'doing' ? h('span', { class: 'tag doing' }, 'en curso') : null, where);
     }));
   }
 
+  // Quién sirve el proyecto: el Inicio (lo normal, D29) o un hub suelto (el del dock, `scompass serve`).
   function hubTag(p) {
     if (!p.found) return h('span', { class: 'tag overdue' }, 'no encontrado');
-    if (p.hubs.length) return h('span', { class: 'tag live' }, h('span', { class: 'dot' }), 'hub :' + p.hubs[0].port);
-    return h('span', { class: 'tag' }, 'hub apagado · leído de disco');
+    if (p.served === 'hub') return h('span', { class: 'tag live', title: 'Lo sirve un hub suelto (el del dock o scompass serve); el Inicio le pasa los pedidos' }, h('span', { class: 'dot' }), 'hub suelto :' + p.hubs.find((x) => !x.base)?.port);
+    if (p.served === 'home') return h('span', { class: 'tag live' }, h('span', { class: 'dot' }), 'abierto');
+    return null;
   }
 
   function projectCard(p) {
@@ -137,18 +139,14 @@
 
     if (p.git?.uncommitted) body.push(h('p', { style: 'margin:0' }, h('span', { class: 'tag today', title: 'La app no commitea sola: commiteá compass/ cuando quieras' }, p.git.uncommitted === 1 ? '1 archivo sin commitear' : p.git.uncommitted + ' archivos sin commitear')));
     const foot = h('div', { class: 'foot' });
-    if (p.found) {
-      if (p.hubs.length) {
-        foot.append(h('button', { class: 'btn', type: 'button', disabled: S.busy.has(key), 'aria-label': 'Apagar el hub de ' + p.name, onclick: () => stopHub(p) }, '■ Apagar'));
-      } else {
-        foot.append(h('button', { class: 'btn', type: 'button', disabled: S.busy.has(key), 'aria-label': 'Prender el hub de ' + p.name,
-          onclick: () => act(key, () => call('POST', '/api/projects/start', { path: p.path }), 'Hub prendido') }, S.busy.has(key) ? 'Prendiendo…' : '▶ Prender'));
-      }
+    // Solo un hub suelto se apaga desde acá; los proyectos que sirve el Inicio no tienen un proceso propio.
+    if (p.found && p.served === 'hub') {
+      foot.append(h('button', { class: 'btn', type: 'button', disabled: S.busy.has(key), 'aria-label': 'Apagar el hub suelto de ' + p.name, onclick: () => stopHub(p) }, '■ Apagar hub suelto'));
     }
     foot.append(h('button', { class: 'btn ghost', type: 'button', 'aria-label': 'Quitar ' + p.name + ' del Inicio',
       onclick: () => { if (confirm(`¿Quitar "${p.name}" del Inicio? No se borra nada de la carpeta; se puede volver a agregar.`)) act('rm:' + p.path, () => call('DELETE', '/api/projects?path=' + encodeURIComponent(p.path)), 'Quitado del Inicio'); } }, 'Quitar'));
     foot.append(h('span', { class: 'spacer' }));
-    if (p.hubs.length) foot.append(h('a', { href: hubUrl(p.hubs[0].port) }, 'Abrir tablero'));
+    if (p.url) foot.append(h('a', { href: p.url, class: 'open' }, 'Abrir tablero'));
     return h('article', { class: 'proj' + (p.found ? '' : ' missing'), 'aria-label': p.name }, head, ...body, foot);
   }
 

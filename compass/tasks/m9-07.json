@@ -1,18 +1,18 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Abrir tablero dentro del Inicio"
     },
     {
-      "done": false,
+      "done": true,
       "text": "La bandeja: un submenú por proyecto sin prender ni apagar (salvo hubs sueltos)"
     }
   ],
   "code": "9.7",
   "created_at": "2026-10-05T01:29:55.078Z",
   "milestone": "m09",
-  "notes": "",
+  "notes": "Tarjetas: \"Abrir tablero\" → /p/<clave>/, etiqueta \"abierto\" o \"hub suelto :puerto\"; ya no hay Prender. Hoy enlaza al tablero. Bandeja: un submenú por proyecto (Abrir tablero, Actualizar compass/, y Detener hub suelto si hay uno).",
   "order": 7,
   "refs": [
     {
@@ -20,8 +20,8 @@
       "section": "v4"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "",
   "title": "Tarjetas, Hoy y bandeja apuntan a /p/…",
-  "updated_at": "2026-10-05T01:29:55.793Z"
+  "updated_at": "2026-10-05T01:51:05.222Z"
 }

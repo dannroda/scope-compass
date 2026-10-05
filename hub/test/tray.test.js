@@ -188,9 +188,9 @@ test('§16.8 home --tray: con tres hubs con --tray hay un solo ícono; al cerrar
     const visible = (v) => v[1][0][1].find(([k]) => k === 'visible')?.[1][1][0] !== false;
     const top = layout[2];
     assert.equal(label(top[0]), 'Abrir Inicio');
-    const entries = top.filter((v) => /^Scope Compass · :\d+$/.test(label(v) ?? ''));
+    const entries = top.filter((v) => /^Scope Compass · hub suelto :\d+$/.test(label(v) ?? ''));
     assert.deepEqual(entries.map((v) => Number(label(v).split(':')[1])).sort(), ports.sort(), `proyectos en el menú: ${top.map(label).join(' | ')}`);
-    assert.deepEqual(entries[0][1][0][2].filter(visible).map(label), ['Abrir tablero', 'Reiniciar hub', 'Detener hub']);
+    assert.deepEqual(entries[0][1][0][2].filter(visible).map(label), ['Abrir tablero', 'Detener hub suelto']);
     assert.deepEqual(top.filter((v) => label(v)).slice(-2).map(label), ['Agregar proyecto…', 'Cerrar Inicio']);
 
     // Al cerrar el Inicio, los tres vuelven a la bandeja.
@@ -224,7 +224,7 @@ test('home --tray: un hub que se prende desde la web (API del Inicio) cambia el 
     await new Promise((r, j) => watcherBus.addMatch(`type='signal',sender='${service}',member='LayoutUpdated'`, (e) => (e ? j(e) : r())));
     const label = (v) => v[1][0][1].find(([k]) => k === 'label')?.[1][1][0];
     const labels = async () => (await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'GetLayout', 'iias', [0, -1, []]))[1][2].map(label);
-    assert.ok((await labels()).includes('Scope Compass · apagado'));
+    assert.ok((await labels()).includes('Scope Compass'), (await labels()).join(' | '));
     const url = JSON.parse(out.split('\n')[0]).url;
     const r = await fetch(url + 'api/projects/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: project }) });
     const { hub } = await r.json();
@@ -233,7 +233,7 @@ test('home --tray: un hub que se prende desde la web (API del Inicio) cambia el 
     // Un escritorio que no hizo caso del LayoutUpdated pregunta al abrir el menú: tiene que oír que cambió.
     const [changed] = await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'AboutToShow', 'i', [0]);
     assert.equal(changed, true, 'AboutToShow dijo que no cambió');
-    assert.ok((await labels()).includes(`Scope Compass · :${hub.port}`), (await labels()).join(' | '));
+    assert.ok((await labels()).includes(`Scope Compass · hub suelto :${hub.port}`), (await labels()).join(' | '));
     const [again] = await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'AboutToShow', 'i', [0]);
     assert.equal(again, false, 'ya lo pidió: no cambió');
   } finally {

@@ -30,13 +30,17 @@
       this.current = body?.error?.current;
     }
   }
+  // La carpeta de la página: "/" en un hub suelto, "/p/<clave>/" dentro del Inicio (D29). Las rutas de la API van
+  // relativas a ella, así el mismo tablero sirve en los dos lugares.
+  const BASE = location.pathname.replace(/[^/]*$/, '');
+  const IN_HOME = /^\/p\/[^/]+\/$/.test(BASE);
   async function call(method, path, body, etag) {
     const headers = {};
     if (body !== undefined) headers['content-type'] = 'application/json';
     if (etag) headers['if-match'] = '"' + etag + '"';
     let r;
     try {
-      r = await fetch(path, {
+      r = await fetch(BASE + path.replace(/^\//, ''), {
         method,
         headers,
         body: body === undefined ? undefined : JSON.stringify(body)
@@ -1146,7 +1150,7 @@
   // WebSocket con reconexión: espera creciente de 0,5 s a 10 s, y vuelve a 0,5 s al conectar.
   let retry = 500;
   function connect() {
-    const ws = new WebSocket(new URL('/ws', location.href.replace(/^http/, 'ws')));
+    const ws = new WebSocket(new URL(BASE + 'ws', location.href.replace(/^http/, 'ws')));
     // El handler se registra ya: el hello llega apenas se abre la conexión (spec §5.5).
     ws.onmessage = (e) => { try { onEvent(JSON.parse(e.data)); } catch (err) { console.error(err); } };
     ws.onopen = () => { retry = 500; S.connected = true; socket = ws; sendPresence(); renderConn(); };
@@ -1171,9 +1175,25 @@
     a.hidden = !r?.url;
     if (r?.url) a.href = r.url;
   }
-  checkHome();
-  setInterval(checkHome, 10000);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkHome(); });
+  // Dentro del Inicio: la barra con "Inicio" y el selector de proyecto (la lista sale de la API del Inicio, en /).
+  async function homeBar() {
+    const a = document.getElementById('home-link');
+    a.href = '/';
+    a.hidden = false;
+    const sel = document.getElementById('project-switch');
+    const r = await fetch('/api/projects').then((x) => x.json()).catch(() => null);
+    const list = (r?.projects ?? []).filter((p) => p.url);
+    if (list.length < 2) return;
+    sel.replaceChildren(...list.map((p) => h('option', { value: p.url, selected: p.url === BASE }, p.name)));
+    sel.hidden = false;
+    sel.onchange = () => { location.href = sel.value; };
+  }
+  if (IN_HOME) homeBar();
+  else {
+    checkHome();
+    setInterval(checkHome, 10000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkHome(); });
+  }
 
   readHash();
   window.addEventListener('hashchange', () => { readHash(); render(); scrollToSection(); });

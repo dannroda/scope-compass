@@ -910,21 +910,20 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
 function homeTrayItems({ app, url, openUrl, warn, close, refresh }) {
   const act = (fn) => async () => { try { await fn(); } catch (e) { warn(`bandeja: ${e.message}`); } refresh(); };
   const projects = (() => { try { return projectsStatus(); } catch (e) { warn(`bandeja: ${e.message}`); return []; } })();
+  // D29: el Inicio sirve los proyectos, así que no hay nada que prender; un hub suelto (el del dock) se puede detener.
   const project = (p) => {
-    const h = p.hubs[0] && listHubs().find((x) => x.pid === p.hubs[0].pid);
     if (!p.found) return { label: `${p.name} · no encontrado`, enabled: false };
-    if (!h) return { label: `${p.name} · apagado`, children: [{ label: 'Prender', onClick: act(() => app.hubs.start(p.path)) }] };
-    const hubUrl = `http://127.0.0.1:${h.port}/`;
+    const key = app.serving.keyOf(p.path);
+    const standalone = p.hubs.map((x) => listHubs().find((y) => y.pid === x.pid)).find((h) => h && !h.base && h.pid !== process.pid);
     const compass = join(p.path, 'compass');
     const stale = outdatedFiles(compass).length;
     return {
-      label: `${p.name} · :${h.port}`,
+      label: standalone ? `${p.name} · hub suelto :${standalone.port}` : p.name,
       children: [
-        { label: 'Abrir tablero', onClick: () => openUrl(hubUrl) },
+        { label: 'Abrir tablero', onClick: () => openUrl(`${url}p/${encodeURIComponent(key)}/`) },
         { label: `Actualizar compass/ (${stale} archivo${stale === 1 ? '' : 's'})`, visible: stale > 0, onClick: act(() => updateCompass(compass)) },
-        { label: 'Reiniciar hub', onClick: act(() => fetch(hubUrl + 'api/restart', { method: 'POST' })) },
-        // El de un hub que abrió el dock: desde el menú no hay confirmación, así que el label lo avisa.
-        { label: app.hubs.isForeign(h) ? 'Detener hub (lo abrió el dock)' : 'Detener hub', onClick: act(() => app.hubs.stop(p.path, { force: true })) }
+        // Desde el menú no hay confirmación, así que el label avisa si lo abrió el dock.
+        ...(standalone ? [{ label: app.hubs.isForeign(standalone) ? 'Detener hub suelto (lo abrió el dock)' : 'Detener hub suelto', onClick: act(() => app.hubs.stop(p.path, { force: true })) }] : [])
       ]
     };
   };

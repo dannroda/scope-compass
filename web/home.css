@@ -65,3 +65,6 @@ header.top h1 { flex: 1 1 auto; }
 .proj .ms .bar { flex: none; }
 .add .where-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .add .where-row .hint { flex: 1 1 280px; overflow-wrap: anywhere; }
+/* Transiciones entre el Inicio y los tableros (mismo origen, D29). */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 160ms; }

@@ -10,7 +10,11 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="home-link" id="home-link" href="#" hidden>← Inicio</a>
+    <nav class="home-bar" aria-label="Inicio">
+      <a class="home-link" id="home-link" href="#" hidden>← Inicio</a>
+      <label for="project-switch" class="sr">Proyecto</label>
+      <select id="project-switch" hidden></select>
+    </nav>
     <h1><span id="project">Scope Compass</span> <small>tareas</small></h1>
     <span class="conn" id="conn" role="status" hidden>Sin conexión con el hub · reintentando</span>
     <span class="gitmark" id="git" role="status" hidden></span>

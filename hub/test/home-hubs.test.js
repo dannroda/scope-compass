@@ -32,7 +32,7 @@ beforeEach(async () => {
   ({ port } = await listen(home, 0));
 });
 afterEach(async () => {
-  for (const h of hubsOf(p)) { try { process.kill(h.pid, 'SIGKILL'); } catch {} }
+  for (const h of hubsOf(p)) if (h.pid !== process.pid) { try { process.kill(h.pid, 'SIGKILL'); } catch {} }
   await home.close();
   for (const [k, v] of [['SCOMPASS_REGISTRY', saved.reg], ['SCOMPASS_CONFIG', saved.cfg]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
   await rm(root, { recursive: true, force: true });

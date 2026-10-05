@@ -47,7 +47,7 @@ beforeEach(async () => {
   pageErrors = [];
 });
 afterEach(async () => {
-  for (const p of [vida, juego]) for (const h of hubsOf(p)) { try { process.kill(h.pid, 'SIGKILL'); } catch {} }
+  for (const p of [vida, juego]) for (const h of hubsOf(p)) if (h.pid !== process.pid) { try { process.kill(h.pid, 'SIGKILL'); } catch {} }
   await home.close();
   for (const [k, v] of [['SCOMPASS_REGISTRY', saved.reg], ['SCOMPASS_CONFIG', saved.cfg], ['SCOMPASS_DATA', saved.data]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
   await rm(root, { recursive: true, force: true });
@@ -76,17 +76,31 @@ test('Hoy: tildar un ítem lo guarda; uno que se repite avanza y sigue en la lis
   assert.notEqual(luz.due, TODAY);
 });
 
-test('tarjetas: prender muestra el puerto y el enlace al tablero; apagar vuelve a "leído de disco"', async () => {
+test('tarjetas: "Abrir tablero" abre el tablero dentro del Inicio (mismo puerto), con la barra y el selector', async () => {
   const page = await open();
-  const card = page.locator('article.proj[aria-label="Scope Compass"]').first();
   assert.equal(await page.locator('article.proj').count(), 3, 'dos proyectos y la tarjeta de agregar');
-  await card.getByRole('button', { name: /Prender/ }).click();
-  await card.locator('.tag.live').waitFor({ timeout: 8000 });
+  const card = page.locator('article.proj[aria-label="Scope Compass"]').first();
   const href = await card.getByRole('link', { name: 'Abrir tablero' }).getAttribute('href');
-  assert.match(href, /^http:\/\/127\.0\.0\.1:\d+\/$/);
-  assert.equal((await (await fetch(href + 'api/health')).json()).name, 'scope-compass');
-  await card.getByRole('button', { name: /Apagar/ }).click();
-  await card.getByText('hub apagado · leído de disco').waitFor({ timeout: 8000 });
+  assert.match(href, /^\/p\/[a-z0-9-]+\/$/);
+  await card.getByRole('link', { name: 'Abrir tablero' }).click();
+  await page.waitForSelector('.card');
+  assert.equal(new URL(page.url()).origin, new URL(url).origin, 'mismo origen');
+  assert.equal(new URL(page.url()).pathname, href);
+  // La barra: volver al Inicio y cambiar de proyecto.
+  assert.equal(await page.getAttribute('#home-link', 'href'), '/');
+  assert.equal(await page.isVisible('#project-switch'), true);
+  assert.equal(await page.locator('#project-switch option').count(), 2);
+  // Editar funciona por el Inicio (sin procesos aparte).
+  await page.click('.card[data-id="m1-07"]');
+  await page.click('.seg button:has-text("Revisión")');
+  const file = join(href.includes('juego') ? juego : vida, 'compass', 'tasks', 'm1-07.json');
+  for (let i = 0; i < 100 && JSON.parse(await readFile(file, 'utf8')).status !== 'review'; i++) await new Promise((r) => setTimeout(r, 30));
+  assert.equal(JSON.parse(await readFile(file, 'utf8')).status, 'review');
+  assert.equal(hubsOf(vida).filter((h) => !h.base).length + hubsOf(juego).filter((h) => !h.base).length, 0, 'ningún hub suelto');
+  // Volver al Inicio: la tarjeta dice que está abierto.
+  await page.click('#home-link');
+  await page.waitForSelector('.proj h3');
+  await page.locator('article.proj .tag.live:has-text("abierto")').first().waitFor();
 });
 
 test('agregar: importar una carpeta y crear un proyecto con plantilla', async () => {
