@@ -1,18 +1,18 @@
 {
   "checklist": [
     {
-      "done": false,
-      "text": "createServer pasa a ser un plugin que se monta en / (hub suelto) o en /p/<clave> (Inicio)"
+      "done": true,
+      "text": "La app de un hub expone lo que necesita su WebSocket (`app.hub`) y `attachSocket` se puede usar desde otra app"
     },
     {
-      "done": false,
+      "done": true,
       "text": "El hub suelto sigue igual: mismos tests"
     }
   ],
   "code": "9.1",
   "created_at": "2026-10-05T01:29:48.929Z",
   "milestone": "m09",
-  "notes": "",
+  "notes": "Fastify no deja agregar rutas ni plugins después de arrancar, así que montar cada proyecto como plugin impediría activarlos o importarlos con el Inicio corriendo. En su lugar: cada proyecto es una app de createServer sin listen; el Inicio le pasa los pedidos con inject() y atiende su WebSocket con attachSocket.",
   "order": 1,
   "refs": [
     {
@@ -20,8 +20,8 @@
       "section": "v4"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "",
   "title": "Servidor del hub montable bajo una ruta",
-  "updated_at": "2026-10-05T01:29:49.657Z"
+  "updated_at": "2026-10-05T01:31:46.120Z"
 }

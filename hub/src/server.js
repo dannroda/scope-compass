@@ -113,6 +113,8 @@ export function createServer({ projectDir, store, validators, watch = false, exp
     setImmediate(onRestart);
     return reply;
   });
+  // Para servir este hub desde otra app (el Inicio, D29): lo que necesita su WebSocket.
+  app.decorate('hub', { store, publish, boards, projectDir, version: VERSION });
   registerApi(app, { store, projectDir, publish });
   registerDocsApi(app, { store, projectDir });
   app.register(registerWs, { store, publish, version: VERSION, boards });

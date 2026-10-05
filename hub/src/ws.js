@@ -15,43 +15,50 @@ export async function registerWs(app, { store, publish, version, boards = new Se
     }
   });
 
-  app.get('/ws', { websocket: true }, (socket) => {
-    const send = (msg) => { if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(msg)); };
-    const forward = (evt) => send(evt);
-    app.events.on('event', forward);
-    socket.on('close', () => { app.events.off('event', forward); boards.delete(send); });
-    send({ type: 'hello', server_version: version });
+  app.get('/ws', { websocket: true }, (socket) => attachSocket(socket, { app, store, publish, version, boards }));
+}
 
-    socket.on('message', async (data) => {
-      let msg;
-      try {
-        msg = JSON.parse(String(data));
-      } catch {
-        return send({ type: 'error', req: null, code: 'invalid_argument', message: 'mensaje que no es JSON' });
+/**
+ * Atiende un WebSocket del protocolo de §5.5 contra un hub: le manda sus eventos y recibe `update` y `presence`.
+ * Lo usan el hub suelto (/ws) y el Inicio, que sirve el hub de cada proyecto en /p/<clave>/ws sin que el hub
+ * escuche en un puerto propio (D29). app: la app del hub (sus `events` y su log).
+ */
+export function attachSocket(socket, { app, store, publish, version, boards }) {
+  const send = (msg) => { if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(msg)); };
+  const forward = (evt) => send(evt);
+  app.events.on('event', forward);
+  socket.on('close', () => { app.events.off('event', forward); boards.delete(send); });
+  send({ type: 'hello', server_version: version });
+
+  socket.on('message', async (data) => {
+    let msg;
+    try {
+      msg = JSON.parse(String(data));
+    } catch {
+      return send({ type: 'error', req: null, code: 'invalid_argument', message: 'mensaje que no es JSON' });
+    }
+    const req = msg?.req ?? null;
+    if (msg?.type === 'presence') {
+      boards.delete(send);
+      if (msg.notify === true) boards.add(send);
+      return;
+    }
+    try {
+      if (msg?.type !== 'update') throw new StoreError('invalid_argument', `tipo de mensaje desconocido: ${msg?.type}`);
+      if (msg.collection !== 'tasks') throw new StoreError('invalid_argument', 'update solo admite la colección tasks');
+      if (!msg.patch || typeof msg.patch !== 'object' || Array.isArray(msg.patch)) {
+        throw new StoreError('invalid_argument', 'falta patch (objeto)');
       }
-      const req = msg?.req ?? null;
-      if (msg?.type === 'presence') {
-        boards.delete(send);
-        if (msg.notify === true) boards.add(send);
-        return;
-      }
-      try {
-        if (msg?.type !== 'update') throw new StoreError('invalid_argument', `tipo de mensaje desconocido: ${msg?.type}`);
-        if (msg.collection !== 'tasks') throw new StoreError('invalid_argument', 'update solo admite la colección tasks');
-        if (!msg.patch || typeof msg.patch !== 'object' || Array.isArray(msg.patch)) {
-          throw new StoreError('invalid_argument', 'falta patch (objeto)');
-        }
-        const { id: _id, etag: _etag, ...patch } = msg.patch;
-        const r = await store.patch('tasks', msg.id, patch, msg.etag === undefined ? {} : { ifMatch: msg.etag });
-        send({ type: 'ack', req, doc: flat(r.id, r.doc, r.etag) });
-        publish.upsert('tasks', r);
-      } catch (e) {
-        // Un error inesperado no puede tumbar el hub: se responde como io_error.
-        if (!(e instanceof StoreError)) app.log.error(e);
-        const err = { type: 'error', req, code: e instanceof StoreError ? e.code : 'io_error', message: e.message };
-        if (e.current) err.doc = flat(e.current.id, e.current.doc, e.current.etag);
-        send(err);
-      }
-    });
+      const { id: _id, etag: _etag, ...patch } = msg.patch;
+      const r = await store.patch('tasks', msg.id, patch, msg.etag === undefined ? {} : { ifMatch: msg.etag });
+      send({ type: 'ack', req, doc: flat(r.id, r.doc, r.etag) });
+      publish.upsert('tasks', r);
+    } catch (e) {
+      // Un error inesperado no puede tumbar el hub: se responde como io_error.
+      if (!(e instanceof StoreError)) app.log.error(e);
+      const err = { type: 'error', req, code: e instanceof StoreError ? e.code : 'io_error', message: e.message };
+      if (e.current) err.doc = flat(e.current.id, e.current.doc, e.current.etag);
+      send(err);
+    }
   });
 }
