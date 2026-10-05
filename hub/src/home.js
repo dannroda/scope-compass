@@ -32,6 +32,7 @@ import { createHttpStore, detectHub } from './store/http.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { loadCompass } from './store/load.js';
 import { summarize, todayOf } from './summary.js';
+import { registerProjectRoutes } from './home-serve.js';
 import { boardStatus } from './git.js';
 import { listTemplates, loadTemplate } from './templates.js';
 import { STATUSES } from './views.js';
@@ -49,6 +50,18 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   const events = new EventEmitter();
   app.decorate('events', events);
   const emit = (e) => events.emit('event', e);
+  // Un solo plugin de WebSocket para el del Inicio (/ws) y el de cada proyecto (/p/<clave>/ws).
+  app.register(websocket, {
+    preClose(done) { for (const c of this.websocketServer.clients) c.terminate(); this.websocketServer.close(done); }
+  });
+  // Multi-hub (D29): cada proyecto en /p/<clave>/, servido acá o reenviado a su hub suelto.
+  const serving = registerProjectRoutes(app, {
+    validators,
+    projects: () => { try { return projectsStatus(); } catch { return []; } },
+    onChange: (path, e) => { if (e.type === 'upsert' || e.type === 'delete') emit({ type: 'changed', path, collection: e.collection, id: e.id }); }
+  });
+  app.addHook('onClose', () => serving.close());
+  app.decorate('serving', serving);
 
   app.setErrorHandler((err, req, reply) => {
     if (err instanceof StoreError || err instanceof ProjectsError) {
@@ -89,7 +102,10 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   }
 
   async function projectView(p) {
-    const base = { path: p.path, name: p.name, found: p.found, hubs: p.hubs, added_at: p.added_at, last_seen: p.last_seen };
+    const key = serving.keyOf(p.path);
+    // url: el tablero dentro del Inicio; served: quién lo sirve ahora ('home', 'hub' o null si nadie lo pidió todavía).
+    const base = { path: p.path, name: p.name, found: p.found, hubs: p.hubs, added_at: p.added_at, last_seen: p.last_seen,
+      ...(key && { key, url: `/p/${encodeURIComponent(key)}/`, served: serving.served(p.path) }) };
     if (!p.found) return base;
     const all = await loadCompass(compassOf(p.path), validators);
     const git = await boardStatus(p.path, all.config);
@@ -299,9 +315,6 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   app.get('/fonts/:file', (req, reply) => serveWeb(reply, 'fonts/' + req.params.file));
 
   app.register(async (scope) => {
-    await scope.register(websocket, {
-      preClose(done) { for (const c of this.websocketServer.clients) c.terminate(); this.websocketServer.close(done); }
-    });
     scope.get('/ws', { websocket: true }, (socket) => {
       const forward = (e) => { if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(e)); };
       events.on('event', forward);

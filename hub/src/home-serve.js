@@ -1,0 +1,117 @@
+// El Inicio como multi-hub (spec §17, D29): sirve cada proyecto del registro en /p/<clave>/ con la misma app del
+// hub (createServer), sin que esa app escuche en un puerto. Los pedidos HTTP le llegan con inject() y su WebSocket
+// lo atiende attachSocket. Un solo proceso escribe cada compass/: si el proyecto ya tiene un hub suelto (el del
+// dock, `scompass serve`), el Inicio le reenvía HTTP y WebSocket en lugar de servirlo él.
+import { basename, join } from 'node:path';
+import { slugify, freeId } from './lists.js';
+import { hubsOf } from './registry.js';
+import { createServer } from './server.js';
+import { createJsonFilesStore } from './store/json-files.js';
+import { attachSocket } from './ws.js';
+
+/** Clave de cada proyecto en la URL (/p/<clave>/): el nombre de su carpeta como slug, sin repetir, en orden. */
+export function projectKeys(projects) {
+  const keys = new Map();
+  for (const p of projects) keys.set(p.path, freeId(slugify(basename(p.path)), [...keys.values()]));
+  return keys;
+}
+
+// Cabeceras que pasan del navegador al hub y de vuelta.
+const IN = ['content-type', 'if-match', 'if-none-match', 'accept'];
+const OUT = ['content-type', 'etag', 'location', 'cache-control'];
+
+/**
+ * Registra /p/:key, /p/:key/* y /p/:key/ws en la app del Inicio. projects(): el registro con su estado
+ * (projectsStatus). onChange(path, evt): un cambio en un proyecto que sirve el Inicio (para avisar a sus pestañas).
+ * Devuelve { served(path), close() }.
+ */
+export function registerProjectRoutes(app, { validators, projects, onChange }) {
+  const live = new Map(); // path → { key, hub, ready }
+  const keyed = () => {
+    const list = projects().filter((p) => p.found);
+    const keys = projectKeys(list);
+    return { list, keys };
+  };
+  const find = (key) => {
+    const { list, keys } = keyed();
+    const p = list.find((x) => keys.get(x.path) === key);
+    return p ? { ...p, key } : null;
+  };
+
+  // La app del hub de un proyecto, creada la primera vez que se la pide (con su watcher y su export).
+  async function activate(p) {
+    let entry = live.get(p.path);
+    if (!entry) {
+      const hub = createServer({ projectDir: p.path, store: createJsonFilesStore(join(p.path, 'compass'), { validators }), validators, watch: true, exportMd: true });
+      hub.events.on('event', (e) => onChange?.(p.path, e));
+      entry = { key: p.key, hub, ready: hub.ready() };
+      live.set(p.path, entry);
+    }
+    await entry.ready;
+    return entry.hub;
+  }
+  // Quién sirve el proyecto ahora: un hub suelto (se le reenvía) o el Inicio.
+  const route = (p) => {
+    const standalone = hubsOf(p.path)[0];
+    return standalone && !live.has(p.path) ? { port: standalone.port } : null;
+  };
+
+  const missing = (reply, key) => reply.code(404).send({ error: { code: 'not_found', message: `no hay un proyecto "${key}" en el Inicio` } });
+
+  app.get('/p/:key', (req, reply) => reply.redirect(`/p/${encodeURIComponent(req.params.key)}/`));
+
+  app.all('/p/:key/*', async (req, reply) => {
+    const p = find(req.params.key);
+    if (!p) return missing(reply, req.params.key);
+    const q = req.url.indexOf('?');
+    const url = '/' + req.params['*'] + (q >= 0 ? req.url.slice(q) : '');
+    const headers = Object.fromEntries(IN.filter((h) => req.headers[h] !== undefined).map((h) => [h, req.headers[h]]));
+    const payload = req.body === undefined || req.body === null ? undefined : typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    const base = `/p/${encodeURIComponent(p.key)}`;
+    const proxy = route(p);
+    let status, outHeaders, body;
+    if (proxy) {
+      const r = await fetch(`http://127.0.0.1:${proxy.port}${url}`, { method: req.method, headers, body: payload }).catch(() => null);
+      if (!r) return reply.code(502).send({ error: { code: 'io_error', message: 'el hub del proyecto no responde' } });
+      status = r.status;
+      outHeaders = Object.fromEntries(OUT.filter((h) => r.headers.get(h) !== null).map((h) => [h, r.headers.get(h)]));
+      body = Buffer.from(await r.arrayBuffer());
+    } else {
+      const hub = await activate(p);
+      const r = await hub.inject({ method: req.method, url, headers, payload });
+      status = r.statusCode;
+      outHeaders = Object.fromEntries(OUT.filter((h) => r.headers[h] !== undefined).map((h) => [h, r.headers[h]]));
+      body = r.rawPayload;
+    }
+    if (outHeaders.location?.startsWith('/')) outHeaders.location = base + outHeaders.location;
+    return reply.code(status).headers(outHeaders).send(body);
+  });
+
+  // El WebSocket del tablero: contra la app del proyecto, o un puente al hub suelto.
+  app.register(async (scope) => {
+    scope.get('/p/:key/ws', { websocket: true }, async (socket, req) => {
+      const p = find(req.params.key);
+      if (!p) { socket.close(4404, 'no existe el proyecto'); return; }
+      const proxy = route(p);
+      if (!proxy) {
+        const hub = await activate(p);
+        attachSocket(socket, { app: hub, ...hub.hub });
+        return;
+      }
+      const up = new WebSocket(`ws://127.0.0.1:${proxy.port}/ws`);
+      const pending = [];
+      up.addEventListener('open', () => { for (const m of pending.splice(0)) up.send(m); });
+      up.addEventListener('message', (m) => { if (socket.readyState === socket.OPEN) socket.send(String(m.data)); });
+      up.addEventListener('close', () => socket.close());
+      up.addEventListener('error', () => socket.close());
+      socket.on('message', (d) => (up.readyState === WebSocket.OPEN ? up.send(String(d)) : pending.push(String(d))));
+      socket.on('close', () => up.close());
+    });
+  });
+
+  return {
+    served: (path) => (live.has(path) ? 'home' : hubsOf(path).length ? 'hub' : null),
+    keyOf: (path) => keyed().keys.get(path) ?? null,
+    async close() { for (const e of live.values()) await e.hub.close().catch(() => {}); live.clear(); }
+  };
+}

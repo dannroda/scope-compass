@@ -1,22 +1,22 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Clave por proyecto (nombre de la carpeta, sin repetir)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Activar al primer pedido: store, watcher, export y WebSocket"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Si hay un hub suelto del proyecto, reenviarle HTTP y WebSocket"
     }
   ],
   "code": "9.2",
   "created_at": "2026-10-05T01:29:49.894Z",
   "milestone": "m09",
-  "notes": "",
+  "notes": "`hub/src/home-serve.js`: `projectKeys`, rutas /p/:key, /p/:key/* (inject o fetch al hub suelto, Location con la base) y /p/:key/ws (attachSocket o puente). El plugin de WebSocket se registra una vez en la raíz del Inicio. /api/projects suma key, url y served. Falta que un hub suelto no arranque si el Inicio ya sirve el proyecto (9.3).",
   "order": 2,
   "refs": [
     {
@@ -24,8 +24,8 @@
       "section": "v4"
     }
   ],
-  "status": "todo",
-  "test": "",
+  "status": "done",
+  "test": "hub/test/home-serve.test.js: tablero, API con etag, POST con Location, WebSocket con watcher, y reenvío a un hub suelto.",
   "title": "El Inicio sirve los proyectos en /p/<clave>/",
-  "updated_at": "2026-10-05T01:29:50.851Z"
+  "updated_at": "2026-10-05T01:36:08.559Z"
 }
