@@ -725,7 +725,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-## M8 — Inicio, listas y plantillas (v3)  (10/14)
+## M8 — Inicio, listas y plantillas (v3)  (11/14)
 
 Página de Inicio con todos los proyectos, listas con fecha límite y repetición, y plantillas de proyecto (§16). Local; el mirror always-on queda para M7.
 
@@ -779,16 +779,18 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 **Bloquea a:** 8.4 Listas: API, WebSocket y vista en la web; 8.5 Repetición simple en ítems de lista; 8.7 Plantillas en `scompass init`
 
-### 8.4 Listas: API, WebSocket y vista en la web · Pendiente
+### 8.4 Listas: API, WebSocket y vista en la web · Hecho
 
-- [ ] `/api/lists` y mensajes con `kind: "list"`
-- [ ] Pestaña Listas: barra lateral, lista simple y agrupada por fecha
-- [ ] Agregar rápido, quitar tildadas, reordenar
-- [ ] Pasar a tarea: crea la tarea y enlaza el ítem
+- [x] `/api/lists` y mensajes con `kind: "list"`
+- [x] Pestaña Listas: barra lateral, lista simple y agrupada por fecha
+- [x] Agregar rápido, quitar tildadas, reordenar
+- [x] Pasar a tarea: crea la tarea y enlaza el ítem
   Guarda el id de la tarea en `task` del ítem.
-- [ ] Pestañas según `config.views` (sin `views`: board, lists, docs) y abrir en la primera
+- [x] Pestañas según `config.views` (sin `views`: board, lists, docs) y abrir en la primera
 
 **Prueba:** Dos pestañas: tildar un ítem en una se refleja en la otra en menos de 1 s.
+
+**Notas:** Endpoints nuevos en `hub/src/api.js` (crear, tildar, pasar a tarea) para no duplicar reglas en la web. La vista re-arma todo en cada evento y restaura lo que se estaba escribiendo y el foco. Tests en `hub/test/ui-lists.test.js`.
 
 **Referencias:** `docs/spec.md#v3-listas`
 

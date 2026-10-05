@@ -13,7 +13,9 @@
     // Vínculos entre tareas: buscador abierto ({ type, q }) o null.
     linkSearch: null,
     // Pasos: detalles desplegados y el paso en edición ("tarea:índice").
-    stepsOpen: new Set(), editStep: null };
+    stepsOpen: new Set(), editStep: null,
+    // Listas (D25): las del proyecto, la abierta, el ítem en edición ("lista:n") y las pestañas de config.views.
+    lists: [], list: '', editItem: null, views: ['board', 'lists', 'docs'], viewsApplied: false };
   const sectionCache = new Map(); // "alias#id" → html
   const docCache = new Map(); // alias → html
 
@@ -54,7 +56,13 @@
     remove: (id, etag) => call('DELETE', '/api/tasks/' + encodeURIComponent(id), undefined, etag),
     docs: () => call('GET', '/api/docs'),
     doc: (alias) => call('GET', '/api/docs/' + encodeURIComponent(alias)),
-    section: (alias, id) => call('GET', '/api/docs/' + encodeURIComponent(alias) + '/sections/' + encodeURIComponent(id))
+    section: (alias, id) => call('GET', '/api/docs/' + encodeURIComponent(alias) + '/sections/' + encodeURIComponent(id)),
+    lists: () => call('GET', '/api/lists'),
+    listCreate: (title) => call('POST', '/api/lists', { title }),
+    listPatch: (id, patch, etag) => call('PATCH', '/api/lists/' + encodeURIComponent(id), patch, etag),
+    listDelete: (id, etag) => call('DELETE', '/api/lists/' + encodeURIComponent(id), undefined, etag),
+    listCheck: (id, n, etag) => call('POST', '/api/lists/' + encodeURIComponent(id) + '/check', { n }, etag),
+    listTask: (id, n, milestone, etag) => call('POST', '/api/lists/' + encodeURIComponent(id) + '/task', { n, milestone }, etag)
   };
 
   function pref(k, v) {
@@ -133,7 +141,8 @@
 
   // Aplica al estado un documento que devolvió el hub (o lo quita si doc es null).
   function apply(collection, id, doc) {
-    // Otras colecciones (las listas, D25) todavía no se muestran: no se mezclan con las tareas.
+    if (collection === 'lists') { applyList(id, doc); return; }
+    // Otras colecciones que esta versión no conoce: no se mezclan con las tareas.
     if (collection !== 'milestones' && collection !== 'tasks') return;
     const list = collection === 'milestones' ? S.milestones : S.tasks;
     const i = list.findIndex((t) => t.id === id);
@@ -632,6 +641,8 @@
 
   // Vista Documentos: índice, documento y tareas que referencian la sección actual.
   function readHash() {
+    const l = /^#lists(?:\/([^/]+))?$/.exec(location.hash);
+    if (l) { S.view = 'lists'; S.openId = null; S.confirmDelete = false; if (l[1]) S.list = decodeURIComponent(l[1]); return; }
     const m = /^#docs(?:\/([^/]+)(?:\/([^/]+))?)?$/.exec(location.hash);
     S.view = m ? 'docs' : 'board';
     if (m) { S.openId = null; S.confirmDelete = false; } // el detalle de una tarea es del tablero
@@ -721,19 +732,237 @@
     docCache.delete(alias);
     api.docs().then((r) => { S.docs = r.docs; render(); }).catch(() => {});
   }
+  // Vista Listas (8.4, spec §16.4). La regla de tildar (lo que se repite avanza) y el id de una lista nueva los
+  // pone el hub: la web solo muestra y manda.
+  const EVERY = { day: 'cada día', week: 'cada semana', month: 'cada mes', year: 'cada año' };
+  function applyList(id, doc) {
+    const i = S.lists.findIndex((x) => x.id === id);
+    if (doc === null) { if (i >= 0) S.lists.splice(i, 1); }
+    else if (i >= 0) S.lists[i] = doc;
+    else S.lists.push(doc);
+    S.lists.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.id.localeCompare(b.id));
+    if (S.editItem && !S.lists.some((l) => S.editItem.startsWith(l.id + ':'))) S.editItem = null;
+    render();
+  }
+  // Escrituras de una misma lista, en fila y con el etag más reciente (como updateTask).
+  const listQueues = new Map();
+  function listWrite(id, fn, okMsg) {
+    const run = () => write(async () => {
+      const l = S.lists.find((x) => x.id === id);
+      if (!l) return;
+      try {
+        const r = await fn(l);
+        if (r?.list) applyList(r.list.id, r.list); else if (r?.id) applyList(r.id, r);
+        if (r?.task) applyTask(r.task.id, r.task);
+        if (typeof okMsg === 'function') { const m = okMsg(r); if (m) toast(m); } else if (okMsg) toast(okMsg);
+      } catch (e) {
+        if (e.code === 'conflict' && e.current) { applyList(e.current.id, { id: e.current.id, etag: e.current.etag, ...e.current.doc }); toast('La lista cambió en otro lado; se actualizó. Probá de nuevo.'); return; }
+        throw e;
+      }
+    });
+    const next = (listQueues.get(id) || Promise.resolve()).then(run);
+    listQueues.set(id, next);
+    next.finally(() => { if (listQueues.get(id) === next) listQueues.delete(id); });
+    return next;
+  }
+  // Fechas como en hub/src/dates.js (dueState): sin hora, vence al terminar el día. Solo para mostrar y agrupar.
+  function dueDate(due) { const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/.exec(due || ''); return m ? new Date(+m[1], m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)) : null; }
+  const dayKey = (d) => d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  function dueGroup(due, now = new Date()) {
+    const d = dueDate(due);
+    if (!d) return 'none';
+    if (due.includes('T') ? d < now : dayKey(d) < dayKey(now)) return 'overdue';
+    if (dayKey(d) === dayKey(now)) return 'today';
+    const week = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
+    return d < week ? 'week' : 'later';
+  }
+  const GROUPS = [['overdue', 'Vencidos'], ['today', 'Hoy'], ['week', 'Esta semana'], ['later', 'Más adelante'], ['none', 'Sin fecha'], ['done', 'Tildados']];
+  function showDue(due) {
+    const d = dueDate(due);
+    if (!d) return due;
+    const sameYear = d.getFullYear() === new Date().getFullYear();
+    return d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }) }) + (due.includes('T') ? ' ' + due.slice(11) : '');
+  }
+  const listLeft = (l) => l.items.filter((x) => !x.done).length;
+
+  function renderLists() {
+    const box = document.getElementById('lists');
+    if (S.view !== 'lists') { box.replaceChildren(); return; }
+    // Lo que se está escribiendo (campos con data-keep) sobrevive al re-armado, con el foco y el cursor.
+    const sameList = box.dataset.list === S.list;
+    const kept = sameList ? [...box.querySelectorAll('[data-keep]')].map((el) => [el.id, el.value]) : [];
+    const focus = sameList && box.contains(document.activeElement) ? { id: document.activeElement.id, start: document.activeElement.selectionStart, end: document.activeElement.selectionEnd } : null;
+    buildLists(box);
+    for (const [id, v] of kept) { const el = id && document.getElementById(id); if (el && box.contains(el)) el.value = v; }
+    const f = focus?.id && document.getElementById(focus.id);
+    if (f && box.contains(f)) { f.focus(); try { if (focus.start != null) f.setSelectionRange(focus.start, focus.end); } catch (e) { /* date/select */ } }
+  }
+
+  function buildLists(box) {
+    const l = S.lists.find((x) => x.id === S.list) || S.lists[0];
+    if (l) S.list = l.id;
+    box.dataset.list = S.list;
+    const side = h('nav', { class: 'list-side', 'aria-label': 'Listas' },
+      S.lists.map((x) => h('a', { href: '#lists/' + encodeURIComponent(x.id), class: 'list-link', 'aria-current': x.id === S.list ? 'page' : null },
+        h('span', { class: 't' }, x.title), h('span', { class: 'n' }, listLeft(x) || '✓'))),
+      h('form', { class: 'list-new', onsubmit: (e) => {
+        e.preventDefault();
+        const input = e.target.querySelector('input');
+        const title = input.value.trim();
+        if (!title) return;
+        input.value = '';
+        write(async () => { const r = await api.listCreate(title); applyList(r.id, r); location.hash = '#lists/' + encodeURIComponent(r.id); }, 'Lista creada');
+      } }, h('label', { for: 'list-new', class: 'sr' }, 'Nueva lista'), h('input', { type: 'text', id: 'list-new', placeholder: '+ Nueva lista', autocomplete: 'off', 'data-keep': '1' })));
+    if (!l) { box.replaceChildren(h('div', { class: 'lists-grid' }, side, h('div', { class: 'notice' }, 'Este proyecto no tiene listas todavía. Creá una a la izquierda (pendientes, compras, ideas…).'))); return; }
+    box.replaceChildren(h('div', { class: 'lists-grid' }, side, listPanel(l)));
+  }
+
+  function listPanel(l) {
+    const dated = l.items.some((x) => x.due);
+    const done = l.items.filter((x) => x.done).length;
+    const rows = l.items.map((x, i) => ({ x, n: i + 1 }));
+    let body;
+    if (dated) {
+      body = GROUPS.map(([g, label]) => {
+        const inG = rows.filter((r) => (r.x.done ? 'done' : dueGroup(r.x.due)) === g)
+          .sort((a, b) => String(a.x.due ?? '~').localeCompare(String(b.x.due ?? '~')));
+        return inG.length ? h('div', { class: 'list-group' }, h('div', { class: 'label' + (g === 'overdue' ? ' bad' : '') }, label), h('ul', { class: 'items' }, inG.map((r) => itemRow(l, r)))) : null;
+      });
+    } else {
+      body = rows.length ? h('ul', { class: 'items' }, rows.map((r) => itemRow(l, r))) : h('p', { class: 'muted' }, 'Vacía.');
+    }
+    return h('section', { class: 'list-panel', 'aria-label': l.title },
+      h('div', { class: 'list-head' },
+        h('h2', null, l.title),
+        h('span', { class: 'muted small' }, dated ? 'agrupada por fecha' : 'lista simple'),
+        h('span', { class: 'spacer' }),
+        done ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => listWrite(l.id, (cur) => api.listPatch(cur.id, { items: cur.items.filter((x) => !x.done) }, cur.etag), done === 1 ? 'Quitado 1 tildado' : `Quitados ${done} tildados`) }, 'Quitar tildados') : null,
+        h('button', { class: 'btn ghost small', type: 'button', onclick: () => {
+          const title = prompt('Nuevo nombre de la lista', l.title);
+          if (title && title.trim() && title.trim() !== l.title) listWrite(l.id, (cur) => api.listPatch(cur.id, { title: title.trim() }, cur.etag));
+        } }, 'Renombrar'),
+        h('button', { class: 'btn ghost small danger', type: 'button', onclick: () => {
+          if (!confirm(`¿Borrar la lista "${l.title}" con sus ${l.items.length} ítems? Se puede recuperar con git.`)) return;
+          write(async () => { await api.listDelete(l.id, l.etag); applyList(l.id, null); location.hash = '#lists'; }, 'Lista borrada');
+        } }, 'Borrar')),
+      addItemForm(l),
+      body);
+  }
+
+  function addItemForm(l) {
+    return h('form', { class: 'item-add', onsubmit: (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const text = f.elements.text.value.trim();
+      if (!text) return;
+      const date = f.elements.date.value, time = f.elements.time.value, every = f.elements.repeat.value;
+      if (every && !date) { toast('Para repetirlo hace falta una fecha.'); return; }
+      const item = { text, done: false, created_at: new Date().toISOString(), ...(date ? { due: date + (time ? 'T' + time : '') } : {}), ...(every ? { repeat: { every } } : {}) };
+      f.reset();
+      f.elements.text.focus();
+      listWrite(l.id, (cur) => api.listPatch(cur.id, { items: [...cur.items, item] }, cur.etag));
+    } },
+    h('label', { for: 'item-text', class: 'sr' }, 'Agregar a ' + l.title),
+    h('input', { type: 'text', id: 'item-text', name: 'text', placeholder: 'Agregar…', autocomplete: 'off', 'data-keep': '1' }),
+    h('label', { for: 'item-date', class: 'sr' }, 'Fecha límite'), h('input', { type: 'date', id: 'item-date', name: 'date', 'data-keep': '1' }),
+    h('label', { for: 'item-time', class: 'sr' }, 'Hora'), h('input', { type: 'time', id: 'item-time', name: 'time', 'data-keep': '1' }),
+    h('label', { for: 'item-repeat', class: 'sr' }, 'Repetir'),
+    h('select', { id: 'item-repeat', name: 'repeat', 'data-keep': '1' }, h('option', { value: '' }, 'No se repite'), Object.entries(EVERY).map(([k, v]) => h('option', { value: k }, v))),
+    h('button', { class: 'btn primary', type: 'submit' }, 'Agregar'));
+  }
+
+  function itemRow(l, { x, n }) {
+    const key = l.id + ':' + n;
+    const id = 'it-' + l.id + '-' + n;
+    if (S.editItem === key) return itemEdit(l, x, n);
+    const g = x.done ? null : dueGroup(x.due);
+    const task = x.task ? S.tasks.find((t) => t.id === x.task) : null;
+    return h('li', { class: 'item' + (x.done ? ' done' : ''), draggable: 'true', 'data-n': n,
+      ondragstart: (e) => { e.dataTransfer.setData('text/x-item', key); e.dataTransfer.effectAllowed = 'move'; },
+      ondragover: (e) => { if ([...e.dataTransfer.types].includes('text/x-item')) { e.preventDefault(); e.currentTarget.classList.add('drop-before'); } },
+      ondragleave: (e) => e.currentTarget.classList.remove('drop-before'),
+      ondrop: (e) => { e.preventDefault(); e.currentTarget.classList.remove('drop-before'); const [lid, from] = e.dataTransfer.getData('text/x-item').split(':'); if (lid === l.id) moveItem(l.id, Number(from), n); } },
+      h('input', { type: 'checkbox', id, checked: x.done, onchange: (e) => {
+        if (x.repeat && !e.target.checked) return;
+        listWrite(l.id, (cur) => (e.target.checked ? api.listCheck(cur.id, n, cur.etag) : api.listPatch(cur.id, { items: cur.items.map((y, i) => (i === n - 1 ? { ...y, done: false } : y)) }, cur.etag)),
+          (r) => (r?.advanced ? `↻ ${x.text}: la próxima vez es el ${showDue(r.list.items[n - 1].due)}` : null));
+      } }),
+      h('label', { for: id, class: 'text' }, rich(x.text)),
+      x.due ? h('span', { class: 'due' + (g === 'overdue' ? ' bad' : g === 'today' ? ' today' : '') }, showDue(x.due)) : null,
+      x.repeat ? h('span', { class: 'rep', title: 'Al tildarlo, la fecha avanza ' + EVERY[x.repeat.every] }, '↻ ' + EVERY[x.repeat.every]) : null,
+      task ? h('a', { href: '#', class: 'item-task', onclick: (e) => { e.preventDefault(); goToTask(task.id); } }, '→ ', task.code || task.id) : x.task ? h('span', { class: 'muted small' }, '→ ' + x.task) : null,
+      h('span', { class: 'acts' },
+        !x.task && S.milestones.length ? h('button', { class: 'btn ghost small', type: 'button', title: 'Crea una tarea con este texto y deja el ítem enlazado', onclick: () => toTask(l, n) }, 'Pasar a tarea') : null,
+        h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Editar ' + x.text, onclick: () => { S.editItem = key; render(); document.getElementById('ie-text')?.focus(); } }, '✎'),
+        h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Quitar ' + x.text, onclick: () => listWrite(l.id, (cur) => api.listPatch(cur.id, { items: cur.items.filter((_, i) => i !== n - 1) }, cur.etag)) }, '×')));
+  }
+
+  function itemEdit(l, x, n) {
+    const [date, time] = x.due ? [x.due.slice(0, 10), x.due.slice(11)] : ['', ''];
+    const close = () => { S.editItem = null; render(); };
+    return h('li', { class: 'item editing' }, h('form', { class: 'item-add', onsubmit: (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const text = f.elements.text.value.trim();
+      const d = f.elements.date.value, t = f.elements.time.value, every = f.elements.repeat.value;
+      if (!text) return;
+      if (every && !d) { toast('Para repetirlo hace falta una fecha.'); return; }
+      S.editItem = null;
+      listWrite(l.id, (cur) => api.listPatch(cur.id, { items: cur.items.map((y, i) => {
+        if (i !== n - 1) return y;
+        const { due, repeat, ...rest } = y;
+        return { ...rest, text, ...(d ? { due: d + (t ? 'T' + t : '') } : {}), ...(every ? { repeat: { every } } : {}) };
+      }) }, cur.etag));
+    }, onkeydown: (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } } },
+    h('label', { for: 'ie-text', class: 'sr' }, 'Texto'), h('input', { type: 'text', id: 'ie-text', name: 'text', value: x.text, 'data-keep': '1' }),
+    h('label', { for: 'ie-date', class: 'sr' }, 'Fecha límite'), h('input', { type: 'date', id: 'ie-date', name: 'date', value: date, 'data-keep': '1' }),
+    h('label', { for: 'ie-time', class: 'sr' }, 'Hora'), h('input', { type: 'time', id: 'ie-time', name: 'time', value: time, 'data-keep': '1' }),
+    h('label', { for: 'ie-repeat', class: 'sr' }, 'Repetir'),
+    h('select', { id: 'ie-repeat', name: 'repeat', 'data-keep': '1' }, h('option', { value: '' }, 'No se repite'), Object.entries(EVERY).map(([k, v]) => h('option', { value: k, selected: x.repeat?.every === k }, v))),
+    h('button', { class: 'btn primary', type: 'submit' }, 'Guardar'), h('button', { class: 'btn ghost', type: 'button', onclick: close }, 'Cancelar')));
+  }
+
+  // Soltar el ítem from antes del ítem to (números desde 1, como en la CLI).
+  function moveItem(id, from, to) {
+    if (from === to) return;
+    listWrite(id, (cur) => {
+      const items = [...cur.items];
+      const [it] = items.splice(from - 1, 1);
+      items.splice(to - 1 - (from < to ? 1 : 0), 0, it);
+      return api.listPatch(cur.id, { items }, cur.etag);
+    });
+  }
+
+  function toTask(l, n) {
+    const ms = S.milestones;
+    const pick = ms.length === 1 ? ms[0].id : prompt('¿En qué hito? ' + ms.map((m) => m.code + ' (' + m.id + ')').join(', '), (S.filter !== 'all' ? S.filter : ms[0].id));
+    const m = ms.find((x) => x.id === pick || x.code === pick);
+    if (!pick) return;
+    if (!m) { toast('No hay un hito "' + pick + '".'); return; }
+    listWrite(l.id, (cur) => api.listTask(cur.id, n, m.id, cur.etag), (r) => `Tarea creada en ${m.code}: ${r.task.title}`);
+  }
+
   async function copy(text) {
     try { await navigator.clipboard.writeText(text); toast('Copiado: ' + text); } catch (e) { toast(text); }
   }
 
   function render() {
-    renderMiles(); renderSummary(); renderWarnings(); renderBoard(); renderDetail(); renderDocs(); renderConn();
+    renderMiles(); renderSummary(); renderWarnings(); renderBoard(); renderDetail(); renderDocs(); renderLists(); renderConn();
     // La vista se aplica al final: renderSummary muestra su caja por su cuenta.
-    const docsView = S.view === 'docs';
-    for (const id of ['miles', 'summary', 'board', 'new-btn']) document.getElementById(id).hidden = docsView;
-    if (docsView) document.getElementById('new-form').hidden = true;
-    document.getElementById('docs').hidden = !docsView;
-    document.getElementById('tab-board').setAttribute('aria-current', docsView ? 'false' : 'page');
-    document.getElementById('tab-docs').setAttribute('aria-current', docsView ? 'page' : 'false');
+    const boardView = S.view === 'board';
+    for (const id of ['miles', 'summary', 'board', 'new-btn']) document.getElementById(id).hidden = !boardView;
+    if (!boardView) document.getElementById('new-form').hidden = true;
+    document.getElementById('docs').hidden = S.view !== 'docs';
+    document.getElementById('lists').hidden = S.view !== 'lists';
+    // Pestañas en el orden de config.views; las que no están se esconden (la del tablero, si es la actual, no).
+    const nav = document.querySelector('nav.views');
+    for (const v of ['board', 'lists', 'docs']) {
+      const tab = document.getElementById('tab-' + v);
+      tab.setAttribute('aria-current', S.view === v ? 'page' : 'false');
+      tab.hidden = !S.views.includes(v) && S.view !== v;
+      tab.style.order = String(S.views.includes(v) ? S.views.indexOf(v) : 9);
+    }
+    nav.hidden = [...nav.children].filter((a) => !a.hidden).length < 2;
   }
 
   function setFilter(id) { S.filter = id; pref('filter', id); render(); }
@@ -793,7 +1022,7 @@
       return;
     }
     if (e.ctrlKey || e.metaKey || e.altKey || typing(document.activeElement)) return;
-    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openNewForm(); return; }
+    if ((e.key === 'n' || e.key === 'N') && S.view === 'board') { e.preventDefault(); openNewForm(); return; }
     const n = Number(e.key);
     if (S.openId && n >= 1 && n <= STATUSES.length) { e.preventDefault(); setStatus(S.openId, STATUSES[n - 1].id); }
   });
@@ -806,7 +1035,11 @@
     do {
       eventsDuringLoad = false;
       try {
-        const [config, m, t, d] = await Promise.all([api.config(), api.milestones(), api.tasks(), api.docs().catch(() => ({ docs: [] }))]);
+        const [config, m, t, d, l] = await Promise.all([api.config(), api.milestones(), api.tasks(), api.docs().catch(() => ({ docs: [] })),
+          // Un hub de antes de las listas no tiene /api/lists.
+          api.lists().catch(() => ({ lists: [], warnings: [] }))]);
+        S.lists = l.lists;
+        S.views = Array.isArray(config.views) && config.views.length ? config.views : ['board', 'lists', 'docs'];
         S.docs = d.docs;
         sectionCache.clear();
         docCache.clear();
@@ -814,7 +1047,7 @@
         S.milestones = m.milestones;
         S.tasks = t.tasks;
         S.warnings = [];
-        for (const w of [...m.warnings, ...t.warnings]) setWarning(w);
+        for (const w of [...m.warnings, ...t.warnings, ...l.warnings]) setWarning(w);
         S.offline = false;
       } catch (e) {
         S.offline = true;
@@ -826,6 +1059,11 @@
     document.title = S.project && S.project !== 'Scope Compass' ? S.project + ' · Scope Compass' : 'Scope Compass';
     if (S.filter !== 'all' && !S.milestones.some((x) => x.id === S.filter)) S.filter = 'all';
     if (S.openId && !S.tasks.some((x) => x.id === S.openId)) S.openId = null;
+    // config.views (§16.6): sin hash, se abre la primera; una pestaña que el proyecto no tiene no se muestra.
+    if (!S.viewsApplied && !S.offline) {
+      S.viewsApplied = true;
+      if (!location.hash && S.views[0] !== 'board') { history.replaceState(null, '', S.views[0] === 'lists' ? '#lists' : '#docs'); readHash(); }
+    }
     S.loaded = true;
     render();
   }

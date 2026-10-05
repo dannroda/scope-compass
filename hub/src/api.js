@@ -3,6 +3,7 @@
 import { exportMarkdown } from './export-md.js';
 import { StoreError } from './store/json-files.js';
 import { flat, listLists, listMilestones, listTasks, STATUSES } from './views.js';
+import { checkItem, freeId, slugify } from './lists.js';
 
 const quote = (etag) => `"${etag}"`;
 const unquote = (v) => v.trim().replace(/^W\//, '').replace(/^"(.*)"$/, '$1');
@@ -81,6 +82,48 @@ export function registerApi(app, { store, projectDir, publish }) {
   });
 
   app.get('/api/lists/:id', async (req, reply) => send(reply, await store.get('lists', req.params.id)));
+
+  // Crear con el id que saldría en la CLI (slug del título, -2 si ya existe), al final de la barra lateral.
+  app.post('/api/lists', async (req, reply) => {
+    const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
+    if (!title) throw new StoreError('invalid_argument', 'falta el título');
+    const { items } = await store.list('lists');
+    const id = freeId(slugify(title), items.map((l) => l.id));
+    const order = Math.max(0, ...items.map((l) => l.doc.order ?? 0)) + 1;
+    const r = wrote('lists', await store.create('lists', { title, order, items: [] }, id));
+    return send(reply.header('location', `/api/lists/${r.id}`), r, 201);
+  });
+
+  // Ítem n (desde 1) de una lista, con el etag de la lista si se manda (If-Match) para no tildar otro.
+  const itemOf = async (req) => {
+    const cur = await store.get('lists', req.params.id);
+    const pre = preconditions(req);
+    if (pre.ifMatch !== undefined && pre.ifMatch !== cur.etag) throw new StoreError('conflict', 'la lista cambió desde que se leyó', { current: cur });
+    const n = req.body?.n;
+    if (!Number.isInteger(n) || n < 1 || n > cur.doc.items.length) throw new StoreError('invalid_argument', `ítem inexistente: ${n} (la lista tiene ${cur.doc.items.length})`);
+    return { cur, n, items: cur.doc.items };
+  };
+
+  // Tildar con la regla de la CLI (D26): uno que se repite no queda tildado, su fecha avanza un período.
+  app.post('/api/lists/:id/check', async (req, reply) => {
+    const { cur, n, items } = await itemOf(req);
+    let r;
+    try { r = checkItem(items[n - 1], { undo: !!req.body?.undo }); } catch (e) { throw new StoreError('invalid_argument', e.message); }
+    const w = wrote('lists', await store.patch('lists', cur.id, { items: items.with(n - 1, r.item) }, { ifMatch: cur.etag }));
+    return reply.header('etag', quote(w.etag)).send({ list: flat(w.id, w.doc, w.etag), advanced: r.advanced });
+  });
+
+  // Pasar a tarea: una tarea nueva con el texto del ítem, y el ítem queda apuntando a ella.
+  app.post('/api/lists/:id/task', async (req, reply) => {
+    const { cur, n, items } = await itemOf(req);
+    const it = items[n - 1];
+    if (it.task) throw new StoreError('conflict', `el ítem ${n} ya pasó a la tarea ${it.task}`);
+    const milestone = req.body?.milestone;
+    await store.get('milestones', typeof milestone === 'string' ? milestone : '');
+    const t = wrote('tasks', await store.create('tasks', { milestone, title: it.text, code: req.body?.code ?? '', status: 'todo', checklist: [], test: '', notes: '', refs: [] }));
+    const w = wrote('lists', await store.patch('lists', cur.id, { items: items.with(n - 1, { ...it, task: t.id }) }, { ifMatch: cur.etag }));
+    return reply.code(201).send({ list: flat(w.id, w.doc, w.etag), task: flat(t.id, t.doc, t.etag) });
+  });
 
   app.put('/api/lists/:id', async (req, reply) =>
     send(reply, wrote('lists', await store.put('lists', req.params.id, body(req), preconditions(req)))));

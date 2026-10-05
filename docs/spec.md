@@ -634,7 +634,9 @@ Una entidad nueva de la base, disponible en **cualquier** proyecto (D25): `compa
 - **Pasar a tarea:** crea una tarea en el hito elegido con el texto del ítem y guarda su id en `task`.
 - **Id legible:** sale del título (`"Libros para leer"` → `libros-para-leer`); si ya existe, `-2`, `-3`… Como lo elige el cliente, la API crea con `PUT /api/lists/:id` + `If-None-Match: *`.
 - CLI: `scompass lists`, `lists show|add|set|rm`, `item add <lista> "<texto>" [--due 2026-10-10]`, `item check <lista> <n> [--undo]`, `item set <lista> <n> [--text …] [--due …]`, `item rm`, `item clear` (quita los tildados), `item task <lista> <n> --milestone m00` (y `--repeat` en 8.5).
-- API y WebSocket: `GET/PUT/PATCH/DELETE /api/lists[/:id]`, y los mismos `upsert`/`delete` que las tareas con `collection: "lists"`. La web y el dock ignoran las colecciones que no muestran.
+- API y WebSocket: `GET/PUT/PATCH/DELETE /api/lists[/:id]`, y los mismos `upsert`/`delete` que las tareas con `collection: "lists"`. El dock ignora las colecciones que no muestra.
+- Con las reglas de la CLI, para que la web no las repita: `POST /api/lists { title }` (id del título), `POST /api/lists/:id/check { n, undo? }` (lo que se repite avanza) y `POST /api/lists/:id/task { n, milestone, code? }`. Las tres aceptan `If-Match` con el etag de la lista.
+- **Web:** pestaña Listas (`#lists/<id>`), con la barra lateral, "+ Nueva lista", agregar con fecha, hora y repetición, editar, quitar, arrastrar para reordenar, Quitar tildados, Renombrar, Borrar y Pasar a tarea. Si algún ítem tiene fecha, agrupa en Vencidos, Hoy, Esta semana, Más adelante, Sin fecha y Tildados. Las pestañas siguen `config.views`.
 
 ### 16.5 Fechas y repetición
 <!-- id: v3-fechas -->

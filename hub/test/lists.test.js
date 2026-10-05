@@ -200,3 +200,31 @@ test('export: sin listas no cambia nada; con listas, una sección al final', () 
   ] }, opts);
   assert.ok(md.endsWith('## Listas\n\n### Primera  (1/2)\n\n- [x] Uno\n- [ ] Dos · vence 2026-10-10 17:30 · → tarea 0.1\n\n### Segunda\n'));
 });
+
+test('API: crear con id del título, tildar con la regla de la CLI y pasar a tarea', async () => {
+  const base = `http://127.0.0.1:${port}/api/lists`;
+  const post = (path, body, headers = {}) => fetch(base + path, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
+  let r = await post('', { title: 'Libros para leer' });
+  assert.equal(r.status, 201);
+  assert.equal((await r.json()).id, 'libros-para-leer');
+  assert.equal((await (await post('', { title: 'Libros para leer' })).json()).id, 'libros-para-leer-2');
+  assert.equal((await post('', { title: '  ' })).status, 400);
+  await fetch(`${base}/libros-para-leer`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ items: [
+    { text: 'Rayuela', done: false }, { text: 'Revista', done: false, due: '2026-01-31', repeat: { every: 'month' } }
+  ] }) });
+  r = await post('/libros-para-leer/check', { n: 2 });
+  let body = await r.json();
+  assert.deepEqual([body.advanced, body.list.items[1].done, body.list.items[1].due], [true, false, '2026-02-28']);
+  assert.equal((await post('/libros-para-leer/check', { n: 1 }, { 'if-match': '"viejo"' })).status, 409);
+  r = await post('/libros-para-leer/check', { n: 1 }, { 'if-match': `"${body.list.etag}"` });
+  assert.equal((await r.json()).list.items[0].done, true);
+  assert.equal((await post('/libros-para-leer/check', { n: 9 })).status, 400);
+  assert.equal((await post('/libros-para-leer/check', { n: 2, undo: true })).status, 400, 'uno que se repite no se destilda');
+  r = await post('/libros-para-leer/task', { n: 1, milestone: 'm01' });
+  assert.equal(r.status, 201);
+  body = await r.json();
+  assert.equal(body.list.items[0].task, body.task.id);
+  assert.equal(body.task.title, 'Rayuela');
+  assert.equal((await post('/libros-para-leer/task', { n: 1, milestone: 'm01' })).status, 409);
+  assert.ok(events.some((e) => e.type === 'upsert' && e.collection === 'tasks' && e.id === body.task.id), 'la tarea nueva se publica');
+});
