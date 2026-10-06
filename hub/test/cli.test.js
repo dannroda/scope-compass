@@ -224,6 +224,20 @@ test('serve --exit-on-stdin-close: se cierra cuando se corta la entrada; sin la 
   assert.equal(await exit(without), 0);
 });
 
+test('serve --log: la salida se agrega al archivo (el dock en Windows, sin sh)', async () => {
+  const { spawn } = await import('node:child_process');
+  const { readFile: rf, writeFile: wf } = await import('node:fs/promises');
+  const log = join(dir, 'hub.log');
+  await wf(log, 'antes\n');
+  const p = spawn(process.execPath, [join(REPO, 'hub', 'bin', 'scompass.js'), '--dir', dir, 'serve', '--port', '0', '--log', log]);
+  let text = '';
+  for (let i = 0; i < 100 && !/http:\/\/127/.test(text); i++) { await new Promise((r) => setTimeout(r, 50)); text = await rf(log, 'utf8'); }
+  assert.match(text, /^antes\nScope Compass en http:\/\/127\.0\.0\.1:\d+\//, 'agrega, no pisa');
+  const exited = new Promise((r) => p.on('exit', r));
+  await fetch(/(http:\/\/127\.0\.0\.1:\d+\/)/.exec(text)[1] + 'api/shutdown', { method: 'POST' });
+  assert.equal(await exited, 0);
+});
+
 test('serve: SIGTERM lo cierra ordenado (Linux)', { skip: process.platform === 'win32' && 'Windows no tiene SIGTERM' }, async () => {
   const { spawn } = await import('node:child_process');
   const p = spawn(process.execPath, [join(REPO, 'hub', 'bin', 'scompass.js'), '--dir', dir, 'serve', '--port', '0']);

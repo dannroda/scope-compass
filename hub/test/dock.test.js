@@ -90,7 +90,8 @@ function godotLive(args, onLine = () => {}) {
     const feed = (d) => {
       out += d; buf += d;
       let i;
-      while ((i = buf.indexOf('\n')) >= 0) { const line = buf.slice(0, i); buf = buf.slice(i + 1); Promise.resolve(onLine(line)).catch((e) => { out += `\nnode: ${e.stack}`; }); }
+      // Godot en Windows termina las líneas con \r\n.
+      while ((i = buf.indexOf('\n')) >= 0) { const line = buf.slice(0, i).replace(/\r$/, ''); buf = buf.slice(i + 1); Promise.resolve(onLine(line)).catch((e) => { out += `\nnode: ${e.stack}`; }); }
     };
     p.stdout.on('data', feed);
     p.stderr.on('data', (d) => { out += d; });
@@ -310,7 +311,11 @@ test('modo "mantener": el hub sigue al cerrar el editor', { skip }, async () => 
     await new Promise((res) => setTimeout(res, 500));
     assert.ok(alive(hubPid), 'el hub se cerró con Godot');
     assert.equal((await (await fetch(`http://127.0.0.1:${port}/api/health`)).json()).ok, true);
-    assert.match(await readFile(join(dir, '.godot', 'scope_compass_hub.log'), 'utf8'), /sin ícono en la bandeja/);
+    // El log del hub (sh en Linux, --log en Windows). En Linux, sin bus no hay ícono; en Windows la bandeja no usa D-Bus.
+    const log = await readFile(join(dir, '.godot', 'scope_compass_hub.log'), 'utf8');
+    assert.match(log, /Scope Compass en http:\/\/127\.0\.0\.1:\d+\//);
+    if (process.platform !== 'win32') assert.match(log, /sin ícono en la bandeja/);
+    else assert.doesNotMatch(log, /sin ícono/);
   } finally {
     if (hubPid && alive(hubPid)) process.kill(hubPid, 'SIGTERM');
   }

@@ -350,6 +350,16 @@ func scompass_command() -> Array:
 		if not path.ends_with(".js") and FileAccess.file_exists(path):
 			return [path, []]
 	var out := []
+	if OS.get_name() == "Windows":
+		# `npm link` deja scompass.cmd: Godot no lanza un .cmd sin la consola de por medio, así que se usa el .js
+		# que el shim tiene al lado, con node.
+		if OS.execute("where", ["scompass"], out) == 0:
+			for line in str(out[0]).split("\n"):
+				var shim := line.strip_edges().replace("\\", "/")
+				var js := shim.get_base_dir().path_join("node_modules/scope-compass/bin/scompass.js")
+				if shim != "" and FileAccess.file_exists(js):
+					return ["node", [js]]
+		return []
 	if OS.execute("sh", ["-c", "command -v scompass"], out) == 0 and str(out[0]).strip_edges() != "":
 		return [str(out[0]).strip_edges(), []]
 	return []
@@ -375,7 +385,16 @@ func start_hub() -> bool:
 	var log_path := project_root.path_join(".godot/scope_compass_hub.log")
 	DirAccess.make_dir_recursive_absolute(log_path.get_base_dir())
 	hub_kept = bool(keep_hub_setting.call())
-	if hub_kept:
+	if OS.get_name() == "Windows":
+		# Sin sh (§18): node directo, y el hub escribe él mismo el log (--log). Godot lo lanza sin consola.
+		DirAccess.remove_absolute(log_path)
+		var args: Array = cmd[1] + ["--dir", project_root, "serve", "--log", log_path]
+		if hub_kept:
+			hub_pid = OS.create_process(cmd[0], PackedStringArray(args + ["--tray"]))
+		else:
+			_hub_pipe = OS.execute_with_pipe(cmd[0], PackedStringArray(args + ["--exit-on-stdin-close"]), false)
+			hub_pid = int(_hub_pipe.get("pid", -1))
+	elif hub_kept:
 		# Independiente del editor (5.9): sin tubería y con ícono en la bandeja para detenerlo. create_process ya
 		# pone al hijo en su propia sesión (setsid sobra y, al ser líder, haría un fork que cambia el PID).
 		var args: Array = ["-c", 'log="$1"; shift; exec "$@" >"$log" 2>&1 </dev/null', "sh", log_path, cmd[0]] + cmd[1] \
@@ -438,7 +457,7 @@ func restart_hub() -> bool:
 
 ## Cierra el hub solo si lo abrió este dock y no está en modo "mantener" (salvo force): corta la tubería
 ## (el hub termina el export pendiente y sale).
-## Si en 3 s sigue vivo, SIGTERM.
+## Si en 3 s sigue vivo, SIGTERM (en Windows, OS.kill: no hay señales).
 func stop_hub(force := false) -> void:
 	if hub_pid <= 0 or (hub_kept and not force):
 		return
@@ -446,15 +465,23 @@ func stop_hub(force := false) -> void:
 		if _hub_pipe.get(key) is FileAccess:
 			_hub_pipe[key].close()
 	_hub_pipe = {}
-	# Con kill -0: tras un reinicio el hub es nieto de Godot y OS.is_process_running no lo conoce.
-	var alive := func(pid: int) -> bool: return OS.execute("kill", ["-0", str(pid)]) == 0
 	var t0 := Time.get_ticks_msec()
-	while alive.call(hub_pid) and Time.get_ticks_msec() - t0 < 3000:
+	while pid_alive(hub_pid) and Time.get_ticks_msec() - t0 < 3000:
 		OS.delay_msec(50)
-	if alive.call(hub_pid):
-		if OS.execute("kill", ["-TERM", str(hub_pid)]) != 0:
+	if pid_alive(hub_pid):
+		if OS.get_name() == "Windows" or OS.execute("kill", ["-TERM", str(hub_pid)]) != 0:
 			OS.kill(hub_pid)
 	hub_pid = -1
+
+
+## ¿Sigue vivo el proceso? OS.is_process_running solo conoce los hijos de Godot, y tras un reinicio el hub es
+## nieto: kill -0 en Linux; en Windows, tasklist.
+static func pid_alive(pid: int) -> bool:
+	if OS.get_name() == "Windows":
+		var out := []
+		OS.execute("tasklist", ["/FI", "PID eq %d" % pid, "/NH", "/FO", "CSV"], out)
+		return ("\"%d\"" % pid) in (str(out[0]) if out.size() else "")
+	return OS.execute("kill", ["-0", str(pid)]) == 0
 
 
 func show_notice(text: String) -> void:

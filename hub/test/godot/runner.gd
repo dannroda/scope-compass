@@ -482,8 +482,8 @@ func test_restart_hub(a: Array) -> void:
 	if not _check(c, await v.restart_hub(), "no se reinició: " + v.notice.text): return
 	var after: int = v.hub_pid
 	print("PIDS ", before, " ", after)
-	# OS.is_process_running solo conoce los hijos de Godot; el hub reiniciado es nieto: kill -0.
-	var alive := func(pid: int) -> bool: return OS.execute("kill", ["-0", str(pid)]) == 0
+	# OS.is_process_running solo conoce los hijos de Godot; el hub reiniciado es nieto (kill -0, o tasklist).
+	var alive := func(pid: int) -> bool: return DockView.pid_alive(pid)
 	if not _check(c, after != before and alive.call(after), "PID nuevo inválido: %d → %d" % [before, after]): return
 	v.stop_hub()
 	if not _check(c, await _until(func(): return not alive.call(after), 5.0), "el hub nuevo no se cerró con el dock"): return

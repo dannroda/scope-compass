@@ -726,7 +726,7 @@ Tests: el primero en `hub/test/m9-criteria.test.js`; los cambios en vivo y el hu
 - **Rutas:** se comparan y validan con `node:path` (`isAbsolute`, no `startsWith('/')`); en las dos plataformas, un nombre de proyecto no puede tener `\ / : * ? " < > |` ni ser un nombre reservado (`CON`, `NUL`, …), para que un proyecto creado en Linux se abra en Windows. Las rutas que muestra la UI usan el separador del sistema.
 - **Procesos:** todo hijo (hub del Inicio, reinicio, `git`, `scompass init`) se lanza con `windowsHide`, para que no aparezcan consolas. Reiniciar el Inicio o un hub no abre una ventana nueva.
 - **Escritura atómica:** en Windows, `rename` falla con `EPERM`/`EBUSY` si otro proceso tiene abierto el destino (el antivirus, el indexador o el watcher). Se reintenta unas veces con espera corta antes de dar error.
-- **Dock:** no usa `sh`, `id` ni `kill`. Busca `scompass`/`node` con `where`, lanza `node` directo y usa `OS.is_process_running`/`OS.kill`. El registro de hubs lo encuentra igual que el hub.
+- **Dock:** en Windows no usa `sh`, `id` ni `kill`. Busca `scompass` con `where` (del shim de `npm link` toma el `.js` y lo corre con `node`), lanza `node` directo con `serve --log <archivo>` (el hub escribe su propio log), mira si el hub sigue vivo con `tasklist` (`OS.is_process_running` solo conoce los hijos de Godot) y como último recurso `OS.kill`. El registro de hubs lo busca en `%TEMP%`, como Node, y compara rutas sin distinguir `\` de `/` ni mayúsculas.
 - **Tests:** `npm test` corre igual en las dos plataformas (sin sintaxis de `sh` en `package.json`). Los tests que dependen de Linux (D-Bus, `sh -c`) se saltan en Windows con un motivo; los demás tienen que pasar.
 
 ### 18.1 Criterios de aceptación de M10

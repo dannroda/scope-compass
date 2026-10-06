@@ -1061,7 +1061,7 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 
 **Referencias:** `docs/spec.md#v4`
 
-## M10 — Windows  (7/10)
+## M10 — Windows  (8/10)
 
 Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, bandeja y dock (§18, D30).
 
@@ -1142,14 +1142,14 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 
 **Referencias:** `docs/spec.md#windows`
 
-### 10.8 Dock en Windows · Pendiente
+### 10.8 Dock en Windows · Hecho
 
-- [ ] Encontrar y lanzar el hub sin sh
-- [ ] Vivo/cerrar con las APIs de Godot (cierre ordenado como en 10.4)
-- [ ] registry_dir igual que el hub
-- [ ] dock.test pasa en la VM con Godot 4.8
+- [x] Encontrar y lanzar el hub sin sh
+- [x] Vivo/cerrar con las APIs de Godot (cierre ordenado como en 10.4)
+- [x] registry_dir igual que el hub
+- [x] dock.test pasa en la VM con Godot 4.8
 
-**Notas:** El dock usa `sh`, `id` y `kill` (dock_view.gd, hub_client.gd). En Windows: buscar scompass/node con `where`, lanzar `node` directo, `OS.is_process_running`/`OS.kill`, y el mismo directorio de registro que el hub (10.3).
+**Notas:** Hecho, solo la rama de Windows (Linux sigue con sh): scompass_command busca con `where` y del shim de `npm link` toma node_modules/scope-compass/bin/scompass.js; start_hub lanza node directo con `serve --log` (nueva opción: el hub agrega su salida al archivo, también un error que lo tire), con tubería (--exit-on-stdin-close) o con create_process en modo mantener; `pid_alive` usa tasklist (OS.is_process_running solo conoce los hijos y tras un reinicio el hub es nieto) y el último recurso es OS.kill; registry_dir en %TEMP% como Node; _same_path normaliza \ y mayúsculas. Tests: el runner usa pid_alive; dock.test saca el \r de las líneas de Godot en Windows (por eso "Node no avisó") y el log de modo mantener se mira por plataforma. dock.test 29/29 en la VM con Godot 4.8-dev7; suite completa en la VM sin fallas. Falta probar `where` con un `npm link` de verdad: 10.9.
 
 **Referencias:** `docs/spec.md#windows`
 

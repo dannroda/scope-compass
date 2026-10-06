@@ -124,6 +124,10 @@ static func registry_dir() -> String:
 	var custom := OS.get_environment("SCOMPASS_REGISTRY")
 	if custom != "":
 		return custom.path_join("hubs")
+	# En Windows, %TEMP%\scope-compass\hubs, la misma que usa Node (os.tmpdir() mira TEMP antes que TMP).
+	if OS.get_name() == "Windows":
+		var tmp := OS.get_environment("TEMP")
+		return (tmp if tmp != "" else OS.get_temp_dir()).replace("\\", "/").path_join("scope-compass/hubs")
 	var runtime := OS.get_environment("XDG_RUNTIME_DIR")
 	if runtime != "":
 		return runtime.path_join("scope-compass/hubs")
@@ -206,5 +210,10 @@ func load_all():
 		"warnings": ms.json.warnings + ts.json.warnings, "docs": docs.json.docs if docs.code == 200 else [] }
 
 
+## El registro guarda la ruta como la da Node: en Windows, con "\\" y la letra de la unidad en mayúscula. En
+## Windows las rutas no distinguen mayúsculas.
 func _same_path(a: String, b: String) -> bool:
-	return a.simplify_path().trim_suffix("/") == b.simplify_path().trim_suffix("/")
+	var norm := func(p: String) -> String:
+		var s := p.replace("\\", "/").simplify_path().trim_suffix("/")
+		return s.to_lower() if OS.get_name() == "Windows" else s
+	return norm.call(a) == norm.call(b)
