@@ -9,6 +9,7 @@ import { parseArgs } from 'node:util';
 import { exportMarkdown } from './export-md.js';
 import { checkRefs, loadDocs, resolveRef, sectionMarkdown, stampIds, suggestRefs } from './docs.js';
 import { writeAtomic } from './store/atomic.js';
+import { openUrl as openInBrowser } from './desktop.js';
 import { importArtifact } from './import-artifact.js';
 import { KINDS, loadValidators, parseDoc, SCHEMA_DIR } from './schema.js';
 import { canonical } from './store/canonical.js';
@@ -183,8 +184,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
 
   // El Inicio: un proceso por usuario (kind "home" en el registro de hubs). Si ya hay uno, dice dónde está.
   async function serveHome() {
-    const openUrl = (url) => spawn(process.env.SCOMPASS_OPEN || 'xdg-open', [url], { detached: true, stdio: 'ignore', windowsHide: true })
-      .on('error', () => warn(`no se pudo abrir el navegador: ${url}`)).unref();
+    const openUrl = (url) => openInBrowser(url, { onError: () => warn(`no se pudo abrir el navegador: ${url}`) });
     const running = liveHome();
     if (running) {
       const url = `http://127.0.0.1:${running.port}/`;
@@ -339,9 +339,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       try { await recordProject(project, { seen: true }); } catch (e) { warn(`aviso: no se anotó el proyecto en ${projectsFile()}: ${e.message}`); }
       const url = `http://${addr.address}:${addr.port}/`;
       o.json ? print(JSON.stringify({ url, port: addr.port, project })) : print(`Scope Compass en ${url} · ${project} · Ctrl+C para cerrar`);
-      // SCOMPASS_OPEN reemplaza a xdg-open (los tests lo usan para no abrir el navegador).
-      const openBoard = () => spawn(process.env.SCOMPASS_OPEN || 'xdg-open', [url], { detached: true, stdio: 'ignore', windowsHide: true })
-        .on('error', () => warn(`no se pudo abrir el navegador: ${url}`)).unref();
+      const openBoard = () => openInBrowser(url, { onError: () => warn(`no se pudo abrir el navegador: ${url}`) });
       if (o.open) openBoard();
       // Desde la bandeja: si ya hay un tablero abierto que puede notificar, se le pide que llame la atención en
       // lugar de abrir otra pestaña (el navegador no deja enfocar una pestaña desde afuera).

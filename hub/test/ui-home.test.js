@@ -128,11 +128,10 @@ test('agregar: importar una carpeta y crear un proyecto con plantilla', async ()
   assert.ok(existsSync(join(nueva, '.git')), 'git init');
   assert.deepEqual(JSON.parse(await readFile(join(nueva, 'compass', 'config.json'), 'utf8')).views, ['lists', 'board']);
   // Otra carpeta, con el selector del escritorio (acá, un script que "elige" una).
-  const { writeFile: wf, chmod } = await import('node:fs/promises');
+  const { writeFile: wf } = await import('node:fs/promises');
   const otra = join(root, 'Juegos');
-  const picker = join(root, 'picker.sh');
-  await wf(picker, `#!/bin/sh\necho "${otra}"\n`);
-  await chmod(picker, 0o755);
+  const picker = join(root, 'picker.js');
+  await wf(picker, `process.stdout.write(${JSON.stringify(otra)});`);
   process.env.SCOMPASS_PICKER = picker;
   try {
     await page.click('#add-btn');

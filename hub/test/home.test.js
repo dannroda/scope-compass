@@ -211,15 +211,15 @@ test('init: <carpeta de datos>/<nombre> con git init, o <otra>/<nombre>; una que
 });
 
 test('pick-folder: lo que elige el selector del escritorio; cancelar no es un error', async () => {
-  const { writeFile: wf, chmod } = await import('node:fs/promises');
-  const picker = join(root, 'picker.sh');
+  const { writeFile: wf } = await import('node:fs/promises');
+  // Un .js: SCOMPASS_PICKER lo corre con Node, así el selector falso anda en Linux y en Windows.
+  const picker = join(root, 'picker.js');
   const saved = process.env.SCOMPASS_PICKER;
   process.env.SCOMPASS_PICKER = picker;
   try {
-    await wf(picker, `#!/bin/sh\necho "${root}/elegida"\n`);
-    await chmod(picker, 0o755);
+    await wf(picker, `process.stdout.write(${JSON.stringify(join(root, 'elegida'))} + '\\n');`);
     assert.deepEqual((await api('POST', '/api/pick-folder', {})).body, { path: join(root, 'elegida') });
-    await wf(picker, '#!/bin/sh\nexit 1\n');
+    await wf(picker, 'process.exit(1);');
     assert.deepEqual((await api('POST', '/api/pick-folder', {})).body, { cancelled: true });
     process.env.SCOMPASS_PICKER = join(root, 'no-existe');
     assert.equal((await api('POST', '/api/pick-folder', {})).status, 404);

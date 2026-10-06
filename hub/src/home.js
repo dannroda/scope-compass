@@ -25,6 +25,7 @@ import Fastify from 'fastify';
 import websocket from '@fastify/websocket';
 import { exportMarkdown } from './export-md.js';
 import { checkItem } from './lists.js';
+import { pickFolder } from './desktop.js';
 import { folderName, forgetProject, loadProjects, projectsDataDir, projectsFile, projectsStatus, ProjectsError, recordProject } from './projects.js';
 import { hubsOf, listHubs } from './registry.js';
 import { VERSION, WEB_DIR } from './server.js';
@@ -201,19 +202,12 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   });
 
   // Elegir una carpeta (el botón "Elegir otra carpeta…"): el navegador no puede darle una ruta al servidor, así que
-  // el diálogo lo abre el Inicio con el del escritorio (kdialog o zenity; SCOMPASS_PICKER lo reemplaza en tests).
+  // el diálogo lo abre el Inicio con el del escritorio (desktop.js: kdialog o zenity, o el de Windows).
   app.post('/api/pick-folder', async (req) => {
     const start = typeof req.body?.start === 'string' ? req.body.start : projectsDataDir();
-    const tries = process.env.SCOMPASS_PICKER ? [[process.env.SCOMPASS_PICKER, [start]]]
-      : [['kdialog', ['--getexistingdirectory', start, '--title', 'Dónde crear el proyecto']],
-        ['zenity', ['--file-selection', '--directory', '--title=Dónde crear el proyecto', `--filename=${start}/`]]];
-    for (const [cmd, args] of tries) {
-      const r = await new Promise((done) => execFile(cmd, args, { timeout: 10 * 60 * 1000 }, (err, stdout) => done({ err, out: stdout.trim() })));
-      if (r.err?.code === 'ENOENT') continue;
-      // Cancelar sale con código 1 y sin salida.
-      return r.out ? { path: r.out } : { cancelled: true };
-    }
-    throw new StoreError('not_found', 'no hay un selector de carpetas (instalá kdialog o zenity); escribí la ruta');
+    const r = await pickFolder(start, 'Dónde crear el proyecto');
+    if (!r) throw new StoreError('not_found', 'no hay un selector de carpetas (instalá kdialog o zenity); escribí la ruta');
+    return r;
   });
 
   // Que el Inicio sirva un proyecto ya (el "Iniciar hub" del dock con el Inicio corriendo, D29). Si no estaba en

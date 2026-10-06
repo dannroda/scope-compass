@@ -1061,7 +1061,7 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 
 **Referencias:** `docs/spec.md#v4`
 
-## M10 — Windows  (5/10)
+## M10 — Windows  (6/10)
 
 Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, bandeja y dock (§18, D30).
 
@@ -1121,13 +1121,13 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 
 **Referencias:** `docs/spec.md#windows`
 
-### 10.6 Navegador y selector de carpetas en Windows · Pendiente
+### 10.6 Navegador y selector de carpetas en Windows · Hecho
 
-- [ ] Abrir el navegador por plataforma (serve --open, home --open, bandeja)
-- [ ] Selector de carpetas con PowerShell
-- [ ] Selector falso de los tests que corra en Windows
+- [x] Abrir el navegador por plataforma (serve --open, home --open, bandeja)
+- [x] Selector de carpetas con PowerShell
+- [x] Selector falso de los tests que corra en Windows
 
-**Notas:** `xdg-open` no existe: abrir con `explorer.exe <url>`. El selector de carpetas (D28) usa kdialog/zenity: en Windows, el FolderBrowserDialog desde PowerShell. pick-folder.test 130 falla con spawn EFTYPE (el selector falso del test es un script de sh).
+**Notas:** Hecho: hub/src/desktop.js con openUrl (xdg-open; en Windows, explorer.exe) y pickFolder (kdialog o zenity; en Windows, el FolderBrowserDialog de Windows Forms desde PowerShell 5.1, sin dependencias). La carpeta inicial y el título van por variables de entorno y la elegida vuelve en UTF-8. PowerShell corre con windowsHide; un formulario dueño invisible y TopMost hace que el diálogo salga delante. SCOMPASS_OPEN y SCOMPASS_PICKER aceptan un .js (se corre con Node), así los tests andan en las dos plataformas. Verificado en el escritorio de la VM con una tarea programada interactiva: el diálogo se ve, en primer plano, sin consola, y la ruta con tilde vuelve intacta.
 
 **Referencias:** `docs/spec.md#windows`
 
