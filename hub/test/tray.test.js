@@ -242,7 +242,7 @@ test('home --tray: un hub que se prende desde la web (API del Inicio) cambia el 
   }
 });
 
-test('serve --tray sin bus de sesión: avisa y el hub funciona igual', async () => {
+test('serve --tray sin bus de sesión: avisa y el hub funciona igual', { skip: process.platform === 'win32' && 'en Windows la bandeja no usa D-Bus (tray-win.test.js)' }, async () => {
   const project = await mkdtemp(join(tmpdir(), 'scompass-tray-nobus-'));
   try {
     await cp(FIXTURE, join(project, 'compass'), { recursive: true });

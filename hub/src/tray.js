@@ -1,30 +1,16 @@
 // Ícono en la bandeja del sistema (5.9, D20): StatusNotifierItem + menú com.canonical.dbusmenu por D-Bus,
 // el mecanismo nativo de KDE Plasma. Sin binarios nativos: @homebridge/dbus-native es JavaScript puro.
+// En Windows, NotifyIcon desde PowerShell (D31, tray-win.js), con la misma interfaz.
 import dbus from '@homebridge/dbus-native';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildMenu, compassPixmap } from './tray-menu.js';
+import { startWinTray } from './tray-win.js';
 
 const ICON_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'icons');
 const WATCHER = 'org.kde.StatusNotifierWatcher';
 const ITEM_PATH = '/StatusNotifierItem';
 const MENU_PATH = '/MenuBar';
-
-// Ícono dibujado en píxeles (ARGB32, big endian), por si la bandeja no encuentra el SVG del tema (el compass de @icons).
-function compassPixmap(size) {
-  const buf = Buffer.alloc(size * size * 4);
-  const c = (size - 1) / 2, r = size / 2 - 1;
-  const put = (x, y, [a, rr, g, b]) => { const i = (y * size + x) * 4; buf[i] = a; buf[i + 1] = rr; buf[i + 2] = g; buf[i + 3] = b; };
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const dx = x - c, dy = y - c, d = Math.hypot(dx, dy);
-      if (d <= r) put(x, y, d > r - size / 11 ? [255, 0xd9, 0xa4, 0x41] : [255, 0x1f, 0x25, 0x2e]);
-      // Aguja: rombo vertical, mitad norte en dorado y mitad sur en claro.
-      const w = (r * 0.62 - Math.abs(dy)) * 0.32;
-      if (Math.abs(dx) <= w && Math.abs(dy) <= r * 0.62) put(x, y, dy < 0 ? [255, 0xd9, 0xa4, 0x41] : [255, 0xec, 0xe5, 0xd6]);
-    }
-  }
-  return [size, size, buf];
-}
 
 const ITEM_IFACE = {
   name: 'org.kde.StatusNotifierItem',
@@ -51,9 +37,13 @@ const MENU_IFACE = {
  * Muestra el ícono. items: [{ label, onClick?, visible?, enabled?, children?, separator? }] para el menú; items,
  * children, label, visible y enabled pueden ser funciones: se evalúan al abrir el menú y con refresh(). En un menú
  * plano, cada ítem tiene id = su posición + 1. onActivate: clic en el ícono.
- * Devuelve { close(), refresh(), service }. Falla si no hay bus de sesión.
+ * Devuelve { close(), refresh() } (más service en Linux). Falla si no hay bus de sesión (Linux) o PowerShell (Windows).
  */
-export async function startTray({ title, tooltip, items, onActivate, busAddress = process.env.DBUS_SESSION_BUS_ADDRESS }) {
+export async function startTray(opts) {
+  return process.platform === 'win32' ? startWinTray(opts) : startDbusTray(opts);
+}
+
+async function startDbusTray({ title, tooltip, items, onActivate, busAddress = process.env.DBUS_SESSION_BUS_ADDRESS }) {
   if (!busAddress) throw new Error('no hay bus de sesión de D-Bus');
   const bus = dbus.sessionBus({ busAddress });
   await new Promise((resolve, reject) => {
@@ -71,9 +61,8 @@ export async function startTray({ title, tooltip, items, onActivate, busAddress 
     Activate: () => onActivate?.(), SecondaryActivate: () => onActivate?.(), ContextMenu: () => {}, Scroll: () => {}
   };
 
-  // Menú: raíz 0 y los ítems numerados en orden (primero cada ítem, después sus hijos). La revisión sube cuando
-  // cambia algo visible: un label, un visible o la lista de ítems (los proyectos del Inicio van y vienen).
-  const val = (v) => (typeof v === 'function' ? v() : v);
+  // Menú: raíz 0 y los ítems numerados en orden (buildMenu). La revisión sube cuando cambia algo visible: un
+  // label, un visible o la lista de ítems (los proyectos del Inicio van y vienen).
   let root = { id: 0, children: [] };
   let byId = new Map();
   let shape = '';
@@ -83,26 +72,12 @@ export async function startTray({ title, tooltip, items, onActivate, busAddress 
   // que decirle que el menú cambió. Si no, Plasma muestra su copia vieja (un hub prendido desde la web seguía
   // "apagado" en el menú del Inicio).
   let served = 0;
-  const build = () => {
-    let next = 1;
-    const map = new Map();
-    const walk = (list) => (val(list) ?? []).map((it) => {
-      const node = { id: next++, item: it, separator: !!it.separator, label: it.separator ? '' : String(val(it.label)),
-        visible: it.visible === undefined ? true : !!val(it.visible), enabled: it.enabled === undefined ? true : !!val(it.enabled) };
-      map.set(node.id, node);
-      node.children = it.children ? walk(it.children) : [];
-      return node;
-    });
-    return { root: { id: 0, children: walk(items) }, map };
-  };
-  const strip = (n) => ({ l: n.label, v: n.visible, e: n.enabled, s: n.separator, c: n.children.map(strip) });
   const recompute = () => {
-    const b = build();
-    const next = JSON.stringify(strip(b.root));
+    const b = buildMenu(items);
     root = b.root;
     byId = b.map;
-    const changed = next !== shape;
-    shape = next;
+    const changed = b.shape !== shape;
+    shape = b.shape;
     if (changed) revision++;
     return changed;
   };

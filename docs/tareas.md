@@ -1061,7 +1061,7 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 
 **Referencias:** `docs/spec.md#v4`
 
-## M10 — Windows  (6/10)
+## M10 — Windows  (7/10)
 
 Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, bandeja y dock (§18, D30).
 
@@ -1131,14 +1131,14 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 
 **Referencias:** `docs/spec.md#windows`
 
-### 10.7 Bandeja en Windows con NotifyIcon · Pendiente
+### 10.7 Bandeja en Windows con NotifyIcon · Hecho
 
-- [ ] Script de PowerShell: ícono, tooltip, menú con submenús, clics
-- [ ] tray.js elige D-Bus o PowerShell según la plataforma, con la misma interfaz
-- [ ] Ícono .ico generado del mismo dibujo
-- [ ] Test con el script real en Windows (sin hacer clic: menú y respuesta simulada)
+- [x] Script de PowerShell: ícono, tooltip, menú con submenús, clics
+- [x] tray.js elige D-Bus o PowerShell según la plataforma, con la misma interfaz
+- [x] Ícono .ico generado del mismo dibujo
+- [x] Test con el script real en Windows (sin hacer clic: menú y respuesta simulada)
 
-**Notas:** D31: un script de PowerShell con System.Windows.Forms.NotifyIcon, lanzado por el hub. Ícono, tooltip y menú van como JSON por stdin; los clics vuelven por stdout. Si se corta el stdin, el ícono se va. El mismo menú que en Linux (§16.3), con submenús por proyecto.
+**Notas:** D31. Hecho: tray.js elige por plataforma; tray-win.js lanza tray-win.ps1 (NotifyIcon de Windows Forms) con -EncodedCommand y windowsHide, y le habla en JSON por líneas: el hub manda ícono, tooltip y menú; PowerShell devuelve clics, clic en el ícono y "opening" (antes de abrir el menú, el hub lo reevalúa, como AboutToShow en D-Bus). stdin se lee sin bloquear con un Timer de la interfaz; si se corta (el hub se cerró o murió), saca el ícono y termina. tray-menu.js tiene lo compartido: buildMenu (lo usa también D-Bus) y el dibujo, más el .ico de 16 a 48 px armado en JS. Tests en la VM sin escritorio (dump e invoke de prueba): menú con submenús, tildes, ocultos y deshabilitados; clics por el handler real; refresh; cierre; home --tray; el hub muerto de golpe saca el ícono. Visto en el escritorio de la VM (captura): ícono en la bandeja y el menú como en Linux. Falta mirar en la máquina real el clic izquierdo en el ícono (abre el Inicio): 10.10.
 
 **Referencias:** `docs/spec.md#windows`
 
@@ -1167,7 +1167,7 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 
 - [ ] Tests de los criterios de §18.1
 - [ ] Suite completa en la VM
-- [ ] Prueba en Windows en la máquina real (incluye Ctrl+C en la consola cierra ordenado el hub y el Inicio)
+- [ ] Prueba en Windows en la máquina real (incluye Ctrl+C en la consola cierra ordenado el hub y el Inicio, y el clic izquierdo en el ícono abre el Inicio)
 - [ ] AGENTS.md, README y spec al día
 - [ ] Esperas de 3 s en los tests de UI que fallan a veces con la suite entera en la VM (fecha límite 8.13, listas «tildar, editar…»); solos pasan siempre
 

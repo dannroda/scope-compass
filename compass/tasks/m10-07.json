@@ -1,26 +1,26 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Script de PowerShell: ícono, tooltip, menú con submenús, clics"
     },
     {
-      "done": false,
+      "done": true,
       "text": "tray.js elige D-Bus o PowerShell según la plataforma, con la misma interfaz"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Ícono .ico generado del mismo dibujo"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Test con el script real en Windows (sin hacer clic: menú y respuesta simulada)"
     }
   ],
   "code": "10.7",
   "created_at": "2026-10-06T04:23:26.837Z",
   "milestone": "m10",
-  "notes": "D31: un script de PowerShell con System.Windows.Forms.NotifyIcon, lanzado por el hub. Ícono, tooltip y menú van como JSON por stdin; los clics vuelven por stdout. Si se corta el stdin, el ícono se va. El mismo menú que en Linux (§16.3), con submenús por proyecto.",
+  "notes": "D31. Hecho: tray.js elige por plataforma; tray-win.js lanza tray-win.ps1 (NotifyIcon de Windows Forms) con -EncodedCommand y windowsHide, y le habla en JSON por líneas: el hub manda ícono, tooltip y menú; PowerShell devuelve clics, clic en el ícono y \"opening\" (antes de abrir el menú, el hub lo reevalúa, como AboutToShow en D-Bus). stdin se lee sin bloquear con un Timer de la interfaz; si se corta (el hub se cerró o murió), saca el ícono y termina. tray-menu.js tiene lo compartido: buildMenu (lo usa también D-Bus) y el dibujo, más el .ico de 16 a 48 px armado en JS. Tests en la VM sin escritorio (dump e invoke de prueba): menú con submenús, tildes, ocultos y deshabilitados; clics por el handler real; refresh; cierre; home --tray; el hub muerto de golpe saca el ícono. Visto en el escritorio de la VM (captura): ícono en la bandeja y el menú como en Linux. Falta mirar en la máquina real el clic izquierdo en el ícono (abre el Inicio): 10.10.",
   "order": 7,
   "refs": [
     {
@@ -28,8 +28,8 @@
       "section": "windows"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "",
   "title": "Bandeja en Windows con NotifyIcon",
-  "updated_at": "2026-10-06T04:23:28.283Z"
+  "updated_at": "2026-10-06T05:19:11.590Z"
 }

@@ -15,6 +15,8 @@ src/schema.js        carga ../schema
 src/registry.js      hubs vivos ($XDG_RUNTIME_DIR/scope-compass/hubs; en Windows, %TEMP%\scope-compass\hubs)
 src/projects.js      proyectos conocidos (~/.config/scope-compass/projects.json; en Windows, %APPDATA%, D23)
 src/desktop.js       abrir el navegador y el selector de carpetas, por plataforma (§18)
+src/tray.js          bandeja: StatusNotifierItem por D-Bus (D20); en Windows, tray-win.js + tray-win.ps1 (NotifyIcon, D31)
+src/tray-menu.js     lo que comparten: el menú evaluado y el ícono (.ico para Windows)
 src/export-md.js     port de ../tools/artifact_to_md.py
 src/import-artifact.js  port de ../tools/artifact_to_tablero.py
 scripts/run-tests.js `npm test`: node --test con registro, config y datos propios

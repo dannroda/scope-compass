@@ -10,7 +10,7 @@
     },
     {
       "done": false,
-      "text": "Prueba en Windows en la máquina real (incluye Ctrl+C en la consola cierra ordenado el hub y el Inicio)"
+      "text": "Prueba en Windows en la máquina real (incluye Ctrl+C en la consola cierra ordenado el hub y el Inicio, y el clic izquierdo en el ícono abre el Inicio)"
     },
     {
       "done": false,
@@ -35,5 +35,5 @@
   "status": "todo",
   "test": "",
   "title": "Tests de M10, spec y guía",
-  "updated_at": "2026-10-06T04:53:01.629Z"
+  "updated_at": "2026-10-06T05:19:11.316Z"
 }
