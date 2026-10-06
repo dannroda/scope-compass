@@ -1061,7 +1061,7 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 
 **Referencias:** `docs/spec.md#v4`
 
-## M10 — Windows  (4/10)
+## M10 — Windows  (5/10)
 
 Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, bandeja y dock (§18, D30).
 
@@ -1112,12 +1112,12 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 
 **Referencias:** `docs/spec.md#windows`
 
-### 10.5 Escritura atómica: reintentar el rename en Windows · Pendiente
+### 10.5 Escritura atómica: reintentar el rename en Windows · Hecho
 
-- [ ] Reintento con espera corta en writeAtomic
-- [ ] Test que simula el destino ocupado
+- [x] Reintento con espera corta en writeAtomic
+- [x] Test que simula el destino ocupado
 
-**Notas:** En Windows, `rename` sobre un archivo que otro proceso tiene abierto (antivirus, indexador, el watcher) falla con EPERM/EBUSY/EACCES. Reintentar unas veces con espera corta antes de dar error (store/atomic.js, también projects.json).
+**Notas:** En Windows, `rename` sobre un archivo que otro proceso tiene abierto sin compartir (antivirus, indexador, un editor) falla con EPERM/EBUSY/EACCES. Hecho: `renameRetrying` en store/atomic.js, que usa writeAtomic (y con él el Store, projects.json, el export y doc stamp-ids): hasta 10 intentos con esperas que crecen (~1 s en total), solo en Windows; en Linux esos errores son de permisos y salen enseguida. Verificado en la VM con el destino abierto por PowerShell con FileShare None: sin reintento, EPERM al instante; con reintento, anda cuando lo suelta.
 
 **Referencias:** `docs/spec.md#windows`
 

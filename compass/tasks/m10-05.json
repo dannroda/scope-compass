@@ -1,18 +1,18 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Reintento con espera corta en writeAtomic"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Test que simula el destino ocupado"
     }
   ],
   "code": "10.5",
   "created_at": "2026-10-06T04:23:24.201Z",
   "milestone": "m10",
-  "notes": "En Windows, `rename` sobre un archivo que otro proceso tiene abierto (antivirus, indexador, el watcher) falla con EPERM/EBUSY/EACCES. Reintentar unas veces con espera corta antes de dar error (store/atomic.js, también projects.json).",
+  "notes": "En Windows, `rename` sobre un archivo que otro proceso tiene abierto sin compartir (antivirus, indexador, un editor) falla con EPERM/EBUSY/EACCES. Hecho: `renameRetrying` en store/atomic.js, que usa writeAtomic (y con él el Store, projects.json, el export y doc stamp-ids): hasta 10 intentos con esperas que crecen (~1 s en total), solo en Windows; en Linux esos errores son de permisos y salen enseguida. Verificado en la VM con el destino abierto por PowerShell con FileShare None: sin reintento, EPERM al instante; con reintento, anda cuando lo suelta.",
   "order": 5,
   "refs": [
     {
@@ -20,8 +20,8 @@
       "section": "windows"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "",
   "title": "Escritura atómica: reintentar el rename en Windows",
-  "updated_at": "2026-10-06T04:23:25.151Z"
+  "updated_at": "2026-10-06T05:01:33.238Z"
 }
