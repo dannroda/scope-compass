@@ -115,7 +115,7 @@ Después de cada escritura, desde la CLI o desde el hub, se regenera `export_md`
 - **Detalle:** `npm install <paquete>` no corre el `postinstall` del proyecto. Después de agregar una dependencia hay que correr `npm install` sin argumentos para que se cree `node_modules/.gdignore`.
 
 ## D15 · Linux primero
-**2026-09-29 · vigente** · spec §14
+**2026-09-29 · reemplazada por D30** · spec §14
 
 v1 se desarrolla y se prueba solo en Linux. Windows no se prueba ni bloquea ningún hito.
 
@@ -237,3 +237,21 @@ Además del registro de hubs vivos (en `$XDG_RUNTIME_DIR`, se borra al reiniciar
 - **Regla:** un solo proceso escribe cada `compass/`. El registro de hubs dice quién sirve cada proyecto (un hub suelto, o el Inicio con `base`). Si hay un hub suelto, el Inicio le reenvía los pedidos.
 - **Costo aceptado:** si el Inicio se cae, se caen todos sus proyectos a la vez (los datos están en disco y en git). El dock y la CLI aprenden a usar la `base` del registro.
 - **Descartado:** el Inicio como proxy de hubs separados (cada proyecto seguía siendo un proceso y había que esperar que arrancara), y sacarles el puerto TCP a los hubs (Godot no se conecta a sockets locales).
+
+## D30 · Linux es la plataforma principal; Windows, la segunda
+**2026-10-06 · vigente** · spec §18 · reemplaza a D15
+
+Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en Windows: hay días en que el equipo arranca en Windows, y ahí se sigue trabajando en los mismos proyectos.
+
+- **Por qué:** se cumplió lo que D15 dejaba para revisar: alguien lo usa en Windows. Cambiar de sistema no puede dejar el tablero afuera.
+- **Qué significa:** lo nuevo se diseña en Linux. Antes de cerrar un hito, la suite corre también en Windows. Si algo no se puede hacer igual en las dos plataformas, gana Linux, y en Windows hay una alternativa o un aviso, nunca un error.
+- **Cómo se prueba:** una VM con Windows 10 por SSH para el día a día, y el mismo Windows en la máquina real como prueba de uso. Godot es el mismo 4.8 que en Linux.
+- **Datos entre sistemas:** por git (push en uno y pull en el otro), no por una partición compartida. `.gitattributes` fija LF, así que los JSON quedan iguales en las dos plataformas.
+- **Descartado:** CI en Windows por ahora (un solo usuario; la VM alcanza), y macOS (nadie lo usa).
+
+## D31 · Bandeja en Windows: `NotifyIcon` desde PowerShell, sin dependencias
+**2026-10-06 · vigente** · spec §18 · complementa D20
+
+- **Qué:** en Windows, el hub lanza un script de PowerShell (`powershell.exe -NoProfile -WindowStyle Hidden`) que muestra el ícono con `System.Windows.Forms.NotifyIcon`. El hub le manda el ícono, el tooltip y el menú como JSON por stdin, y el script devuelve los clics por stdout. Si el hub muere, se cierra el stdin y el ícono desaparece. En Linux sigue D20.
+- **Por qué:** menos librerías externas. PowerShell 5.1 y .NET vienen con todo Windows 10/11, así que no hay que instalar nada. Es el mismo patrón que D20: el mecanismo nativo de cada escritorio, sin binarios propios.
+- **Descartado:** paquetes de npm con un binario precompilado (`systray2` y similares), que son una dependencia más, con binarios que no se auditan. También un mismo mecanismo para las dos plataformas: Node no tiene bandeja, y el `StatusIndicator` de Godot sería un proceso de unos 100 MB solo para un ícono.

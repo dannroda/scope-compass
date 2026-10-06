@@ -1,0 +1,39 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "El script `test` de package.json sin sintaxis de sh (un `node` que arma las variables)"
+    },
+    {
+      "done": false,
+      "text": "registry.test: simular otro hub con un PID vivo de verdad, no PID 1 (en Windows se colgaba)"
+    },
+    {
+      "done": false,
+      "text": "cli-hub.test: sin `sh -c`"
+    },
+    {
+      "done": false,
+      "text": "export-md: saltar los tests de Python si no hay `python3` que ande (en Windows, `python3` es el alias de la Store)"
+    },
+    {
+      "done": false,
+      "text": "Rutas absolutas esperadas con el separador del sistema (projects.test, home list)"
+    }
+  ],
+  "code": "10.1",
+  "created_at": "2026-10-06T04:23:17.640Z",
+  "milestone": "m10",
+  "notes": "Primera corrida en la VM (2026-10-06): 280 tests, 188 pasan, 54 fallan, 37 saltados. 41 fallas eran de Playwright sin navegador y 29 saltos eran porque Node no puede lanzar `godot.cmd` (ya resuelto en la VM con `godot.exe`). Lo de esta tarea son los tests que asumen Linux, no el código.",
+  "order": 1,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "windows"
+    }
+  ],
+  "status": "todo",
+  "test": "",
+  "title": "npm test corre en Windows",
+  "updated_at": "2026-10-06T04:23:19.310Z"
+}

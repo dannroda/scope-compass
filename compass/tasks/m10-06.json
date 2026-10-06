@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Abrir el navegador por plataforma (serve --open, home --open, bandeja)"
+    },
+    {
+      "done": false,
+      "text": "Selector de carpetas con PowerShell"
+    },
+    {
+      "done": false,
+      "text": "Selector falso de los tests que corra en Windows"
+    }
+  ],
+  "code": "10.6",
+  "created_at": "2026-10-06T04:23:25.389Z",
+  "milestone": "m10",
+  "notes": "`xdg-open` no existe: abrir con `explorer.exe <url>`. El selector de carpetas (D28) usa kdialog/zenity: en Windows, el FolderBrowserDialog desde PowerShell. pick-folder.test 130 falla con spawn EFTYPE (el selector falso del test es un script de sh).",
+  "order": 6,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "windows"
+    }
+  ],
+  "status": "todo",
+  "test": "",
+  "title": "Navegador y selector de carpetas en Windows",
+  "updated_at": "2026-10-06T04:23:26.598Z"
+}

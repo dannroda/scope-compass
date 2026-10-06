@@ -552,7 +552,7 @@ Para respetar el principio de §1 también hosteado, **git sigue siendo el almac
 - [x] Con la app apagada: editar a mano un JSON, validar contra `compass/schema/` y, al levantar la app, verlo reflejado sin pérdidas.
 - [x] Un archivo con marcadores de conflicto de git se marca como inválido y la app no lo sobrescribe.
 - [x] Borrar la app por completo no pierde ningún dato: todo está en `compass/` y en git.
-- [x] Corre en Linux. Windows queda para después de v1 (D15).
+- [x] Corre en Linux. Windows queda para después de v1 (D15; ahora es la segunda plataforma, D30 y §18).
 
 ## 15. Decisiones abiertas
 <!-- id: decisiones-abiertas -->
@@ -707,3 +707,33 @@ Tests: el primero en `hub/test/m9-criteria.test.js`; los cambios en vivo y el hu
 - [x] Con un hub suelto del dock corriendo, el tablero en el Inicio pasa por ese hub (un solo proceso escribe).
 - [x] `scompass home restart` y "Reiniciar Inicio" de la bandeja vuelven en el mismo puerto, con los proyectos.
 - [x] "Actualizar compass/" en la tarjeta de un proyecto sin hub copia el schema nuevo.
+
+## 18. Windows como segunda plataforma (M10)
+<!-- id: windows -->
+
+**Objetivo:** el mismo Scope Compass en Windows 10/11: CLI, hub, Inicio, bandeja y dock, sobre los mismos proyectos que en Linux, sincronizados por git (D30). Lo nuevo se sigue diseñando en Linux; Windows no puede quedar con errores, a lo sumo con una alternativa o un aviso.
+
+| Qué | Linux | Windows |
+|---|---|---|
+| Proyectos conocidos (D23) | `$XDG_CONFIG_HOME/scope-compass/projects.json` (`~/.config`) | `%APPDATA%\scope-compass\projects.json` |
+| Carpeta de datos (D28) | `$XDG_DATA_HOME/scope-compass` (`~/.local/share`) | `%LOCALAPPDATA%\scope-compass` |
+| Hubs vivos | `$XDG_RUNTIME_DIR/scope-compass/hubs` | `%TEMP%\scope-compass-<usuario>\hubs` |
+| Abrir el navegador | `xdg-open` | `explorer.exe <url>` |
+| Selector de carpetas (D28) | `kdialog` o `zenity` | diálogo de carpetas de Windows, desde PowerShell |
+| Bandeja (D20, D31) | StatusNotifierItem por D-Bus | `NotifyIcon` desde un script de PowerShell que el hub lanza y maneja por stdin/stdout |
+| Apagar un hub | `SIGTERM`: cierra ordenado | Node no tiene señales en Windows (`kill` lo mata en seco): se pide el cierre por API o por stdin, y `kill` queda para cuando no responde |
+
+- **Rutas:** se comparan y validan con `node:path` (`isAbsolute`, no `startsWith('/')`); un nombre de proyecto no puede tener `\ / : * ? " < > |` ni ser un nombre reservado (`CON`, `NUL`, …). Las rutas que muestra la UI usan el separador del sistema.
+- **Procesos:** todo hijo (hub del Inicio, reinicio, `git`, `scompass init`) se lanza con `windowsHide`, para que no aparezcan consolas. Reiniciar el Inicio o un hub no abre una ventana nueva.
+- **Escritura atómica:** en Windows, `rename` falla con `EPERM`/`EBUSY` si otro proceso tiene abierto el destino (el antivirus, el indexador o el watcher). Se reintenta unas veces con espera corta antes de dar error.
+- **Dock:** no usa `sh`, `id` ni `kill`. Busca `scompass`/`node` con `where`, lanza `node` directo y usa `OS.is_process_running`/`OS.kill`. El registro de hubs lo encuentra igual que el hub.
+- **Tests:** `npm test` corre igual en las dos plataformas (sin sintaxis de `sh` en `package.json`). Los tests que dependen de Linux (D-Bus, `sh -c`) se saltan en Windows con un motivo; los demás tienen que pasar.
+
+### 18.1 Criterios de aceptación de M10
+<!-- id: criterios-windows -->
+
+- [ ] `npm test` pasa en Windows (VM), salvo los tests marcados como solo Linux.
+- [ ] `scompass home --tray` en Windows: el Inicio abre en el navegador, con ícono en la bandeja y sin ventanas de consola.
+- [ ] Desde el Inicio en Windows se prende, se apaga y se reinicia un hub, y el registro queda limpio.
+- [ ] El dock en Godot 4.8 sobre Windows encuentra el hub, lo prende y lo apaga.
+- [ ] Un proyecto clonado en Windows y otro en Linux, sincronizados por git, no muestran cambios por fin de línea.

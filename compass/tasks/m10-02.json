@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Documentos: path y alias con / (docs.js, config docs)"
+    },
+    {
+      "done": false,
+      "text": "Avisos y errores del Store con rutas con /"
+    },
+    {
+      "done": false,
+      "text": "Revisar export, watcher y refs que comparen rutas relativas"
+    }
+  ],
+  "code": "10.2",
+  "created_at": "2026-10-06T04:23:19.556Z",
+  "milestone": "m10",
+  "notes": "En Windows salen con `\\`: el alias de un documento queda `docs/docs\\audio` y se rompen sus refs (docs.test 86, 87, 92), y los avisos del Store dicen `compass\\tasks\\m0-03.json` (schema.test 190, m1-criteria 153). Las rutas dentro del proyecto son identificadores, como en git: siempre con `/`. Las absolutas, con el separador del sistema.",
+  "order": 2,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "windows"
+    }
+  ],
+  "status": "todo",
+  "test": "",
+  "title": "Rutas relativas al proyecto siempre con /",
+  "updated_at": "2026-10-06T04:23:20.704Z"
+}

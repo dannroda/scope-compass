@@ -1,0 +1,35 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Cierre pedido por API/stdin en el Inicio (stop, apagar al cerrar) y en el dock"
+    },
+    {
+      "done": false,
+      "text": "SIGINT/Ctrl+C en la consola de Windows sigue cerrando ordenado"
+    },
+    {
+      "done": false,
+      "text": "windowsHide en spawn y execFile; restart con detached sin ventana"
+    },
+    {
+      "done": false,
+      "text": "Tests de cierre que corran en las dos plataformas"
+    }
+  ],
+  "code": "10.4",
+  "created_at": "2026-10-06T04:23:22.366Z",
+  "milestone": "m10",
+  "notes": "En Windows Node no tiene SIGTERM: `kill` termina el proceso en seco, sin cerrar el servidor ni darse de baja del registro (cli.test 47 y tray.test 223 salen con código null). Pedir el cierre por la API o cerrando el stdin, y `kill` solo si no responde. Todo hijo con `windowsHide`, y reiniciar sin abrir una consola nueva.",
+  "order": 4,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "windows"
+    }
+  ],
+  "status": "todo",
+  "test": "",
+  "title": "Cerrar hubs e Inicio sin señales",
+  "updated_at": "2026-10-06T04:23:23.948Z"
+}

@@ -1,0 +1,35 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Encontrar y lanzar el hub sin sh"
+    },
+    {
+      "done": false,
+      "text": "Vivo/cerrar con las APIs de Godot (cierre ordenado como en 10.4)"
+    },
+    {
+      "done": false,
+      "text": "registry_dir igual que el hub"
+    },
+    {
+      "done": false,
+      "text": "dock.test pasa en la VM con Godot 4.8"
+    }
+  ],
+  "code": "10.8",
+  "created_at": "2026-10-06T04:23:28.527Z",
+  "milestone": "m10",
+  "notes": "El dock usa `sh`, `id` y `kill` (dock_view.gd, hub_client.gd). En Windows: buscar scompass/node con `where`, lanzar `node` directo, `OS.is_process_running`/`OS.kill`, y el mismo directorio de registro que el hub (10.3).",
+  "order": 8,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "windows"
+    }
+  ],
+  "status": "todo",
+  "test": "",
+  "title": "Dock en Windows",
+  "updated_at": "2026-10-06T04:23:29.955Z"
+}

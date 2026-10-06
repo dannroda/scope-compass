@@ -1,0 +1,35 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Script de PowerShell: ícono, tooltip, menú con submenús, clics"
+    },
+    {
+      "done": false,
+      "text": "tray.js elige D-Bus o PowerShell según la plataforma, con la misma interfaz"
+    },
+    {
+      "done": false,
+      "text": "Ícono .ico generado del mismo dibujo"
+    },
+    {
+      "done": false,
+      "text": "Test con el script real en Windows (sin hacer clic: menú y respuesta simulada)"
+    }
+  ],
+  "code": "10.7",
+  "created_at": "2026-10-06T04:23:26.837Z",
+  "milestone": "m10",
+  "notes": "D31: un script de PowerShell con System.Windows.Forms.NotifyIcon, lanzado por el hub. Ícono, tooltip y menú van como JSON por stdin; los clics vuelven por stdout. Si se corta el stdin, el ícono se va. El mismo menú que en Linux (§16.3), con submenús por proyecto.",
+  "order": 7,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "windows"
+    }
+  ],
+  "status": "todo",
+  "test": "",
+  "title": "Bandeja en Windows con NotifyIcon",
+  "updated_at": "2026-10-06T04:23:28.283Z"
+}

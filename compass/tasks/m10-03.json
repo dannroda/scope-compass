@@ -1,0 +1,31 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Carpetas por plataforma en projects.js y registry.js"
+    },
+    {
+      "done": false,
+      "text": "Ruta absoluta con isAbsolute; nombres de proyecto sin \\ / : * ? \" < > | ni nombres reservados"
+    },
+    {
+      "done": false,
+      "text": "Mensajes y docs que nombran ~/.config muestran la ruta real"
+    }
+  ],
+  "code": "10.3",
+  "created_at": "2026-10-06T04:23:20.944Z",
+  "milestone": "m10",
+  "notes": "D23, D28 y el registro de hubs usan XDG. En Windows: `%APPDATA%\\scope-compass` (proyectos conocidos), `%LOCALAPPDATA%\\scope-compass` (datos) y `%TEMP%\\scope-compass-<usuario>` (hubs vivos; `userInfo().uid` es -1). Crear un proyecto falla porque se valida la ruta con `startsWith('/')` (home.test 129).",
+  "order": 3,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "windows"
+    }
+  ],
+  "status": "todo",
+  "test": "",
+  "title": "Carpetas de config, datos y registro en Windows",
+  "updated_at": "2026-10-06T04:23:22.129Z"
+}

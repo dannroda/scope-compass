@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-10-04
+> Generado: 2026-10-06
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -1060,3 +1060,117 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 - [x] AGENTS.md, README e instalar.md
 
 **Referencias:** `docs/spec.md#v4`
+
+## M10 — Windows  (0/10)
+
+Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, bandeja y dock (§18, D30).
+
+**Hecho cuando:**
+- npm test pasa en Windows, salvo los tests marcados como solo Linux.
+- El Inicio con bandeja, los hubs y el dock funcionan en Windows sin ventanas de consola.
+- Los mismos proyectos se usan en Linux y en Windows, sincronizados por git, sin cambios por fin de línea.
+
+### 10.1 npm test corre en Windows · Pendiente
+
+- [ ] El script `test` de package.json sin sintaxis de sh (un `node` que arma las variables)
+- [ ] registry.test: simular otro hub con un PID vivo de verdad, no PID 1 (en Windows se colgaba)
+- [ ] cli-hub.test: sin `sh -c`
+- [ ] export-md: saltar los tests de Python si no hay `python3` que ande (en Windows, `python3` es el alias de la Store)
+- [ ] Rutas absolutas esperadas con el separador del sistema (projects.test, home list)
+
+**Notas:** Primera corrida en la VM (2026-10-06): 280 tests, 188 pasan, 54 fallan, 37 saltados. 41 fallas eran de Playwright sin navegador y 29 saltos eran porque Node no puede lanzar `godot.cmd` (ya resuelto en la VM con `godot.exe`). Lo de esta tarea son los tests que asumen Linux, no el código.
+
+**Referencias:** `docs/spec.md#windows`
+
+### 10.2 Rutas relativas al proyecto siempre con / · Pendiente
+
+- [ ] Documentos: path y alias con / (docs.js, config docs)
+- [ ] Avisos y errores del Store con rutas con /
+- [ ] Revisar export, watcher y refs que comparen rutas relativas
+
+**Notas:** En Windows salen con `\`: el alias de un documento queda `docs/docs\audio` y se rompen sus refs (docs.test 86, 87, 92), y los avisos del Store dicen `compass\tasks\m0-03.json` (schema.test 190, m1-criteria 153). Las rutas dentro del proyecto son identificadores, como en git: siempre con `/`. Las absolutas, con el separador del sistema.
+
+**Referencias:** `docs/spec.md#windows`
+
+### 10.3 Carpetas de config, datos y registro en Windows · Pendiente
+
+- [ ] Carpetas por plataforma en projects.js y registry.js
+- [ ] Ruta absoluta con isAbsolute; nombres de proyecto sin \ / : * ? " < > | ni nombres reservados
+- [ ] Mensajes y docs que nombran ~/.config muestran la ruta real
+
+**Notas:** D23, D28 y el registro de hubs usan XDG. En Windows: `%APPDATA%\scope-compass` (proyectos conocidos), `%LOCALAPPDATA%\scope-compass` (datos) y `%TEMP%\scope-compass-<usuario>` (hubs vivos; `userInfo().uid` es -1). Crear un proyecto falla porque se valida la ruta con `startsWith('/')` (home.test 129).
+
+**Referencias:** `docs/spec.md#windows`
+
+### 10.4 Cerrar hubs e Inicio sin señales · Pendiente
+
+- [ ] Cierre pedido por API/stdin en el Inicio (stop, apagar al cerrar) y en el dock
+- [ ] SIGINT/Ctrl+C en la consola de Windows sigue cerrando ordenado
+- [ ] windowsHide en spawn y execFile; restart con detached sin ventana
+- [ ] Tests de cierre que corran en las dos plataformas
+
+**Notas:** En Windows Node no tiene SIGTERM: `kill` termina el proceso en seco, sin cerrar el servidor ni darse de baja del registro (cli.test 47 y tray.test 223 salen con código null). Pedir el cierre por la API o cerrando el stdin, y `kill` solo si no responde. Todo hijo con `windowsHide`, y reiniciar sin abrir una consola nueva.
+
+**Referencias:** `docs/spec.md#windows`
+
+### 10.5 Escritura atómica: reintentar el rename en Windows · Pendiente
+
+- [ ] Reintento con espera corta en writeAtomic
+- [ ] Test que simula el destino ocupado
+
+**Notas:** En Windows, `rename` sobre un archivo que otro proceso tiene abierto (antivirus, indexador, el watcher) falla con EPERM/EBUSY/EACCES. Reintentar unas veces con espera corta antes de dar error (store/atomic.js, también projects.json).
+
+**Referencias:** `docs/spec.md#windows`
+
+### 10.6 Navegador y selector de carpetas en Windows · Pendiente
+
+- [ ] Abrir el navegador por plataforma (serve --open, home --open, bandeja)
+- [ ] Selector de carpetas con PowerShell
+- [ ] Selector falso de los tests que corra en Windows
+
+**Notas:** `xdg-open` no existe: abrir con `explorer.exe <url>`. El selector de carpetas (D28) usa kdialog/zenity: en Windows, el FolderBrowserDialog desde PowerShell. pick-folder.test 130 falla con spawn EFTYPE (el selector falso del test es un script de sh).
+
+**Referencias:** `docs/spec.md#windows`
+
+### 10.7 Bandeja en Windows con NotifyIcon · Pendiente
+
+- [ ] Script de PowerShell: ícono, tooltip, menú con submenús, clics
+- [ ] tray.js elige D-Bus o PowerShell según la plataforma, con la misma interfaz
+- [ ] Ícono .ico generado del mismo dibujo
+- [ ] Test con el script real en Windows (sin hacer clic: menú y respuesta simulada)
+
+**Notas:** D31: un script de PowerShell con System.Windows.Forms.NotifyIcon, lanzado por el hub. Ícono, tooltip y menú van como JSON por stdin; los clics vuelven por stdout. Si se corta el stdin, el ícono se va. El mismo menú que en Linux (§16.3), con submenús por proyecto.
+
+**Referencias:** `docs/spec.md#windows`
+
+### 10.8 Dock en Windows · Pendiente
+
+- [ ] Encontrar y lanzar el hub sin sh
+- [ ] Vivo/cerrar con las APIs de Godot (cierre ordenado como en 10.4)
+- [ ] registry_dir igual que el hub
+- [ ] dock.test pasa en la VM con Godot 4.8
+
+**Notas:** El dock usa `sh`, `id` y `kill` (dock_view.gd, hub_client.gd). En Windows: buscar scompass/node con `where`, lanzar `node` directo, `OS.is_process_running`/`OS.kill`, y el mismo directorio de registro que el hub (10.3).
+
+**Referencias:** `docs/spec.md#windows`
+
+### 10.9 Instalar en Windows · Pendiente
+
+- [ ] Pasos de Windows en la guía de instalación
+- [ ] build.mjs corre en Windows
+- [ ] Probar la instalación desde el .tgz en la VM
+
+**Notas:** INSTALAR.md y docs/instalar.md con los pasos de Windows: Node, `npm link` (o el .tgz) y el addon. Que `scompass` ande en PowerShell y en cmd, y que la build (tools/build.mjs) no dependa de herramientas de Linux.
+
+**Referencias:** `docs/spec.md#windows`
+
+### 10.10 Tests de M10, spec y guía · Pendiente
+
+- [ ] Tests de los criterios de §18.1
+- [ ] Suite completa en la VM
+- [ ] Prueba en Windows en la máquina real
+- [ ] AGENTS.md, README y spec al día
+
+**Notas:** Criterios de §18.1. Al cerrar: suite completa en la VM, y una sesión real en la máquina con Windows (Inicio con bandeja, un proyecto sincronizado por git con Linux, dock en Godot). AGENTS.md (plantilla, copia del addon y compass/) con lo que cambie para Windows.
+
+**Referencias:** `docs/spec.md#windows`
