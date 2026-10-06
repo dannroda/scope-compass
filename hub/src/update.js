@@ -1,4 +1,4 @@
-// Los archivos que `init` copia de Scope Compass (schema/ y la guía para agentes) quedan viejos cuando Scope
+// Los archivos que `init` copia de Scope Compass (schema/, la guía para agentes y .gitattributes) quedan viejos cuando Scope
 // Compass cambia, por ejemplo con un campo nuevo en las tareas. updateCompass los vuelve a copiar; no toca los
 // datos, config.json ni README.md. Lo usan `scompass update` y la bandeja del hub. De la guía hay una copia igual en
 // addons/scope_compass/AGENTS.md (un test las compara).
@@ -9,7 +9,8 @@ import { KINDS, SCHEMA_DIR } from './schema.js';
 
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
 
-const generated = () => [...KINDS.map((k) => [join(SCHEMA_DIR, `${k}.schema.json`), `schema/${k}.schema.json`]), [join(TEMPLATES, 'compass-AGENTS.md'), 'AGENTS.md']];
+const generated = () => [...KINDS.map((k) => [join(SCHEMA_DIR, `${k}.schema.json`), `schema/${k}.schema.json`]), [join(TEMPLATES, 'compass-AGENTS.md'), 'AGENTS.md'],
+  [join(TEMPLATES, 'compass-gitattributes'), '.gitattributes']];
 const read = (p) => { try { return readFileSync(p, 'utf8'); } catch { return null; } };
 
 /** Rutas relativas a compass/ ("schema/task.schema.json", "AGENTS.md") que no coinciden con las de Scope Compass. */

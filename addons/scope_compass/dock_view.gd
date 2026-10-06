@@ -114,7 +114,7 @@ func setup(root: String) -> void:
 	project_root = root
 	client.project_root = root
 	await reload()
-	check_compass()
+	await check_compass()
 	await _try_hub()
 
 
@@ -283,7 +283,7 @@ func init_compass() -> bool:
 	if cmd.is_empty():
 		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path.")
 		return false
-	var r := _scompass(["init", "--template", selected_template()])
+	var r: Array = await _scompass(["init", "--template", selected_template()])
 	if r[0] != 0 or not has_compass():
 		show_notice("No se pudo crear compass/: " + (r[1] if r[1] != "" else "sin salida de scompass"))
 		return false
@@ -292,15 +292,26 @@ func init_compass() -> bool:
 	return true
 
 
-## Corre scompass en el proyecto y espera. Devuelve [código, salida]; código -1 si no se encontró scompass.
+## Corre scompass en el proyecto y espera, en otro hilo: el editor sigue dibujando mientras tanto. Bloquear el
+## cuadro no solo congela el editor: el cuadro siguiente llega con todo ese tiempo de golpe y vence en el acto los
+## pedidos HTTP con timeout corto (en Windows, Node tarda ~0,5 s en arrancar y el dock no encontraba el hub).
+## Devuelve [código, salida]; código -1 si no se encontró scompass.
 func _scompass(args: Array) -> Array:
 	var cmd := scompass_command()
 	if cmd.is_empty():
 		return [-1, ""]
-	var out := []
 	var all: Array = cmd[1] + ["--dir", project_root] + args
-	var code := OS.execute(cmd[0], PackedStringArray(all), out, true)
-	return [code, str(out[0]).strip_edges() if out.size() else ""]
+	var run := func() -> Array:
+		var out := []
+		var code := OS.execute(cmd[0], PackedStringArray(all), out, true)
+		return [code, str(out[0]).strip_edges() if out.size() else ""]
+	if not is_inside_tree():
+		return run.call()
+	var th := Thread.new()
+	th.start(run)
+	while th.is_alive():
+		await get_tree().process_frame
+	return th.wait_to_finish()
 
 
 ## ¿compass/ tiene archivos generados de una versión anterior de Scope Compass (schema/, AGENTS.md)?
@@ -308,7 +319,7 @@ func _scompass(args: Array) -> Array:
 func check_compass() -> void:
 	outdated = []
 	if has_compass():
-		var r := _scompass(["update", "--check", "--json"])
+		var r: Array = await _scompass(["update", "--check", "--json"])
 		var data = JSON.parse_string(r[1]) if r[0] == 1 else null
 		if data is Dictionary and data.get("outdated") is Array:
 			outdated = data.outdated
@@ -317,13 +328,13 @@ func check_compass() -> void:
 
 ## Corre `scompass update`: copia el schema y la guía para agentes de esta versión de Scope Compass.
 func update_compass() -> bool:
-	var r := _scompass(["update"])
+	var r: Array = await _scompass(["update"])
 	if r[0] != 0:
 		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path." if r[0] == -1 \
 			else "No se pudo actualizar compass/: " + r[1])
 		return false
 	var n := outdated.size()
-	check_compass()
+	await check_compass()
 	show_notice("compass/ actualizada (%d archivos). Revisá el cambio y commitealo." % n)
 	return true
 

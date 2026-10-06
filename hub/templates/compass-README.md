@@ -8,6 +8,7 @@ Estos archivos **son** las tareas del proyecto, en el formato de [Scope Compass]
 - `schema/`: JSON Schema de cada tipo y de `config.json`, para validar una edición a mano. Es una copia del de Scope Compass: `scompass update` la pone al día.
 - `config.json`: nombre del proyecto, documentos referenciables, export markdown, puerto del hub y `views` (las pestañas de la web en orden, la primera es la que abre: `board`, `lists`, `docs`).
 - `.gdignore`: hace que Godot ignore esta carpeta.
+- `.gitattributes`: estos archivos siempre con LF, también en Windows (`scompass update` lo pone al día).
 - `AGENTS.md`: guía del tablero para agentes de IA (se pone al día con `scompass update`).
 
 Con la CLI: `scompass list`, `scompass show <id>`, `scompass move <id> doing`, `scompass --help`.

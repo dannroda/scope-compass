@@ -7,6 +7,7 @@ Estos archivos **son** las tareas de Scope Compass. Se pueden leer, editar y ver
 - `schema/`: JSON Schema de cada tipo y de `config.json`, para validar una edición a mano (copia de `../schema/`; `scompass update` la pone al día). Desde la raíz: `uv run tools/validate.py`.
 - `config.json`: nombre del proyecto, documentos referenciables, export markdown, puerto del hub.
 - `.gdignore`: hace que Godot ignore esta carpeta.
+- `.gitattributes`: estos archivos siempre con LF, también en Windows (`scompass update` lo pone al día).
 - `AGENTS.md`: guía del tablero para agentes de IA (se pone al día con `scompass update`).
 
 ## Estado actual

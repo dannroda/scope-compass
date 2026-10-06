@@ -115,7 +115,7 @@ test('init crea un compass/ válido y no pisa uno existente', async () => {
   await mkdir(p);
   const r = await cli(['--dir', p, 'init', '--project', 'Nuevo']);
   assert.equal(r.code, 0, r.err);
-  assert.deepEqual((await readdir(join(p, 'compass'))).sort(), ['.gdignore', 'AGENTS.md', 'README.md', 'config.json', 'milestones', 'schema', 'tasks']);
+  assert.deepEqual((await readdir(join(p, 'compass'))).sort(), ['.gdignore', '.gitattributes', 'AGENTS.md', 'README.md', 'config.json', 'milestones', 'schema', 'tasks']);
   assert.deepEqual(JSON.parse(await readFile(join(p, 'compass', 'config.json'), 'utf8')), { export_md: 'docs/tareas.md', port: 4711, project: 'Nuevo' });
   assert.equal((await cli(['list', '--json'], { cwd: p })).json().tasks.length, 0);
   assert.equal((await cli(['--dir', p, 'init'])).code, 1);

@@ -1061,7 +1061,7 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 
 **Referencias:** `docs/spec.md#v4`
 
-## M10 — Windows  (8/10)
+## M10 — Windows  (9/10)
 
 Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, bandeja y dock (§18, D30).
 
@@ -1153,13 +1153,13 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 
 **Referencias:** `docs/spec.md#windows`
 
-### 10.9 Instalar en Windows · Pendiente
+### 10.9 Instalar en Windows · Hecho
 
-- [ ] Pasos de Windows en la guía de instalación
-- [ ] build.mjs corre en Windows
-- [ ] Probar la instalación desde el .tgz en la VM
+- [x] Pasos de Windows en la guía de instalación
+- [x] build.mjs corre en Windows
+- [x] Probar la instalación desde el .tgz en la VM
 
-**Notas:** INSTALAR.md y docs/instalar.md con los pasos de Windows: Node, `npm link` (o el .tgz) y el addon. Que `scompass` ande en PowerShell y en cmd, y que la build (tools/build.mjs) no dependa de herramientas de Linux.
+**Notas:** Hecho: docs/instalar.md con Windows (Node y Git con winget, npm install -g desde PowerShell o cmd, scompass.cmd si PowerShell no deja correr scripts, dónde quedan los datos, sincronizar por git, nombres de proyecto). build.mjs corre en Windows: npm.cmd por la consola (sin comillas en el nombre: si no, el shim busca sus archivos en la carpeta actual) y el zip del addon con el tar.exe de Windows; el paquete sale sin scripts (postinstall solo sirve en el repo y npm reciente lo frena con un aviso). Probado en la VM: build, npm install -g del .tgz, scompass en PowerShell y cmd, home --tray instalado, y el dock encuentra el scompass global con where. Agregado: compass/.gitattributes (* text eol=lf), que init crea y update pone al día como el schema; en la VM, un proyecto de Linux clonado con core.autocrlf=true sale todo en CRLF sin él, y en LF con él. Encontrado con el scompass global: el dock corría `scompass update --check` con OS.execute y en Windows Node tarda ~0,5 s; el cuadro siguiente vencía en el acto los pedidos de 0,5 s al hub y el dock arrancaba sin hub. Ahora _scompass corre en otro hilo. Menor: Invoke-WebRequest -Method Post sin cuerpo manda un Content-Type de formulario y Fastify responde 415 en /api/shutdown (Node, curl y el dock no lo hacen).
 
 **Referencias:** `docs/spec.md#windows`
 

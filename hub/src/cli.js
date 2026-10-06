@@ -262,6 +262,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       for (const k of KINDS) await copyFile(join(SCHEMA_DIR, `${k}.schema.json`), join(compass, 'schema', `${k}.schema.json`));
       await copyFile(join(TEMPLATES, 'compass-README.md'), join(compass, 'README.md'));
       await copyFile(join(TEMPLATES, 'compass-AGENTS.md'), join(compass, 'AGENTS.md'));
+      await copyFile(join(TEMPLATES, 'compass-gitattributes'), join(compass, '.gitattributes'));
       await writeFile(join(compass, '.gdignore'), '');
       const config = { project: o.project || basename(project), export_md: 'docs/tareas.md', port: 4711, ...tpl.config };
       const res = parseDoc(JSON.stringify(config), 'config', validators);

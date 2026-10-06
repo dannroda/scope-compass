@@ -289,7 +289,7 @@ func test_update_compass(a: Array) -> void:
 	var c := "update_compass"
 	var v := await _view(a[0])
 	v.scompass_setting = func(): return a[1]
-	v.check_compass()
+	await v.check_compass()
 	if not _check(c, v.update_row.visible and v.outdated == ["compass/schema/task.schema.json"], "no avisa el schema viejo: " + str(v.outdated)): return
 	if not _check(c, v.update_label.text.ends_with(": schema/task.schema.json"), "aviso: " + v.update_label.text): return
 	if not _check(c, await v.update_compass(), "no actualizó: " + v.notice.text): return
@@ -302,7 +302,9 @@ func test_start_hub_missing(a: Array) -> void:
 	var v := await _view(a[0])
 	v.scompass_setting = func(): return "/no/existe/scompass.js"
 	v.project_root = "/no/existe"
-	if not _check(c, v.scompass_command().is_empty() or v.scompass_command()[0] != "node", "encontró algo inesperado"): return
+	# Puede encontrar uno instalado (PATH, `npm install -g`), pero nunca la ruta configurada que no existe.
+	var cmd := v.scompass_command()
+	if not _check(c, cmd.is_empty() or not str(cmd).contains("/no/existe"), "inventó un comando: " + str(cmd)): return
 
 
 # Lanza el hub desde el dock y se queda esperando: Node mata a Godot con kill -9 (5.8).
