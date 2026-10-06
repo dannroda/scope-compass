@@ -1,10 +1,11 @@
 // Carga de compass/ desde disco: solo lee. Un archivo inválido se reporta en `warnings`,
 // no se carga y queda como está hasta que alguien lo corrija (spec §4.3, §4.5).
 import { readdir, readFile } from 'node:fs/promises';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, relative, sep } from 'node:path';
 import { parseDoc } from '../schema.js';
 
-const rel = (compassDir, path) => relative(dirname(compassDir), path);
+// Ruta relativa al proyecto, siempre con "/" (también en Windows), como en git.
+const rel = (compassDir, path) => relative(dirname(compassDir), path).split(sep).join('/');
 
 export const COLLECTIONS = { milestones: 'milestone', tasks: 'task', lists: 'list' };
 

@@ -147,7 +147,11 @@ test('scompass restart: el hub vuelve en el mismo puerto con otro PID y sigue at
   const bin = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
   // Entrada por un pipe del sistema, como la de Godot (con cat en el medio): la tubería 'pipe' de Node es un par
   // de sockets, y al cerrarse el proceso viejo le haría shutdown también al nuevo.
-  const hub = spawn('sh', ['-c', 'cat | exec "$0" "$@"', process.execPath, bin, '--dir', disk, 'serve', '--exit-on-stdin-close'], { stdio: ['pipe', 'pipe', 'pipe'] });
+  // En Windows la tubería de Node ya es un pipe con nombre del sistema, sin ese problema (y no hay sh).
+  const args = [bin, '--dir', disk, 'serve', '--exit-on-stdin-close'];
+  const hub = process.platform === 'win32'
+    ? spawn(process.execPath, args, { stdio: ['pipe', 'pipe', 'pipe'] })
+    : spawn('sh', ['-c', 'cat | exec "$0" "$@"', process.execPath, ...args], { stdio: ['pipe', 'pipe', 'pipe'] });
   let newPid = 0;
   try {
     await new Promise((r) => hub.stdout.once('data', r));

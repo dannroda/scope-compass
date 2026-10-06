@@ -1,30 +1,30 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "El script `test` de package.json sin sintaxis de sh (un `node` que arma las variables)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "registry.test: simular otro hub con un PID vivo de verdad, no PID 1 (en Windows se colgaba)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "cli-hub.test: sin `sh -c`"
     },
     {
-      "done": false,
+      "done": true,
       "text": "export-md: saltar los tests de Python si no hay `python3` que ande (en Windows, `python3` es el alias de la Store)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Rutas absolutas esperadas con el separador del sistema (projects.test, home list)"
     }
   ],
   "code": "10.1",
   "created_at": "2026-10-06T04:23:17.640Z",
   "milestone": "m10",
-  "notes": "Primera corrida en la VM (2026-10-06): 280 tests, 188 pasan, 54 fallan, 37 saltados. 41 fallas eran de Playwright sin navegador y 29 saltos eran porque Node no puede lanzar `godot.cmd` (ya resuelto en la VM con `godot.exe`). Lo de esta tarea son los tests que asumen Linux, no el código.",
+  "notes": "Primera corrida en la VM (2026-10-06): 280 tests, 188 pasan, 54 fallan, 37 saltados. 41 fallas eran de Playwright sin navegador y 29 saltos, de que Node no lanza `godot.cmd` (resuelto en la VM con `godot.exe`). Hecho: `npm test` es `scripts/run-tests.js` (arma las variables en Node y borra la carpeta temporal al final); registry.test simula el otro hub con `process.ppid`; cli-hub.test sin `sh` en Windows; export-md salta sin Python (también el alias de la Store, que sale con 9009); home list acepta los dos separadores. Después de 10.1 y 10.2: 255 pasan; lo que falla es de 10.3, 10.4, 10.6 y 10.8.",
   "order": 1,
   "refs": [
     {
@@ -32,8 +32,8 @@
       "section": "windows"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "",
   "title": "npm test corre en Windows",
-  "updated_at": "2026-10-06T04:23:19.310Z"
+  "updated_at": "2026-10-06T04:31:56.153Z"
 }

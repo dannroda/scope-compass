@@ -49,11 +49,13 @@ test('serve se niega si ya hay un hub del mismo proyecto (aunque en otro puerto)
   const a = await serve(project, 0);
   const port = JSON.parse(a.out()).port;
   assert.deepEqual(hubsOf(project).map((h) => h.port), [port]);
-  // El registro guarda el PID del proceso (acá, el de los tests); se simula otro proceso con otro PID.
-  await writeFile(join(registryDir(), '1.json'), JSON.stringify({ pid: 1, port, project, startedAt: new Date().toISOString() }));
+  // El registro guarda el PID del proceso (acá, el de los tests); se simula otro proceso con un PID vivo que no
+  // es el nuestro: el del runner de tests (PID 1 no sirve: en Windows no existe y el registro lo da por muerto).
+  const other = process.ppid;
+  await writeFile(join(registryDir(), `${other}.json`), JSON.stringify({ pid: other, port, project, startedAt: new Date().toISOString() }));
   const b = await serve(project, 0);
   assert.equal(await b.done, 1);
-  assert.match(b.err(), /ya hay un hub de este proyecto: PID 1 en http:\/\/127\.0\.0\.1:\d+\//);
+  assert.match(b.err(), new RegExp(`ya hay un hub de este proyecto: PID ${other} en http://127\\.0\\.0\\.1:\\d+/`));
   const c = await serve(project, 0, ['--force']);
   assert.ok(JSON.parse(c.out()).port);
   c.ac.abort();

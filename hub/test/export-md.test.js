@@ -22,7 +22,8 @@ async function python(src, board, title) {
     execFileSync('python3', [join(REPO, 'tools', 'artifact_to_md.py'), src, join(dir, 'out.md'), '--board', board, '--title', title]);
     return await readFile(join(dir, 'out.md'), 'utf8');
   } catch (e) {
-    if (e.code === 'ENOENT') return null;
+    // Sin Python: no está (ENOENT), o en Windows `python3` es el alias de la Store, que sale con 9009.
+    if (e.code === 'ENOENT' || e.status === 9009) return null;
     throw e;
   } finally {
     await rm(dir, { recursive: true, force: true });

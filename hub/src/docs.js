@@ -2,7 +2,7 @@
 // Solo lectura: los documentos se editan donde siempre; acá se leen.
 import { readFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 
 const HEADING = /^(#{1,6})[ \t]+(.+?)[ \t#]*$/;
 const ID_COMMENT = /^<!--\s*id:\s*([a-z0-9][a-z0-9_-]*)\s*-->\s*$/;
@@ -63,14 +63,15 @@ export async function loadDocs(projectDir, config) {
     const files = entry.path.includes('*')
       ? (await Array.fromAsync(glob(entry.path, { cwd: projectDir }))).sort()
       : [entry.path];
-    for (const rel of files) {
+    // Rutas dentro del proyecto siempre con "/", como en git: glob devuelve las de Windows con "\".
+    for (const rel of files.map((f) => f.split(sep).join('/'))) {
       const text = await readFile(join(projectDir, rel), 'utf8').catch(() => null);
       const alias = entry.path.includes('*') ? `${entry.alias}/${rel.replace(/^.*\//, '').replace(/\.md$/, '')}` : entry.alias;
       if (text === null) {
         out.push({ alias, path: rel, sections: [], lines: [], warnings: [{ code: 'missing_doc', message: `no existe ${rel}` }] });
         continue;
       }
-      out.push({ alias, path: relative(projectDir, join(projectDir, rel)), ...parseSections(text) });
+      out.push({ alias, path: relative(projectDir, join(projectDir, rel)).split(sep).join('/'), ...parseSections(text) });
     }
   }
   return out;

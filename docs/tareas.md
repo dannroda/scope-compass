@@ -1061,7 +1061,7 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 
 **Referencias:** `docs/spec.md#v4`
 
-## M10 — Windows  (0/10)
+## M10 — Windows  (2/10)
 
 Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, bandeja y dock (§18, D30).
 
@@ -1070,25 +1070,25 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 - El Inicio con bandeja, los hubs y el dock funcionan en Windows sin ventanas de consola.
 - Los mismos proyectos se usan en Linux y en Windows, sincronizados por git, sin cambios por fin de línea.
 
-### 10.1 npm test corre en Windows · Pendiente
+### 10.1 npm test corre en Windows · Hecho
 
-- [ ] El script `test` de package.json sin sintaxis de sh (un `node` que arma las variables)
-- [ ] registry.test: simular otro hub con un PID vivo de verdad, no PID 1 (en Windows se colgaba)
-- [ ] cli-hub.test: sin `sh -c`
-- [ ] export-md: saltar los tests de Python si no hay `python3` que ande (en Windows, `python3` es el alias de la Store)
-- [ ] Rutas absolutas esperadas con el separador del sistema (projects.test, home list)
+- [x] El script `test` de package.json sin sintaxis de sh (un `node` que arma las variables)
+- [x] registry.test: simular otro hub con un PID vivo de verdad, no PID 1 (en Windows se colgaba)
+- [x] cli-hub.test: sin `sh -c`
+- [x] export-md: saltar los tests de Python si no hay `python3` que ande (en Windows, `python3` es el alias de la Store)
+- [x] Rutas absolutas esperadas con el separador del sistema (projects.test, home list)
 
-**Notas:** Primera corrida en la VM (2026-10-06): 280 tests, 188 pasan, 54 fallan, 37 saltados. 41 fallas eran de Playwright sin navegador y 29 saltos eran porque Node no puede lanzar `godot.cmd` (ya resuelto en la VM con `godot.exe`). Lo de esta tarea son los tests que asumen Linux, no el código.
+**Notas:** Primera corrida en la VM (2026-10-06): 280 tests, 188 pasan, 54 fallan, 37 saltados. 41 fallas eran de Playwright sin navegador y 29 saltos, de que Node no lanza `godot.cmd` (resuelto en la VM con `godot.exe`). Hecho: `npm test` es `scripts/run-tests.js` (arma las variables en Node y borra la carpeta temporal al final); registry.test simula el otro hub con `process.ppid`; cli-hub.test sin `sh` en Windows; export-md salta sin Python (también el alias de la Store, que sale con 9009); home list acepta los dos separadores. Después de 10.1 y 10.2: 255 pasan; lo que falla es de 10.3, 10.4, 10.6 y 10.8.
 
 **Referencias:** `docs/spec.md#windows`
 
-### 10.2 Rutas relativas al proyecto siempre con / · Pendiente
+### 10.2 Rutas relativas al proyecto siempre con / · Hecho
 
-- [ ] Documentos: path y alias con / (docs.js, config docs)
-- [ ] Avisos y errores del Store con rutas con /
-- [ ] Revisar export, watcher y refs que comparen rutas relativas
+- [x] Documentos: path y alias con / (docs.js, config docs)
+- [x] Avisos y errores del Store con rutas con /
+- [x] Revisar export, watcher y refs que comparen rutas relativas
 
-**Notas:** En Windows salen con `\`: el alias de un documento queda `docs/docs\audio` y se rompen sus refs (docs.test 86, 87, 92), y los avisos del Store dicen `compass\tasks\m0-03.json` (schema.test 190, m1-criteria 153). Las rutas dentro del proyecto son identificadores, como en git: siempre con `/`. Las absolutas, con el separador del sistema.
+**Notas:** Las rutas dentro del proyecto son identificadores, como en git: siempre con `/`. Las absolutas, con el separador del sistema. Hecho: `rel()` de store/load.js (avisos del Store) y loadDocs (glob devuelve `\` en Windows, y el alias quedaba `docs/docs\audio`). El watcher de compass/ ya aceptaba los dos separadores y el de documentos usa basename, que también.
 
 **Referencias:** `docs/spec.md#windows`
 
@@ -1170,6 +1170,7 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 - [ ] Suite completa en la VM
 - [ ] Prueba en Windows en la máquina real
 - [ ] AGENTS.md, README y spec al día
+- [ ] ui.test «fecha límite (8.13)» falla a veces con la suite entera en la VM (las esperas de 3 s no alcanzan con todo en paralelo); solo, pasa siempre
 
 **Notas:** Criterios de §18.1. Al cerrar: suite completa en la VM, y una sesión real en la máquina con Windows (Inicio con bandeja, un proyecto sincronizado por git con Linux, dock en Godot). AGENTS.md (plantilla, copia del addon y compass/) con lo que cambie para Windows.
 

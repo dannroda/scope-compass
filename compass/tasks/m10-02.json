@@ -1,22 +1,22 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Documentos: path y alias con / (docs.js, config docs)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Avisos y errores del Store con rutas con /"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Revisar export, watcher y refs que comparen rutas relativas"
     }
   ],
   "code": "10.2",
   "created_at": "2026-10-06T04:23:19.556Z",
   "milestone": "m10",
-  "notes": "En Windows salen con `\\`: el alias de un documento queda `docs/docs\\audio` y se rompen sus refs (docs.test 86, 87, 92), y los avisos del Store dicen `compass\\tasks\\m0-03.json` (schema.test 190, m1-criteria 153). Las rutas dentro del proyecto son identificadores, como en git: siempre con `/`. Las absolutas, con el separador del sistema.",
+  "notes": "Las rutas dentro del proyecto son identificadores, como en git: siempre con `/`. Las absolutas, con el separador del sistema. Hecho: `rel()` de store/load.js (avisos del Store) y loadDocs (glob devuelve `\\` en Windows, y el alias quedaba `docs/docs\\audio`). El watcher de compass/ ya aceptaba los dos separadores y el de documentos usa basename, que también.",
   "order": 2,
   "refs": [
     {
@@ -24,8 +24,8 @@
       "section": "windows"
     }
   ],
-  "status": "todo",
+  "status": "done",
   "test": "",
   "title": "Rutas relativas al proyecto siempre con /",
-  "updated_at": "2026-10-06T04:23:20.704Z"
+  "updated_at": "2026-10-06T04:31:56.386Z"
 }

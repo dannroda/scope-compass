@@ -94,7 +94,7 @@ test('CLI: home add, list y rm', async () => {
   assert.equal(list.file, projectsFile());
   assert.deepEqual(list.projects.map((x) => [x.path, x.found, x.hubs]), [[p, true, []]]);
   r = await cli(['home', 'list']);
-  assert.match(r.out, /apagado\s+\S*\/p\n/);
+  assert.match(r.out, /apagado\s+\S*[\\/]p\n/);
   r = await cli(['home', 'rm', 'p']);
   assert.equal(r.code, 0, r.err);
   r = await cli(['home', 'rm', 'p']);
