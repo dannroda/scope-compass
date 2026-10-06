@@ -1,4 +1,5 @@
-// Registro de hubs activos: un archivo por hub en $XDG_RUNTIME_DIR/scope-compass/hubs/<pid>.json con
+// Registro de hubs activos: un archivo por hub en $XDG_RUNTIME_DIR/scope-compass/hubs/<pid>.json (en Windows,
+// %TEMP%\scope-compass\hubs, que ya es de cada usuario) con
 // { pid, port, project, startedAt }. El Inicio (`scompass home`, D24) se anota igual, con kind: "home" y sin project. Sirve para no levantar dos hubs del mismo proyecto y para encontrar el hub
 // de un proyecto aunque no esté en el puerto de su config. Los registros de procesos muertos se limpian solos.
 import { mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
@@ -6,7 +7,8 @@ import { tmpdir, userInfo } from 'node:os';
 import { join } from 'node:path';
 
 export function registryDir() {
-  const base = process.env.SCOMPASS_REGISTRY ?? (process.env.XDG_RUNTIME_DIR ? join(process.env.XDG_RUNTIME_DIR, 'scope-compass') : join(tmpdir(), `scope-compass-${userInfo().uid}`));
+  const base = process.env.SCOMPASS_REGISTRY ?? (process.platform === 'win32' ? join(tmpdir(), 'scope-compass')
+    : process.env.XDG_RUNTIME_DIR ? join(process.env.XDG_RUNTIME_DIR, 'scope-compass') : join(tmpdir(), `scope-compass-${userInfo().uid}`));
   return join(base, 'hubs');
 }
 

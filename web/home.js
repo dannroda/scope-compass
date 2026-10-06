@@ -1,7 +1,7 @@
 // Inicio de Scope Compass (spec §16.2, mockups en https://claude.ai/artifact/H842sKGxHz1oGH7qgZhYvY): la franja
 // "Hoy" y una tarjeta por proyecto del registro. Los datos vienen de la API del Inicio (hub/src/home.js).
 (function () {
-  const S = { projects: [], today: [], templates: [], dataDir: '', loaded: false, offline: false, connected: false,
+  const S = { projects: [], today: [], templates: [], dataDir: '', sep: '/', loaded: false, offline: false, connected: false,
     add: { open: false, mode: 'import', err: '', busy: false }, busy: new Set() };
   const EVERY = { day: 'cada día', week: 'cada semana', month: 'cada mes', year: 'cada año' };
   const TPL_NAMES = { juego: 'Juego', personal: 'Personal', vacio: 'Vacío' };
@@ -218,7 +218,7 @@
       const showWhere = () => {
         const name = document.getElementById('new-name')?.value.trim() || 'Nombre';
         const parent = S.add.parent || S.dataDir;
-        where.textContent = parent ? `Se crea en ${parent}/${name}` + (S.add.parent ? '.' : ', con su propio repo de git.') : '';
+        where.textContent = parent ? `Se crea en ${parent}${S.sep}${name}` + (S.add.parent ? '.' : ', con su propio repo de git.') : '';
         const reset = document.getElementById('new-reset');
         if (reset) reset.hidden = !S.add.parent;
       };
@@ -279,6 +279,7 @@
         S.today = t.items;
         S.templates = tp.templates;
         if (tp.data_dir) S.dataDir = tp.data_dir;
+        if (tp.sep) S.sep = tp.sep;
         S.offline = false;
       } catch (e) {
         S.offline = true;

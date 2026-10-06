@@ -5,7 +5,7 @@ import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/pr
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { forgetProject, loadProjects, projectsFile, projectsStatus, recordProject } from '../src/projects.js';
+import { folderName, forgetProject, loadProjects, projectsDataDir, projectsFile, projectsStatus, recordProject } from '../src/projects.js';
 import { run } from '../src/cli.js';
 
 const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'compass');
@@ -33,13 +33,9 @@ async function cli(args) {
 
 const projectName = async (p) => JSON.parse(await readFile(join(p, 'compass', 'config.json'), 'utf8')).project;
 
-test('el archivo vive en SCOMPASS_CONFIG, o en XDG_CONFIG_HOME/scope-compass', () => {
+// Sin SCOMPASS_CONFIG, la carpeta de cada plataforma: ver "carpetas por plataforma" más abajo.
+test('el archivo vive en SCOMPASS_CONFIG si está', () => {
   assert.equal(projectsFile(), join(dir, 'config', 'projects.json'));
-  delete process.env.SCOMPASS_CONFIG;
-  const xdg = process.env.XDG_CONFIG_HOME;
-  process.env.XDG_CONFIG_HOME = join(dir, 'xdg');
-  try { assert.equal(projectsFile(), join(dir, 'xdg', 'scope-compass', 'projects.json')); }
-  finally { if (xdg === undefined) delete process.env.XDG_CONFIG_HOME; else process.env.XDG_CONFIG_HOME = xdg; }
 });
 
 test('recordProject: alta con el nombre de la config, sin duplicar por otra forma de la ruta', async () => {
@@ -136,4 +132,29 @@ test('serve con un registro roto avisa y levanta igual', async () => {
   assert.ok(JSON.parse(out).port);
   assert.match(err, /no se anotó el proyecto/);
   assert.equal(await readFile(projectsFile(), 'utf8'), '[]');
+});
+
+test('carpetas por plataforma (§18): XDG en Linux, %APPDATA% y %LOCALAPPDATA% en Windows', () => {
+  const keys = ['SCOMPASS_CONFIG', 'SCOMPASS_DATA', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'APPDATA', 'LOCALAPPDATA'];
+  const saved = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+  try {
+    for (const k of keys) delete process.env[k];
+    Object.assign(process.env, { XDG_CONFIG_HOME: join(dir, 'xc'), XDG_DATA_HOME: join(dir, 'xd'), APPDATA: join(dir, 'ad'), LOCALAPPDATA: join(dir, 'ld') });
+    if (process.platform === 'win32') {
+      assert.equal(projectsFile(), join(dir, 'ad', 'scope-compass', 'projects.json'));
+      assert.equal(projectsDataDir(), join(dir, 'ld', 'scope-compass'));
+    } else {
+      assert.equal(projectsFile(), join(dir, 'xc', 'scope-compass', 'projects.json'));
+      assert.equal(projectsDataDir(), join(dir, 'xd', 'scope-compass'));
+    }
+  } finally {
+    for (const k of keys) if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k];
+  }
+});
+
+test('folderName: nombres que sirven de carpeta en Linux y en Windows', () => {
+  for (const ok of ['Vida', 'Project Epiphany', 'juego.v2', 'com10', 'Lecturas 2026']) assert.equal(folderName(` ${ok} `), ok);
+  for (const bad of ['', '.', '..', 'a/b', 'a\\b', 'x:y', 'a*', 'q?', '"x"', '<x>', 'a|b', 'tab\tx', 'CON', 'con.txt', 'Nul', 'COM1', 'lpt9.md', 'Vida.']) {
+    assert.equal(folderName(bad), null, JSON.stringify(bad));
+  }
 });

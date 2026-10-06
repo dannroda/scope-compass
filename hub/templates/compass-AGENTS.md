@@ -113,7 +113,7 @@ scompass refs check                # referencias rotas (sale con 1 si hay)
 
 ## Proyectos del equipo
 
-Cada hub que se levanta anota su proyecto en `~/.config/scope-compass/projects.json`, para que el Inicio lo muestre aunque después se apague. No hace falta tocarlo para operar el tablero.
+Cada hub que se levanta anota su proyecto en `~/.config/scope-compass/projects.json` (en Windows, `%APPDATA%\scope-compass\projects.json`), para que el Inicio lo muestre aunque después se apague. No hace falta tocarlo para operar el tablero.
 
 ```sh
 scompass home list --json   # { "file", "projects": [ { "path", "name", "found", "hubs": [ { "pid", "port" } ] } ] }

@@ -12,8 +12,8 @@ src/server.js        Fastify: API REST, WebSocket, estáticos (sirve ../web)
 src/store/           interfaz Store + json-files.js
 src/docs/            interfaz DocSource (v2)
 src/schema.js        carga ../schema
-src/registry.js      hubs vivos ($XDG_RUNTIME_DIR/scope-compass/hubs)
-src/projects.js      proyectos conocidos (~/.config/scope-compass/projects.json, D23)
+src/registry.js      hubs vivos ($XDG_RUNTIME_DIR/scope-compass/hubs; en Windows, %TEMP%\scope-compass\hubs)
+src/projects.js      proyectos conocidos (~/.config/scope-compass/projects.json; en Windows, %APPDATA%, D23)
 src/export-md.js     port de ../tools/artifact_to_md.py
 src/import-artifact.js  port de ../tools/artifact_to_tablero.py
 test/                node:test

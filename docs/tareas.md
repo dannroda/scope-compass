@@ -1061,7 +1061,7 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 
 **Referencias:** `docs/spec.md#v4`
 
-## M10 — Windows  (2/10)
+## M10 — Windows  (3/10)
 
 Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, bandeja y dock (§18, D30).
 
@@ -1092,13 +1092,13 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 
 **Referencias:** `docs/spec.md#windows`
 
-### 10.3 Carpetas de config, datos y registro en Windows · Pendiente
+### 10.3 Carpetas de config, datos y registro en Windows · Hecho
 
-- [ ] Carpetas por plataforma en projects.js y registry.js
-- [ ] Ruta absoluta con isAbsolute; nombres de proyecto sin \ / : * ? " < > | ni nombres reservados
-- [ ] Mensajes y docs que nombran ~/.config muestran la ruta real
+- [x] Carpetas por plataforma en projects.js y registry.js
+- [x] Ruta absoluta con isAbsolute; nombres de proyecto sin \ / : * ? " < > | ni nombres reservados
+- [x] Mensajes y docs que nombran ~/.config muestran la ruta real
 
-**Notas:** D23, D28 y el registro de hubs usan XDG. En Windows: `%APPDATA%\scope-compass` (proyectos conocidos), `%LOCALAPPDATA%\scope-compass` (datos) y `%TEMP%\scope-compass-<usuario>` (hubs vivos; `userInfo().uid` es -1). Crear un proyecto falla porque se valida la ruta con `startsWith('/')` (home.test 129).
+**Notas:** D23, D28 y el registro de hubs usaban solo XDG. Hecho: en Windows, proyectos conocidos en %APPDATA%\scope-compass, datos en %LOCALAPPDATA%\scope-compass y hubs vivos en %TEMP%\scope-compass\hubs (%TEMP% ya es de cada usuario; `userInfo().uid` es -1). Crear un proyecto valida la carpeta con `isAbsolute`. Los nombres de proyecto siguen la regla de Windows en las dos plataformas (sin \ / : * ? " < > |, sin CON/NUL/COM1…, sin punto al final), para que un proyecto de Linux se abra en Windows. La página del Inicio arma "Se crea en …" con el separador que manda /api/templates (`sep`). AGENTS.md y hub/README nombran la ruta de Windows.
 
 **Referencias:** `docs/spec.md#windows`
 

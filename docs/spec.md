@@ -717,13 +717,13 @@ Tests: el primero en `hub/test/m9-criteria.test.js`; los cambios en vivo y el hu
 |---|---|---|
 | Proyectos conocidos (D23) | `$XDG_CONFIG_HOME/scope-compass/projects.json` (`~/.config`) | `%APPDATA%\scope-compass\projects.json` |
 | Carpeta de datos (D28) | `$XDG_DATA_HOME/scope-compass` (`~/.local/share`) | `%LOCALAPPDATA%\scope-compass` |
-| Hubs vivos | `$XDG_RUNTIME_DIR/scope-compass/hubs` | `%TEMP%\scope-compass-<usuario>\hubs` |
+| Hubs vivos | `$XDG_RUNTIME_DIR/scope-compass/hubs` | `%TEMP%\scope-compass\hubs` (`%TEMP%` ya es de cada usuario) |
 | Abrir el navegador | `xdg-open` | `explorer.exe <url>` |
 | Selector de carpetas (D28) | `kdialog` o `zenity` | diálogo de carpetas de Windows, desde PowerShell |
 | Bandeja (D20, D31) | StatusNotifierItem por D-Bus | `NotifyIcon` desde un script de PowerShell que el hub lanza y maneja por stdin/stdout |
 | Apagar un hub | `SIGTERM`: cierra ordenado | Node no tiene señales en Windows (`kill` lo mata en seco): se pide el cierre por API o por stdin, y `kill` queda para cuando no responde |
 
-- **Rutas:** se comparan y validan con `node:path` (`isAbsolute`, no `startsWith('/')`); un nombre de proyecto no puede tener `\ / : * ? " < > |` ni ser un nombre reservado (`CON`, `NUL`, …). Las rutas que muestra la UI usan el separador del sistema.
+- **Rutas:** se comparan y validan con `node:path` (`isAbsolute`, no `startsWith('/')`); en las dos plataformas, un nombre de proyecto no puede tener `\ / : * ? " < > |` ni ser un nombre reservado (`CON`, `NUL`, …), para que un proyecto creado en Linux se abra en Windows. Las rutas que muestra la UI usan el separador del sistema.
 - **Procesos:** todo hijo (hub del Inicio, reinicio, `git`, `scompass init`) se lanza con `windowsHide`, para que no aparezcan consolas. Reiniciar el Inicio o un hub no abre una ventana nueva.
 - **Escritura atómica:** en Windows, `rename` falla con `EPERM`/`EBUSY` si otro proceso tiene abierto el destino (el antivirus, el indexador o el watcher). Se reintenta unas veces con espera corta antes de dar error.
 - **Dock:** no usa `sh`, `id` ni `kill`. Busca `scompass`/`node` con `where`, lanza `node` directo y usa `OS.is_process_running`/`OS.kill`. El registro de hubs lo encuentra igual que el hub.

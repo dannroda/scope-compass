@@ -4,7 +4,7 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadValidators } from '../src/schema.js';
 import { canonical } from '../src/store/canonical.js';
@@ -194,7 +194,13 @@ test('init: <carpeta de datos>/<nombre> con git init, o <otra>/<nombre>; una que
     assert.match(r.body.error.message, /ya existe/);
     assert.equal((await api('POST', '/api/projects/init', { template: 'vacio' })).status, 400, 'sin nombre');
     assert.equal((await api('POST', '/api/projects/init', { name: 'a/b' })).status, 400, 'con /');
+    // Nombres que Windows no acepta, también en Linux (§18): el proyecto tiene que poder abrirse en las dos.
+    for (const name of ['a\\b', 'Vida: notas', 'CON', 'nul.txt', 'Vida.']) {
+      assert.equal((await api('POST', '/api/projects/init', { name })).status, 400, name);
+    }
+    assert.equal((await api('POST', '/api/projects/init', { name: 'Rel', parent: 'relativa' })).status, 400, 'carpeta relativa');
     assert.equal((await api('GET', '/api/templates')).body.data_dir, join(root, 'datos'));
+    assert.equal((await api('GET', '/api/templates')).body.sep, sep, 'la página arma la ruta con el separador del sistema');
     // Otra carpeta: el proyecto queda adentro, con su nombre; dentro de un repo no se hace otro.
     r = await api('POST', '/api/projects/init', { name: 'Sub', parent: join(root, 'datos', 'Vida') });
     assert.equal(r.body.path, join(root, 'datos', 'Vida', 'Sub'));

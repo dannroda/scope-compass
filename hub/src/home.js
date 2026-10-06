@@ -19,7 +19,7 @@ import { execFile, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { existsSync, realpathSync, statSync } from 'node:fs';
 import { mkdir, readFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import websocket from '@fastify/websocket';
@@ -155,7 +155,8 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
 
   app.get('/api/templates', async () => ({
     templates: await Promise.all((await listTemplates()).map(async (n) => ({ name: n, description: (await loadTemplate(n)).description ?? '' }))),
-    data_dir: projectsDataDir()
+    data_dir: projectsDataDir(),
+    sep
   }));
 
   // Crear un proyecto: la misma `scompass init` de la CLI, en otro proceso. La carpeta es <parent>/<nombre>, y
@@ -166,9 +167,9 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     const { template = 'vacio' } = req.body ?? {};
     const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
     const dirName = folderName(name);
-    if (!dirName) throw new StoreError('invalid_argument', name ? `"${name}" no sirve como nombre de carpeta (sin "/")` : 'falta el nombre del proyecto');
+    if (!dirName) throw new StoreError('invalid_argument', name ? `"${name}" no sirve como nombre de carpeta (sin \\ / : * ? " < > |)` : 'falta el nombre del proyecto');
     const parent = typeof req.body?.parent === 'string' && req.body.parent.trim() ? req.body.parent.trim() : projectsDataDir();
-    if (!parent.startsWith('/')) throw new StoreError('invalid_argument', 'la carpeta tiene que ser una ruta absoluta');
+    if (!isAbsolute(parent)) throw new StoreError('invalid_argument', 'la carpeta tiene que ser una ruta absoluta');
     if (!(await loadTemplate(template))) throw new StoreError('invalid_argument', `plantilla desconocida: ${template}`);
     const path = join(parent, dirName);
     if (existsSync(path)) throw new StoreError('conflict', `ya existe ${path}: elegí otro nombre u otra carpeta`);

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { loadValidators } from '../src/schema.js';
@@ -119,7 +119,7 @@ test('agregar: importar una carpeta y crear un proyecto con plantilla', async ()
   // Crear: sin carpeta va a la carpeta de datos del usuario, con su repo de git (D28).
   await page.click('#add .tabs button:has-text("Crear con plantilla")');
   await page.fill('#new-name', 'Vida dos');
-  assert.equal(await page.textContent('#new-where'), `Se crea en ${process.env.SCOMPASS_DATA}/Vida dos, con su propio repo de git.`);
+  assert.equal(await page.textContent('#new-where'), `Se crea en ${join(process.env.SCOMPASS_DATA, 'Vida dos')}, con su propio repo de git.`);
   await page.check('input[name="tpl"][value="personal"]');
   await page.click('#add button[type="submit"]');
   await page.waitForSelector('article.proj[aria-label="Vida dos"]');
@@ -139,7 +139,7 @@ test('agregar: importar una carpeta y crear un proyecto con plantilla', async ()
     await page.click('#add .tabs button:has-text("Crear con plantilla")');
     await page.fill('#new-name', 'Mi juego');
     await page.click('#add button:has-text("Elegir otra carpeta…")');
-    await page.waitForFunction((d) => document.getElementById('new-where').textContent === `Se crea en ${d}/Mi juego.`, otra);
+    await page.waitForFunction(([d, sep]) => document.getElementById('new-where').textContent === `Se crea en ${d}${sep}Mi juego.`, [otra, sep]);
     await page.click('#add button[type="submit"]');
     await page.waitForSelector('article.proj[aria-label="Mi juego"]');
     assert.ok(existsSync(join(otra, 'Mi juego', 'compass', 'milestones', 'm00.json')));

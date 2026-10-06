@@ -1,5 +1,6 @@
 // Registro de proyectos conocidos (8.1, D23): los que se abrieron o se importaron en este equipo, para que el
 // Inicio los muestre aunque su hub esté apagado. Vive en $XDG_CONFIG_HOME/scope-compass/projects.json
+// (en Windows, %APPDATA%\scope-compass\projects.json, §18)
 // ({ projects: [{ path, name, added_at, last_seen }] }) y solo guarda rutas y nombres: borrarlo no pierde datos.
 // A diferencia del registro de hubs vivos (registry.js), no se limpia solo: una carpeta que ya no existe se
 // muestra como no encontrada y la quita el usuario.
@@ -10,24 +11,35 @@ import { writeAtomic } from './store/atomic.js';
 import { canonical } from './store/canonical.js';
 import { hubsOf } from './registry.js';
 
+const WIN = process.platform === 'win32';
+
 export function projectsFile() {
-  const base = process.env.SCOMPASS_CONFIG ?? join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'scope-compass');
+  const base = process.env.SCOMPASS_CONFIG ?? (WIN
+    ? join(process.env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'scope-compass')
+    : join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'scope-compass'));
   return join(base, 'projects.json');
 }
 
 /**
  * Dónde se crean los proyectos nuevos del Inicio si no se elige otra carpeta (D28): la carpeta de datos del
- * usuario, $XDG_DATA_HOME/scope-compass (~/.local/share/scope-compass), el equivalente de AppData en Linux.
- * Cada proyecto es una carpeta con su nombre: …/scope-compass/Vida.
+ * usuario, $XDG_DATA_HOME/scope-compass (~/.local/share/scope-compass), el equivalente de AppData en Linux; en
+ * Windows, %LOCALAPPDATA%\scope-compass. Cada proyecto es una carpeta con su nombre: …/scope-compass/Vida.
  */
 export function projectsDataDir() {
-  return process.env.SCOMPASS_DATA ?? join(process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share'), 'scope-compass');
+  return process.env.SCOMPASS_DATA ?? (WIN
+    ? join(process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local'), 'scope-compass')
+    : join(process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share'), 'scope-compass'));
 }
 
-/** El nombre del proyecto como nombre de carpeta, o null si no sirve (vacío, con "/", ".", ".."). */
+// Lo que Windows no acepta en un nombre de carpeta. Vale en las dos plataformas: un proyecto creado en Linux
+// tiene que poder abrirse en Windows (D30).
+const BAD_CHARS = /[\\/:*?"<>|\x00-\x1f]/;
+const RESERVED = /^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])(\..*)?$/i;
+
+/** El nombre del proyecto como nombre de carpeta, o null si no sirve (vacío, ".", "..", \ / : * ? " < > |, CON…). */
 export function folderName(name) {
   const n = String(name ?? '').trim();
-  return !n || n.includes('/') || n.includes('\0') || n === '.' || n === '..' ? null : n;
+  return !n || BAD_CHARS.test(n) || RESERVED.test(n) || n.endsWith('.') ? null : n;
 }
 
 export class ProjectsError extends Error {
