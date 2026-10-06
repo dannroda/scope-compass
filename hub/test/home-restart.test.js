@@ -3,6 +3,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -23,7 +24,7 @@ afterEach(async () => {
   // El Inicio nuevo no es hijo de este test: se lo busca por el registro.
   const h = await cli(['hubs', '--json']).then((r) => JSON.parse(r.out).hubs.find((x) => x.kind === 'home')).catch(() => null);
   if (h) try { process.kill(h.pid, 'SIGKILL'); } catch {}
-  await rm(root, { recursive: true, force: true });
+  await rm(root, { recursive: true, force: true, maxRetries: 10 });
 });
 const cli = (args) => new Promise((done) => execFile(process.execPath, [BIN, ...args], { env, timeout: 20000 }, (e, out, err) => done({ code: e?.code ?? 0, out, err })));
 
@@ -42,9 +43,11 @@ test('scompass home restart: mismo puerto, otro PID, y los proyectos siguen', as
   assert.notEqual(after.pid, before);
   assert.equal(new URL(after.url).port, String(port));
   assert.equal((await fetch(url + 'p/vida/api/tasks')).status, 200, 'sigue sirviendo el proyecto');
+  // POST /api/shutdown lo cierra ordenado (§18, también en Windows): se da de baja del registro él mismo.
+  assert.equal((await fetch(url + 'api/shutdown', { method: 'POST' })).status, 202);
+  for (let i = 0; i < 100; i++) { try { process.kill(after.pid, 0); await sleep(50); } catch { break; } }
+  assert.ok(!existsSync(join(root, 'registro', 'hubs', `${after.pid}.json`)), 'se dio de baja al cerrar');
   // Sin Inicio, restart avisa.
-  process.kill(after.pid, 'SIGTERM');
-  for (let i = 0; i < 60; i++) { try { process.kill(after.pid, 0); await sleep(50); } catch { break; } }
   const none = await cli(['home', 'restart']);
   assert.equal(none.code, 1);
   assert.match(none.err, /no está corriendo/);

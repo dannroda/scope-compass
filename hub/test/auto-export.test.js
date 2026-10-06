@@ -23,7 +23,7 @@ beforeEach(async () => {
   await cp(FIXTURE, compass, { recursive: true });
   exports = 0;
 });
-afterEach(() => rm(dir, { recursive: true, force: true }));
+afterEach(() => rm(dir, { recursive: true, force: true, maxRetries: 10 }));
 
 async function hub(opts = {}) {
   const app = createServer({ projectDir: dir, store: createJsonFilesStore(compass, { validators: V }), validators: V, watch: true, exportMd: true, ...opts });

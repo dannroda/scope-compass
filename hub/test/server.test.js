@@ -19,7 +19,7 @@ beforeEach(async () => {
   await cp(FIXTURE, join(dir, 'compass'), { recursive: true });
   store = createJsonFilesStore(join(dir, 'compass'), { validators: V });
 });
-afterEach(() => rm(dir, { recursive: true, force: true }));
+afterEach(() => rm(dir, { recursive: true, force: true, maxRetries: 10 }));
 
 test('GET /api/health devuelve versión y proyecto', async () => {
   const app = createServer({ projectDir: dir, store });

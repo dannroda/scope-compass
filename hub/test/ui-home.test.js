@@ -50,7 +50,7 @@ afterEach(async () => {
   for (const p of [vida, juego]) for (const h of hubsOf(p)) if (h.pid !== process.pid) { try { process.kill(h.pid, 'SIGKILL'); } catch {} }
   await home.close();
   for (const [k, v] of [['SCOMPASS_REGISTRY', saved.reg], ['SCOMPASS_CONFIG', saved.cfg], ['SCOMPASS_DATA', saved.data]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
-  await rm(root, { recursive: true, force: true });
+  await rm(root, { recursive: true, force: true, maxRetries: 10 });
   assert.deepEqual(pageErrors, [], 'errores en la página');
 });
 

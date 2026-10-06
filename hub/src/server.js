@@ -34,7 +34,9 @@ const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, inva
 // app.events emite 'event' con los mensajes del protocolo WebSocket (§5.5): upsert, delete, warning.
 // webDir: carpeta de la UI (por defecto web/ del repo).
 // onRestart: si se pasa, POST /api/restart lo llama (serve cierra y se vuelve a lanzar).
-export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false, webDir = WEB_DIR, onRestart = null, gitPollMs = 3000 }) {
+// onShutdown: si se pasa, POST /api/shutdown lo llama (serve cierra ordenado). Es la forma de apagar un hub en
+// todas las plataformas: en Windows no hay SIGTERM y `kill` lo mata en seco, sin darse de baja (§18).
+export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null, gitPollMs = 3000 }) {
   // Al cerrar se cortan todas las conexiones: con la UI abierta (que reintenta cada 0,5 s) el cierre
   // podía quedar esperando una conexión nueva o el cierre educado de un WebSocket.
   const app = Fastify({ logger, forceCloseConnections: true });
@@ -111,6 +113,13 @@ export function createServer({ projectDir, store, validators, watch = false, exp
     if (!onRestart) throw new StoreError('invalid_argument', 'este hub no se puede reiniciar desde la API');
     reply.code(202).send({ ok: true, restarting: true });
     setImmediate(onRestart);
+    return reply;
+  });
+  // Apagar el hub. Responde antes de cerrar.
+  app.post('/api/shutdown', async (req, reply) => {
+    if (!onShutdown) throw new StoreError('invalid_argument', 'este hub no se puede apagar desde la API');
+    reply.code(202).send({ ok: true, stopping: true });
+    setImmediate(onShutdown);
     return reply;
   });
   // Para servir este hub desde otra app (el Inicio, D29): lo que necesita su WebSocket.

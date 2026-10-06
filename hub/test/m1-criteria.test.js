@@ -28,7 +28,7 @@ beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'scompass-'));
   await cp(FIXTURE, join(dir, 'compass'), { recursive: true });
 });
-afterEach(() => rm(dir, { recursive: true, force: true }));
+afterEach(() => rm(dir, { recursive: true, force: true, maxRetries: 10 }));
 
 test('el hub y el addon de Godot llevan la misma versión (tools/build.mjs lo exige)', async () => {
   const { readFile } = await import('node:fs/promises');

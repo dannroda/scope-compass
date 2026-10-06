@@ -37,7 +37,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   await app.close();
-  await rm(root, { recursive: true, force: true });
+  await rm(root, { recursive: true, force: true, maxRetries: 10 });
 });
 
 async function cli(cwd, argv) {

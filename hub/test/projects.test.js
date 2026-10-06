@@ -22,7 +22,7 @@ afterEach(async () => {
   for (const [k, v] of [['SCOMPASS_REGISTRY', saved.reg], ['SCOMPASS_CONFIG', saved.cfg]]) {
     if (v === undefined) delete process.env[k]; else process.env[k] = v;
   }
-  await rm(dir, { recursive: true, force: true });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10 });
 });
 
 async function cli(args) {

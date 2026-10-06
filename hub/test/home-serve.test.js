@@ -46,7 +46,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await home.close();
   for (const [k, v] of [['SCOMPASS_REGISTRY', saved.reg], ['SCOMPASS_CONFIG', saved.cfg]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
-  await rm(root, { recursive: true, force: true });
+  await rm(root, { recursive: true, force: true, maxRetries: 10 });
 });
 
 test('projectKeys: el nombre de la carpeta como slug, sin repetir', () => {
@@ -74,6 +74,10 @@ test('sin hub suelto: el Inicio sirve el tablero, la API y el WebSocket del proy
   assert.equal((await fetch(base + '/p/vida/api/tasks/m1-04', { method: 'PATCH', headers: { 'content-type': 'application/json', 'if-match': '"viejo"' }, body: '{"status":"done"}' })).status, 409);
   const created = await fetch(base + '/p/vida/api/tasks', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ milestone: 'm01', title: 'Nueva', status: 'todo' }) });
   assert.match(created.headers.get('location'), /^\/p\/vida\/api\/tasks\/m1-\d+$/);
+  // Apagar o reiniciar un proyecto que sirve el Inicio no tiene sentido: se rechaza y el Inicio sigue.
+  assert.equal((await fetch(base + '/p/vida/api/shutdown', { method: 'POST' })).status, 400);
+  assert.equal((await fetch(base + '/p/vida/api/restart', { method: 'POST' })).status, 400);
+  assert.equal((await fetch(base + '/api/health')).status, 200);
   // El WebSocket: hello y el upsert de la escritura.
   assert.ok(await until(() => ws.got.some((e) => e.type === 'upsert' && e.id === 'm1-04')), JSON.stringify(ws.got));
   assert.equal(ws.got[0].type, 'hello');

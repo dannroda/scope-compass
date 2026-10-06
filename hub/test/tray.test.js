@@ -34,7 +34,7 @@ before(async () => {
 after(async () => {
   watcherBus?.connection.end();
   daemon?.kill();
-  if (dir) await rm(dir, { recursive: true, force: true });
+  if (dir) await rm(dir, { recursive: true, force: true, maxRetries: 10 });
 });
 
 const call = (service, path, iface, member, signature, body) => new Promise((resolve, reject) =>
@@ -256,9 +256,10 @@ test('serve --tray sin bus de sesión: avisa y el hub funciona igual', async () 
     assert.match(out, /sin ícono en la bandeja: no hay bus de sesión/);
     const url = /(http:\/\/127\.0\.0\.1:\d+\/)/.exec(out)[1];
     assert.equal((await (await fetch(url + 'api/health')).json()).ok, true);
-    hub.kill('SIGTERM');
-    assert.equal(await new Promise((r) => hub.on('exit', r)), 0);
+    const exited = new Promise((r) => hub.on('exit', r));
+    await fetch(url + 'api/shutdown', { method: 'POST' });
+    assert.equal(await exited, 0);
   } finally {
-    await rm(project, { recursive: true, force: true });
+    await rm(project, { recursive: true, force: true, maxRetries: 10 });
   }
 });

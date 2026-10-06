@@ -20,7 +20,7 @@ beforeEach(async () => {
   await cp(FIXTURE, compass, { recursive: true });
   store = createJsonFilesStore(compass, { validators: V, now: () => NOW });
 });
-afterEach(() => rm(dir, { recursive: true, force: true }));
+afterEach(() => rm(dir, { recursive: true, force: true, maxRetries: 10 }));
 
 const file = (c, id) => join(compass, c, `${id}.json`);
 const assertStoreError = (code) => (e) => e.code === code;

@@ -76,7 +76,7 @@ test('un archivo inválido se reporta, no se carga y queda sin tocar', async () 
     assert.equal(await readFile(bad, 'utf8'), badText);
     assert.equal(await readFile(conflict, 'utf8'), conflictText);
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10 });
   }
 });
 

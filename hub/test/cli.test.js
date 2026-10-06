@@ -16,7 +16,7 @@ beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'scompass-'));
   await cp(FIXTURE, join(dir, 'compass'), { recursive: true });
 });
-afterEach(() => rm(dir, { recursive: true, force: true }));
+afterEach(() => rm(dir, { recursive: true, force: true, maxRetries: 10 }));
 
 async function cli(argv, { cwd = dir, stdin = '' } = {}) {
   let out = '', err = '';
@@ -206,20 +206,32 @@ test('serve --exit-on-stdin-close: se cierra cuando se corta la entrada; sin la 
   const bin = join(REPO, 'hub', 'bin', 'scompass.js');
   const start = (extra) => new Promise((resolve) => {
     const p = spawn(process.execPath, [bin, '--dir', dir, 'serve', '--port', '0', ...extra]);
-    p.stdout.once('data', () => resolve(p));
+    p.stdout.once('data', (d) => resolve({ p, url: /(http:\/\/127\.0\.0\.1:\d+\/)/.exec(String(d))[1] }));
   });
-  const withFlag = await start(['--exit-on-stdin-close']);
+  const exit = (p) => new Promise((r) => (p.exitCode !== null ? r(p.exitCode) : p.on('exit', r)));
+  const { p: withFlag } = await start(['--exit-on-stdin-close']);
   const t0 = Date.now();
-  const code = await new Promise((r) => { withFlag.on('exit', r); withFlag.stdin.end(); });
-  assert.equal(code, 0);
+  withFlag.stdin.end();
+  assert.equal(await exit(withFlag), 0);
   assert.ok(Date.now() - t0 < 2000);
 
-  const without = await start([]);
+  const { p: without, url } = await start([]);
   without.stdin.end();
   await new Promise((r) => setTimeout(r, 500));
   assert.equal(without.exitCode, null, 'sin la opción sigue corriendo');
-  without.kill('SIGTERM');
-  assert.equal(await new Promise((r) => without.on('exit', r)), 0);
+  // Se apaga ordenado por la API, en todas las plataformas (§18).
+  assert.equal((await fetch(url + 'api/shutdown', { method: 'POST' })).status, 202);
+  assert.equal(await exit(without), 0);
+});
+
+test('serve: SIGTERM lo cierra ordenado (Linux)', { skip: process.platform === 'win32' && 'Windows no tiene SIGTERM' }, async () => {
+  const { spawn } = await import('node:child_process');
+  const p = spawn(process.execPath, [join(REPO, 'hub', 'bin', 'scompass.js'), '--dir', dir, 'serve', '--port', '0']);
+  const url = /(http:\/\/127\.0\.0\.1:\d+\/)/.exec(String(await new Promise((r) => p.stdout.once('data', r))))[1];
+  // Que responda: el hub anuncia la URL un momento antes de instalar el manejador de SIGTERM.
+  await fetch(url + 'api/health');
+  p.kill('SIGTERM');
+  assert.equal(await new Promise((r) => p.on('exit', r)), 0);
 });
 
 test('step add/set/rm: texto corto y detalle; show imprime el detalle sangrado', async () => {

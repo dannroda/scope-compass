@@ -52,7 +52,7 @@ afterEach(async () => {
   for (const c of children) c.kill('SIGKILL');
   await home.close();
   for (const [k, v] of [['SCOMPASS_REGISTRY', saved.reg], ['SCOMPASS_CONFIG', saved.cfg]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
-  await rm(root, { recursive: true, force: true });
+  await rm(root, { recursive: true, force: true, maxRetries: 10 });
 });
 
 test('§16.8: con el Inicio abierto, un hub que levanta el dock se ve activo en menos de 1 s y queda en projects.json', async () => {

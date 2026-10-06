@@ -28,7 +28,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await home.close();
   for (const [k, v] of [['SCOMPASS_REGISTRY', saved.reg], ['SCOMPASS_CONFIG', saved.cfg]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
-  await rm(root, { recursive: true, force: true });
+  await rm(root, { recursive: true, force: true, maxRetries: 10 });
 });
 
 test('§17.1: abrir un tablero desde el Inicio no cambia de puerto ni levanta procesos, y se edita enseguida', async () => {

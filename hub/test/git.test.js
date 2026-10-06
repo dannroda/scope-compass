@@ -31,13 +31,13 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   await app.close();
-  await rm(dir, { recursive: true, force: true });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10 });
 });
 const until = async (fn, ms = 3000) => { const t0 = Date.now(); while (!fn() && Date.now() - t0 < ms) await sleep(20); return fn(); };
 
 test('boardStatus: fuera de un repo, repo false; en uno, cuenta compass/ y el export', async () => {
   const out = await mkdtemp(join(tmpdir(), 'scompass-nogit-'));
-  try { assert.deepEqual(await boardStatus(out, null), { repo: false, uncommitted: 0, files: [] }); } finally { await rm(out, { recursive: true, force: true }); }
+  try { assert.deepEqual(await boardStatus(out, null), { repo: false, uncommitted: 0, files: [] }); } finally { await rm(out, { recursive: true, force: true, maxRetries: 10 }); }
   assert.deepEqual(await boardStatus(dir, { export_md: 'docs/tareas.md' }), { repo: true, uncommitted: 0, files: [] });
 });
 

@@ -1061,7 +1061,7 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 
 **Referencias:** `docs/spec.md#v4`
 
-## M10 — Windows  (3/10)
+## M10 — Windows  (4/10)
 
 Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, bandeja y dock (§18, D30).
 
@@ -1102,14 +1102,13 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 
 **Referencias:** `docs/spec.md#windows`
 
-### 10.4 Cerrar hubs e Inicio sin señales · Pendiente
+### 10.4 Cerrar hubs e Inicio sin señales · Hecho
 
-- [ ] Cierre pedido por API/stdin en el Inicio (stop, apagar al cerrar) y en el dock
-- [ ] SIGINT/Ctrl+C en la consola de Windows sigue cerrando ordenado
-- [ ] windowsHide en spawn y execFile; restart con detached sin ventana
-- [ ] Tests de cierre que corran en las dos plataformas
+- [x] Cierre pedido por API/stdin en el Inicio (stop, apagar al cerrar); el del dock, en 10.8
+- [x] windowsHide en spawn y execFile; restart con detached sin ventana
+- [x] Tests de cierre que corran en las dos plataformas
 
-**Notas:** En Windows Node no tiene SIGTERM: `kill` termina el proceso en seco, sin cerrar el servidor ni darse de baja del registro (cli.test 47 y tray.test 223 salen con código null). Pedir el cierre por la API o cerrando el stdin, y `kill` solo si no responde. Todo hijo con `windowsHide`, y reiniciar sin abrir una consola nueva.
+**Notas:** En Windows Node no tiene SIGTERM: `kill` termina el proceso en seco, sin cerrar el servidor ni darse de baja. Hecho: `POST /api/shutdown` en el hub y en el Inicio (un proyecto servido por el Inicio lo rechaza con 400). El Inicio apaga a sus hijos cortándoles la entrada y a los demás hubs por la API; `kill` solo si en 3 s siguen vivos. `windowsHide` en todos los procesos que se lanzan (salvo el selector de carpetas, 10.6). Tests: cierre por API con código 0 (cli, tray, home-hubs, home-restart); SIGTERM solo en Linux. Encontrado: un hub reiniciado cuyo padre es Node (con la tubería 'pipe' directa) recibe fin de entrada al irse el viejo y se cierra, en Linux y en Windows; por eso el test usa cat (findstr en Windows). Con el dock (Godot de padre) se ve en 10.8. Con el Inicio de padre pasaría igual, pero desde D29 el Inicio no crea hubs.
 
 **Referencias:** `docs/spec.md#windows`
 
@@ -1168,9 +1167,9 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 
 - [ ] Tests de los criterios de §18.1
 - [ ] Suite completa en la VM
-- [ ] Prueba en Windows en la máquina real
+- [ ] Prueba en Windows en la máquina real (incluye Ctrl+C en la consola cierra ordenado el hub y el Inicio)
 - [ ] AGENTS.md, README y spec al día
-- [ ] ui.test «fecha límite (8.13)» falla a veces con la suite entera en la VM (las esperas de 3 s no alcanzan con todo en paralelo); solo, pasa siempre
+- [ ] Esperas de 3 s en los tests de UI que fallan a veces con la suite entera en la VM (fecha límite 8.13, listas «tildar, editar…»); solos pasan siempre
 
 **Notas:** Criterios de §18.1. Al cerrar: suite completa en la VM, y una sesión real en la máquina con Windows (Inicio con bandeja, un proyecto sincronizado por git con Linux, dock en Godot). AGENTS.md (plantilla, copia del addon y compass/) con lo que cambie para Windows.
 

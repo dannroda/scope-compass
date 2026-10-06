@@ -26,7 +26,7 @@ beforeEach(async () => {
 afterEach(async () => {
   for (const c of clients) c.ws.close();
   await app.close();
-  await rm(dir, { recursive: true, force: true });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10 });
 });
 
 // Cliente mínimo: guarda los mensajes y permite esperar el siguiente de un tipo.

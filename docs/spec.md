@@ -721,7 +721,7 @@ Tests: el primero en `hub/test/m9-criteria.test.js`; los cambios en vivo y el hu
 | Abrir el navegador | `xdg-open` | `explorer.exe <url>` |
 | Selector de carpetas (D28) | `kdialog` o `zenity` | diálogo de carpetas de Windows, desde PowerShell |
 | Bandeja (D20, D31) | StatusNotifierItem por D-Bus | `NotifyIcon` desde un script de PowerShell que el hub lanza y maneja por stdin/stdout |
-| Apagar un hub | `SIGTERM`: cierra ordenado | Node no tiene señales en Windows (`kill` lo mata en seco): se pide el cierre por API o por stdin, y `kill` queda para cuando no responde |
+| Apagar un hub o el Inicio | `POST /api/shutdown`, o cortarle la entrada (`--exit-on-stdin-close`); `SIGTERM` también cierra ordenado | Lo mismo, sin `SIGTERM`: Node no tiene señales en Windows y `kill` lo mata en seco, así que queda para cuando no responde |
 
 - **Rutas:** se comparan y validan con `node:path` (`isAbsolute`, no `startsWith('/')`); en las dos plataformas, un nombre de proyecto no puede tener `\ / : * ? " < > |` ni ser un nombre reservado (`CON`, `NUL`, …), para que un proyecto creado en Linux se abra en Windows. Las rutas que muestra la UI usan el separador del sistema.
 - **Procesos:** todo hijo (hub del Inicio, reinicio, `git`, `scompass init`) se lanza con `windowsHide`, para que no aparezcan consolas. Reiniciar el Inicio o un hub no abre una ventana nueva.

@@ -56,7 +56,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   await app.close();
-  await rm(dir, { recursive: true, force: true });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10 });
   assert.deepEqual(pageErrors, [], 'errores en la página');
 });
 async function setTask(id, changes) {

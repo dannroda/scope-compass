@@ -35,7 +35,7 @@ afterEach(async () => {
   for (const h of hubsOf(p)) if (h.pid !== process.pid) { try { process.kill(h.pid, 'SIGKILL'); } catch {} }
   await home.close();
   for (const [k, v] of [['SCOMPASS_REGISTRY', saved.reg], ['SCOMPASS_CONFIG', saved.cfg]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
-  await rm(root, { recursive: true, force: true });
+  await rm(root, { recursive: true, force: true, maxRetries: 10 });
 });
 
 const api = async (method, path, body) => {
@@ -71,6 +71,7 @@ test('los hubs que prendió el Inicio mueren con él', async () => {
 test('un hub del dock (atado a otro proceso) se apaga solo con force', async () => {
   // Como lo lanza el dock: su entrada es una tubería de otro proceso.
   const hub = spawn(process.execPath, [join(REPO, 'hub', 'bin', 'scompass.js'), '--dir', p, 'serve', '--port', '0', '--exit-on-stdin-close'], { stdio: ['pipe', 'ignore', 'ignore'] });
+  const exited = new Promise((r) => hub.on('exit', (code) => r(code)));
   try {
     for (let i = 0; i < 100 && !hubsOf(p).length; i++) await sleep(50);
     const [h] = hubsOf(p);
@@ -83,6 +84,8 @@ test('un hub del dock (atado a otro proceso) se apaga solo con force', async () 
     r = await api('POST', '/api/projects/stop', { path: p, force: true });
     assert.equal(r.status, 200, JSON.stringify(r.body));
     assert.ok(!alive(hub.pid));
+    // Se lo pidió por la API (§18): cerró ordenado, no lo mató (en Windows, kill no deja salir con 0).
+    assert.equal(await exited, 0);
   } finally {
     hub.kill('SIGKILL');
   }

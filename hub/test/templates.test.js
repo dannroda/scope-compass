@@ -21,7 +21,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   if (saved === undefined) delete process.env.SCOMPASS_CONFIG; else process.env.SCOMPASS_CONFIG = saved;
-  await rm(dir, { recursive: true, force: true });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10 });
 });
 
 async function init(name, ...args) {

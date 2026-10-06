@@ -46,7 +46,7 @@ const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, inva
 
 // now: función que devuelve la fecha "de hoy" (los tests la fijan). pollMs: cada cuánto mira el registro de hubs
 // (medio segundo: un hub que se levanta se ve en el Inicio en menos de 1 s, §16.8).
-export function createHomeServer({ validators, now = () => new Date(), pollMs = 500, logger = false, webDir = WEB_DIR, onRestart = null }) {
+export function createHomeServer({ validators, now = () => new Date(), pollMs = 500, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null }) {
   const app = Fastify({ logger, forceCloseConnections: true });
   const events = new EventEmitter();
   app.decorate('events', events);
@@ -140,6 +140,13 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     setImmediate(onRestart);
     return reply;
   });
+  // Apagar el Inicio (§18): lo mismo que Ctrl+C, en todas las plataformas.
+  app.post('/api/shutdown', async (req, reply) => {
+    if (!onShutdown) throw new StoreError('invalid_argument', 'este Inicio no se puede apagar desde la API');
+    reply.code(202).send({ ok: true, stopping: true });
+    setImmediate(onShutdown);
+    return reply;
+  });
 
   app.post('/api/projects', async (req, reply) => {
     const { entry, added } = await recordProject(req.body?.path ?? '');
@@ -174,11 +181,11 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     const path = join(parent, dirName);
     if (existsSync(path)) throw new StoreError('conflict', `ya existe ${path}: elegí otro nombre u otra carpeta`);
     await mkdir(path, { recursive: true });
-    const inRepo = await new Promise((r) => execFile('git', ['-C', path, 'rev-parse', '--is-inside-work-tree'], (err) => r(!err)));
-    const gitInit = !inRepo && await new Promise((r) => execFile('git', ['-C', path, 'init', '-q'], (err) => r(!err)));
+    const inRepo = await new Promise((r) => execFile('git', ['-C', path, 'rev-parse', '--is-inside-work-tree'], { windowsHide: true }, (err) => r(!err)));
+    const gitInit = !inRepo && await new Promise((r) => execFile('git', ['-C', path, 'init', '-q'], { windowsHide: true }, (err) => r(!err)));
     const args = [BIN, '--dir', path, 'init', '--template', template, '--json', ...(name ? ['--project', name] : [])];
     const r = await new Promise((resolve) => {
-      const child = spawn(process.execPath, args, { stdio: ['ignore', 'pipe', 'pipe'], env: process.env });
+      const child = spawn(process.execPath, args, { stdio: ['ignore', 'pipe', 'pipe'], env: process.env, windowsHide: true });
       let out = '', err = '';
       child.stdout.on('data', (d) => { out += d; });
       child.stderr.on('data', (d) => { err += d; });
@@ -267,7 +274,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     known(path);
     const running = standaloneOf(path);
     if (running.length) return { hub: running[0], already: true };
-    const child = spawn(process.execPath, [BIN, '--dir', path, 'serve', '--exit-on-stdin-close'], { stdio: ['pipe', 'ignore', 'pipe'], env: { ...process.env, SCOMPASS_LAUNCHED_BY: 'home' } });
+    const child = spawn(process.execPath, [BIN, '--dir', path, 'serve', '--exit-on-stdin-close'], { stdio: ['pipe', 'ignore', 'pipe'], env: { ...process.env, SCOMPASS_LAUNCHED_BY: 'home' }, windowsHide: true });
     let err = '';
     child.stderr.on('data', (d) => { err += d; });
     children.set(child.pid, child);
@@ -279,7 +286,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
       if (child.exitCode !== null) break;
       await sleep(50);
     }
-    child.kill('SIGTERM');
+    child.kill();
     throw new StoreError('io_error', `el hub no arrancó${err.trim() ? `: ${err.trim().split('\n').at(-1)}` : ''}`);
   }
 
@@ -293,8 +300,14 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     // Uno atado a otro proceso (el dock de Godot) se apaga solo con force: el editor se queda sin hub.
     const foreign = running.filter(isForeign);
     if (foreign.length && !force) throw new StoreError('conflict', 'ese hub lo abrió el dock de Godot (u otro programa): el editor se queda sin hub hasta que lo vuelva a iniciar', { foreign: true });
-    for (const h of running) { try { process.kill(h.pid, 'SIGTERM'); } catch { /* ya no estaba */ } }
-    for (let i = 0; i < 100 && running.some((h) => alive(h.pid)); i++) await sleep(50);
+    // Cierre ordenado en todas las plataformas (§18): a un hijo se le corta la entrada (--exit-on-stdin-close) y a
+    // los demás se les pide por la API. Si en 3 s sigue vivo, kill (SIGTERM en Linux; en Windows, en seco).
+    await Promise.all(running.map((h) => children.has(h.pid)
+      ? children.get(h.pid).stdin.end()
+      : fetch(`http://127.0.0.1:${h.port}/api/shutdown`, { method: 'POST', signal: AbortSignal.timeout(1000) }).catch(() => null)));
+    for (let i = 0; i < 60 && running.some((h) => alive(h.pid)); i++) await sleep(50);
+    for (const h of running) if (alive(h.pid)) { try { process.kill(h.pid); } catch { /* ya no estaba */ } }
+    for (let i = 0; i < 40 && running.some((h) => alive(h.pid)); i++) await sleep(50);
     const still = running.filter((h) => alive(h.pid));
     if (still.length) throw new StoreError('io_error', `el hub (PID ${still.map((h) => h.pid).join(', ')}) no se cerró en 5 s`);
     poll();
@@ -308,7 +321,15 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   app.post('/api/projects/stop', async (req) => stopHub(req.body?.path, { force: !!req.body?.force }));
   // Para la bandeja del Inicio (CLI): las mismas operaciones sin pasar por HTTP.
   app.decorate('hubs', { start: startHub, stop: stopHub, isForeign });
-  app.addHook('onClose', async () => { for (const c of children.values()) c.kill('SIGTERM'); });
+  // Al cerrar el Inicio, sus hijos se van solos al cortarse la entrada (también en Windows). Se los espera hasta
+  // 3 s; el que siga vivo, kill.
+  app.addHook('onClose', async () => {
+    const left = [...children.values()];
+    const running = () => left.filter((c) => c.exitCode === null && c.signalCode === null);
+    for (const c of left) c.stdin.end();
+    for (let i = 0; i < 60 && running().length; i++) await sleep(50);
+    for (const c of running()) c.kill();
+  });
 
   // En vivo: el Inicio se suscribe al WebSocket de cada hub vivo de un proyecto conocido y reenvía sus cambios.
   const subs = new Map(); // `${pid}` → { ws, path }

@@ -69,7 +69,7 @@ test('writeAtomic reemplaza el archivo y no deja temporales', async () => {
     assert.equal(await readFile(f, 'utf8'), '{\n  "status": "done"\n}\n');
     assert.deepEqual(await readdir(dir), ['m0-01.json']);
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10 });
   }
 });
 
@@ -83,7 +83,7 @@ test('writeAtomic que falla al renombrar no deja temporales', async () => {
     assert.equal(await readFile(join(dir, 'keep.json'), 'utf8'), 'viejo');
     assert.deepEqual((await readdir(dir)).sort(), ['keep.json', 'x.json']);
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10 });
   }
 });
 

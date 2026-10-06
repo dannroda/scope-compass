@@ -21,7 +21,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   if (saved === undefined) delete process.env.SCOMPASS_REGISTRY; else process.env.SCOMPASS_REGISTRY = saved;
-  await rm(dir, { recursive: true, force: true });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10 });
 });
 
 async function serve(project, port, extra = []) {

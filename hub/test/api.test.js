@@ -20,7 +20,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   await app.close();
-  await rm(dir, { recursive: true, force: true });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10 });
 });
 
 const req = (method, url, payload, headers = {}) => app.inject({ method, url, payload, headers });

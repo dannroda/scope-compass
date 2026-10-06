@@ -40,7 +40,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   await app.close();
-  await rm(root, { recursive: true, force: true });
+  await rm(root, { recursive: true, force: true, maxRetries: 10 });
 });
 
 async function cli(cwd, argv, stdin = '') {
@@ -141,20 +141,21 @@ const freePort = () => new Promise((res) => { const s = netServer().listen(0, '1
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
 
 test('scompass restart: el hub vuelve en el mismo puerto con otro PID y sigue atado a la misma entrada', async () => {
-  const port = await freePort();
+  let port = await freePort();
   const cfgPath = join(disk, 'compass', 'config.json');
   await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), port }));
   const bin = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
-  // Entrada por un pipe del sistema, como la de Godot (con cat en el medio): la tubería 'pipe' de Node es un par
-  // de sockets, y al cerrarse el proceso viejo le haría shutdown también al nuevo.
-  // En Windows la tubería de Node ya es un pipe con nombre del sistema, sin ese problema (y no hay sh).
+  // Entrada por un pipe del sistema, como la de Godot (con cat en el medio): con la tubería 'pipe' de Node directa,
+  // al cerrarse el proceso viejo el nuevo recibe fin de entrada y se va (en Linux es un par de sockets y el viejo le
+  // hace shutdown; en Windows pasa lo mismo). En Windows, `findstr "^"` hace de cat.
   const args = [bin, '--dir', disk, 'serve', '--exit-on-stdin-close'];
   const hub = process.platform === 'win32'
-    ? spawn(process.execPath, args, { stdio: ['pipe', 'pipe', 'pipe'] })
+    ? spawn('cmd', ['/d', '/s', '/c', `"findstr "^" | "${process.execPath}" ${args.map((a) => `"${a}"`).join(' ')}"`], { stdio: ['pipe', 'pipe', 'pipe'], windowsVerbatimArguments: true })
     : spawn('sh', ['-c', 'cat | exec "$0" "$@"', process.execPath, ...args], { stdio: ['pipe', 'pipe', 'pipe'] });
   let newPid = 0;
   try {
-    await new Promise((r) => hub.stdout.once('data', r));
+    // El puerto real, del mensaje del hub: si otro proceso tomó `port` entre medio, el hub usa el siguiente libre.
+    port = Number(/127\.0\.0\.1:(\d+)/.exec(String(await new Promise((r) => hub.stdout.once('data', r))))[1]);
     const before = (await (await fetch(`http://127.0.0.1:${port}/api/health`)).json()).pid;
     const r = await cli(disk, ['restart', '--json']);
     assert.equal(r.code, 0, r.err);
@@ -163,6 +164,9 @@ test('scompass restart: el hub vuelve en el mismo puerto con otro PID y sigue at
     assert.equal((await (await fetch(`http://127.0.0.1:${port}/api/health`)).json()).pid, newPid);
     for (let i = 0; i < 40 && alive(before); i++) await new Promise((res) => setTimeout(res, 50));
     assert.ok(!alive(before), 'el viejo terminó');
+    // Y el nuevo sigue: no recibió fin de entrada cuando se fue el viejo.
+    await new Promise((res) => setTimeout(res, 1000));
+    assert.ok(alive(newPid), 'el hub nuevo se cerró solo después del reinicio');
     // La entrada es la misma tubería: al cortarla, el hub nuevo también se cierra.
     hub.stdin.end();
     for (let i = 0; i < 40 && alive(newPid); i++) await new Promise((res) => setTimeout(res, 50));

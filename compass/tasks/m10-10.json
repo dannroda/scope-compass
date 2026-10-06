@@ -10,7 +10,7 @@
     },
     {
       "done": false,
-      "text": "Prueba en Windows en la máquina real"
+      "text": "Prueba en Windows en la máquina real (incluye Ctrl+C en la consola cierra ordenado el hub y el Inicio)"
     },
     {
       "done": false,
@@ -18,7 +18,7 @@
     },
     {
       "done": false,
-      "text": "ui.test «fecha límite (8.13)» falla a veces con la suite entera en la VM (las esperas de 3 s no alcanzan con todo en paralelo); solo, pasa siempre"
+      "text": "Esperas de 3 s en los tests de UI que fallan a veces con la suite entera en la VM (fecha límite 8.13, listas «tildar, editar…»); solos pasan siempre"
     }
   ],
   "code": "10.10",
@@ -35,5 +35,5 @@
   "status": "todo",
   "test": "",
   "title": "Tests de M10, spec y guía",
-  "updated_at": "2026-10-06T04:31:55.446Z"
+  "updated_at": "2026-10-06T04:53:01.629Z"
 }

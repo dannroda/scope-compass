@@ -20,7 +20,7 @@ beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'scompass-repeat-'));
   await cp(FIXTURE, join(dir, 'compass'), { recursive: true });
 });
-afterEach(() => rm(dir, { recursive: true, force: true }));
+afterEach(() => rm(dir, { recursive: true, force: true, maxRetries: 10 }));
 
 async function cli(...argv) {
   let out = '', err = '';

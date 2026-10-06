@@ -183,7 +183,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
 
   // El Inicio: un proceso por usuario (kind "home" en el registro de hubs). Si ya hay uno, dice dónde está.
   async function serveHome() {
-    const openUrl = (url) => spawn(process.env.SCOMPASS_OPEN || 'xdg-open', [url], { detached: true, stdio: 'ignore' })
+    const openUrl = (url) => spawn(process.env.SCOMPASS_OPEN || 'xdg-open', [url], { detached: true, stdio: 'ignore', windowsHide: true })
       .on('error', () => warn(`no se pudo abrir el navegador: ${url}`)).unref();
     const running = liveHome();
     if (running) {
@@ -199,7 +199,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     }
     // Reiniciar (9.8): se cierra y se vuelve a lanzar el mismo comando en el mismo puerto (carga código nuevo).
     let restart = false;
-    const app = createHomeServer({ validators, onRestart: () => { restart = true; ac.abort(); } });
+    const app = createHomeServer({ validators, onRestart: () => { restart = true; ac.abort(); }, onShutdown: () => ac.abort() });
     let addr;
     try { addr = await listen(app, port); } catch (e) {
       await app.close();
@@ -231,7 +231,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     unregisterHub();
     if (restart) {
       const again = argv.filter((x, i) => x !== '--port' && argv[i - 1] !== '--port' && !x.startsWith('--port=') && x !== '--open');
-      spawn(process.execPath, [BIN, ...again, '--port', String(addr.port)], { cwd, env: process.env, stdio: 'inherit', detached: true }).unref();
+      spawn(process.execPath, [BIN, ...again, '--port', String(addr.port)], { cwd, env: process.env, stdio: 'inherit', detached: true, windowsHide: true }).unref();
       if (!o.json) print('Reiniciando el Inicio…');
     }
     return 0;
@@ -324,7 +324,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       let restart = false;
       const app = createServer({ projectDir: project, store, validators, watch: true, exportMd: true,
-        onRestart: () => { restart = true; ac.abort(); } });
+        onRestart: () => { restart = true; ac.abort(); }, onShutdown: () => ac.abort() });
       if (!o.json) app.events.on('event', (e) => { if (e.type === 'warning') warn(`aviso [${e.code}] ${e.path}: ${e.message}`); });
       let addr;
       try {
@@ -340,7 +340,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const url = `http://${addr.address}:${addr.port}/`;
       o.json ? print(JSON.stringify({ url, port: addr.port, project })) : print(`Scope Compass en ${url} · ${project} · Ctrl+C para cerrar`);
       // SCOMPASS_OPEN reemplaza a xdg-open (los tests lo usan para no abrir el navegador).
-      const openBoard = () => spawn(process.env.SCOMPASS_OPEN || 'xdg-open', [url], { detached: true, stdio: 'ignore' })
+      const openBoard = () => spawn(process.env.SCOMPASS_OPEN || 'xdg-open', [url], { detached: true, stdio: 'ignore', windowsHide: true })
         .on('error', () => warn(`no se pudo abrir el navegador: ${url}`)).unref();
       if (o.open) openBoard();
       // Desde la bandeja: si ya hay un tablero abierto que puede notificar, se le pide que llame la atención en
@@ -412,7 +412,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (restart) {
         // En el mismo puerto que tenía (con --port 0 tomaría otro al azar).
         const again = argv.filter((x, i) => x !== '--port' && argv[i - 1] !== '--port' && !x.startsWith('--port='));
-        spawn(process.execPath, [BIN, ...again, '--port', String(addr.port)], { cwd, env: process.env, stdio: 'inherit', detached: true }).unref();
+        spawn(process.execPath, [BIN, ...again, '--port', String(addr.port)], { cwd, env: process.env, stdio: 'inherit', detached: true, windowsHide: true }).unref();
         if (!o.json) print('Reiniciando el hub…');
         if (stdin === process.stdin) process.exit(0);
       }

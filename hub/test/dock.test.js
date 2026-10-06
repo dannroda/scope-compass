@@ -23,7 +23,7 @@ beforeEach(async () => {
   await setTask('m1-03', { status: 'doing' });
   await setTask('m1-05', { status: 'review' });
 });
-afterEach(() => rm(dir, { recursive: true, force: true }));
+afterEach(() => rm(dir, { recursive: true, force: true, maxRetries: 10 }));
 
 async function setTask(id, changes) {
   const p = join(dir, 'compass', 'tasks', `${id}.json`);
@@ -410,7 +410,7 @@ test('dock: el aviso dice por qué no hay hub (otro proyecto) y "Reintentar" enc
     expectOk(r, 'detect_reason');
   } finally {
     await app.close();
-    await rm(other, { recursive: true, force: true });
+    await rm(other, { recursive: true, force: true, maxRetries: 10 });
   }
 });
 

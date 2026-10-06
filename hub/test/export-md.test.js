@@ -26,7 +26,7 @@ async function python(src, board, title) {
     if (e.code === 'ENOENT' || e.status === 9009) return null;
     throw e;
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10 });
   }
 }
 const dateOf = (md) => md.match(/^> Generado: (\S+)$/m)[1];
@@ -79,7 +79,7 @@ test('CLI: export md y export automático al escribir, salvo auto_export_md: fal
     assert.equal(await run(['move', 'm1-07', 'done'], { cwd: dir, ...quiet }), 0);
     assert.match(await readFile(md, 'utf8'), /### 1\.7 Tests de M1 · Revisión/);
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10 });
   }
 });
 
@@ -98,6 +98,6 @@ test('el detalle de un paso va sangrado debajo, igual que en tools/artifact_to_m
     if (expected === null) return t.skip('sin python3');
     assert.equal(renderMarkdown(all, { title: 'T', board: 'https://x', date: dateOf(expected) }), expected);
   } finally {
-    await rm(d, { recursive: true, force: true });
+    await rm(d, { recursive: true, force: true, maxRetries: 10 });
   }
 });

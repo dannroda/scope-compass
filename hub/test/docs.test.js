@@ -81,7 +81,7 @@ test('resolver referencias por alias o por ruta; sectionMarkdown devuelve la sec
     assert.equal(resolveRef(docs, 'gdd#nada').section, null);
     assert.equal(resolveRef(docs, 'otro#x').doc, null);
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10 });
   }
 });
 
@@ -174,7 +174,7 @@ test('ref add/rm y refs check: renombrar el título no rompe; borrar el id sí',
     assert.equal((await cli('refs', 'check')).code, 0);
     assert.equal((await cli('ref', 'rm', 'm1-07', 'gdd#ventanas-ataque')).code, 1);
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10 });
   }
 });
 
@@ -191,7 +191,7 @@ test('stamp-ids estampa el slug actual (las refs frágiles siguen resolviendo) y
     assert.equal((await cli('doc', 'stamp-ids', 'gdd')).code, 0);
     assert.equal(await readFile(join(dir, 'gdd.md'), 'utf8'), text);
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10 });
   }
 });
 

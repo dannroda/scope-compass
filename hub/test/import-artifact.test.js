@@ -33,7 +33,7 @@ beforeEach(async () => {
   exp = join(dir, 'export');
   await makeExport(FIXTURE, exp);
 });
-afterEach(() => rm(dir, { recursive: true, force: true }));
+afterEach(() => rm(dir, { recursive: true, force: true, maxRetries: 10 }));
 
 test('import en un compass/ vacío: canónico, sin version, created_at = updated_at', async () => {
   const target = join(dir, 'nuevo');
