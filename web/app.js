@@ -278,8 +278,18 @@
             onchange: (e) => setF({ [key]: e.target.checked ? [...sel, v] : sel.filter((x) => x !== v) }) }), l);
         }) : h('p', { class: 'muted small' }, 'Ninguna tarea tiene ' + label.toLowerCase() + '.')));
     };
-    const single = (key, label, options) => h('select', { id: 'f-' + key, 'aria-label': label, class: S.f[key] ? 'on' : null, onchange: (e) => setF({ [key]: e.target.value }) },
-      options.map(([v, l]) => h('option', { value: v, selected: S.f[key] === v }, l)));
+    // Desplegable de una sola opción, con el mismo aspecto que los de casillas (no un <select>, que abre la lista
+    // del sistema). Sin valor, el resumen dice qué filtra; con valor, cuál se eligió. Elegir uno lo cierra.
+    const single = (key, label, options) => {
+      const cur = S.f[key];
+      return h('details', { class: 'fdrop' + (cur ? ' on' : ''), 'data-key': key, open: open.includes(key) },
+        h('summary', { id: 'f-' + key, 'aria-label': label + ': ' + options.find(([v]) => v === cur)[1] }, cur ? options.find(([v]) => v === cur)[1] : label),
+        h('div', { class: 'fdrop-body', role: 'radiogroup', 'aria-label': label }, options.map(([v, l]) => {
+          const id = 'f-' + key + '-' + (v || 'any');
+          return h('label', { for: id }, h('input', { type: 'radio', name: 'f-' + key, id, checked: cur === v,
+            onchange: (e) => { e.target.closest('details').open = false; setF({ [key]: v }); } }), l);
+        })));
+    };
     const toggle = (key, label) => h('button', { type: 'button', class: 'chip small', id: 'f-' + key, 'aria-pressed': S.f[key] ? 'true' : 'false', onclick: () => setF({ [key]: !S.f[key] }) }, label);
     // Los valores elegidos siguen en la lista aunque ninguna tarea los tenga ya (se pueden destildar).
     const values = (all, chosen) => [...new Set([...all, ...chosen.filter((x) => x !== 'none')])].map((x) => [x, x]);

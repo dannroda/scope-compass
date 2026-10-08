@@ -74,12 +74,13 @@ test('filtros del tablero: texto, etiquetas, prioridad, fecha, bloqueo y pasos; 
   await page.check('#f-priority-none');
   assert.equal((await cards(page)).length, 5, 'sin prioridad');
   await page.click('#f-clear');
-  await page.selectOption('#f-due', 'overdue');
+  await pick(page, 'due', 'overdue');
   assert.deepEqual(await cards(page), ['m1-03']);
-  await page.selectOption('#f-due', '');
-  await page.selectOption('#f-blocked', 'yes');
+  assert.equal(await page.textContent('#f-due'), 'Vencidas', 'el resumen dice qué se eligió');
+  await pick(page, 'due', 'any');
+  await pick(page, 'blocked', 'yes');
   assert.deepEqual(await cards(page), ['m1-04']);
-  await page.selectOption('#f-blocked', '');
+  await pick(page, 'blocked', 'any');
   await page.click('#f-pendingSteps');
   assert.deepEqual(await cards(page), ['m1-04']);
   await page.click('#f-clear');
@@ -179,6 +180,12 @@ test('una tarea nueva que los filtros ocultan lo avisa', async () => {
   await page.context().close();
 });
 
+// Elige una opción de un desplegable de una sola opción (fecha, bloqueo): se cierra solo.
+async function pick(page, key, value) {
+  await page.click(`#f-${key}`);
+  await page.check(`#f-${key}-${value}`);
+  assert.equal(await page.locator(`details[data-key="${key}"][open]`).count(), 0, 'elegir cierra el desplegable');
+}
 async function expectText(page, sel, text) {
   await page.waitForFunction(([s, t]) => document.querySelector(s)?.textContent === t, [sel, text], { timeout: 2000 })
     .catch(async () => assert.fail(`${sel}: «${await page.locator(sel).textContent().catch(() => '(no está)')}», esperado «${text}»`));

@@ -314,8 +314,7 @@ ul.items > .item:first-child { border-top: 0; }
 .mode-switch button[aria-pressed="true"] { background: var(--surface); font-weight: 700; box-shadow: var(--shadow); }
 #f-q { flex: 1 1 240px; min-width: 0; max-width: 480px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 10px; min-height: 38px; }
 .f-more { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.f-more select { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 10px; min-height: 34px; font-size: 14px; }
-.f-more select.on, .fdrop.on > summary { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.fdrop.on > summary { border-color: var(--accent); color: var(--accent); font-weight: 700; }
 .chip.small { min-height: 34px; padding: 4px 12px; font-size: 14px; }
 .fdrop { position: relative; }
 .fdrop > summary { list-style: none; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 12px; min-height: 34px; font-size: 14px; cursor: pointer; user-select: none; }
