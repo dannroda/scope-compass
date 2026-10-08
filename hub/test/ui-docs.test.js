@@ -99,6 +99,37 @@ test('agregar una referencia con el buscador y quitarla', async () => {
   await page.close();
 });
 
+test('12.1: referencia al documento entero desde el buscador, [[gdd]] en notas y backlinks del documento', async () => {
+  await setTask('m1-06', { notes: 'todo el [[gdd]], no `[[gdd]]`' });
+  const page = await open();
+  await page.click('.chip:has-text("M1")');
+  await page.click('.card[data-id="m1-07"]');
+  await page.click('.refs-head button:has-text("Agregar")');
+  await page.fill('#d-refq', 'gdd');
+  assert.match(await page.textContent('.ref-matches li:first-child'), /Juego.*gdd\.md · documento entero/);
+  await page.click('.ref-matches li:first-child button');
+  await page.waitForSelector('.ref.whole');
+  assert.deepEqual((await task('m1-07')).refs, [{ doc: 'gdd.md' }]);
+  assert.equal(await page.getAttribute('.ref.whole a.ref-toggle', 'href'), '#docs/gdd');
+  assert.equal(await page.locator('.card[data-id="m1-07"] .refmark.bad').count(), 0, 'no es una referencia rota');
+  // Ya referenciado, el documento no vuelve a ofrecerse.
+  await page.click('.refs-head button:has-text("Agregar")');
+  await page.fill('#d-refq', 'gdd');
+  assert.doesNotMatch(await page.textContent('.ref-matches'), /documento entero/);
+  await page.click('h1'); // fuera del buscador
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('#detail[hidden]', { state: 'attached' });
+  await page.click('.card[data-id="m1-06"]');
+  await page.waitForSelector('.doclinks a.doclink');
+  assert.equal(await page.textContent('.doclinks a.doclink'), 'Juego', 'el enlace muestra el título del documento');
+  assert.equal(await page.getAttribute('.doclinks a.doclink', 'href'), '#docs/gdd');
+  await page.goto(url + '#docs/gdd');
+  await page.waitForSelector('.backlinks .bl-task');
+  assert.match(await page.textContent('.backlinks .label'), /Referencian el documento · 2 tareas/);
+  assert.equal(await page.textContent('.copy-link'), 'Copiar enlace al documento');
+  await page.close();
+});
+
 test('referencia rota: aviso en el detalle y en la tarjeta', async () => {
   const page = await open();
   await page.click('.chip:has-text("M1")');

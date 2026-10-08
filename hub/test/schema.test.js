@@ -99,3 +99,8 @@ test('config.views: pestañas conocidas, sin repetir, y por defecto las tres con
   assert.deepEqual(viewsOf({ project: 'P', views: ['lists', 'board'] }), ['lists', 'board']);
   assert.deepEqual(viewsOf(null), ['board', 'lists', 'docs']);
 });
+
+test('refs: section es opcional (referencia al documento entero), doc no (12.1)', () => {
+  assert.equal(parseDoc(JSON.stringify({ ...task, refs: [{ doc: 'docs/gdd.md' }] }), 'task', V).ok, true);
+  assert.equal(parseDoc(JSON.stringify({ ...task, refs: [{ section: 'combate' }] }), 'task', V).ok, false);
+});

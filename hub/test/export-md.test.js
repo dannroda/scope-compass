@@ -111,3 +111,11 @@ test('prioridad, responsable y etiquetas van en una línea debajo del título (M
   assert.match(md, /### 0\.1 Con todo · Pendiente\n\n\*\*Prioridad:\*\* alta · \*\*Responsable:\*\* Dani · \*\*Etiquetas:\*\* `arte`, `nivel`\n\n/);
   assert.doesNotMatch(md.split('### 0.2')[1], /Prioridad/);
 });
+
+test('referencias: con sección "ruta#id"; al documento entero, solo la ruta (12.1)', () => {
+  const md = renderMarkdown({
+    milestones: [['m00', { code: 'M0', title: 'Hito', order: 0 }]],
+    tasks: [['a', { milestone: 'm00', code: '0.1', title: 'Con refs', status: 'todo', refs: [{ doc: 'docs/gdd.md', section: 'combate' }, { doc: 'docs/enemigos.md' }] }]]
+  }, { title: 'T', date: '2026-10-08' });
+  assert.match(md, /\*\*Referencias:\*\* `docs\/gdd\.md#combate`, `docs\/enemigos\.md`/);
+});

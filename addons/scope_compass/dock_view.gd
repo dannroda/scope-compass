@@ -1005,6 +1005,10 @@ func _render_refs(t: Dictionary) -> void:
 	refs_box.add_child(label)
 	for r in refs:
 		var d = board.doc(str(r.get("doc", "")))
+		# Sin sección, la referencia es al documento entero (12.1): no se despliega, se abre en el navegador.
+		if str(r.get("section", "")) == "":
+			_render_whole_ref(r, d)
+			continue
 		var s = board.section(d, str(r.get("section", "")))
 		var key := "%s#%s" % [r.get("doc", ""), r.get("section", "")]
 		if s == null:
@@ -1034,6 +1038,37 @@ func _render_refs(t: Dictionary) -> void:
 			box.name = "Section"
 			refs_box.add_child(box)
 			_fill_section(box, d, s)
+
+
+func _render_whole_ref(r: Dictionary, d) -> void:
+	if d == null:
+		var broken := Label.new()
+		broken.text = "⚠ Referencia rota: %s no está" % r.get("doc", "")
+		broken.add_theme_color_override("font_color", Color("#e8806e"))
+		refs_box.add_child(broken)
+		return
+	var head := HBoxContainer.new()
+	refs_box.add_child(head)
+	var title := Label.new()
+	title.name = "WholeDoc"
+	title.text = "▤ " + _doc_title(d)
+	title.tooltip_text = "%s · documento entero" % d.path
+	title.mouse_filter = Control.MOUSE_FILTER_PASS
+	title.size_flags_horizontal = SIZE_EXPAND_FILL
+	title.clip_text = true
+	head.add_child(title)
+	if online:
+		var web := _icon_button("browser", "Abrir en el navegador")
+		web.pressed.connect(func(): OS.shell_open("%s/#docs/%s" % [client.base_url(), str(d.alias).uri_encode()]))
+		head.add_child(web)
+
+
+## Título de un documento: su primer título de nivel 1, o la ruta (como docTitle en web/app.js).
+func _doc_title(d: Dictionary) -> String:
+	for s in d.sections:
+		if int(s.level) == 1:
+			return str(s.title).replace("`", "")
+	return str(d.path)
 
 
 ## La sección en bloques: texto en RichTextLabel y cada snippet en un CodeEdit de solo lectura, con el resaltado

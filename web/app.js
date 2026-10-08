@@ -96,7 +96,8 @@
     return el;
   }
 
-  const LINK = /\[\[([^\]#\s]+)#([a-z0-9][a-z0-9_-]*)\]\]/g;
+  // [[alias#id]] es una sección; [[alias]], el documento entero (m[2] undefined). Como LINK de hub/src/docs.js.
+  const LINK = /\[\[([^\]#\s]+)(?:#([a-z0-9][a-z0-9_-]*))?\]\]/g;
   // `código` inline -> <code>; [[alias#id]] fuera del código -> enlace con el título actual de la sección (6.6).
   // plain: sin enlaces (dentro de un botón, como las tarjetas, un <a> es inválido).
   function rich(str, plain) {
@@ -107,20 +108,29 @@
       let last = 0;
       for (const m of part.matchAll(LINK)) {
         frag.append(document.createTextNode(part.slice(last, m.index).replace(/\*\*/g, '')));
-        frag.append(plain ? document.createTextNode(sectionOf(docByKey(m[1]), m[2])?.title.replace(/`/g, '') ?? m[0]) : docLink(m[1], m[2]));
+        frag.append(plain ? document.createTextNode(linkTitle(m[1], m[2]) ?? m[0]) : docLink(m[1], m[2]));
         last = m.index + m[0].length;
       }
       frag.append(document.createTextNode(part.slice(last).replace(/\*\*/g, '')));
     });
     return frag;
   }
-  // Enlace a una sección: su título actual, o marcado como roto si ya no existe.
+  // Título de un documento: su primer título de nivel 1, o la ruta.
+  const docTitle = (d) => (d.sections.find((x) => x.level === 1)?.title ?? d.path).replace(/`/g, '');
+  // Título actual de lo que apunta un enlace (la sección o el documento), o null si no existe.
+  function linkTitle(key, id) {
+    const d = docByKey(key);
+    if (!d || d.missing) return null;
+    if (!id) return docTitle(d);
+    return sectionOf(d, id)?.title.replace(/`/g, '') ?? null;
+  }
+  // Enlace a una sección (o al documento entero, sin id): su título actual, o marcado como roto si ya no existe.
   function docLink(key, id) {
     const d = docByKey(key);
-    const sec = sectionOf(d, id);
-    if (!sec) return h('span', { class: 'doclink broken', title: 'Referencia rota: la sección ya no existe' }, '⚠ ' + key + '#' + id);
-    const a = h('a', { class: 'doclink', href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(sec.id), title: d.path + '#' + sec.id,
-      onclick: (e) => e.stopPropagation() }, sec.title.replace(/`/g, ''));
+    const title = linkTitle(key, id);
+    if (title === null) return h('span', { class: 'doclink broken', title: 'Referencia rota: ' + (id && d && !d.missing ? 'la sección ya no existe' : 'el documento no está') }, '⚠ ' + key + (id ? '#' + id : ''));
+    const a = h('a', { class: 'doclink', href: '#docs/' + encodeURIComponent(d.alias) + (id ? '/' + encodeURIComponent(id) : ''), title: d.path + (id ? '#' + id : ''),
+      onclick: (e) => e.stopPropagation() }, title);
     return a;
   }
   // Enlaces [[alias#id]] de un texto que se edita en un textarea: se listan debajo para poder abrirlos.
@@ -759,15 +769,17 @@
   const sectionOf = (d, id) => d && d.sections.find((x) => x.id === id);
   const refsOf = (t) => (Array.isArray(t.refs) ? t.refs : []);
 
-  // Tareas que referencian una sección: refs estructuradas y enlaces [[alias#id]] (los de dentro de `…` no cuentan).
+  // Tareas que referencian una sección (o el documento entero, con id null): refs estructuradas y enlaces
+  // [[alias#id]] o [[alias]] (los de dentro de `…` no cuentan).
   function tasksFor(d, id) {
-    const hits = (key, sid) => sid === id && (key === d.alias || key === d.path);
+    const hits = (key, sid) => (sid || null) === (id || null) && (key === d.alias || key === d.path);
     return S.tasks.filter((t) => refsOf(t).some((r) => hits(r.doc, r.section)) ||
       [t.notes, t.test, ...checklistOf(t).flatMap((c) => [c.text, c.detail])].some((txt) =>
         [...String(txt || '').replace(/`[^`]*`/g, '').matchAll(LINK)].some((m) => hits(m[1], m[2]))))
       .sort(sortTasks);
   }
-  const brokenRefs = (t) => refsOf(t).filter((r) => !sectionOf(docByKey(r.doc), r.section));
+  const brokenRefs = (t) => refsOf(t).filter((r) => linkTitle(r.doc, r.section) === null);
+  const sameRef = (a, b) => (docByKey(a.doc)?.path || a.doc) === (docByKey(b.doc)?.path || b.doc) && (a.section || null) === (b.section || null);
   const allBroken = () => S.tasks.flatMap((t) => brokenRefs(t).map((r) => ({ t, r })));
 
   // HTML de una sección, pedido al desplegarla y guardado hasta que el documento cambie.
@@ -797,7 +809,17 @@
       const d = docByKey(r.doc);
       const sec = sectionOf(d, r.section);
       const key = t.id + '|' + r.doc + '#' + r.section;
-      const remove = h('button', { class: 'rm', type: 'button', 'aria-label': 'Quitar referencia', onclick: () => updateTask(t.id, (cur) => ({ refs: refsOf(cur).filter((x) => !(x.doc === r.doc && x.section === r.section)) })) }, '×');
+      const remove = h('button', { class: 'rm', type: 'button', 'aria-label': 'Quitar referencia', onclick: () => updateTask(t.id, (cur) => ({ refs: refsOf(cur).filter((x) => !sameRef(x, r)) })) }, '×');
+      // Al documento entero: no se despliega (puede ser largo), se abre en la vista Documentos.
+      if (!r.section) {
+        box.append(d && !d.missing
+          ? h('div', { class: 'ref whole' }, h('div', { class: 'ref-head' },
+            h('a', { class: 'ref-toggle', href: '#docs/' + encodeURIComponent(d.alias) }, h('span', { class: 'chev', 'aria-hidden': 'true' }, '▤'), docTitle(d)),
+            h('span', { class: 'ref-id' }, d.path + ' · documento entero'),
+            remove))
+          : h('div', { class: 'ref broken' }, h('div', { class: 'ref-head' }, h('span', null, '⚠ Referencia rota: ', h('code', null, r.doc), ' no está'), remove)));
+        return;
+      }
       if (!sec) {
         box.append(h('div', { class: 'ref broken' }, h('div', { class: 'ref-head' },
           h('span', null, '⚠ Referencia rota: ', h('code', null, r.doc + '#' + r.section)),
@@ -909,18 +931,22 @@
     const q = String(S.refSearch || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
     const words = q.split(/\s+/).filter(Boolean);
     const norm = (x) => x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-    const have = new Set(refsOf(t).map((r) => (docByKey(r.doc)?.path || r.doc) + '#' + r.section));
-    const matches = S.docs.flatMap((d) => d.sections.map((s) => ({ d, s })))
-      .filter(({ d, s }) => !have.has(d.path + '#' + s.id) && words.every((w) => norm(s.title + ' ' + s.id).includes(w)))
+    // Cada documento entero (s: null) va antes que sus secciones; coincide por ruta, alias o su título.
+    const matches = S.docs.filter((d) => !d.missing).flatMap((d) => [{ d, s: null }, ...d.sections.map((s) => ({ d, s }))])
+      .filter(({ d, s }) => !refsOf(t).some((r) => sameRef(r, { doc: d.path, section: s?.id }))
+        && words.every((w) => norm(s ? s.title + ' ' + s.id : d.path + ' ' + d.alias + ' ' + docTitle(d)).includes(w)))
       .slice(0, 8);
     return h('div', { class: 'ref-search' },
       h('label', { for: 'd-refq', class: 'sr' }, 'Buscar sección'),
-      h('input', { id: 'd-refq', placeholder: 'Buscar sección por título', autocomplete: 'off', value: S.refSearch || '', 'data-orig': S.refSearch || '',
+      h('input', { id: 'd-refq', placeholder: 'Buscar documento o sección', autocomplete: 'off', value: S.refSearch || '', 'data-orig': S.refSearch || '',
         oninput: (e) => { S.refSearch = e.target.value; renderDetail(); } }),
       h('ul', { class: 'ref-matches' }, matches.map(({ d, s }) => h('li', null,
-        h('button', { type: 'button', onclick: () => { S.refSearch = null; updateTask(t.id, (cur) => refsOf(cur).some((x) => (docByKey(x.doc)?.path || x.doc) === d.path && x.section === s.id) ? null : ({ refs: [...refsOf(cur), { doc: d.path, section: s.id }] })); } },
-          rich(s.title), h('span', { class: 'ref-id' }, d.alias + '#' + s.id))))),
-      words.length && !matches.length ? h('p', { class: 'muted small' }, 'Ninguna sección coincide.') : null);
+        h('button', { type: 'button', onclick: () => {
+          const ref = s ? { doc: d.path, section: s.id } : { doc: d.path };
+          S.refSearch = null; updateTask(t.id, (cur) => refsOf(cur).some((x) => sameRef(x, ref)) ? null : ({ refs: [...refsOf(cur), ref] }));
+        } },
+          s ? rich(s.title) : h('span', null, '▤ ', docTitle(d)), h('span', { class: 'ref-id' }, s ? d.alias + '#' + s.id : d.path + ' · documento entero'))))),
+      words.length && !matches.length ? h('p', { class: 'muted small' }, 'Ningún documento ni sección coincide.') : null);
   }
 
   // Vista Documentos: índice, documento y tareas que referencian la sección actual.
@@ -939,6 +965,8 @@
     return null;
   }
   let docObserver = null;
+  const backlinkTask = (t) => h('a', { href: '#', class: 'bl-task', onclick: (e) => { e.preventDefault(); goToTask(t.id); } },
+    h('span', { class: 'dot', style: 'background:' + STATUSES.find((x) => x.id === t.status).color }), t.code ? h('span', { class: 'code' }, t.code) : null, h('span', { class: 't' }, rich(t.title)));
   function renderDocs(rebuildArticle) {
     const box = document.getElementById('docs');
     if (S.view !== 'docs') { box.replaceChildren(); return; }
@@ -962,8 +990,9 @@
         // Enlace [[alias#id]] a la sección actual, para pegarlo en notas o pasos (6.6).
         sec && !sec.explicit ? h('span', { class: 'fragile', title: 'Agregá <!-- id: … --> debajo del título en ' + d.path + ' (o scompass doc stamp-ids ' + d.alias + ')' },
           'Sin id: el enlace se rompe si cambiás el título') : null,
-        sec ? h('button', { class: 'btn ghost small copy-link', type: 'button', title: 'Copia [[' + d.alias + '#' + sec.id + ']] para pegar en notas o pasos',
-          onclick: () => copy('[[' + d.alias + '#' + sec.id + ']]') }, 'Copiar enlace') : null),
+        // Sin sección elegida, el enlace es al documento entero: [[alias]].
+        h('button', { class: 'btn ghost small copy-link', type: 'button', title: 'Copia [[' + d.alias + (sec ? '#' + sec.id : '') + ']] para pegar en notas o pasos',
+          onclick: () => copy('[[' + d.alias + (sec ? '#' + sec.id : '') + ']]') }, sec ? 'Copiar enlace' : 'Copiar enlace al documento')),
       h('div', { class: 'docs-grid' },
         h('nav', { class: 'toc', 'aria-label': 'Índice de ' + d.path }, d.sections.map((s) => h('a', {
           href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(s.id), 'aria-current': s.id === S.sec ? 'true' : null,
@@ -973,10 +1002,11 @@
         article,
         h('aside', { class: 'backlinks', 'aria-label': 'Tareas que referencian esta sección' },
           sec ? [h('div', { class: 'label' }, 'Referenciada por · ' + (counts.get(sec.id) === 1 ? '1 tarea' : counts.get(sec.id) + ' tareas')),
-            ...tasksFor(d, sec.id).map((t) => h('a', { href: '#', class: 'bl-task', onclick: (e) => { e.preventDefault(); goToTask(t.id); } },
-              h('span', { class: 'dot', style: 'background:' + STATUSES.find((x) => x.id === t.status).color }), t.code ? h('span', { class: 'code' }, t.code) : null, h('span', { class: 't' }, rich(t.title)))),
+            ...tasksFor(d, sec.id).map(backlinkTask),
             counts.get(sec.id) ? null : h('p', { class: 'muted small' }, 'Ninguna tarea referencia esta sección: parte del diseño todavía sin planificar.')]
-            : h('p', { class: 'muted small' }, 'Elegí una sección del índice para ver qué tareas la referencian.'))));
+            : [h('div', { class: 'label' }, 'Referencian el documento · ' + (tasksFor(d, null).length === 1 ? '1 tarea' : tasksFor(d, null).length + ' tareas')),
+              ...tasksFor(d, null).map(backlinkTask),
+              h('p', { class: 'muted small' }, 'Elegí una sección del índice para ver qué tareas la referencian.')])));
     observeHeadings(article);
   }
   // Al bajar por el documento, el índice y los backlinks siguen a la sección visible.

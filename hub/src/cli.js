@@ -86,11 +86,11 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   item task <lista> <n> --milestone m00 [--code 0.12]
                                             pasa el ítem a una tarea nueva y lo deja enlazado
   doc list                                  documentos de config.json con su índice de secciones
-  doc show <alias>#<id> [--raw]             una sección (--raw: solo el markdown, para agentes)
+  doc show <alias>[#<id>] [--raw]           una sección, o el documento entero sin #<id> (--raw: solo el markdown)
   doc stamp-ids <alias> [--dry-run]         agrega <!-- id: … --> a las secciones que no tienen
   refs check                                referencias rotas (sale con 1 si hay) y frágiles
   refs suggest                              propone refs a partir de citas "gdd.md §4.3" (no aplica nada)
-  ref add|rm <tarea> <alias>#<id>           agrega o quita una referencia de la tarea
+  ref add|rm <tarea> <alias>[#<id>]         agrega o quita una referencia (sin #<id>, al documento entero)
   link add <tarea> <blocks|blocked-by|related> <otra>
                                             vincula dos tareas (reemplaza el vínculo que tuvieran)
   link rm <tarea> <otra>                    quita el vínculo entre las dos
@@ -621,8 +621,17 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         return 0;
       }
       if (sub === 'show') {
-        const r = resolveRef(docs, need(target, '<alias>#<id>'));
+        const r = resolveRef(docs, need(target, '<alias>[#<id>]'));
         if (!r.doc) throw new StoreError('not_found', `no hay un documento "${r.key}" (doc list muestra los que hay)`);
+        if (r.whole) {
+          const md = r.doc.lines.join('\n').replace(/\s+$/, '') + '\n';
+          if (o.raw) { out.write(md); return 0; }
+          if (o.json) return done({ alias: r.doc.alias, path: r.doc.path, lines: [1, r.doc.lines.length], markdown: md });
+          print(`${r.doc.alias} · ${r.doc.path}, ${r.doc.lines.length} líneas`);
+          print('');
+          out.write(md);
+          return 0;
+        }
         if (!r.section) throw new StoreError('not_found', `no hay una sección "${r.id}" en ${r.doc.path}`);
         const md = sectionMarkdown(r.doc, r.section);
         if (o.raw) { out.write(md); return 0; }
@@ -678,18 +687,20 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       need(taskId, 'la tarea');
       const all = await store.loadAll();
       const docs = await loadDocs(project, all.config);
-      const r = resolveRef(docs, need(target, '<alias>#<id>'));
+      const r = resolveRef(docs, need(target, '<alias>[#<id>]'));
       const cur = await store.get('tasks', taskId);
       const refs = cur.doc.refs ?? [];
+      // Sin #<id>, la referencia es al documento entero: se guarda sin section.
+      const same = (x, path) => (x.doc === path || x.doc === r.key) && (x.section || null) === r.id;
       let next;
       if (sub === 'add') {
         if (!r.doc) throw new StoreError('not_found', `no hay un documento "${r.key}"`);
-        if (!r.section) throw new StoreError('not_found', `no hay una sección "${r.id}" en ${r.doc.path}`);
-        if (refs.some((x) => x.doc === r.doc.path && x.section === r.id)) return done({ id: cur.id, etag: cur.etag, ...cur.doc }, `${taskId} ya referencia ${target}`);
-        next = [...refs, { doc: r.doc.path, section: r.id }];
+        if (!r.whole && !r.section) throw new StoreError('not_found', `no hay una sección "${r.id}" en ${r.doc.path}`);
+        if (refs.some((x) => same(x, r.doc.path))) return done({ id: cur.id, etag: cur.etag, ...cur.doc }, `${taskId} ya referencia ${target}`);
+        next = [...refs, r.whole ? { doc: r.doc.path } : { doc: r.doc.path, section: r.id }];
       } else {
         const path = r.doc?.path ?? r.key;
-        next = refs.filter((x) => !((x.doc === path || x.doc === r.key) && x.section === r.id));
+        next = refs.filter((x) => !same(x, path));
         if (next.length === refs.length) throw new StoreError('not_found', `${taskId} no referencia ${target}`);
       }
       const w = await store.patch('tasks', taskId, { refs: next }, { ifMatch: o.etag ?? cur.etag });

@@ -68,7 +68,7 @@ export async function loadDocs(projectDir, config) {
       const text = await readFile(join(projectDir, rel), 'utf8').catch(() => null);
       const alias = entry.path.includes('*') ? `${entry.alias}/${rel.replace(/^.*\//, '').replace(/\.md$/, '')}` : entry.alias;
       if (text === null) {
-        out.push({ alias, path: rel, sections: [], lines: [], warnings: [{ code: 'missing_doc', message: `no existe ${rel}` }] });
+        out.push({ alias, path: rel, missing: true, sections: [], lines: [], warnings: [{ code: 'missing_doc', message: `no existe ${rel}` }] });
         continue;
       }
       out.push({ alias, path: relative(projectDir, join(projectDir, rel)).split(sep).join('/'), ...parseSections(text) });
@@ -84,18 +84,27 @@ export const findSection = (doc, id) => doc?.sections.find((s) => s.id === id) ?
 
 export const sectionMarkdown = (doc, s) => doc.lines.slice(s.start, s.end).join('\n').replace(/\s+$/, '') + '\n';
 
-/** "alias#id" → { doc, section } (o null en cada parte si no existe). */
+/**
+ * "alias#id" o "alias" → { key, id, doc, section, whole } (doc o section null si no existen). Sin "#id" la
+ * referencia es al documento entero: whole = true, id y section quedan null.
+ */
 export function resolveRef(docs, ref) {
-  const [key, id] = typeof ref === 'string' ? ref.split('#') : [ref.doc, ref.section];
+  const [key, rawId] = typeof ref === 'string' ? ref.split('#') : [ref.doc, ref.section];
+  const id = rawId || null;
   const doc = findDoc(docs, key) ?? null;
-  return { key, id, doc, section: doc ? findSection(doc, id) : null };
+  return { key, id, doc, section: doc && id ? findSection(doc, id) : null, whole: !id };
 }
 
-// Enlaces en línea [[alias#id]] dentro de un texto.
-export const LINK = /\[\[([^\]#\s]+)#([a-z0-9][a-z0-9_-]*)\]\]/g;
+/** Texto de una referencia: "ruta#id", o solo la ruta si es al documento entero. */
+export const refText = (doc, section) => (section ? `${doc}#${section}` : doc);
+
+// Enlaces en línea [[alias#id]] (una sección) o [[alias]] (el documento entero) dentro de un texto. m[2] es la
+// sección, undefined en los de documento entero.
+export const LINK = /\[\[([^\]#\s]+)(?:#([a-z0-9][a-z0-9_-]*))?\]\]/g;
 
 /**
- * Referencias de las tareas que no resuelven: refs estructuradas y enlaces [[alias#id]] en notas, prueba y pasos.
+ * Referencias de las tareas que no resuelven: refs estructuradas y enlaces [[alias#id]] o [[alias]] en notas,
+ * prueba y pasos. Una referencia al documento entero solo se rompe si el documento no está.
  * tasks: [{ id, ...doc }]. Devuelve [{ task, ref, where, problem: 'missing_doc'|'missing_section'|'fragile' }].
  * 'fragile' = resuelve, pero contra una sección sin id explícito (se rompe si se renombra el título).
  */
@@ -103,8 +112,8 @@ export function checkRefs(docs, tasks) {
   const out = [];
   const check = (task, key, id, where) => {
     const r = resolveRef(docs, { doc: key, section: id });
-    const problem = !r.doc ? 'missing_doc' : !r.section ? 'missing_section' : !r.section.explicit ? 'fragile' : null;
-    if (problem) out.push({ task: task.id, ref: `${key}#${id}`, where, problem });
+    const problem = !r.doc || r.doc.missing ? 'missing_doc' : r.whole ? null : !r.section ? 'missing_section' : !r.section.explicit ? 'fragile' : null;
+    if (problem) out.push({ task: task.id, ref: refText(key, r.id), where, problem });
   };
   for (const t of tasks) {
     for (const r of t.refs ?? []) check(t, r.doc, r.section, 'refs');

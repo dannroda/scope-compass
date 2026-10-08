@@ -97,12 +97,11 @@
     },
     "refs": {
       "type": "array",
-      "description": "Referencias a secciones de documentos: doc = ruta, section = id del comentario <!-- id: ... -->",
+      "description": "Referencias a documentos: doc = ruta, section = id del comentario <!-- id: ... -->; sin section, el documento entero",
       "items": {
         "type": "object",
         "required": [
-          "doc",
-          "section"
+          "doc"
         ],
         "additionalProperties": false,
         "properties": {

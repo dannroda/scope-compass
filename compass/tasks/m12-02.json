@@ -19,6 +19,10 @@
     {
       "done": false,
       "text": "Tests"
+    },
+    {
+      "done": false,
+      "text": "Dock sin hub: compass_reader.read_docs expande los globs (hoy los saltea), con las mismas reglas que loadDocs"
     }
   ],
   "code": "12.2",
@@ -30,5 +34,5 @@
   "status": "todo",
   "test": "doc add enemigos docs/enemigos.md lo muestra en doc list; un glob nuevo toma archivos creados después; init --template juego no lista tareas.md.",
   "title": "Agregar y quitar documentos sin editar config.json",
-  "updated_at": "2026-10-08T04:55:37.378Z"
+  "updated_at": "2026-10-08T05:25:01.560Z"
 }

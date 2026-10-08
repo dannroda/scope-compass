@@ -18,7 +18,7 @@
     },
     {
       "done": false,
-      "text": "Detalle de tarea: refs a documento entero y [[alias]] en el texto"
+      "text": "Detalle de tarea: refs a documento entero y `[[alias]]` en el texto"
     }
   ],
   "code": "12.5",

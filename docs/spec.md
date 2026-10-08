@@ -424,6 +424,7 @@ La referencia no puede depender del número (`11.3`) ni del texto del título (s
 
 - **Campo estructurado** `refs` en la tarea: `[{ doc: "gdd.md", section: "ventanas-ataque" }]`. Se edita desde el detalle con un buscador de secciones (título + documento).
 - **Enlaces en línea** dentro de `notes`, `test` y los pasos: `[[gdd#ventanas-ataque]]`. Se muestran como un enlace con el título actual de la sección. `gdd` es el alias del documento definido en `config.json`.
+- **Documento entero (12.1):** una ref sin `section` (`{ doc: "docs/enemigos.md" }`) y el enlace `[[enemigos]]` apuntan al documento completo, para tareas descritas por un archivo propio. Se muestran con el título de nivel 1 del documento (o su ruta) y no se despliegan en el detalle: se abren en la vista Documentos, que lista las tareas que referencian el documento cuando no hay una sección elegida. Solo se rompen si el documento no está (`missing_doc`). En la CLI, `ref add|rm <tarea> <alias>` sin `#<id>` y `doc show <alias>` devuelve el documento entero.
 
 ### 10.3 UI
 <!-- id: documentos-ui -->

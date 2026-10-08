@@ -22,7 +22,7 @@ func _initialize() -> void:
 		# Cuarto argumento "refs": despliega sus referencias.
 		if a.size() > 3 and a[3] == "refs":
 			for r in v.board.task(a[2]).get("refs", []):
-				v._refs_open["%s#%s" % [r.doc, r.section]] = true
+				v._refs_open["%s#%s" % [r.doc, r.get("section", "")]] = true
 		v._render()
 	for i in 10:
 		await process_frame

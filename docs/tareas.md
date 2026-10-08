@@ -1232,7 +1232,7 @@ Ver y encontrar tareas en un tablero grande: vista de lista y filtros en la UI w
 
 **Prueba:** npm test (hub/test/filters.test.js, ui-filters.test.js y los de schema, API y export)
 
-## M12 — Biblioteca de documentos  (1/8)
+## M12 — Biblioteca de documentos  (2/8)
 
 Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos archivos, enlaces a documentos enteros, búsqueda y el estado de git de cada uno.
 
@@ -1242,17 +1242,17 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 - La web tiene una biblioteca: árbol por carpetas, búsqueda de texto en todos los documentos y, por documento, sus tareas y su estado de git.
 - Cada documento muestra si tiene cambios sin commitear, su último commit y el diff contra HEAD.
 
-### 12.1 Refs a un documento entero · Pendiente
+### 12.1 Refs a un documento entero · Hecho
 
-- [ ] Schema: section opcional en refs (schema/, compass/schema/ y fixture de tests)
-- [ ] docs.js: resolveRef, LINK y checkRefs aceptan doc sin sección
-- [ ] CLI ref add|rm <tarea> <alias>[#<id>] y doc show <alias> sin sección
-- [ ] Backlinks a nivel documento en /api/docs y export md
-- [ ] Tests
+- [x] Schema: section opcional en refs (schema/, compass/schema/ y fixture de tests)
+- [x] docs.js: resolveRef, LINK y checkRefs aceptan doc sin sección
+- [x] CLI ref add|rm <tarea> <alias>[#<id>] y doc show <alias> sin sección
+- [x] Backlinks a nivel documento en /api/docs y export md
+- [x] Tests
 
-**Prueba:** scompass ref add <tarea> gdd; refs check no lo marca roto; [[gdd]] en notas resuelve; borrar el archivo lo marca missing_doc.
+**Prueba:** scompass ref add <tarea> gdd; refs check no lo marca roto; `[[gdd]]` en notas resuelve; borrar el archivo lo marca missing_doc.
 
-**Notas:** Hoy refs exige doc y section. Se hace section opcional: una ref sin sección apunta al documento entero. En texto, [[alias]] sin #. Afecta resolveRef/checkRefs/suggestRefs, export md, ref add|rm y backlinks (docs-api).
+**Notas:** Hoy refs exige doc y section. Se hace section opcional: una ref sin sección apunta al documento entero. En texto, `[[alias]]` sin #. Afecta resolveRef/checkRefs/suggestRefs, export md, ref add|rm y backlinks (docs-api).
 
 ### 12.2 Agregar y quitar documentos sin editar config.json · Pendiente
 
@@ -1296,7 +1296,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 - [ ] Caja de búsqueda con resultados por documento y sección
 - [ ] Ficha del documento: tareas, secciones sin tareas, estado de git
 - [ ] Agregar / quitar documento desde la UI
-- [ ] Detalle de tarea: refs a documento entero y [[alias]] en el texto
+- [ ] Detalle de tarea: refs a documento entero y `[[alias]]` en el texto
 
 **Prueba:** Con 5+ documentos en carpetas: navegar el árbol, buscar un término y saltar a la sección, ver qué tareas referencian el documento.
 
@@ -1329,4 +1329,4 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Prueba:** Elegir Actualizada ▼: la tarea recién editada sube al tope de su columna, también al llegar el cambio por ws; volver a Manual restaura el orden y el arrastre.
 
-**Notas:** Selector de orden en la barra del tablero: orden manual (el de hoy, order), código, actualizada, creada, fecha límite, prioridad y título, ascendente o descendente. Se ordena dentro de cada columna. Reusa COLUMNS/sortedForList de la vista de lista y el mismo S.sort, así tablero y lista comparten el orden; la lista suma las columnas Actualizada y Creada. Con un orden que no es el manual, arrastrar entre columnas sigue cambiando el estado pero no reordena (aviso en el tooltip). Se recuerda por proyecto como el filtro. Solo web: no toca datos.
+**Notas:** Selector de orden en la barra del tablero: orden manual (el de hoy, order), código, actualizada, creada, fecha límite, prioridad y título, ascendente o descendente. Se ordena dentro de cada columna. Reusa COLUMNS/sortedForList de la vista de lista y el mismo S.sort, así tablero y lista comparten el orden; la lista suma las columnas Actualizada y Creada. Con un orden que no es el manual, arrastrar entre columnas sigue cambiando el estado pero no reordena (aviso en el tooltip). Se recuerda por proyecto como el filtro. Solo web: no toca datos. Hecho: AGENTS.md no cambia (es solo web, sin CLI ni datos).

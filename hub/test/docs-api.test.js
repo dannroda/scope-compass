@@ -51,6 +51,8 @@ beforeEach(async () => {
   await set('m1-03', [{ doc: 'gdd.md', section: 'ventanas-ataque' }]);
   await set('m1-04', [], 'ver [[gdd#ventanas-ataque]] y [[gdd#borrada]]');
   await set('m1-05', [{ doc: 'gdd.md', section: 'combate' }]);
+  await set('m1-06', [{ doc: 'gdd.md' }]);
+  await set('m1-07', [], 'todo el [[gdd]]');
   app = createServer({ projectDir: dir, store: createJsonFilesStore(join(dir, 'compass'), { validators: V }), validators: V, watch: true });
 });
 afterEach(async () => {
@@ -78,6 +80,8 @@ test('GET /api/docs: índice con las tareas que referencian cada sección', asyn
   assert.equal(d.alias, 'gdd');
   const tasksOf = Object.fromEntries(d.sections.map((s) => [s.id, s.tasks.map((t) => t.id)]));
   assert.deepEqual(tasksOf, { juego: [], combate: ['m1-05'], 'ventanas-ataque': ['m1-03', 'm1-04'], camara: [] });
+  assert.deepEqual(d.tasks.map((t) => t.id), ['m1-06', 'm1-07'], 'las que referencian el documento entero, ref o [[gdd]]');
+  assert.deepEqual((await get('/api/docs/gdd')).body.tasks.map((t) => t.id), ['m1-06', 'm1-07']);
 });
 
 test('GET /api/docs/:alias y /sections/:id: HTML y backlinks; 404 si no existe', async () => {

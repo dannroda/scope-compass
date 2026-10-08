@@ -25,7 +25,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
   - `tags`: etiquetas opcionales, textos cortos sin comas (`["arte", "audio"]`);
   - `test`: cómo se comprueba que la tarea está terminada;
   - `notes`: notas libres;
-  - `refs`: secciones de documentos del proyecto que la tarea cita;
+  - `refs`: documentos del proyecto que la tarea cita, enteros (`{ doc }`) o una sección (`{ doc, section }`);
   - `links`: vínculos con otras tareas (ver "Vínculos entre tareas").
 - En los textos, `` `así` `` se muestra como código.
 
@@ -111,12 +111,13 @@ scompass item task assets 3 --milestone m06         # pasa el ítem a una tarea 
 
 ## Documentos y referencias
 
-Los documentos citables están en `compass/config.json` › `docs` (alias y ruta). Una referencia apunta a una sección por su id estable (`<!-- id: … -->` debajo del título).
+Los documentos citables están en `compass/config.json` › `docs` (alias y ruta). Una referencia apunta a una sección por su id estable (`<!-- id: … -->` debajo del título), o al documento entero si va sin `#<id>`. En notas, prueba y pasos, `[[alias#id]]` enlaza una sección y `[[alias]]` el documento.
 
 ```sh
 scompass doc list                  # documentos con su índice de secciones
-scompass doc show spec#godot --raw # el markdown de una sección
+scompass doc show spec#godot --raw # el markdown de una sección (sin #godot, el documento entero)
 scompass ref add m5-02 spec#godot  # la tarea cita esa sección
+scompass ref add m5-02 spec        # la tarea cita el documento entero
 scompass ref rm m5-02 spec#godot
 scompass refs check                # referencias rotas (sale con 1 si hay)
 ```

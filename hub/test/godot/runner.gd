@@ -364,7 +364,15 @@ func _refs_check(v, a: Array, c: String, online: bool) -> void:
 	for ch in v.refs_box.get_children():
 		if ch is Label and ch.text.contains("Referencia rota: gdd.md#borrada"):
 			broken = true
-	_check(c, broken, "falta el aviso de la referencia rota")
+	if not _check(c, broken, "falta el aviso de la referencia rota"): return
+	# Al documento entero (12.1): su título, sin desplegar, y rota si el documento no está.
+	var whole = v.refs_box.find_child("WholeDoc", true, false)
+	if not _check(c, whole is Label and whole.text == "▤ Juego", "falta la referencia al documento entero"): return
+	var whole_broken := false
+	for ch in v.refs_box.get_children():
+		if ch is Label and ch.text.contains("Referencia rota: otro.md no está"):
+			whole_broken = true
+	_check(c, whole_broken, "falta el aviso del documento que no está")
 
 
 func test_refs_online(a: Array) -> void:

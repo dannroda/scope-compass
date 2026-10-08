@@ -327,7 +327,7 @@ async function withDocs() {
   await writeFile(join(dir, 'gdd.md'), GDD);
   const cfgPath = join(dir, 'compass', 'config.json');
   await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), docs: [{ alias: 'gdd', path: 'gdd.md' }] }));
-  await setTask('m1-04', { refs: [{ doc: 'gdd.md', section: 'ventanas-ataque' }, { doc: 'gdd.md', section: 'borrada' }] });
+  await setTask('m1-04', { refs: [{ doc: 'gdd.md', section: 'ventanas-ataque' }, { doc: 'gdd.md', section: 'borrada' }, { doc: 'gdd.md' }, { doc: 'otro.md' }] });
 }
 
 test('dock con hub: la referencia se despliega con el texto en BBCode y el snippet en un CodeEdit con resaltado', { skip }, async () => {

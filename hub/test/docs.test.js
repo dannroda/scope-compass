@@ -178,6 +178,40 @@ test('ref add/rm y refs check: renombrar el título no rompe; borrar el id sí',
   }
 });
 
+test('referencias al documento entero: ref sin sección y [[alias]]; solo se rompen si falta el documento', async () => {
+  const docs = await loadDocs('/', { docs: [] });
+  docs.push({ alias: 'gdd', path: 'gdd.md', ...parseSections(MD) });
+  const r = resolveRef(docs, 'gdd');
+  assert.equal(r.doc.path, 'gdd.md');
+  assert.equal(r.whole, true);
+  assert.equal(r.section, null);
+  assert.equal(resolveRef(docs, { doc: 'gdd.md' }).whole, true);
+  const problems = checkRefs(docs, [{ id: 't1', refs: [{ doc: 'gdd.md' }, { doc: 'otro.md' }], notes: 'todo el [[gdd]], no [[otro]] ni `[[nada]]`' }]);
+  assert.deepEqual(problems.map((p) => [p.ref, p.where, p.problem]), [['otro.md', 'refs', 'missing_doc'], ['otro', 'notes', 'missing_doc']]);
+
+  const dir = await projectWithGdd();
+  const cli = cliIn(dir);
+  const refs = async () => JSON.parse(await readFile(join(dir, 'compass', 'tasks', 'm1-07.json'), 'utf8')).refs;
+  try {
+    assert.equal((await cli('ref', 'add', 'm1-07', 'gdd')).code, 0);
+    assert.equal((await cli('ref', 'add', 'm1-07', 'gdd#combate')).code, 0);
+    assert.deepEqual(await refs(), [{ doc: 'gdd.md' }, { doc: 'gdd.md', section: 'combate' }]);
+    assert.match((await cli('ref', 'add', 'm1-07', 'gdd.md')).out, /ya referencia/);
+    assert.equal((await cli('refs', 'check')).code, 0);
+    const show = await cli('doc', 'show', 'gdd', '--raw');
+    assert.equal(show.out, MD.replace(/\s+$/, '') + '\n', 'doc show sin #id: el documento entero');
+    assert.equal((await cli('ref', 'rm', 'm1-07', 'gdd')).code, 0);
+    assert.deepEqual(await refs(), [{ doc: 'gdd.md', section: 'combate' }], 'quitar la del documento deja la de la sección');
+    assert.equal((await cli('ref', 'add', 'm1-07', 'gdd')).code, 0);
+    await rm(join(dir, 'gdd.md'));
+    const c = await cli('refs', 'check', '--json');
+    assert.equal(c.code, 1);
+    assert.deepEqual(JSON.parse(c.out).broken.map((b) => [b.ref, b.problem]), [['gdd.md#combate', 'missing_doc'], ['gdd.md', 'missing_doc']]);
+  } finally {
+    await rm(dir, { recursive: true, force: true, maxRetries: 10 });
+  }
+});
+
 test('stamp-ids estampa el slug actual (las refs frágiles siguen resolviendo) y no toca lo demás', async () => {
   const { text, stamped } = stampIds(MD);
   assert.deepEqual(stamped, ['sin-id-con-tildes']);

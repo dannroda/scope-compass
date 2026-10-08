@@ -1,16 +1,16 @@
 // API de documentos (spec §10.4): índice, documento y sección renderizados, backlinks y referencias rotas.
 // Solo lectura. Los documentos se releen en cada request: son archivos chicos y siempre están al día.
-import { checkRefs, findDoc, findSection, LINK, loadDocs, sectionMarkdown } from './docs.js';
+import { checkRefs, findDoc, findSection, LINK, loadDocs, refText, sectionMarkdown } from './docs.js';
 import { renderBBCode, renderBlocks, renderMarkdown } from './render.js';
 import { StoreError } from './store/json-files.js';
 
-// Tareas que referencian cada sección: "<ruta>#<id>" → [{ id, code, title, status, milestone }].
+// Tareas que referencian cada sección, "<ruta>#<id>", o el documento entero, "<ruta>" → [{ id, code, title, status, milestone }].
 function backlinks(docs, tasks) {
   const map = new Map();
   const add = (key, id, t) => {
     const d = findDoc(docs, key);
-    if (!d || !findSection(d, id)) return;
-    const k = `${d.path}#${id}`;
+    if (!d || (id && !findSection(d, id))) return;
+    const k = refText(d.path, id);
     const list = map.get(k) ?? [];
     if (!list.some((x) => x.id === t.id)) list.push({ id: t.id, code: t.code ?? '', title: t.title, status: t.status, milestone: t.milestone });
     map.set(k, list);
@@ -44,13 +44,13 @@ const sectionInfo = (d, s, links) => ({
 export function registerDocsApi(app, { store, projectDir }) {
   app.get('/api/docs', async () => {
     const { docs, links } = await context(store, projectDir);
-    return { docs: docs.map((d) => ({ alias: d.alias, path: d.path, warnings: d.warnings, sections: d.sections.map((s) => sectionInfo(d, s, links)) })) };
+    return { docs: docs.map((d) => ({ alias: d.alias, path: d.path, ...(d.missing && { missing: true }), warnings: d.warnings, tasks: links.get(d.path) ?? [], sections: d.sections.map((s) => sectionInfo(d, s, links)) })) };
   });
 
   app.get('/api/docs/:alias', async (req) => {
     const { docs, links } = await context(store, projectDir);
     const d = getDoc(docs, req.params.alias);
-    return { alias: d.alias, path: d.path, warnings: d.warnings, sections: d.sections.map((s) => sectionInfo(d, s, links)),
+    return { alias: d.alias, path: d.path, warnings: d.warnings, tasks: links.get(d.path) ?? [], sections: d.sections.map((s) => sectionInfo(d, s, links)),
       html: renderMarkdown(d.lines.join('\n'), d.sections) };
   });
 
