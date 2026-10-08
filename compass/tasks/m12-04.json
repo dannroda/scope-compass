@@ -1,0 +1,30 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "docs.js: searchDocs(docs, q) → [{ alias, section, line, snippet }]"
+    },
+    {
+      "done": false,
+      "text": "API GET /api/docs/search?q="
+    },
+    {
+      "done": false,
+      "text": "CLI doc search \"<texto>\" [--json]"
+    },
+    {
+      "done": false,
+      "text": "Tests"
+    }
+  ],
+  "code": "12.4",
+  "created_at": "2026-10-08T04:55:39.572Z",
+  "milestone": "m12",
+  "notes": "Buscar en todos los documentos declarados, sin índice externo: recorrer las líneas ya cargadas. Cada resultado dice documento, sección y un fragmento. Sin tildes ni mayúsculas, como los filtros de M11.",
+  "order": 4,
+  "refs": [],
+  "status": "todo",
+  "test": "scompass doc search slime encuentra la sección de enemigos.md con su fragmento; la API devuelve lo mismo.",
+  "title": "Búsqueda de texto en los documentos",
+  "updated_at": "2026-10-08T04:55:40.784Z"
+}

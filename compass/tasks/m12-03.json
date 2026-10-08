@@ -1,0 +1,38 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "git.js: docStatus (porcelain por ruta) y lastCommit (git log -1)"
+    },
+    {
+      "done": false,
+      "text": "git.js: docDiff contra HEAD y docLog con --follow"
+    },
+    {
+      "done": false,
+      "text": "API: git en /api/docs, GET /api/docs/:alias/diff y /log"
+    },
+    {
+      "done": false,
+      "text": "CLI doc status y doc diff <alias> [--json]"
+    },
+    {
+      "done": false,
+      "text": "El watcher avisa por ws cuando cambia el estado de un documento"
+    },
+    {
+      "done": false,
+      "text": "Tests (repo temporal; sin git devuelve repo: false)"
+    }
+  ],
+  "code": "12.3",
+  "created_at": "2026-10-08T04:55:37.623Z",
+  "milestone": "m12",
+  "notes": "Ampliar git.js: por documento, estado (sin cambios, modificado, nuevo sin seguir, borrado), último commit (hash corto, fecha, autor, asunto) y diff contra HEAD. Historial con git log --follow. Sin repo: los campos quedan vacíos, nada falla. Solo lectura: la app nunca commitea (spec §4.5).",
+  "order": 3,
+  "refs": [],
+  "status": "todo",
+  "test": "Modificar docs/gdd.md sin commitear: doc status lo marca modificado y doc diff gdd muestra el cambio; tras commitear vuelve a limpio con el commit nuevo.",
+  "title": "Estado de git de los documentos",
+  "updated_at": "2026-10-08T04:55:39.319Z"
+}

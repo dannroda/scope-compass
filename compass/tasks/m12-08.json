@@ -1,0 +1,34 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Columnas Actualizada y Creada en la lista (updated_at, created_at)"
+    },
+    {
+      "done": false,
+      "text": "Selector de orden y sentido en la barra del tablero, compartido con la lista"
+    },
+    {
+      "done": false,
+      "text": "renderBoard ordena cada columna con sortedForList"
+    },
+    {
+      "done": false,
+      "text": "Arrastrar para reordenar solo con orden manual"
+    },
+    {
+      "done": false,
+      "text": "Tests de UI"
+    }
+  ],
+  "code": "12.8",
+  "created_at": "2026-10-08T05:03:16.166Z",
+  "milestone": "m12",
+  "notes": "Selector de orden en la barra del tablero: orden manual (el de hoy, order), código, actualizada, creada, fecha límite, prioridad y título, ascendente o descendente. Se ordena dentro de cada columna. Reusa COLUMNS/sortedForList de la vista de lista y el mismo S.sort, así tablero y lista comparten el orden; la lista suma las columnas Actualizada y Creada. Con un orden que no es el manual, arrastrar entre columnas sigue cambiando el estado pero no reordena (aviso en el tooltip). Se recuerda por proyecto como el filtro. Solo web: no toca datos.",
+  "order": 8,
+  "refs": [],
+  "status": "todo",
+  "test": "Elegir Actualizada ▼: la tarea recién editada sube al tope de su columna, también al llegar el cambio por ws; volver a Manual restaura el orden y el arrastre.",
+  "title": "Ordenar las tarjetas del tablero",
+  "updated_at": "2026-10-08T05:03:17.657Z"
+}

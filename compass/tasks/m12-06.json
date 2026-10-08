@@ -1,0 +1,30 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Marca de modificado/nuevo en el árbol, en vivo por ws"
+    },
+    {
+      "done": false,
+      "text": "Vista de diff contra HEAD"
+    },
+    {
+      "done": false,
+      "text": "Historial de commits del documento"
+    },
+    {
+      "done": false,
+      "text": "Secciones tocadas por el diff y sus tareas"
+    }
+  ],
+  "code": "12.6",
+  "created_at": "2026-10-08T04:55:42.791Z",
+  "milestone": "m12",
+  "notes": "Marca en el árbol para documentos con cambios sin commitear. En la ficha: último commit, historial y el diff contra HEAD con líneas agregadas y quitadas. Marcar las secciones tocadas por el diff para ver qué tareas pueden quedar afectadas.",
+  "order": 6,
+  "refs": [],
+  "status": "todo",
+  "test": "Editar un documento con el hub abierto: aparece la marca sin recargar, el diff muestra el cambio y las tareas de esa sección quedan señaladas.",
+  "title": "Cambios y diff de documentos en la web",
+  "updated_at": "2026-10-08T04:55:44.000Z"
+}

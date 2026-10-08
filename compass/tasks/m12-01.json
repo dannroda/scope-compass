@@ -1,0 +1,34 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Schema: section opcional en refs (schema/, compass/schema/ y fixture de tests)"
+    },
+    {
+      "done": false,
+      "text": "docs.js: resolveRef, LINK y checkRefs aceptan doc sin sección"
+    },
+    {
+      "done": false,
+      "text": "CLI ref add|rm <tarea> <alias>[#<id>] y doc show <alias> sin sección"
+    },
+    {
+      "done": false,
+      "text": "Backlinks a nivel documento en /api/docs y export md"
+    },
+    {
+      "done": false,
+      "text": "Tests"
+    }
+  ],
+  "code": "12.1",
+  "created_at": "2026-10-08T04:54:55.146Z",
+  "milestone": "m12",
+  "notes": "Hoy refs exige doc y section. Se hace section opcional: una ref sin sección apunta al documento entero. En texto, [[alias]] sin #. Afecta resolveRef/checkRefs/suggestRefs, export md, ref add|rm y backlinks (docs-api).",
+  "order": 1,
+  "refs": [],
+  "status": "todo",
+  "test": "scompass ref add <tarea> gdd; refs check no lo marca roto; [[gdd]] en notas resuelve; borrar el archivo lo marca missing_doc.",
+  "title": "Refs a un documento entero",
+  "updated_at": "2026-10-08T04:55:35.676Z"
+}

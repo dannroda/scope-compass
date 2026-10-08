@@ -1,0 +1,34 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Árbol de documentos por carpeta con contadores de tareas"
+    },
+    {
+      "done": false,
+      "text": "Caja de búsqueda con resultados por documento y sección"
+    },
+    {
+      "done": false,
+      "text": "Ficha del documento: tareas, secciones sin tareas, estado de git"
+    },
+    {
+      "done": false,
+      "text": "Agregar / quitar documento desde la UI"
+    },
+    {
+      "done": false,
+      "text": "Detalle de tarea: refs a documento entero y [[alias]] en el texto"
+    }
+  ],
+  "code": "12.5",
+  "created_at": "2026-10-08T04:55:41.041Z",
+  "milestone": "m12",
+  "notes": "La vista Docs pasa de un selector a un explorador: árbol por carpetas a la izquierda, búsqueda arriba y, por documento, ficha con secciones, tareas que lo referencian (a nivel documento y por sección) y estado de git. Resaltar documentos o secciones sin tareas (diseño sin planificar). Agregar y quitar documentos desde la UI.",
+  "order": 5,
+  "refs": [],
+  "status": "todo",
+  "test": "Con 5+ documentos en carpetas: navegar el árbol, buscar un término y saltar a la sección, ver qué tareas referencian el documento.",
+  "title": "Biblioteca en la web",
+  "updated_at": "2026-10-08T04:55:42.535Z"
+}

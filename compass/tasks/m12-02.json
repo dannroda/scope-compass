@@ -1,0 +1,34 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "CLI doc add / doc rm con validación de alias y ruta dentro del proyecto"
+    },
+    {
+      "done": false,
+      "text": "API POST/DELETE /api/docs que reescribe config.json"
+    },
+    {
+      "done": false,
+      "text": "loadDocs excluye export_md de los globs"
+    },
+    {
+      "done": false,
+      "text": "Plantilla juego con glob docs/**/*.md"
+    },
+    {
+      "done": false,
+      "text": "Tests"
+    }
+  ],
+  "code": "12.2",
+  "created_at": "2026-10-08T04:55:35.931Z",
+  "milestone": "m12",
+  "notes": "scompass doc add <alias> <ruta|glob> y doc rm <alias>; API POST/DELETE /api/docs que escribe config.json (atómico, con etag). La plantilla juego declara docs/**/*.md en vez de solo gdd.md; el glob excluye el export_md (docs/tareas.md) para no listarse a sí mismo.",
+  "order": 2,
+  "refs": [],
+  "status": "todo",
+  "test": "doc add enemigos docs/enemigos.md lo muestra en doc list; un glob nuevo toma archivos creados después; init --template juego no lista tareas.md.",
+  "title": "Agregar y quitar documentos sin editar config.json",
+  "updated_at": "2026-10-08T04:55:37.378Z"
+}

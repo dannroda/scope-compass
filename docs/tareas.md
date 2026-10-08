@@ -1232,7 +1232,7 @@ Ver y encontrar tareas en un tablero grande: vista de lista y filtros en la UI w
 
 **Prueba:** npm test (hub/test/filters.test.js, ui-filters.test.js y los de schema, API y export)
 
-## M12 — Biblioteca de documentos  (0/7)
+## M12 — Biblioteca de documentos  (0/8)
 
 Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos archivos, enlaces a documentos enteros, búsqueda y el estado de git de cada uno.
 
@@ -1318,3 +1318,15 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 - [ ] Tests de UI de la biblioteca y el diff
 - [ ] Spec §20 y decisiones
 - [ ] AGENTS.md (plantilla, copia del addon y compass/), README y spec al día
+
+### 12.8 Ordenar las tarjetas del tablero · Pendiente
+
+- [ ] Columnas Actualizada y Creada en la lista (updated_at, created_at)
+- [ ] Selector de orden y sentido en la barra del tablero, compartido con la lista
+- [ ] renderBoard ordena cada columna con sortedForList
+- [ ] Arrastrar para reordenar solo con orden manual
+- [ ] Tests de UI
+
+**Prueba:** Elegir Actualizada ▼: la tarea recién editada sube al tope de su columna, también al llegar el cambio por ws; volver a Manual restaura el orden y el arrastre.
+
+**Notas:** Selector de orden en la barra del tablero: orden manual (el de hoy, order), código, actualizada, creada, fecha límite, prioridad y título, ascendente o descendente. Se ordena dentro de cada columna. Reusa COLUMNS/sortedForList de la vista de lista y el mismo S.sort, así tablero y lista comparten el orden; la lista suma las columnas Actualizada y Creada. Con un orden que no es el manual, arrastrar entre columnas sigue cambiando el estado pero no reordena (aviso en el tooltip). Se recuerda por proyecto como el filtro. Solo web: no toca datos.
