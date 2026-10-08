@@ -201,6 +201,174 @@
   }
   const checklistOf = (t) => (Array.isArray(t.checklist) ? t.checklist : []);
 
+  // --- Filtros y vista de lista (M11, spec §19, D32) ----------------------------------------------
+  // Las reglas son las de hub/src/filters.js (`scompass list`): si cambian allá, cambian acá.
+  const PRIORITIES = [['high', 'Alta'], ['medium', 'Media'], ['low', 'Baja']];
+  const PRIORITY_LABEL = Object.fromEntries(PRIORITIES);
+  const DUE_FILTERS = [['', 'Cualquier fecha'], ['overdue', 'Vencidas'], ['today', 'Vencen hoy'], ['week', 'Esta semana'], ['none', 'Sin fecha']];
+  const BLOCK_FILTERS = [['', 'Con y sin bloqueo'], ['yes', 'Bloqueadas'], ['no', 'No bloqueadas']];
+  const emptyFilter = () => ({ q: '', status: [], due: '', blocked: '', pendingSteps: false, withRefs: false, tags: [], priority: [], assignee: [] });
+  // Se recuerdan por proyecto. Dentro del Inicio todos los tableros comparten el origen (D29): la clave lleva la ruta.
+  const FILTER_KEY = 'taskFilter:' + BASE, MODE_KEY = 'boardMode:' + BASE, SORT_KEY = 'listSort:' + BASE;
+  function readJsonPref(key, fallback) { try { return JSON.parse(pref(key) || 'null') ?? fallback; } catch (e) { return fallback; } }
+  S.f = { ...emptyFilter(), ...readJsonPref(FILTER_KEY, {}) };
+  S.mode = pref(MODE_KEY) === 'list' ? 'list' : 'board';
+  S.sort = readJsonPref(SORT_KEY, null); // { key, dir: 1 | -1 } o null: el orden del tablero
+  function setF(changes) { S.f = { ...S.f, ...changes }; pref(FILTER_KEY, JSON.stringify(S.f)); render(); }
+  function setMode(mode) { S.mode = mode; pref(MODE_KEY, mode); render(); }
+  const filterActive = (f = S.f) => !!(f.q.trim() || f.status.length || f.due || f.blocked || f.pendingSteps || f.withRefs || f.tags.length || f.priority.length || f.assignee.length);
+
+  const tagsOf = (t) => (Array.isArray(t.tags) ? t.tags : []);
+  const normText = (x) => String(x ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const byText = (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' });
+  const allTags = () => [...new Set(S.tasks.flatMap(tagsOf))].sort(byText);
+  const allAssignees = () => [...new Set(S.tasks.map((t) => t.assignee).filter(Boolean))].sort(byText);
+  function dueMatches(t, which) {
+    if (which === 'none') return !t.due;
+    if (!t.due || t.status === 'done') return false;
+    const g = dueGroup(t.due);
+    return which === 'week' ? g === 'overdue' || g === 'today' || g === 'week' : g === which;
+  }
+  function taskMatches(t, f = S.f) {
+    const words = normText(f.q).split(/\s+/).filter(Boolean);
+    if (words.length && !words.every((w) => normText((t.code || '') + ' ' + (t.title || '') + ' ' + t.id).includes(w))) return false;
+    if (f.status.length && !f.status.includes(t.status)) return false;
+    if (f.due && !dueMatches(t, f.due)) return false;
+    if (f.blocked && (openBlockers(t).length > 0) !== (f.blocked === 'yes')) return false;
+    if (f.pendingSteps && !checklistOf(t).some((c) => !c.done)) return false;
+    if (f.withRefs && !refsOf(t).length) return false;
+    if (f.tags.length && !tagsOf(t).some((x) => f.tags.includes(x))) return false;
+    if (f.priority.length && !f.priority.includes(t.priority || 'none')) return false;
+    if (f.assignee.length && !f.assignee.map(normText).includes(t.assignee ? normText(t.assignee) : 'none')) return false;
+    return true;
+  }
+  // Las del hito elegido que pasan los filtros: lo que muestran el tablero y la lista.
+  const shownTasks = () => visibleTasks().filter((t) => taskMatches(t));
+
+  // Barra de filtros. La parte de arriba (Tablero | Lista y el buscador) se arma una sola vez, para que el buscador no
+  // pierda el foco cuando llega un cambio del hub; los desplegables se rearman, conservando cuál estaba abierto.
+  function renderFilters() {
+    const bar = document.getElementById('filters');
+    if (!bar.firstChild) {
+      const q = h('input', { type: 'search', id: 'f-q', placeholder: 'Buscar por título o código', autocomplete: 'off', value: S.f.q,
+        oninput: (e) => setF({ q: e.target.value }),
+        onkeydown: (e) => { if (e.key === 'Escape' && e.target.value) { e.preventDefault(); e.stopPropagation(); e.target.value = ''; setF({ q: '' }); } } });
+      bar.append(h('div', { class: 'f-main' },
+        h('div', { class: 'mode-switch', role: 'group', 'aria-label': 'Vista del tablero' },
+          h('button', { type: 'button', id: 'mode-board', onclick: () => setMode('board') }, 'Tablero'),
+          h('button', { type: 'button', id: 'mode-list', onclick: () => setMode('list') }, 'Lista')),
+        h('label', { for: 'f-q', class: 'sr' }, 'Buscar tareas'), q),
+      h('div', { class: 'f-more' }));
+    }
+    document.getElementById('mode-board').setAttribute('aria-pressed', S.mode === 'board' ? 'true' : 'false');
+    document.getElementById('mode-list').setAttribute('aria-pressed', S.mode === 'list' ? 'true' : 'false');
+    const q = document.getElementById('f-q');
+    if (q.value !== S.f.q) q.value = S.f.q;
+    const more = bar.querySelector('.f-more');
+    const open = [...more.querySelectorAll('details[open]')].map((d) => d.dataset.key);
+    const focus = more.contains(document.activeElement) ? document.activeElement.id : null;
+    // Desplegable con casillas: el resumen dice cuántos valores hay elegidos.
+    const multi = (key, label, options) => {
+      const sel = S.f[key];
+      return h('details', { class: 'fdrop' + (sel.length ? ' on' : ''), 'data-key': key, open: open.includes(key) },
+        h('summary', null, label, sel.length ? h('span', { class: 'n' }, sel.length) : null),
+        h('div', { class: 'fdrop-body' }, options.length ? options.map(([v, l]) => {
+          const id = 'f-' + key + '-' + encodeURIComponent(v).replace(/%/g, '_');
+          return h('label', { for: id }, h('input', { type: 'checkbox', id, checked: sel.includes(v),
+            onchange: (e) => setF({ [key]: e.target.checked ? [...sel, v] : sel.filter((x) => x !== v) }) }), l);
+        }) : h('p', { class: 'muted small' }, 'Ninguna tarea tiene ' + label.toLowerCase() + '.')));
+    };
+    const single = (key, label, options) => h('select', { id: 'f-' + key, 'aria-label': label, class: S.f[key] ? 'on' : null, onchange: (e) => setF({ [key]: e.target.value }) },
+      options.map(([v, l]) => h('option', { value: v, selected: S.f[key] === v }, l)));
+    const toggle = (key, label) => h('button', { type: 'button', class: 'chip small', id: 'f-' + key, 'aria-pressed': S.f[key] ? 'true' : 'false', onclick: () => setF({ [key]: !S.f[key] }) }, label);
+    // Los valores elegidos siguen en la lista aunque ninguna tarea los tenga ya (se pueden destildar).
+    const values = (all, chosen) => [...new Set([...all, ...chosen.filter((x) => x !== 'none')])].map((x) => [x, x]);
+    const total = visibleTasks().length, shown = shownTasks().length;
+    more.replaceChildren(...[
+      multi('status', 'Estado', STATUSES.map((s) => [s.id, s.label])),
+      single('due', 'Fecha límite', DUE_FILTERS),
+      single('blocked', 'Bloqueo', BLOCK_FILTERS),
+      toggle('pendingSteps', 'Con pasos pendientes'),
+      toggle('withRefs', 'Con referencias'),
+      multi('tags', 'Etiquetas', values(allTags(), S.f.tags)),
+      multi('priority', 'Prioridad', [...PRIORITIES, ['none', 'Sin prioridad']]),
+      multi('assignee', 'Responsable', [...values(allAssignees(), S.f.assignee), ['none', 'Sin responsable']]),
+      filterActive() ? h('span', { class: 'f-count', role: 'status' }, shown + ' de ' + total + (total - shown ? ' · ' + (total - shown) + ' ocultas' : '')) : null,
+      filterActive() ? h('button', { type: 'button', class: 'btn ghost small', id: 'f-clear', onclick: () => { setF(emptyFilter()); document.getElementById('f-q').focus(); } }, 'Limpiar filtros') : null
+    ].filter(Boolean));
+    if (focus) document.getElementById(focus)?.focus();
+  }
+  // Un clic afuera cierra los desplegables de los filtros.
+  document.addEventListener('click', (e) => {
+    for (const d of document.querySelectorAll('#filters details[open]')) if (!d.contains(e.target)) d.open = false;
+  });
+
+  // Vista de lista: una fila por tarea, ordenable por columna. Sin orden elegido, el del tablero (sortTasks).
+  // opt: columnas que se esconden en el teléfono.
+  const naturalCmp = (a, b) => String(a).localeCompare(String(b), 'es', { numeric: true, sensitivity: 'base' });
+  const COLUMNS = [
+    { key: 'code', label: 'Código', val: (t) => t.code || '' },
+    { key: 'title', label: 'Título', val: (t) => t.title || '' },
+    { key: 'milestone', label: 'Hito', val: (t) => msOrder(t.milestone), opt: true },
+    { key: 'status', label: 'Estado', val: (t) => STATUSES.findIndex((s) => s.id === t.status) },
+    { key: 'steps', label: 'Pasos', val: (t) => { const p = clProgress(t); return p.total ? p.done / p.total : null; }, opt: true },
+    { key: 'due', label: 'Fecha límite', val: (t) => t.due || null },
+    { key: 'blocked', label: 'Bloqueo', val: (t) => (openBlockers(t).length ? 0 : null), opt: true },
+    { key: 'priority', label: 'Prioridad', val: (t) => ({ high: 0, medium: 1, low: 2 })[t.priority] ?? null, opt: true },
+    { key: 'assignee', label: 'Responsable', val: (t) => t.assignee || null, opt: true },
+    { key: 'tags', label: 'Etiquetas', val: (t) => tagsOf(t).join(', ') || null, opt: true }
+  ];
+  function sortedForList(ts) {
+    const col = S.sort && COLUMNS.find((c) => c.key === S.sort.key);
+    if (!col) return ts.slice().sort(sortTasks);
+    // Las vacías van al final en los dos sentidos; a igual valor, el orden del tablero.
+    return ts.slice().sort((a, b) => {
+      const va = col.val(a), vb = col.val(b);
+      if (va === null || va === '' || vb === null || vb === '') return (va === null || va === '') - (vb === null || vb === '') || sortTasks(a, b);
+      const c = typeof va === 'number' && typeof vb === 'number' ? va - vb : naturalCmp(va, vb);
+      return c * S.sort.dir || sortTasks(a, b);
+    });
+  }
+  // Clic en un encabezado: ascendente, descendente y de vuelta al orden del tablero.
+  function sortBy(key) {
+    S.sort = S.sort?.key !== key ? { key, dir: 1 } : S.sort.dir === 1 ? { key, dir: -1 } : null;
+    pref(SORT_KEY, S.sort ? JSON.stringify(S.sort) : '');
+    render();
+  }
+  function renderTaskList() {
+    const box = document.getElementById('tasklist');
+    if (S.view !== 'board' || S.mode !== 'list') { box.replaceChildren(); return; }
+    const ts = sortedForList(shownTasks());
+    if (!ts.length) {
+      box.replaceChildren(h('div', { class: 'notice' }, S.loaded ? (filterActive() ? 'Ninguna tarea con estos filtros.' : 'Sin tareas.') : 'Cargando tareas…'));
+      return;
+    }
+    const head = h('tr', null, COLUMNS.map((c) => {
+      const on = S.sort?.key === c.key;
+      return h('th', { scope: 'col', class: c.opt ? 'opt' : null, 'aria-sort': on ? (S.sort.dir === 1 ? 'ascending' : 'descending') : null },
+        h('button', { type: 'button', 'data-sort': c.key, onclick: () => sortBy(c.key), title: 'Ordenar por ' + c.label.toLowerCase() },
+          c.label, h('span', { class: 'sort-mark', 'aria-hidden': 'true' }, on ? (S.sort.dir === 1 ? ' ▲' : ' ▼') : '')));
+    }));
+    const rows = ts.map((t) => {
+      const s = STATUSES.find((x) => x.id === t.status) || STATUSES[0];
+      const m = msById(t.milestone);
+      const p = clProgress(t);
+      const blockers = openBlockers(t);
+      return h('tr', { 'data-id': t.id, 'aria-current': S.openId === t.id ? 'true' : null, onclick: (e) => { if (!e.target.closest('button')) openTask(t.id); } },
+        h('td', { class: 'code' }, t.code || ''),
+        h('td', { class: 'title' }, h('button', { type: 'button', class: 'row-open', onclick: () => openTask(t.id) }, rich(t.title, true))),
+        h('td', { class: 'opt code' }, m ? h('span', { title: m.title }, m.code) : t.milestone),
+        h('td', null, h('span', { class: 'st', title: s.label }, h('span', { class: 'dot', style: 'background:' + s.color }), h('span', { class: 'st-l' }, s.label))),
+        h('td', { class: 'opt code' }, p.total ? p.done + '/' + p.total : ''),
+        h('td', null, t.due ? dueMark(t) : null),
+        h('td', { class: 'opt' }, blockers.length ? h('span', { class: 'blockmark', title: 'Bloqueada por: ' + blockers.map(taskName).join('; ') }, 'Bloqueada') : null),
+        h('td', { class: 'opt' }, t.priority ? h('span', { class: 'prio ' + t.priority }, PRIORITY_LABEL[t.priority] || t.priority) : null),
+        h('td', { class: 'opt' }, t.assignee || ''),
+        h('td', { class: 'opt' }, tagsOf(t).map((x) => h('span', { class: 'tag' }, x))));
+    });
+    box.replaceChildren(h('div', { class: 'table-wrap' }, h('table', { class: 'tasks' }, h('thead', null, head), h('tbody', null, rows))));
+  }
+
   function renderMiles() {
     const nav = document.getElementById('miles');
     nav.replaceChildren();
@@ -238,11 +406,13 @@
     const ts = visibleTasks();
     const d = ts.filter((t) => t.status === 'done').length;
     const pct = ts.length ? Math.round((d / ts.length) * 100) : 0;
+    const hidden = ts.length - ts.filter((t) => taskMatches(t)).length;
     const m = S.filter === 'all' ? null : msById(S.filter);
     const left = h('div', null,
       h('h2', null, m ? m.code + ' · ' + m.title : 'Todos los hitos'),
       h('p', null, rich(m ? m.goal : 'Todas las tareas de ' + (S.project || 'este proyecto') + '. Elegí un hito para ver su objetivo.')),
-      h('div', { class: 'progress' }, h('div', { class: 'bar', role: 'img', 'aria-label': pct + '% hecho' }, h('i', { style: 'width:' + pct + '%' })), d + '/' + ts.length + ' tareas'));
+      h('div', { class: 'progress' }, h('div', { class: 'bar', role: 'img', 'aria-label': pct + '% hecho' }, h('i', { style: 'width:' + pct + '%' })), d + '/' + ts.length + ' tareas',
+        hidden ? h('span', { class: 'hidden-n' }, '· ' + (hidden === 1 ? '1 oculta' : hidden + ' ocultas') + ' por los filtros') : null));
     const right = h('div', null);
     if (m && Array.isArray(m.done_when) && m.done_when.length) {
       right.append(h('div', { class: 'label' }, 'Hecho cuando'), h('ul', null, m.done_when.map((x) => h('li', null, rich(x)))));
@@ -257,7 +427,8 @@
   function renderBoard() {
     const board = document.getElementById('board');
     board.replaceChildren();
-    const ts = visibleTasks().slice().sort(sortTasks);
+    if (S.view !== 'board' || S.mode !== 'board') return;
+    const ts = shownTasks().sort(sortTasks);
     for (const s of STATUSES) {
       const items = ts.filter((t) => (t.status || 'todo') === s.id);
       const col = h('section', { class: 'col', 'aria-label': s.label,
@@ -265,7 +436,7 @@
         ondragleave: () => col.classList.remove('over'),
         ondrop: (e) => { e.preventDefault(); col.classList.remove('over'); const id = e.dataTransfer.getData('text/plain'); if (id) setStatus(id, s.id); } },
         h('h3', null, h('span', { class: 'dot', style: 'background:' + s.color }), s.label, h('span', { class: 'n' }, items.length)));
-      if (!items.length) col.append(h('div', { class: 'empty-col' }, S.loaded ? 'Sin tareas' : ''));
+      if (!items.length) col.append(h('div', { class: 'empty-col' }, S.loaded ? (filterActive() ? 'Ninguna con estos filtros' : 'Sin tareas') : ''));
       for (const t of items) col.append(cardFor(t, s));
       board.append(col);
     }
@@ -296,6 +467,38 @@
         t.due ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => updateTask(t.id, { due: null }) }, 'Quitar') : null));
   }
 
+  // Prioridad, responsable y etiquetas (D32). Las sugerencias salen de lo que ya usan las otras tareas.
+  // Una etiqueta no lleva comas: "arte, audio" son dos. Vaciar un campo lo quita (null en el PATCH).
+  function metaFields(t) {
+    const addTags = (raw) => {
+      const add = String(raw).split(',').map((x) => x.trim()).filter((x) => x && x.length <= 40);
+      if (!add.length) return;
+      updateTask(t.id, (cur) => { const next = [...new Set([...tagsOf(cur), ...add])]; return next.length === tagsOf(cur).length ? null : { tags: next }; });
+    };
+    const takeTag = (el) => { const v = el.value; el.value = ''; el.dataset.orig = ''; addTags(v); };
+    return h('div', { class: 'meta-fields' },
+      h('div', { class: 'field' },
+        h('label', { class: 'label', for: 'd-priority' }, 'Prioridad'),
+        h('select', { id: 'd-priority', onchange: (e) => updateTask(t.id, { priority: e.target.value || null }) },
+          h('option', { value: '', selected: !t.priority }, 'Sin prioridad'),
+          PRIORITIES.map(([v, l]) => h('option', { value: v, selected: t.priority === v }, l)))),
+      h('div', { class: 'field' },
+        h('label', { class: 'label', for: 'd-assignee' }, 'Responsable'),
+        h('input', { id: 'd-assignee', list: 'd-assignees', value: t.assignee || '', 'data-orig': t.assignee || '', placeholder: 'Nadie', autocomplete: 'off',
+          onchange: (e) => { const v = e.target.value.trim(); if (v !== (t.assignee || '')) updateTask(t.id, { assignee: v || null }); } }),
+        h('datalist', { id: 'd-assignees' }, allAssignees().map((x) => h('option', { value: x })))),
+      h('div', { class: 'field wide' },
+        h('label', { class: 'label', for: 'd-tag' }, 'Etiquetas'),
+        h('div', { class: 'tags-edit' },
+          tagsOf(t).map((x) => h('span', { class: 'tag' }, x,
+            h('button', { type: 'button', class: 'rm', 'aria-label': 'Quitar etiqueta ' + x,
+              onclick: () => updateTask(t.id, (cur) => { const next = tagsOf(cur).filter((y) => y !== x); return { tags: next.length ? next : null }; }) }, '×'))),
+          h('input', { id: 'd-tag', list: 'd-tags', placeholder: tagsOf(t).length ? 'Otra etiqueta' : 'Agregar etiqueta', autocomplete: 'off', 'data-orig': '',
+            onkeydown: (e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); takeTag(e.target); } },
+            onchange: (e) => { if (e.target.value.trim()) takeTag(e.target); } }),
+          h('datalist', { id: 'd-tags' }, allTags().filter((x) => !tagsOf(t).includes(x)).map((x) => h('option', { value: x }))))));
+  }
+
   function cardFor(t, s) {
     const p = clProgress(t);
     const m = msById(t.milestone);
@@ -313,8 +516,11 @@
         if (id && id !== t.id) dropBefore(id, t);
       },
       onclick: () => openTask(t.id) },
-      h('span', { class: 'meta' }, t.code ? h('span', null, t.code) : null, m && S.filter === 'all' ? h('span', { class: 'ms' }, m.code) : null),
+      h('span', { class: 'meta' }, t.code ? h('span', null, t.code) : null, m && S.filter === 'all' ? h('span', { class: 'ms' }, m.code) : null,
+        t.assignee ? h('span', { class: 'who', title: 'Responsable' }, '@' + t.assignee) : null),
       h('span', { class: 't' }, rich(t.title, true)),
+      t.priority === 'high' || tagsOf(t).length ? h('span', { class: 'marks' }, t.priority === 'high' ? h('span', { class: 'prio high', title: 'Prioridad alta' }, 'Alta') : null,
+        tagsOf(t).map((x) => h('span', { class: 'tag' }, x))) : null,
       refsOf(t).length ? h('span', { class: 'refmark' + (brokenRefs(t).length ? ' bad' : ''), title: brokenRefs(t).length ? 'Tiene referencias rotas' : refsOf(t).length + ' referencias a documentos' },
         brokenRefs(t).length ? '⚠ ' : '§ ', refsOf(t).length) : null,
       openBlockers(t).length ? h('span', { class: 'blockmark', title: 'Bloqueada por: ' + openBlockers(t).map(taskName).join('; ') }, 'Bloqueada') : null,
@@ -324,7 +530,7 @@
 
   // Campos editables del detalle. Cada uno guarda en data-orig el valor con el que se dibujó:
   // si el usuario lo cambió y todavía no lo guardó, el valor escrito se conserva al redibujar.
-  const EDITABLE = ['d-title', 'd-addcl', 'd-refq', 'd-linkq', 'd-step-text', 'd-step-detail', 'd-test', 'd-notes'];
+  const EDITABLE = ['d-title', 'd-assignee', 'd-tag', 'd-addcl', 'd-refq', 'd-linkq', 'd-step-text', 'd-step-detail', 'd-test', 'd-notes'];
   function captureEdits(box) {
     const active = box.contains(document.activeElement) ? document.activeElement : null;
     const dirty = {};
@@ -458,6 +664,7 @@
         h('select', { id: 'd-ms', onchange: (e) => updateTask(t.id, { milestone: e.target.value }) },
           S.milestones.map((x) => h('option', { value: x.id, selected: x.id === t.milestone }, x.code + ' · ' + x.title)))),
       dueField(t),
+      metaFields(t),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('span', { class: 'label' }, 'Pasos ' + (p.total ? '(' + p.done + '/' + p.total + ')' : '')),
         cl.length ? h('ul', { class: 'checklist' }, cl.map((c, i) => stepItem(t, c, i))) : h('p', { style: 'margin:0;color:var(--muted);font-size:14px' }, 'Sin pasos todavía.'),
@@ -992,10 +1199,12 @@
 
   function render() {
     renderGit();
-    renderMiles(); renderSummary(); renderWarnings(); renderBoard(); renderDetail(); renderDocs(); renderLists(); renderConn();
+    renderMiles(); renderFilters(); renderSummary(); renderWarnings(); renderBoard(); renderTaskList(); renderDetail(); renderDocs(); renderLists(); renderConn();
     // La vista se aplica al final: renderSummary muestra su caja por su cuenta.
     const boardView = S.view === 'board';
-    for (const id of ['miles', 'summary', 'board', 'new-btn']) document.getElementById(id).hidden = !boardView;
+    for (const id of ['miles', 'filters', 'summary', 'new-btn']) document.getElementById(id).hidden = !boardView;
+    document.getElementById('board').hidden = !boardView || S.mode !== 'board';
+    document.getElementById('tasklist').hidden = !boardView || S.mode !== 'list';
     if (!boardView) document.getElementById('new-form').hidden = true;
     document.getElementById('docs').hidden = S.view !== 'docs';
     document.getElementById('lists').hidden = S.view !== 'lists';
@@ -1054,7 +1263,11 @@
     document.getElementById('new-title').value = '';
     document.getElementById('new-form').hidden = true;
     // El hub pone el order (al final del hito), created_at y updated_at.
-    write(async () => { const t = await api.create({ title, milestone, code: '', status: 'todo', checklist: [], test: '', notes: '', refs: [] }); applyTask(t.id, t); }, 'Tarea agregada');
+    write(async () => {
+      const t = await api.create({ title, milestone, code: '', status: 'todo', checklist: [], test: '', notes: '', refs: [] });
+      applyTask(t.id, t);
+      toast(taskMatches(t) ? 'Tarea agregada' : 'Tarea agregada; los filtros la ocultan');
+    });
   });
   // Atajos (3.7): N nueva tarea, 1–4 estado de la tarea abierta, Esc cierra. Nunca mientras se escribe.
   const typing = (el) => el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
@@ -1068,6 +1281,7 @@
     }
     if (e.ctrlKey || e.metaKey || e.altKey || typing(document.activeElement)) return;
     if ((e.key === 'n' || e.key === 'N') && S.view === 'board') { e.preventDefault(); openNewForm(); return; }
+    if (e.key === '/' && S.view === 'board') { e.preventDefault(); document.getElementById('f-q').focus(); return; }
     const n = Number(e.key);
     if (S.openId && n >= 1 && n <= STATUSES.length) { e.preventDefault(); setStatus(S.openId, STATUSES[n - 1].id); }
   });

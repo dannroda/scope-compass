@@ -27,6 +27,7 @@ import { listLists, listMilestones, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
 import { dueState, EVERY, isValidDue, showDue } from './dates.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
+import { DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, splitList } from './filters.js';
 
 const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
 const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
@@ -50,9 +51,14 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   home list                                 proyectos conocidos en este equipo, con el estado de su hub
   home add [<carpeta>]                      anota un proyecto sin levantar su hub (por defecto, el de --dir)
   home rm [<carpeta>]                       lo quita del registro (no toca sus datos)
-  list [--milestone m00] [--status doing]   tareas (--json para agentes)
+  list [--milestone m00] [--status doing,review] [filtros]
+                                            tareas (--json para agentes). Filtros (§19): --q "texto",
+                                            --due overdue|today|week|none, --blocked, --unblocked,
+                                            --pending-steps, --with-refs, --tag arte,audio,
+                                            --priority high,medium,low,none, --assignee nombre|none
   show <id>                                 una tarea, con los pasos numerados
   add "<título>" --milestone m00 [--code 0.11] [--status todo] [--due 2026-10-10]
+      [--tags arte,audio] [--priority high|medium|low] [--assignee nombre]
   move <id> <todo|doing|review|done>
   check <id> <n> [--undo]                   tilda el paso n (desde 1)
   step add <id> "<texto>" [--detail "…"]     agrega un paso (texto corto; el detalle se despliega)
@@ -60,8 +66,9 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   step rm <id> <n>                          quita un paso
   set <id> --file task.json                 reemplazo completo (--file - lee stdin)
   set <id> [--title t] [--notes n] [--test p] [--code c] [--milestone m] [--status s] [--due d]
+      [--tags a,b] [--priority p] [--assignee a]
                                             cambia solo esos campos (--due: fecha límite, YYYY-MM-DD o
-                                            YYYY-MM-DDTHH:MM; --due "" la quita)
+                                            YYYY-MM-DDTHH:MM; "" quita --due, --tags, --priority o --assignee)
   milestone list | show <id> | set <id> --file m.json
   lists                                     listas, con cuántos ítems quedan
   lists show <lista>                        una lista, con los ítems numerados
@@ -108,7 +115,7 @@ const taskLabel = (tasks, id) => { const t = tasks.find((x) => x.id === id); ret
 const AGENTS_HINT = 'Para que los agentes la usen, agregá al AGENTS.md o CLAUDE.md del proyecto: "El tablero de tareas se maneja con scompass; leé compass/AGENTS.md antes de tocarlo."';
 
 // Campos de una tarea que `set` edita sin --file.
-const FIELDS = ['title', 'notes', 'test', 'code', 'milestone', 'status', 'due'];
+const FIELDS = ['title', 'notes', 'test', 'code', 'milestone', 'status', 'due', 'tags', 'priority', 'assignee'];
 
 const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
@@ -116,6 +123,8 @@ const OPTIONS = {
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
   raw: { type: 'boolean' }, check: { type: 'boolean' }, template: { type: 'string' }, due: { type: 'string' }, repeat: { type: 'string' },
   port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, force: { type: 'boolean' }, log: { type: 'string' },
+  q: { type: 'string' }, blocked: { type: 'boolean' }, unblocked: { type: 'boolean' }, 'pending-steps': { type: 'boolean' }, 'with-refs': { type: 'boolean' },
+  tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, assignee: { type: 'string' },
   title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
@@ -168,6 +177,10 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const need = (v, what) => { if (v === undefined || v === '') throw new UsageError(`falta ${what}`); return v; };
   // Fecha límite (D26): "" sirve para quitarla.
   const due = (v) => { if (v !== '' && !isValidDue(v)) throw new StoreError('invalid_argument', `fecha inválida: ${v} (YYYY-MM-DD o YYYY-MM-DDTHH:MM)`); return v; };
+  // Etiquetas, prioridad y responsable (D32): "" quita el campo (null en un patch).
+  const priority = (v) => { if (v !== '' && !PRIORITIES.includes(v)) throw new UsageError(`prioridad inválida: ${v} (${PRIORITIES.join(', ')})`); return v || null; };
+  const tagList = (v) => { const t = [...new Set(splitList(v))]; return t.length ? t : null; };
+  const extras = (d) => [d.priority && `prioridad ${PRIORITY_LABEL[d.priority] ?? d.priority}`, d.assignee && `@${d.assignee}`, d.tags?.length && d.tags.map((x) => '#' + x).join(' ')].filter(Boolean);
   const dueNote = (d, done) => { const s = done ? null : dueState(d); return `vence ${showDue(d)}${s === 'overdue' ? ' (vencida)' : s === 'today' ? ' (hoy)' : ''}`; };
 
   const readJsonFile = async (path) => {
@@ -420,12 +433,20 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     },
 
     async list() {
-      if (o.status && !STATUS[o.status]) throw new UsageError(`estado inválido: ${o.status} (todo, doing, review, done)`);
+      const statuses = splitList(o.status);
+      for (const st of statuses) if (!STATUS[st]) throw new UsageError(`estado inválido: ${st} (todo, doing, review, done)`);
+      if (o.due !== undefined && !DUE_FILTERS.includes(o.due)) throw new UsageError(`--due en list: ${DUE_FILTERS.join(', ')}`);
+      if (o.blocked && o.unblocked) throw new UsageError('--blocked y --unblocked no van juntos');
+      const priorities = splitList(o.priority);
+      for (const p of priorities) if (p !== 'none' && !PRIORITIES.includes(p)) throw new UsageError(`prioridad inválida: ${p} (${PRIORITIES.join(', ')}, none)`);
       const all = await store.loadAll();
       showWarnings(all.warnings);
       const ms = new Map(all.milestones);
-      const tasks = listTasks(all, { milestone: o.milestone, status: o.status });
       const everything = listTasks(all);
+      const tasks = filterTasks(listTasks(all, { milestone: o.milestone }), {
+        q: o.q, status: statuses, due: o.due, blocked: o.blocked ? true : o.unblocked ? false : undefined,
+        pendingSteps: o['pending-steps'], withRefs: o['with-refs'], tags: splitList(o.tag ?? o.tags), priority: priorities, assignee: splitList(o.assignee)
+      }, { all: everything });
       const git = await boardStatus(project, all.config);
       if (o.json) {
         print(JSON.stringify({ tasks, warnings: all.warnings, ...(git.repo && { uncommitted: git.uncommitted }) }));
@@ -443,7 +464,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         const blockers = t.status === 'done' ? [] : openBlockers(everything, t.id);
         const blocked = blockers.length ? `  [bloqueada por ${blockers.join(', ')}]` : '';
         const when = t.due ? `  · ${dueNote(t.due, t.status === 'done')}` : '';
-        print(`  ${t.id.padEnd(9)} ${(t.code || '').padEnd(5)} ${STATUS[t.status].padEnd(9)} ${t.title}${steps}${when}${blocked}`);
+        const more = extras(t).map((x) => `  · ${x}`).join('');
+        print(`  ${t.id.padEnd(9)} ${(t.code || '').padEnd(5)} ${STATUS[t.status].padEnd(9)} ${t.title}${steps}${when}${more}${blocked}`);
       }
       if (!tasks.length) print('Sin tareas.');
       // Recordatorio (4.4): la app no commitea en local.
@@ -457,6 +479,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const d = t.doc;
       print(`${d.code ? d.code + ' ' : ''}${d.title}  [${t.id}]`);
       print(`Estado: ${STATUS[d.status]} · Hito: ${d.milestone}${d.due ? ' · ' + dueNote(d.due, d.status === 'done').replace(/^v/, 'V') : ''}${d.updated_at ? ' · Actualizada: ' + d.updated_at : ''}`);
+      if (extras(d).length) print(extras(d).join(' · ').replace(/^p/, 'P'));
       (d.checklist ?? []).forEach((c, i) => {
         print(`  ${String(i + 1).padStart(2)}. [${c.done ? 'x' : ' '}] ${c.text}`);
         if (c.detail) for (const l of c.detail.split('\n')) print(`         ${l}`);
@@ -718,7 +741,10 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       await store.get('milestones', milestone);
       const r = await store.create('tasks', {
         milestone, title, code: o.code ?? '', status: o.status ?? 'todo', checklist: [], test: '', notes: '', refs: [],
-        ...(o.due ? { due: due(o.due) } : {})
+        ...(o.due ? { due: due(o.due) } : {}),
+        ...(o.tags && tagList(o.tags) ? { tags: tagList(o.tags) } : {}),
+        ...(o.priority ? { priority: priority(o.priority) } : {}),
+        ...(o.assignee ? { assignee: o.assignee.trim() } : {})
       });
       return written({ id: r.id, etag: r.etag, ...r.doc }, `Creada ${r.id}: ${title}`);
     },
@@ -784,6 +810,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (o.file === undefined && !Object.keys(fields).length) throw new UsageError(`falta --file o algún campo (${FIELDS.map((f) => '--' + f).join(', ')})`);
       if (fields.status && !STATUS[fields.status]) throw new UsageError(`estado inválido: ${fields.status} (todo, doing, review, done)`);
       if (fields.due !== undefined) fields.due = due(fields.due) || null; // "" → null: patch quita el campo
+      if (fields.tags !== undefined) fields.tags = tagList(fields.tags);
+      if (fields.priority !== undefined) fields.priority = priority(fields.priority);
+      if (fields.assignee !== undefined) fields.assignee = fields.assignee.trim() || null;
       const r = o.file !== undefined
         ? await store.put('tasks', id, await readJsonFile(o.file), ifMatch)
         : await store.patch('tasks', id, fields, ifMatch);

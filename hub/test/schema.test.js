@@ -27,6 +27,15 @@ test('campo desconocido, estado inválido y fecha rota se reportan', () => {
   assert.match(res.message, /\/created_at.*date-time/);
 });
 
+test('etiquetas, prioridad y responsable (M11): válidos, y los valores rotos se reportan', () => {
+  const ok = { ...task, tags: ['arte', 'nivel 2'], priority: 'high', assignee: 'Claude' };
+  assert.equal(parseDoc(JSON.stringify(ok), 'task', V).ok, true);
+  for (const bad of [{ priority: 'urgente' }, { assignee: '' }, { tags: ['a,b'] }, { tags: [' arte'] }, { tags: ['arte', 'arte'] }, { tags: [''] }, { tags: 'arte' }]) {
+    const res = parseDoc(JSON.stringify({ ...task, ...bad }), 'task', V);
+    assert.equal(res.code, 'invalid_schema', JSON.stringify(bad));
+  }
+});
+
 test('JSON roto y marcadores de conflicto se distinguen', () => {
   assert.equal(parseDoc('{"title": ', 'task', V).code, 'invalid_json');
   const merged = '{\n<<<<<<< HEAD\n  "status": "done",\n=======\n  "status": "doing",\n>>>>>>> otra\n}\n';

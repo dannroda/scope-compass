@@ -19,6 +19,15 @@
     {
       "done": false,
       "text": "Esperas de 3 s en los tests de UI que fallan a veces con la suite entera en la VM (fecha límite 8.13, listas «tildar, editar…»); solos pasan siempre"
+    },
+    {
+      "detail": "Se ve con godot --headless --path . --import: el plugin corre check_compass al abrir y el editor sale antes de que termine el hilo. Una vez el --import salió con error y tumbó toda la suite del dock.",
+      "done": false,
+      "text": "Dock: _scompass deja un Thread vivo si el editor se cierra mientras corre scompass (aviso «Thread object is being destroyed» en godot --import); esperar el hilo en _exit_tree"
+    },
+    {
+      "done": false,
+      "text": "Los tests del dock aíslan el registro solos: node --test test/dock.test.js sin npm test usa el registro real y el Inicio del usuario sirve los proyectos temporales (y los anota en projects.json)"
     }
   ],
   "code": "10.10",
@@ -35,5 +44,5 @@
   "status": "todo",
   "test": "",
   "title": "Tests de M10, spec y guía",
-  "updated_at": "2026-10-06T05:19:11.316Z"
+  "updated_at": "2026-10-08T04:41:32.666Z"
 }

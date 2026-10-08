@@ -101,3 +101,13 @@ test('el detalle de un paso va sangrado debajo, igual que en tools/artifact_to_m
     await rm(d, { recursive: true, force: true, maxRetries: 10 });
   }
 });
+
+test('prioridad, responsable y etiquetas van en una línea debajo del título (M11)', () => {
+  const md = renderMarkdown({
+    milestones: [['m00', { code: 'M0', title: 'Hito', order: 0 }]],
+    tasks: [['a', { milestone: 'm00', code: '0.1', title: 'Con todo', status: 'todo', priority: 'high', assignee: 'Dani', tags: ['arte', 'nivel'] }],
+      ['b', { milestone: 'm00', code: '0.2', title: 'Sin nada', status: 'todo' }]]
+  }, { title: 'T', date: '2026-10-08' });
+  assert.match(md, /### 0\.1 Con todo · Pendiente\n\n\*\*Prioridad:\*\* alta · \*\*Responsable:\*\* Dani · \*\*Etiquetas:\*\* `arte`, `nivel`\n\n/);
+  assert.doesNotMatch(md.split('### 0.2')[1], /Prioridad/);
+});

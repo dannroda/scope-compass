@@ -164,6 +164,9 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `status` | `"todo" \| "doing" \| "review" \| "done"` | |
 | `checklist` | `{ text: string, done: boolean, detail?: string }[]` | `text`: el paso en una línea. `detail` (opcional): el cómo y el porqué; se muestra plegado debajo del paso |
 | `due` | string | Opcional. Fecha límite, `YYYY-MM-DD` o `YYYY-MM-DDTHH:MM` en hora local (§16.5, D26) |
+| `priority` | `"high" \| "medium" \| "low"` | Opcional. Prioridad (§19, D32) |
+| `assignee` | string | Opcional. Responsable: una persona o un agente, texto libre (§19, D32) |
+| `tags` | string[] | Opcional. Etiquetas, sin repetir, sin comas ni espacios en los bordes, hasta 40 caracteres (§19, D32) |
 | `test` | string | "Cómo probarlo" |
 | `notes` | string | |
 | `refs` | `{ doc: string, section: string }[]` | Opcional. Referencias a secciones de documentos (§10). v1 las guarda y las muestra como texto; v2 las resuelve. |
@@ -737,3 +740,35 @@ Tests: el primero en `hub/test/m9-criteria.test.js`; los cambios en vivo y el hu
 - [ ] Desde el Inicio en Windows se prende, se apaga y se reinicia un hub, y el registro queda limpio.
 - [ ] El dock en Godot 4.8 sobre Windows encuentra el hub, lo prende y lo apaga.
 - [ ] Un proyecto clonado en Windows y otro en Linux, sincronizados por git, no muestran cambios por fin de línea.
+
+## 19. Lista y filtros (M11)
+<!-- id: lista-y-filtros -->
+
+**Objetivo:** encontrar tareas en un tablero grande. La UI web suma una vista de lista y una barra de filtros que comparten el tablero y la lista; la tarea suma etiquetas, prioridad y responsable (D32). El dock de Godot no cambia.
+
+**Filtros** (se combinan entre sí y con el hito elegido):
+
+| Filtro | Qué deja | CLI (`scompass list`) |
+|---|---|---|
+| Texto | Tareas con todas las palabras en el código, el título o el id, sin distinguir mayúsculas ni tildes | `--q "texto"` |
+| Estado | Los estados marcados (uno o varios) | `--status doing,review` |
+| Fecha límite | `overdue` (vencidas), `today` (vencen hoy), `week` (vencen en los próximos 7 días, incluidas las vencidas y las de hoy) o `none` (sin fecha). Las hechas no cuentan como vencidas | `--due overdue` |
+| Bloqueo | Bloqueadas (por una tarea sin terminar) o no bloqueadas | `--blocked` / `--unblocked` |
+| Pasos | Con pasos sin tildar | `--pending-steps` |
+| Referencias | Con referencias a documentos | `--with-refs` |
+| Etiqueta | Las que tienen la etiqueta (varias: alguna de ellas) | `--tag arte,audio` |
+| Prioridad | Las de esas prioridades; `none`: sin prioridad | `--priority high,medium` |
+| Responsable | Las de ese responsable; `none`: sin responsable | `--assignee Dani` |
+
+- **Web:** la barra de filtros está arriba del tablero y de la lista. Las etiquetas y los responsables ofrecen los valores que ya existen en el proyecto. Los filtros se recuerdan por proyecto en el navegador, nunca en `compass/`. Cuando hay filtros activos, la barra dice cuántas tareas quedan ocultas y tiene un botón para limpiarlos. `/` lleva al buscador.
+- **Vista de lista:** dentro de la vista del tablero, un selector *Tablero | Lista* (la elección se recuerda). Una fila por tarea, con código, título, hito (con "Todos"), estado, pasos `x/y`, fecha límite, bloqueo, prioridad, responsable y etiquetas. Se ordena por columna con un clic en el encabezado (otro clic invierte el orden); por defecto, hito y después código en orden natural. Un clic en la fila abre el mismo detalle que el tablero. En el teléfono quedan solo las columnas principales.
+- **Edición:** prioridad y responsable se cambian en el detalle; las etiquetas se agregan con sugerencias de las que ya existen y se quitan con ×. La tarjeta del tablero muestra el responsable, la prioridad alta y las etiquetas.
+- **CLI:** `add` y `set` aceptan `--tags a,b`, `--priority high|medium|low` y `--assignee nombre` (`""` quita el campo). `list` y `show` muestran los tres campos, y `list` filtra con las opciones de la tabla. Con `--json`, las mismas tareas filtradas.
+
+### 19.1 Criterios de aceptación de M11
+<!-- id: criterios-lista-y-filtros -->
+
+- [x] La vista de lista muestra las tareas del hito (o de todos), ordenables por columna, y abre el detalle al hacer clic.
+- [x] Tablero y lista se filtran por texto, estado, fecha, bloqueo, pasos, referencias, etiqueta, prioridad y responsable, y el filtro se recuerda al recargar.
+- [x] Etiquetas, prioridad y responsable se editan desde la web y desde la CLI, y se ven en `docs/tareas.md`.
+- [x] `scompass list` filtra con las mismas reglas que la web.

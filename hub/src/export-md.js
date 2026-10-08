@@ -5,6 +5,7 @@ import { dirname, resolve } from 'node:path';
 import { writeAtomic } from './store/atomic.js';
 import { linkView } from './links.js';
 import { EVERY } from './dates.js';
+import { PRIORITY_LABEL } from './filters.js';
 
 const ST = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
 
@@ -36,6 +37,10 @@ export function renderMarkdown({ milestones, tasks, lists = [] }, { title, board
       const head = [t.code ?? '', t.title].filter(Boolean).join(' ');
       L.push(`### ${head} · ${ST[t.status ?? 'todo'] ?? t.status}`, '');
       if (t.due) L.push(`**Vence:** ${t.due.replace('T', ' ')}`, '');
+      // Prioridad, responsable y etiquetas (D32) en una línea.
+      const meta = [t.priority && `**Prioridad:** ${PRIORITY_LABEL[t.priority] ?? t.priority}`, t.assignee && `**Responsable:** ${t.assignee}`,
+        t.tags?.length && '**Etiquetas:** ' + t.tags.map((x) => `\`${x}\``).join(', ')].filter(Boolean);
+      if (meta.length) L.push(meta.join(' · '), '');
       const cl = t.checklist ?? [];
       // El detalle de un paso va sangrado debajo, como continuación del ítem de la lista.
       L.push(...cl.flatMap((c) => [`- [${c.done ? 'x' : ' '}] ${c.text}`, ...(c.detail ? c.detail.split('\n').map((l) => (l ? `  ${l}` : '')) : [])]));

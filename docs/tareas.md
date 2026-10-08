@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-10-06
+> Generado: 2026-10-08
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -1170,7 +1170,151 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 - [ ] Prueba en Windows en la máquina real (incluye Ctrl+C en la consola cierra ordenado el hub y el Inicio, y el clic izquierdo en el ícono abre el Inicio)
 - [ ] AGENTS.md, README y spec al día
 - [ ] Esperas de 3 s en los tests de UI que fallan a veces con la suite entera en la VM (fecha límite 8.13, listas «tildar, editar…»); solos pasan siempre
+- [ ] Dock: _scompass deja un Thread vivo si el editor se cierra mientras corre scompass (aviso «Thread object is being destroyed» en godot --import); esperar el hilo en _exit_tree
+  Se ve con godot --headless --path . --import: el plugin corre check_compass al abrir y el editor sale antes de que termine el hilo. Una vez el --import salió con error y tumbó toda la suite del dock.
+- [ ] Los tests del dock aíslan el registro solos: node --test test/dock.test.js sin npm test usa el registro real y el Inicio del usuario sirve los proyectos temporales (y los anota en projects.json)
 
 **Notas:** Criterios de §18.1. Al cerrar: suite completa en la VM, y una sesión real en la máquina con Windows (Inicio con bandeja, un proyecto sincronizado por git con Linux, dock en Godot). AGENTS.md (plantilla, copia del addon y compass/) con lo que cambie para Windows.
 
 **Referencias:** `docs/spec.md#windows`
+
+## M11 — Lista y filtros  (7/7)
+
+Ver y encontrar tareas en un tablero grande: vista de lista y filtros en la UI web, con campos nuevos para filtrar.
+
+**Hecho cuando:**
+- La UI web tiene una vista de lista del tablero, compacta y ordenable por columna, que abre el mismo detalle.
+- Tablero y lista se filtran por texto, estado, fecha límite, bloqueo, pasos pendientes, etiquetas, prioridad y responsable, y el filtro se recuerda.
+- Las tareas tienen etiquetas, prioridad y responsable, editables desde la CLI y la web, y scompass list filtra por lo mismo.
+
+### 11.1 Etiquetas, prioridad y responsable en el schema · Hecho
+
+- [x] tags: lista de textos cortos; priority: high|medium|low; assignee: texto libre (persona o agente)
+- [x] schema/task.schema.json y la copia de compass/schema (scompass update)
+- [x] Validación en el store y la API, con tests
+- [x] Decisión nueva en docs/decisiones.md y el modelo en la spec
+
+### 11.2 CLI: editar los campos nuevos y filtrar scompass list · Hecho
+
+- [x] add y set con --tags a,b --priority high --assignee nombre ("" quita)
+- [x] show y list muestran etiquetas, prioridad y responsable
+- [x] list filtra con --q, --status (varios), --due overdue|today|week|none, --blocked, --unblocked, --pending-steps, --tag, --priority, --assignee
+- [x] Tests de la CLI
+
+### 11.3 Export a markdown con los campos nuevos · Hecho
+
+- [x] docs/tareas.md muestra etiquetas, prioridad y responsable de cada tarea
+- [x] Test del export
+
+### 11.4 Web: barra de filtros del tablero · Hecho
+
+- [x] Texto (título y código, sin tildes ni mayúsculas), estado, fecha límite, bloqueadas o no, con pasos pendientes, con referencias
+- [x] Etiquetas, prioridad y responsable, con los valores que existen en el tablero
+- [x] Combinables con el hito; el filtro se recuerda por proyecto y se limpia con un botón
+- [x] Los contadores del hito y el resumen dicen cuántas tareas quedan ocultas
+
+### 11.5 Web: vista de lista · Hecho
+
+- [x] Pestaña Tablero | Lista dentro de la vista del tablero; la elección se recuerda
+- [x] Columnas: código, título, hito, estado, pasos x/y, fecha límite, bloqueo, prioridad, responsable, etiquetas
+- [x] Ordenable por columna (orden natural del código por defecto); clic en la fila abre el mismo detalle
+- [x] Usa los mismos filtros que el tablero; se ve bien en el teléfono
+
+### 11.6 Web: editar etiquetas, prioridad y responsable en el detalle · Hecho
+
+- [x] Prioridad y responsable en el detalle; etiquetas con sugerencias de las que ya existen
+- [x] Marcas en la tarjeta del tablero (prioridad, etiquetas)
+
+### 11.7 Tests de M11, spec y guía · Hecho
+
+- [x] Tests de UI de la lista y los filtros
+- [x] AGENTS.md (plantilla, copia del addon y compass/), README y spec al día
+
+**Prueba:** npm test (hub/test/filters.test.js, ui-filters.test.js y los de schema, API y export)
+
+## M12 — Biblioteca de documentos  (0/7)
+
+Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos archivos, enlaces a documentos enteros, búsqueda y el estado de git de cada uno.
+
+**Hecho cuando:**
+- Una tarea puede referenciar un documento entero (ref sin sección o [[alias]]), y refs check lo valida.
+- Los documentos se agregan y quitan desde la CLI y la web sin editar config.json; la plantilla juego declara un glob de docs/.
+- La web tiene una biblioteca: árbol por carpetas, búsqueda de texto en todos los documentos y, por documento, sus tareas y su estado de git.
+- Cada documento muestra si tiene cambios sin commitear, su último commit y el diff contra HEAD.
+
+### 12.1 Refs a un documento entero · Pendiente
+
+- [ ] Schema: section opcional en refs (schema/, compass/schema/ y fixture de tests)
+- [ ] docs.js: resolveRef, LINK y checkRefs aceptan doc sin sección
+- [ ] CLI ref add|rm <tarea> <alias>[#<id>] y doc show <alias> sin sección
+- [ ] Backlinks a nivel documento en /api/docs y export md
+- [ ] Tests
+
+**Prueba:** scompass ref add <tarea> gdd; refs check no lo marca roto; [[gdd]] en notas resuelve; borrar el archivo lo marca missing_doc.
+
+**Notas:** Hoy refs exige doc y section. Se hace section opcional: una ref sin sección apunta al documento entero. En texto, [[alias]] sin #. Afecta resolveRef/checkRefs/suggestRefs, export md, ref add|rm y backlinks (docs-api).
+
+### 12.2 Agregar y quitar documentos sin editar config.json · Pendiente
+
+- [ ] CLI doc add / doc rm con validación de alias y ruta dentro del proyecto
+- [ ] API POST/DELETE /api/docs que reescribe config.json
+- [ ] loadDocs excluye export_md de los globs
+- [ ] Plantilla juego con glob docs/**/*.md
+- [ ] Tests
+
+**Prueba:** doc add enemigos docs/enemigos.md lo muestra en doc list; un glob nuevo toma archivos creados después; init --template juego no lista tareas.md.
+
+**Notas:** scompass doc add <alias> <ruta|glob> y doc rm <alias>; API POST/DELETE /api/docs que escribe config.json (atómico, con etag). La plantilla juego declara docs/**/*.md en vez de solo gdd.md; el glob excluye el export_md (docs/tareas.md) para no listarse a sí mismo.
+
+### 12.3 Estado de git de los documentos · Pendiente
+
+- [ ] git.js: docStatus (porcelain por ruta) y lastCommit (git log -1)
+- [ ] git.js: docDiff contra HEAD y docLog con --follow
+- [ ] API: git en /api/docs, GET /api/docs/:alias/diff y /log
+- [ ] CLI doc status y doc diff <alias> [--json]
+- [ ] El watcher avisa por ws cuando cambia el estado de un documento
+- [ ] Tests (repo temporal; sin git devuelve repo: false)
+
+**Prueba:** Modificar docs/gdd.md sin commitear: doc status lo marca modificado y doc diff gdd muestra el cambio; tras commitear vuelve a limpio con el commit nuevo.
+
+**Notas:** Ampliar git.js: por documento, estado (sin cambios, modificado, nuevo sin seguir, borrado), último commit (hash corto, fecha, autor, asunto) y diff contra HEAD. Historial con git log --follow. Sin repo: los campos quedan vacíos, nada falla. Solo lectura: la app nunca commitea (spec §4.5).
+
+### 12.4 Búsqueda de texto en los documentos · Pendiente
+
+- [ ] docs.js: searchDocs(docs, q) → [{ alias, section, line, snippet }]
+- [ ] API GET /api/docs/search?q=
+- [ ] CLI doc search "<texto>" [--json]
+- [ ] Tests
+
+**Prueba:** scompass doc search slime encuentra la sección de enemigos.md con su fragmento; la API devuelve lo mismo.
+
+**Notas:** Buscar en todos los documentos declarados, sin índice externo: recorrer las líneas ya cargadas. Cada resultado dice documento, sección y un fragmento. Sin tildes ni mayúsculas, como los filtros de M11.
+
+### 12.5 Biblioteca en la web · Pendiente
+
+- [ ] Árbol de documentos por carpeta con contadores de tareas
+- [ ] Caja de búsqueda con resultados por documento y sección
+- [ ] Ficha del documento: tareas, secciones sin tareas, estado de git
+- [ ] Agregar / quitar documento desde la UI
+- [ ] Detalle de tarea: refs a documento entero y [[alias]] en el texto
+
+**Prueba:** Con 5+ documentos en carpetas: navegar el árbol, buscar un término y saltar a la sección, ver qué tareas referencian el documento.
+
+**Notas:** La vista Docs pasa de un selector a un explorador: árbol por carpetas a la izquierda, búsqueda arriba y, por documento, ficha con secciones, tareas que lo referencian (a nivel documento y por sección) y estado de git. Resaltar documentos o secciones sin tareas (diseño sin planificar). Agregar y quitar documentos desde la UI.
+
+### 12.6 Cambios y diff de documentos en la web · Pendiente
+
+- [ ] Marca de modificado/nuevo en el árbol, en vivo por ws
+- [ ] Vista de diff contra HEAD
+- [ ] Historial de commits del documento
+- [ ] Secciones tocadas por el diff y sus tareas
+
+**Prueba:** Editar un documento con el hub abierto: aparece la marca sin recargar, el diff muestra el cambio y las tareas de esa sección quedan señaladas.
+
+**Notas:** Marca en el árbol para documentos con cambios sin commitear. En la ficha: último commit, historial y el diff contra HEAD con líneas agregadas y quitadas. Marcar las secciones tocadas por el diff para ver qué tareas pueden quedar afectadas.
+
+### 12.7 Tests de M12, spec y guía · Pendiente
+
+- [ ] Tests de UI de la biblioteca y el diff
+- [ ] Spec §20 y decisiones
+- [ ] AGENTS.md (plantilla, copia del addon y compass/), README y spec al día

@@ -81,6 +81,15 @@ test('PATCH: null borra, los arrays se reemplazan, id/etag del cuerpo se ignoran
   assert.deepEqual(r.json().checklist, [{ text: 'uno', done: false }]);
 });
 
+test('PATCH: etiquetas, prioridad y responsable se guardan y null los quita (M11)', async () => {
+  let r = await req('PATCH', '/api/tasks/m0-01', { tags: ['arte', 'audio'], priority: 'low', assignee: 'Dani' });
+  assert.equal(r.statusCode, 200, r.body);
+  assert.deepEqual([r.json().tags, r.json().priority, r.json().assignee], [['arte', 'audio'], 'low', 'Dani']);
+  assert.equal((await req('PATCH', '/api/tasks/m0-01', { priority: 'urgente' })).statusCode, 400);
+  r = await req('PATCH', '/api/tasks/m0-01', { tags: null, priority: null, assignee: null });
+  assert.ok(!('tags' in r.json()) && !('priority' in r.json()) && !('assignee' in r.json()));
+});
+
 test('POST /api/tasks: 201, Location, ETag e id nuevo', async () => {
   const r = await req('POST', '/api/tasks', { milestone: 'm02', title: 'Nueva', status: 'todo' });
   assert.equal(r.statusCode, 201);

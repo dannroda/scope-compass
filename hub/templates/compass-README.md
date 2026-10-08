@@ -33,3 +33,4 @@ Con la CLI: `scompass list`, `scompass show <id>`, `scompass move <id> doing`, `
 - En los textos, `` `así` `` se muestra como código.
 - `links` vincula tareas: `{ "type": "blocks", "task": "<id>" }` en la tarea que bloquea a la otra, o `"related"`. "Bloqueada por" no se guarda: se calcula.
 - `refs` apunta a secciones de documentos por su id estable (`<!-- id: ... -->` debajo de cada título).
+- `priority` (`"high"`, `"medium"`, `"low"`), `assignee` (texto) y `tags` (lista de textos sin comas) son opcionales: sin el campo, la tarea no tiene ese dato.

@@ -255,3 +255,12 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
 - **Qué:** en Windows, el hub lanza un script de PowerShell (`powershell.exe -NoProfile -WindowStyle Hidden`) que muestra el ícono con `System.Windows.Forms.NotifyIcon`. El hub le manda el ícono, el tooltip y el menú como JSON por stdin, y el script devuelve los clics por stdout. Si el hub muere, se cierra el stdin y el ícono desaparece. En Linux sigue D20.
 - **Por qué:** menos librerías externas. PowerShell 5.1 y .NET vienen con todo Windows 10/11, así que no hay que instalar nada. Es el mismo patrón que D20: el mecanismo nativo de cada escritorio, sin binarios propios.
 - **Descartado:** paquetes de npm con un binario precompilado (`systray2` y similares), que son una dependencia más, con binarios que no se auditan. También un mismo mecanismo para las dos plataformas: Node no tiene bandeja, y el `StatusIndicator` de Godot sería un proceso de unos 100 MB solo para un ícono.
+
+## D32 · Etiquetas, prioridad y responsable: campos opcionales de la tarea; los filtros son de la vista
+**2026-10-08 · vigente** · spec §19
+
+- **Qué:** la tarea suma tres campos opcionales: `tags` (lista de textos cortos), `priority` (`high`, `medium` o `low`) y `assignee` (texto libre: una persona o un agente). Sin el campo, la tarea no tiene ese dato; no hay valor por defecto. Los filtros (texto, estado, fecha, bloqueo, pasos, referencias y los tres campos) no se guardan en `compass/`: la UI web los recuerda por proyecto en el navegador, y `scompass list` los recibe como opciones.
+- **Por qué:** con un tablero grande, el hito solo no alcanza para encontrar una tarea. Los tres campos son los que se usan para repartir y ordenar trabajo en un equipo chico. Son opcionales para que los proyectos que no los usen no cambien, y los datos viejos siguen siendo válidos.
+- **Etiquetas libres:** no hay una lista de etiquetas del proyecto en `config.json`. Las sugerencias salen de las que ya usan las tareas. Una lista fija obligaría a editar la config antes de etiquetar, y un error de tipeo se ve en el filtro y se corrige igual.
+- **Responsable como texto:** no hay usuarios en Scope Compass (local, un solo usuario por ahora). Un nombre o el de un agente alcanza para filtrar "lo mío".
+- **Descartado:** prioridad numérica (1–5): tres niveles alcanzan y se leen sin pensar. Filtrar en el hub con parámetros de `/api/tasks`: el tablero ya tiene todas las tareas en memoria y filtra al instante.
