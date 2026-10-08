@@ -348,6 +348,7 @@ ul.items > .item:first-child { border-top: 0; }
 .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
 table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
 .tasks th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--line); white-space: nowrap; padding: 0; }
+.tasks td.when { white-space: nowrap; color: var(--muted); }
 .tasks th button { border: 0; background: none; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; padding: 10px 10px; min-height: 40px; width: 100%; text-align: left; }
 .tasks th[aria-sort] button { color: var(--accent); }
 .tasks td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }

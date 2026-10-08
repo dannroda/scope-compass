@@ -293,8 +293,21 @@
     const toggle = (key, label) => h('button', { type: 'button', class: 'chip small', id: 'f-' + key, 'aria-pressed': S.f[key] ? 'true' : 'false', onclick: () => setF({ [key]: !S.f[key] }) }, label);
     // Los valores elegidos siguen en la lista aunque ninguna tarea los tenga ya (se pueden destildar).
     const values = (all, chosen) => [...new Set([...all, ...chosen.filter((x) => x !== 'none')])].map((x) => [x, x]);
+    // Orden de las tarjetas (y de la lista): mismo aspecto que los filtros de una opción, más el sentido al lado.
+    const sortKeys = ['', 'code', 'title', 'updated', 'created', 'due', 'priority'];
+    if (S.sort && !sortKeys.includes(S.sort.key)) sortKeys.push(S.sort.key); // uno elegido en la lista (Estado, Pasos…)
+    const sortDrop = h('details', { class: 'fdrop sort' + (S.sort ? ' on' : ''), 'data-key': 'sort', open: open.includes('sort') },
+      h('summary', { id: 'f-sort', 'aria-label': 'Orden: ' + (S.sort ? sortLabel(S.sort.key) : 'Manual') }, 'Orden: ' + (S.sort ? sortLabel(S.sort.key) : 'Manual')),
+      h('div', { class: 'fdrop-body', role: 'radiogroup', 'aria-label': 'Orden' }, sortKeys.map((k) => {
+        const id = 'f-sort-' + (k || 'manual');
+        return h('label', { for: id }, h('input', { type: 'radio', name: 'f-sort', id, checked: (S.sort?.key ?? '') === k,
+          onchange: (e) => { e.target.closest('details').open = false; setSort(!k ? null : S.sort?.key === k ? S.sort : { key: k, dir: firstDir(k) }); } }), k ? sortLabel(k) : 'Manual');
+      })));
+    const sortDir = S.sort ? h('button', { type: 'button', class: 'chip small', id: 'f-sort-dir', 'aria-label': S.sort.dir === 1 ? 'Ascendente' : 'Descendente',
+      title: 'Invertir el orden', onclick: () => setSort({ ...S.sort, dir: -S.sort.dir }) }, S.sort.dir === 1 ? '▲' : '▼') : null;
     const total = visibleTasks().length, shown = shownTasks().length;
     more.replaceChildren(...[
+      sortDrop, sortDir,
       multi('status', 'Estado', STATUSES.map((s) => [s.id, s.label])),
       single('due', 'Fecha límite', DUE_FILTERS),
       single('blocked', 'Bloqueo', BLOCK_FILTERS),
@@ -326,8 +339,19 @@
     { key: 'blocked', label: 'Bloqueo', val: (t) => (openBlockers(t).length ? 0 : null), opt: true },
     { key: 'priority', label: 'Prioridad', val: (t) => ({ high: 0, medium: 1, low: 2 })[t.priority] ?? null, opt: true },
     { key: 'assignee', label: 'Responsable', val: (t) => t.assignee || null, opt: true },
-    { key: 'tags', label: 'Etiquetas', val: (t) => tagsOf(t).join(', ') || null, opt: true }
+    { key: 'tags', label: 'Etiquetas', val: (t) => tagsOf(t).join(', ') || null, opt: true },
+    { key: 'updated', label: 'Actualizada', val: (t) => t.updated_at || null, opt: true, newestFirst: true },
+    { key: 'created', label: 'Creada', val: (t) => t.created_at || null, opt: true, newestFirst: true }
   ];
+  // Fecha corta para la lista ("8 oct", con el año si no es el actual); la completa en el tooltip.
+  function stamp(iso) {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (isNaN(d)) return null;
+    const short = d.toLocaleDateString('es', { day: 'numeric', month: 'short', ...(d.getFullYear() === new Date().getFullYear() ? {} : { year: 'numeric' }) });
+    return h('time', { datetime: iso, title: d.toLocaleString('es') }, short);
+  }
+  const sortLabel = (key) => COLUMNS.find((c) => c.key === key)?.label ?? key;
   function sortedForList(ts) {
     const col = S.sort && COLUMNS.find((c) => c.key === S.sort.key);
     if (!col) return ts.slice().sort(sortTasks);
@@ -339,11 +363,13 @@
       return c * S.sort.dir || sortTasks(a, b);
     });
   }
-  // Clic en un encabezado: ascendente, descendente y de vuelta al orden del tablero.
+  function setSort(sort) { S.sort = sort; pref(SORT_KEY, sort ? JSON.stringify(sort) : ''); render(); }
+  // Las fechas de edición y de creación empiezan por la más nueva; el resto, ascendente.
+  const firstDir = (key) => (COLUMNS.find((c) => c.key === key)?.newestFirst ? -1 : 1);
+  // Clic en un encabezado: un sentido, el otro y de vuelta al orden del tablero.
   function sortBy(key) {
-    S.sort = S.sort?.key !== key ? { key, dir: 1 } : S.sort.dir === 1 ? { key, dir: -1 } : null;
-    pref(SORT_KEY, S.sort ? JSON.stringify(S.sort) : '');
-    render();
+    const d = firstDir(key);
+    setSort(S.sort?.key !== key ? { key, dir: d } : S.sort.dir === d ? { key, dir: -d } : null);
   }
   function renderTaskList() {
     const box = document.getElementById('tasklist');
@@ -374,7 +400,9 @@
         h('td', { class: 'opt' }, blockers.length ? h('span', { class: 'blockmark', title: 'Bloqueada por: ' + blockers.map(taskName).join('; ') }, 'Bloqueada') : null),
         h('td', { class: 'opt' }, t.priority ? h('span', { class: 'prio ' + t.priority }, PRIORITY_LABEL[t.priority] || t.priority) : null),
         h('td', { class: 'opt' }, t.assignee || ''),
-        h('td', { class: 'opt' }, tagsOf(t).map((x) => h('span', { class: 'tag' }, x))));
+        h('td', { class: 'opt' }, tagsOf(t).map((x) => h('span', { class: 'tag' }, x))),
+        h('td', { class: 'opt when' }, stamp(t.updated_at)),
+        h('td', { class: 'opt when' }, stamp(t.created_at)));
     });
     box.replaceChildren(h('div', { class: 'table-wrap' }, h('table', { class: 'tasks' }, h('thead', null, head), h('tbody', null, rows))));
   }
@@ -438,7 +466,8 @@
     const board = document.getElementById('board');
     board.replaceChildren();
     if (S.view !== 'board' || S.mode !== 'board') return;
-    const ts = shownTasks().sort(sortTasks);
+    // Dentro de cada columna, el orden elegido (el mismo de la lista); sin elegir, el manual.
+    const ts = sortedForList(shownTasks());
     for (const s of STATUSES) {
       const items = ts.filter((t) => (t.status || 'todo') === s.id);
       const col = h('section', { class: 'col', 'aria-label': s.label,
@@ -516,9 +545,12 @@
     return h('button', { class: 'card', type: 'button', draggable: 'true', style: 'border-left: 4px solid ' + s.color,
       'aria-current': S.openId === t.id ? 'true' : null, 'data-id': t.id,
       ondragstart: (e) => { e.dataTransfer.setData('text/plain', t.id); e.dataTransfer.effectAllowed = 'move'; },
-      ondragover: (e) => { e.preventDefault(); e.currentTarget.classList.add('drop-before'); },
+      title: S.sort ? 'Ordenadas por ' + sortLabel(S.sort.key).toLowerCase() + ': arrastrar solo cambia el estado (con orden manual, también reordena)' : null,
+      // Con un orden elegido, soltar sobre una tarjeta es soltar en su columna: cambia el estado, no reordena.
+      ondragover: (e) => { e.preventDefault(); if (!S.sort) e.currentTarget.classList.add('drop-before'); },
       ondragleave: (e) => e.currentTarget.classList.remove('drop-before'),
       ondrop: (e) => {
+        if (S.sort) return;
         e.preventDefault(); e.stopPropagation();
         e.currentTarget.classList.remove('drop-before');
         e.currentTarget.closest('.col')?.classList.remove('over');

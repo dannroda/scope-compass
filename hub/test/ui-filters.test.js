@@ -114,7 +114,7 @@ test('vista de lista: columnas, orden por encabezado (asc, desc, tablero) y clic
   const page = await open();
   await page.click('#mode-list');
   const heads = await page.locator('#tasklist th').allTextContents();
-  assert.deepEqual(heads, ['Código', 'Título', 'Hito', 'Estado', 'Pasos', 'Fecha límite', 'Bloqueo', 'Prioridad', 'Responsable', 'Etiquetas']);
+  assert.deepEqual(heads, ['Código', 'Título', 'Hito', 'Estado', 'Pasos', 'Fecha límite', 'Bloqueo', 'Prioridad', 'Responsable', 'Etiquetas', 'Actualizada', 'Creada']);
   const board = await rows(page);
   assert.deepEqual(board, ['m1-01', 'm1-02', 'm1-03', 'm1-04', 'm1-05', 'm1-06', 'm1-07']);
   await page.click('button[data-sort="priority"]');
@@ -131,6 +131,38 @@ test('vista de lista: columnas, orden por encabezado (asc, desc, tablero) y clic
   const row = await page.locator('#tasklist tr[data-id="m1-03"]').innerText();
   for (const s of ['1.3', 'En curso', 'Vencida', 'Alta', 'Dani', 'store', 'core']) assert.ok(row.includes(s), `${s} en «${row}»`);
   assert.match(await page.locator('#tasklist tr[data-id="m1-04"]').innerText(), /Bloqueada/);
+  await page.context().close();
+});
+
+test('orden del tablero: por actualizada en cada columna, en vivo, invertir, compartido con la lista y arrastre solo cambia estado', async () => {
+  const page = await open();
+  const col = (label) => page.locator(`.col[aria-label="${label}"] .card`).evaluateAll((els) => els.map((e) => e.dataset.id));
+  assert.deepEqual(await col('Hecho'), ['m1-01', 'm1-02', 'm1-05', 'm1-06', 'm1-07'], 'manual: order');
+  assert.equal(await page.textContent('#f-sort'), 'Orden: Manual');
+  await pick(page, 'sort', 'updated');
+  assert.equal(await page.textContent('#f-sort'), 'Orden: Actualizada');
+  assert.deepEqual(await col('Hecho'), ['m1-07', 'm1-06', 'm1-05', 'm1-02', 'm1-01'], 'la más nueva arriba');
+  // Un cambio que llega por ws la sube al tope.
+  await run(['set', 'm1-01', '--notes', 'tocada'], { cwd: dir, out: { write() {} }, err: { write() {} } });
+  await page.waitForFunction(() => document.querySelector('.col[aria-label="Hecho"] .card')?.dataset.id === 'm1-01');
+  await page.click('#f-sort-dir');
+  assert.equal(await page.getAttribute('#f-sort-dir', 'aria-label'), 'Ascendente');
+  assert.deepEqual(await col('Hecho'), ['m1-02', 'm1-05', 'm1-06', 'm1-07', 'm1-01']);
+  // Soltar sobre otra tarjeta no reordena: solo cambia el estado (acá, el mismo), y el order queda igual.
+  const before = (await task('m1-07')).order;
+  await page.dragAndDrop('.card[data-id="m1-07"]', '.card[data-id="m1-02"]');
+  await page.waitForTimeout(300);
+  assert.equal((await task('m1-07')).order, before);
+  // La lista comparte el orden.
+  await page.click('#mode-list');
+  assert.equal(await page.getAttribute('th:has(button[data-sort="updated"])', 'aria-sort'), 'ascending');
+  await page.click('#mode-board');
+  await pick(page, 'sort', 'manual');
+  assert.equal(await page.locator('#f-sort-dir').count(), 0);
+  assert.deepEqual(await col('Hecho'), ['m1-01', 'm1-02', 'm1-05', 'm1-06', 'm1-07']);
+  await page.reload();
+  await page.waitForSelector('.card');
+  assert.equal(await page.textContent('#f-sort'), 'Orden: Manual', 'se recuerda');
   await page.context().close();
 });
 
