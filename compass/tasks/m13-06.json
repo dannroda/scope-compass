@@ -1,0 +1,22 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Spec: sección de M13 con lo que cambió en la UI"
+    },
+    {
+      "done": false,
+      "text": "README de web/ al día"
+    }
+  ],
+  "code": "13.6",
+  "created_at": "2026-10-09T05:12:57.814Z",
+  "milestone": "m13",
+  "notes": "",
+  "order": 6,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Spec y guía de M13",
+  "updated_at": "2026-10-09T05:12:58.535Z"
+}

@@ -1,0 +1,30 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Fila de chips de propiedades con edición en el lugar"
+    },
+    {
+      "done": false,
+      "text": "Título sin borde en reposo"
+    },
+    {
+      "done": false,
+      "text": "Pasos, notas y referencias debajo del estado"
+    },
+    {
+      "done": false,
+      "text": "Tests de UI del detalle"
+    }
+  ],
+  "code": "13.3",
+  "created_at": "2026-10-09T05:12:53.433Z",
+  "milestone": "m13",
+  "notes": "Hito, fecha, prioridad, responsable y etiquetas ocupan ~450 px antes de los pasos. Pasan a una fila de chips que se editan al hacer clic (vacíos en tono apagado). El título sin borde en reposo, con borde al enfocarlo.",
+  "order": 3,
+  "refs": [],
+  "status": "todo",
+  "test": "Al abrir una tarea a 1440×900 se ven los pasos sin bajar; cada propiedad se edita desde su chip y se guarda como hoy.",
+  "title": "Detalle: propiedades en chips y pasos arriba",
+  "updated_at": "2026-10-09T05:12:54.642Z"
+}

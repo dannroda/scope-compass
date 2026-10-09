@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-10-08
+> Generado: 2026-10-09
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -1254,6 +1254,18 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Notas:** Hoy refs exige doc y section. Se hace section opcional: una ref sin sección apunta al documento entero. En texto, `[[alias]]` sin #. Afecta resolveRef/checkRefs/suggestRefs, export md, ref add|rm y backlinks (docs-api).
 
+### 12.8 Ordenar las tarjetas del tablero · Hecho
+
+- [x] Columnas Actualizada y Creada en la lista (updated_at, created_at)
+- [x] Selector de orden y sentido en la barra del tablero, compartido con la lista
+- [x] renderBoard ordena cada columna con sortedForList
+- [x] Arrastrar para reordenar solo con orden manual
+- [x] Tests de UI
+
+**Prueba:** Elegir Actualizada ▼: la tarea recién editada sube al tope de su columna, también al llegar el cambio por ws; volver a Manual restaura el orden y el arrastre.
+
+**Notas:** Selector de orden en la barra del tablero: orden manual (el de hoy, order), código, actualizada, creada, fecha límite, prioridad y título, ascendente o descendente. Se ordena dentro de cada columna. Reusa COLUMNS/sortedForList de la vista de lista y el mismo S.sort, así tablero y lista comparten el orden; la lista suma las columnas Actualizada y Creada. Con un orden que no es el manual, arrastrar entre columnas sigue cambiando el estado pero no reordena (aviso en el tooltip). Se recuerda por proyecto como el filtro. Solo web: no toca datos. Hecho: AGENTS.md no cambia (es solo web, sin CLI ni datos).
+
 ### 12.2 Agregar y quitar documentos sin editar config.json · Pendiente
 
 - [ ] CLI doc add / doc rm con validación de alias y ruta dentro del proyecto
@@ -1261,6 +1273,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 - [ ] loadDocs excluye export_md de los globs
 - [ ] Plantilla juego con glob docs/**/*.md
 - [ ] Tests
+- [ ] Dock sin hub: compass_reader.read_docs expande los globs (hoy los saltea), con las mismas reglas que loadDocs
 
 **Prueba:** doc add enemigos docs/enemigos.md lo muestra en doc list; un glob nuevo toma archivos creados después; init --template juego no lista tareas.md.
 
@@ -1319,14 +1332,71 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 - [ ] Spec §20 y decisiones
 - [ ] AGENTS.md (plantilla, copia del addon y compass/), README y spec al día
 
-### 12.8 Ordenar las tarjetas del tablero · Hecho
+## M13 — UI más compacta  (0/6)
 
-- [x] Columnas Actualizada y Creada en la lista (updated_at, created_at)
-- [x] Selector de orden y sentido en la barra del tablero, compartido con la lista
-- [x] renderBoard ordena cada columna con sortedForList
-- [x] Arrastrar para reordenar solo con orden manual
-- [x] Tests de UI
+Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compactos, según la revisión de diseño del 2026-10-09 (https://claude.ai/artifact/D6vMr2tWMv9dRCX8MUv5qg).
 
-**Prueba:** Elegir Actualizada ▼: la tarea recién editada sube al tope de su columna, también al llegar el cambio por ws; volver a Manual restaura el orden y el arrastre.
+**Hecho cuando:**
+- En escritorio a 1440×900 la primera tarjeta empieza antes de los 320 px; en el teléfono a 390×844, antes de los 450 px.
+- En el detalle, los pasos aparecen sin bajar, con las propiedades en una fila de chips.
+- El código de los documentos se ve sin ligaduras y las acciones de los pasos miden 36 px o más en el teléfono.
 
-**Notas:** Selector de orden en la barra del tablero: orden manual (el de hoy, order), código, actualizada, creada, fecha límite, prioridad y título, ascendente o descendente. Se ordena dentro de cada columna. Reusa COLUMNS/sortedForList de la vista de lista y el mismo S.sort, así tablero y lista comparten el orden; la lista suma las columnas Actualizada y Creada. Con un orden que no es el manual, arrastrar entre columnas sigue cambiando el estado pero no reordena (aviso en el tooltip). Se recuerda por proyecto como el filtro. Solo web: no toca datos. Hecho: AGENTS.md no cambia (es solo web, sin CLI ni datos).
+### 13.1 Bugs: ligaduras en el código y `[[alias]]` en M12 · Pendiente
+
+- [ ] font-variant-ligatures: none en code y pre (web y Inicio)
+- [ ] Backticks alrededor de `[[alias]]` en compass/milestones/m12.json
+- [ ] Test de UI: el ancho de `!=` es de dos caracteres
+
+**Prueba:** Un bloque de código con `<!-- id: x -->` y `!=` se ve tal cual; el resumen de M12 no muestra ⚠.
+
+**Notas:** JetBrains Mono trae ligaduras: en la vista Documentos `<!-- id -->` se ve como flechas y `!=` como ≠. El "Hecho cuando" de M12 nombra `[[alias]]` sin backticks y desde la 12.1 se muestra como enlace roto.
+
+### 13.2 Tablero: parte de arriba compacta · Pendiente
+
+- [ ] Resumen del hito en una línea con "Hecho cuando" desplegable
+- [ ] Chip "Terminados (n)" que agrupa los hitos hechos (el elegido siempre visible)
+- [ ] Botón "Filtros (n)" con panel; Orden a la derecha
+- [ ] Encabezado sin "tareas"
+- [ ] Tests de UI (posición de la primera tarjeta, filtros desde el panel)
+
+**Prueba:** A 1440×900 con M12 elegido la primera tarjeta empieza antes de los 320 px; los filtros y el orden siguen funcionando y recordándose.
+
+**Notas:** Hoy la primera tarjeta empieza a ~580 px en escritorio. Resumen del hito en una línea (título, barra, contador y "Hecho cuando ▸" que despliega la lista, recordado por proyecto). Hitos terminados agrupados en "Terminados (n) ▾". "Orden" a la derecha de la fila del buscador; los 9 filtros detrás de un botón "Filtros (n)" que abre un panel. Sacar el "tareas" del encabezado.
+
+### 13.3 Detalle: propiedades en chips y pasos arriba · Pendiente
+
+- [ ] Fila de chips de propiedades con edición en el lugar
+- [ ] Título sin borde en reposo
+- [ ] Pasos, notas y referencias debajo del estado
+- [ ] Tests de UI del detalle
+
+**Prueba:** Al abrir una tarea a 1440×900 se ven los pasos sin bajar; cada propiedad se edita desde su chip y se guarda como hoy.
+
+**Notas:** Hito, fecha, prioridad, responsable y etiquetas ocupan ~450 px antes de los pasos. Pasan a una fila de chips que se editan al hacer clic (vacíos en tono apagado). El título sin borde en reposo, con borde al enfocarlo.
+
+### 13.4 Teléfono: menos filas antes de las tareas · Pendiente
+
+- [ ] Hitos en una fila con scroll horizontal
+- [ ] Columnas vacías de una línea
+- [ ] Acciones de los pasos de 36 px en el teléfono, visibles al pasar el mouse en escritorio
+- [ ] Cabecera del detalle: código del hito, sin el nombre
+- [ ] Tests de UI a 390 px
+
+**Prueba:** A 390×844 la primera tarjeta empieza antes de los 450 px, sin scroll horizontal de la página; ✎ y × miden 36 px o más.
+
+**Notas:** A 390×844 la primera tarjeta aparece a ~1220 px. Hitos en una fila con scroll horizontal; columnas vacías de una línea; acciones de los pasos (✎ ×) de 36 px o más; la cabecera del detalle con solo el código del hito.
+
+### 13.5 Lista: fechas relativas y columnas vacías · Pendiente
+
+- [ ] Fechas relativas en Actualizada y Creada
+- [ ] Columnas sin valores escondidas
+- [ ] Tests de UI
+
+**Prueba:** Con M11 elegido no aparecen las columnas vacías; una tarea editada recién dice "hace un momento".
+
+**Notas:** Actualizada y Creada dicen todas "8 oct". Fecha relativa para lo reciente ("hace 3 h", "ayer") con la completa en el tooltip. Esconder las columnas sin ningún valor en lo que se está viendo (la de orden activo siempre visible).
+
+### 13.6 Spec y guía de M13 · Pendiente
+
+- [ ] Spec: sección de M13 con lo que cambió en la UI
+- [ ] README de web/ al día
