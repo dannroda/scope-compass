@@ -184,7 +184,7 @@ span.link-task { flex: 1 1 12ch; }
 .doc-body p, .doc-body ul, .doc-body ol { margin: .5em 0; max-width: 75ch; }
 .doc-body a { color: var(--accent); }
 .doc-body table { border-collapse: collapse; margin: .6em 0; font-size: 14px; display: block; overflow-x: auto; max-width: 100%; }
-.doc-body th, .doc-body td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.doc-body th, .doc-body td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; overflow-wrap: break-word; }
 .doc-body th { background: var(--surface-2); }
 .doc-body blockquote { margin: .6em 0; padding: 2px 12px; border-left: 3px solid var(--line); color: var(--muted); }
 .doc-body pre { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; font: 500 13px/1.6 var(--font-mono); }

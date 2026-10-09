@@ -172,6 +172,20 @@ test('editar el documento con la UI abierta la actualiza sola', async () => {
   await page.close();
 });
 
+test('tablas del documento: una columna corta no se aplasta ni parte sus palabras al lado de una de texto largo', async () => {
+  const long = 'Lista de partidas guardadas con fecha, duración y nivel; al elegir una se ve un resumen y se puede cargar o borrar. '.repeat(4);
+  await writeFile(join(dir, 'gdd.md'), GDD + `\n## UI\n<!-- id: ui -->\n\n| Pantalla | Contenido |\n|---|---|\n| Selección | ${long} |\n`);
+  const page = await open('#docs/gdd/ui');
+  await page.waitForSelector('article.doc-body table td');
+  const cell = await page.$eval('article.doc-body tbody td', (td) => {
+    const r = document.createRange();
+    r.selectNodeContents(td);
+    return { lines: r.getClientRects().length, width: td.getBoundingClientRect().width };
+  });
+  assert.equal(cell.lines, 1, '"Selección" entra en una línea');
+  await page.close();
+});
+
 test('6.6: [[gdd#id]] en pasos y notas se ve con el título actual; roto, marcado; en `código`, literal', async () => {
   await setTask('m1-06', {
     notes: 'Ver [[gdd#ventanas-ataque]] y [[gdd#borrada]]; ejemplo: `[[gdd#camara]]`',
