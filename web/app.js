@@ -527,25 +527,24 @@
     return h('span', { class: 'duemark' + cls, title: g === 'overdue' ? 'Vencida' : g === 'today' ? 'Vence hoy' : 'Fecha límite' }, (g === 'overdue' ? 'Vencida · ' : '') + showDue(t.due));
   }
 
-  // Fecha y hora opcionales; vaciar la fecha la quita (null borra el campo en el PATCH).
+  // Fecha y hora opcionales; vaciar la fecha la quita (null borra el campo en el PATCH). La hora aparece con la fecha.
   function dueField(t) {
     const [date, time] = t.due ? [t.due.slice(0, 10), t.due.slice(11)] : ['', ''];
     const save = () => {
-      const d = document.getElementById('d-due').value, hm = document.getElementById('d-due-time').value;
+      const d = document.getElementById('d-due').value, hm = document.getElementById('d-due-time')?.value ?? '';
       const next = d ? d + (hm ? 'T' + hm : '') : null;
       if (next !== (t.due ?? null)) updateTask(t.id, { due: next });
     };
-    return h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
-      h('label', { class: 'label', for: 'd-due' }, 'Fecha límite'),
-      h('div', { class: 'due-row' },
-        h('input', { type: 'date', id: 'd-due', value: date, 'data-orig': date, onchange: save }),
-        h('label', { for: 'd-due-time', class: 'sr' }, 'Hora'),
-        h('input', { type: 'time', id: 'd-due-time', value: time, 'data-orig': time, disabled: !date, onchange: save }),
-        t.due ? dueMark(t) : null,
-        t.due ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => updateTask(t.id, { due: null }) }, 'Quitar') : null));
+    const g = t.due && t.status !== 'done' ? dueGroup(t.due) : null;
+    return h('span', { class: 'pchip' + (t.due ? '' : ' empty') + (g === 'overdue' ? ' bad' : g === 'today' ? ' today' : ''), title: g === 'overdue' ? 'Vencida' : g === 'today' ? 'Vence hoy' : null },
+      h('label', { class: 'pk', for: 'd-due' }, g === 'overdue' ? 'Vencida' : 'Vence'),
+      h('input', { type: 'date', id: 'd-due', value: date, 'data-orig': date, onchange: save }),
+      t.due ? [h('label', { for: 'd-due-time', class: 'sr' }, 'Hora'),
+        h('input', { type: 'time', id: 'd-due-time', value: time, 'data-orig': time, onchange: save }),
+        h('button', { class: 'rm', type: 'button', 'aria-label': 'Quitar fecha', title: 'Quitar fecha', onclick: () => updateTask(t.id, { due: null }) }, '×')] : null);
   }
 
-  // Prioridad, responsable y etiquetas (D32). Las sugerencias salen de lo que ya usan las otras tareas.
+  // Prioridad, responsable y etiquetas (D32), como chips de la fila de propiedades (13.3). Las sugerencias salen de lo que ya usan las otras tareas.
   // Una etiqueta no lleva comas: "arte, audio" son dos. Vaciar un campo lo quita (null en el PATCH).
   function metaFields(t) {
     const addTags = (raw) => {
@@ -554,27 +553,27 @@
       updateTask(t.id, (cur) => { const next = [...new Set([...tagsOf(cur), ...add])]; return next.length === tagsOf(cur).length ? null : { tags: next }; });
     };
     const takeTag = (el) => { const v = el.value; el.value = ''; el.dataset.orig = ''; addTags(v); };
-    return h('div', { class: 'meta-fields' },
-      h('div', { class: 'field' },
-        h('label', { class: 'label', for: 'd-priority' }, 'Prioridad'),
+    return [
+      h('span', { class: 'pchip' + (t.priority ? ' prio-' + t.priority : ' empty') },
+        h('label', { class: 'pk', for: 'd-priority' }, 'Prioridad'),
         h('select', { id: 'd-priority', onchange: (e) => updateTask(t.id, { priority: e.target.value || null }) },
-          h('option', { value: '', selected: !t.priority }, 'Sin prioridad'),
+          h('option', { value: '', selected: !t.priority }, '—'),
           PRIORITIES.map(([v, l]) => h('option', { value: v, selected: t.priority === v }, l)))),
-      h('div', { class: 'field' },
-        h('label', { class: 'label', for: 'd-assignee' }, 'Responsable'),
+      h('span', { class: 'pchip' + (t.assignee ? '' : ' empty') },
+        h('label', { class: 'pk', for: 'd-assignee' }, 'Responsable'),
         h('input', { id: 'd-assignee', list: 'd-assignees', value: t.assignee || '', 'data-orig': t.assignee || '', placeholder: 'Nadie', autocomplete: 'off',
           onchange: (e) => { const v = e.target.value.trim(); if (v !== (t.assignee || '')) updateTask(t.id, { assignee: v || null }); } }),
         h('datalist', { id: 'd-assignees' }, allAssignees().map((x) => h('option', { value: x })))),
-      h('div', { class: 'field wide' },
-        h('label', { class: 'label', for: 'd-tag' }, 'Etiquetas'),
-        h('div', { class: 'tags-edit' },
-          tagsOf(t).map((x) => h('span', { class: 'tag' }, x,
-            h('button', { type: 'button', class: 'rm', 'aria-label': 'Quitar etiqueta ' + x,
-              onclick: () => updateTask(t.id, (cur) => { const next = tagsOf(cur).filter((y) => y !== x); return { tags: next.length ? next : null }; }) }, '×'))),
-          h('input', { id: 'd-tag', list: 'd-tags', placeholder: tagsOf(t).length ? 'Otra etiqueta' : 'Agregar etiqueta', autocomplete: 'off', 'data-orig': '',
-            onkeydown: (e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); takeTag(e.target); } },
-            onchange: (e) => { if (e.target.value.trim()) takeTag(e.target); } }),
-          h('datalist', { id: 'd-tags' }, allTags().filter((x) => !tagsOf(t).includes(x)).map((x) => h('option', { value: x }))))));
+      h('span', { class: 'pchip tags-edit' + (tagsOf(t).length ? '' : ' empty') },
+        h('label', { class: 'pk', for: 'd-tag' }, 'Etiquetas'),
+        tagsOf(t).map((x) => h('span', { class: 'tag' }, x,
+          h('button', { type: 'button', class: 'rm', 'aria-label': 'Quitar etiqueta ' + x,
+            onclick: () => updateTask(t.id, (cur) => { const next = tagsOf(cur).filter((y) => y !== x); return { tags: next.length ? next : null }; }) }, '×'))),
+        h('input', { id: 'd-tag', list: 'd-tags', placeholder: '+ etiqueta', autocomplete: 'off', 'data-orig': '',
+          onkeydown: (e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); takeTag(e.target); } },
+          onchange: (e) => { if (e.target.value.trim()) takeTag(e.target); } }),
+        h('datalist', { id: 'd-tags' }, allTags().filter((x) => !tagsOf(t).includes(x)).map((x) => h('option', { value: x }))))
+    ];
   }
 
   function cardFor(t, s) {
@@ -738,14 +737,16 @@
         h('button', { class: 'btn ghost close', type: 'button', 'aria-label': 'Cerrar detalle', onclick: closeTask }, 'Cerrar')),
       h('label', { for: 'd-title', class: 'sr' }, 'Título'),
       h('input', { class: 'title', id: 'd-title', value: t.title || '', 'data-orig': t.title || '', onchange: (e) => { const v = e.target.value.trim(); if (v && v !== t.title) updateTask(t.id, { title: v }); } }),
+      // Propiedades en una fila de chips que se editan en el lugar; los vacíos, apagados (13.3).
+      h('div', { class: 'props', role: 'group', 'aria-label': 'Propiedades' },
+        h('span', { class: 'pchip' },
+          h('label', { class: 'pk', for: 'd-ms' }, 'Hito'),
+          h('select', { id: 'd-ms', onchange: (e) => updateTask(t.id, { milestone: e.target.value }) },
+            S.milestones.map((x) => h('option', { value: x.id, selected: x.id === t.milestone }, x.code + ' · ' + x.title)))),
+        dueField(t),
+        metaFields(t)),
       h('div', { class: 'seg', role: 'group', 'aria-label': 'Estado' }, STATUSES.map((s) =>
         h('button', { type: 'button', 'aria-pressed': (t.status || 'todo') === s.id ? 'true' : 'false', onclick: () => setStatus(t.id, s.id) }, s.label))),
-      h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
-        h('label', { class: 'label', for: 'd-ms' }, 'Hito'),
-        h('select', { id: 'd-ms', onchange: (e) => updateTask(t.id, { milestone: e.target.value }) },
-          S.milestones.map((x) => h('option', { value: x.id, selected: x.id === t.milestone }, x.code + ' · ' + x.title)))),
-      dueField(t),
-      metaFields(t),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('span', { class: 'label' }, 'Pasos ' + (p.total ? '(' + p.done + '/' + p.total + ')' : '')),
         cl.length ? h('ul', { class: 'checklist' }, cl.map((c, i) => stepItem(t, c, i))) : h('p', { style: 'margin:0;color:var(--muted);font-size:14px' }, 'Sin pasos todavía.'),
@@ -753,16 +754,16 @@
           h('label', { for: 'd-addcl', class: 'sr' }, 'Nuevo paso'),
           h('input', { id: 'd-addcl', placeholder: 'Agregar paso', autocomplete: 'off', 'data-orig': '' }),
           h('button', { class: 'btn', type: 'submit' }, 'Agregar'))),
+      h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
+        h('label', { class: 'label', for: 'd-notes' }, 'Notas'),
+        h('textarea', { id: 'd-notes', 'data-orig': t.notes || '', onchange: (e) => updateTask(t.id, { notes: e.target.value }) }, t.notes || ''),
+        linksOf(t.notes)),
       renderRefs(t),
       renderLinks(t),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('label', { class: 'label', for: 'd-test' }, 'Cómo probarlo'),
         h('textarea', { id: 'd-test', 'data-orig': t.test || '', onchange: (e) => updateTask(t.id, { test: e.target.value }) }, t.test || ''),
         linksOf(t.test)),
-      h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
-        h('label', { class: 'label', for: 'd-notes' }, 'Notas'),
-        h('textarea', { id: 'd-notes', 'data-orig': t.notes || '', onchange: (e) => updateTask(t.id, { notes: e.target.value }) }, t.notes || ''),
-        linksOf(t.notes)),
       h('div', { class: 'footer-actions' },
         h('span', null, t.updated_at ? 'Actualizada ' + new Date(t.updated_at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : ''),
         S.confirmDelete
@@ -1555,7 +1556,7 @@
   }
 
   function setFilter(id) { S.filter = id; pref('filter', id); render(); }
-  function openTask(id) { S.openId = id; S.confirmDelete = false; S.linkSearch = null; render(); const el = document.getElementById('d-title'); if (el) el.focus(); }
+  function openTask(id) { S.openId = id; S.confirmDelete = false; S.linkSearch = null; render(); document.getElementById('detail').focus({ preventScroll: true }); }
   function closeTask() { S.openId = null; S.confirmDelete = false; render(); }
   // Soltar una tarjeta sobre otra: toma el estado de esa columna y, si son del mismo hito, queda justo antes.
   function dropBefore(id, target) {

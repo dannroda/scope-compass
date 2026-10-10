@@ -358,9 +358,6 @@ ul.items > .item:first-child { border-top: 0; }
 .duemark { align-self: flex-start; font-family: var(--font-mono); font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; }
 .duemark.bad { color: var(--danger); border-color: var(--danger); }
 .duemark.today { color: var(--s-review); border-color: var(--s-review); font-weight: 700; }
-.due-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.due-row input { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 6px 10px; min-height: 40px; }
-.due-row .duemark { align-self: center; }
 .gitmark { font-family: var(--font-mono); font-size: 12px; color: var(--s-review); border: 1px solid var(--s-review); border-radius: 999px; padding: 4px 10px; margin-left: auto; cursor: help; }
 .conn:not([hidden]) + .gitmark { margin-left: 0; }
 /* Barra del Inicio (D29): "← Inicio" y, dentro del Inicio, el selector de proyecto; arriba del título. */
@@ -419,14 +416,23 @@ ul.items > .item:first-child { border-top: 0; }
 .prio { font-size: 11px; font-weight: 700; border-radius: 4px; padding: 0 5px; border: 1px solid var(--line); color: var(--muted); }
 .prio.high { color: var(--danger); border-color: var(--danger); }
 .prio.medium { color: var(--s-review); border-color: var(--s-review); }
-.meta-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
-.meta-fields .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.meta-fields .field.wide { grid-column: 1 / -1; }
-.meta-fields input { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 8px 10px; min-height: 40px; min-width: 0; }
-.tags-edit { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.tags-edit .tag { font-size: 14px; padding: 2px 4px 2px 10px; }
-.tags-edit .rm { border: 0; background: transparent; color: var(--muted); padding: 0 4px; min-height: 24px; }
-.tags-edit input { flex: 1 1 140px; }
+.tags-edit { flex-wrap: wrap; }
+.tags-edit .tag { font-size: 13px; padding: 1px 2px 1px 8px; }
+/* Propiedades del detalle: una fila de chips que se editan en el lugar; los vacíos, apagados (13.3). */
+.props { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pchip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 4px 2px 12px; min-height: 34px; background: var(--surface); font-size: 14px; max-width: 100%; }
+.pchip:hover, .pchip:focus-within { border-color: var(--accent); }
+.pchip .pk { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; white-space: nowrap; }
+.pchip :is(select, input) { border: 0; background: transparent; border-radius: 6px; padding: 2px 6px; min-height: 28px; min-width: 0; max-width: 100%; font-size: 14px; field-sizing: content; }
+.pchip input:not([type]) { min-width: 4ch; }
+.pchip :is(select, input):focus-visible { outline: none; background: var(--bg); }
+.pchip.empty { border-style: dashed; }
+.pchip.empty :is(select, input), .pchip input::placeholder { color: var(--muted); }
+.pchip .rm { border: 0; background: transparent; color: var(--muted); padding: 0 6px; min-height: 28px; }
+.pchip.bad { border-color: var(--danger); } .pchip.bad .pk { color: var(--danger); }
+.pchip.today { border-color: var(--s-review); }
+.pchip.prio-high select { color: var(--danger); font-weight: 700; }
+.detail:focus { outline: none; }
 /* Vista de lista (M11): una fila por tarea; en el teléfono quedan código, título, estado y fecha. */
 .tasklist[hidden] { display: none; }
 .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
@@ -448,4 +454,4 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
 .tasks .st .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 .tasks td .tag { margin: 0 4px 2px 0; }
 .tasks .duemark, .tasks .blockmark { white-space: nowrap; }
-@media (max-width: 760px) { .tasks .opt { display: none; } .tasks td.title { min-width: 9em; } .tasks td, .tasks th button { padding-inline: 8px; } .tasks .duemark { white-space: normal; } .tasks .st-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } .meta-fields { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) { .tasks .opt { display: none; } .tasks td.title { min-width: 9em; } .tasks td, .tasks th button { padding-inline: 8px; } .tasks .duemark { white-space: normal; } .tasks .st-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }

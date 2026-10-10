@@ -1355,7 +1355,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Notas:** Cerrar M12: tests, spec y guía al día. Hecho: los tests de UI de la biblioteca y del diff ya estaban de la 12.5 y la 12.6 (ui-docs.test.js). Spec §20 Biblioteca de documentos con sus criterios, la tabla de rutas y los comandos; §10.4 apunta a §20 y §5.5 suma los eventos git y docs_git. D33: la app declara documentos y lee git, pero no escribe documentos ni commitea; alias de patrón por ruta bajo la carpeta base. AGENTS.md (plantilla, compass/ y addon, idénticos) con doc add/rm/search/status/diff y la regla de alias; README (estado con M12), web/README y hub/README (los archivos de documentos y git).
 
-## M13 — UI más compacta  (2/7)
+## M13 — UI más compacta  (3/7)
 
 Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compactos, según la revisión de diseño del 2026-10-09 (https://claude.ai/artifact/D6vMr2tWMv9dRCX8MUv5qg).
 
@@ -1375,7 +1375,7 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 **Notas:** JetBrains Mono trae ligaduras: en la vista Documentos `<!-- id -->` se ve como flechas y `!=` como ≠. El "Hecho cuando" de M12 nombra `[[alias]]` sin backticks y desde la 12.1 se muestra como enlace roto.
 
-### 13.2 Tablero: parte de arriba compacta · Pendiente
+### 13.2 Tablero: parte de arriba compacta · Hecho
 
 - [x] Resumen del hito en una línea con "Hecho cuando" desplegable
 - [x] Chip "Terminados (n)" que agrupa los hitos hechos (el elegido siempre visible)
@@ -1389,14 +1389,14 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 ### 13.3 Detalle: propiedades en chips y pasos arriba · Pendiente
 
-- [ ] Fila de chips de propiedades con edición en el lugar
-- [ ] Título sin borde en reposo
-- [ ] Pasos, notas y referencias debajo del estado
-- [ ] Tests de UI del detalle
+- [x] Fila de chips de propiedades con edición en el lugar
+- [x] Título sin borde en reposo
+- [x] Pasos, notas y referencias debajo del estado
+- [x] Tests de UI del detalle
 
 **Prueba:** Al abrir una tarea a 1440×900 se ven los pasos sin bajar; cada propiedad se edita desde su chip y se guarda como hoy.
 
-**Notas:** Hito, fecha, prioridad, responsable y etiquetas ocupan ~450 px antes de los pasos. Pasan a una fila de chips que se editan al hacer clic (vacíos en tono apagado). El título sin borde en reposo, con borde al enfocarlo.
+**Notas:** Hito, fecha, prioridad, responsable y etiquetas ocupan ~450 px antes de los pasos. Pasan a una fila de chips que se editan al hacer clic (vacíos en tono apagado). El título sin borde en reposo, con borde al enfocarlo. Hecho: los chips son los mismos controles nativos (select, date, input con datalist) con aspecto de chip y field-sizing: content, así que un clic ya edita en el lugar y no hay estados de edición nuevos; cada uno lleva su nombre chico adelante (Hito, Vence, Prioridad, Responsable, Etiquetas). Vacíos: borde punteado y texto apagado; vencida en rojo, hoy en ámbar, prioridad alta en rojo. La hora aparece cuando hay fecha, y × quita la fecha. Orden: título, chips, estado, pasos, notas, referencias, vínculos y Cómo probarlo. Con 5 pasos, a 1440×900 los pasos empiezan a 339 px (antes 519). El título ya tenía borde transparente: se veía con borde porque abrir la tarea lo enfocaba; ahora el foco va al panel (tabindex -1), y de paso 1–4 cambian el estado apenas se abre.
 
 ### 13.4 Teléfono: menos filas antes de las tareas · Pendiente
 

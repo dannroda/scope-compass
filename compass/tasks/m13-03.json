@@ -1,30 +1,30 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Fila de chips de propiedades con edición en el lugar"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Título sin borde en reposo"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Pasos, notas y referencias debajo del estado"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Tests de UI del detalle"
     }
   ],
   "code": "13.3",
   "created_at": "2026-10-09T05:12:53.433Z",
   "milestone": "m13",
-  "notes": "Hito, fecha, prioridad, responsable y etiquetas ocupan ~450 px antes de los pasos. Pasan a una fila de chips que se editan al hacer clic (vacíos en tono apagado). El título sin borde en reposo, con borde al enfocarlo.",
+  "notes": "Hito, fecha, prioridad, responsable y etiquetas ocupan ~450 px antes de los pasos. Pasan a una fila de chips que se editan al hacer clic (vacíos en tono apagado). El título sin borde en reposo, con borde al enfocarlo. Hecho: los chips son los mismos controles nativos (select, date, input con datalist) con aspecto de chip y field-sizing: content, así que un clic ya edita en el lugar y no hay estados de edición nuevos; cada uno lleva su nombre chico adelante (Hito, Vence, Prioridad, Responsable, Etiquetas). Vacíos: borde punteado y texto apagado; vencida en rojo, hoy en ámbar, prioridad alta en rojo. La hora aparece cuando hay fecha, y × quita la fecha. Orden: título, chips, estado, pasos, notas, referencias, vínculos y Cómo probarlo. Con 5 pasos, a 1440×900 los pasos empiezan a 339 px (antes 519). El título ya tenía borde transparente: se veía con borde porque abrir la tarea lo enfocaba; ahora el foco va al panel (tabindex -1), y de paso 1–4 cambian el estado apenas se abre.",
   "order": 3,
   "refs": [],
-  "status": "todo",
+  "status": "done",
   "test": "Al abrir una tarea a 1440×900 se ven los pasos sin bajar; cada propiedad se edita desde su chip y se guarda como hoy.",
   "title": "Detalle: propiedades en chips y pasos arriba",
-  "updated_at": "2026-10-09T05:12:54.642Z"
+  "updated_at": "2026-10-10T19:42:17.385Z"
 }

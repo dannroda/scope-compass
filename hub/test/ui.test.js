@@ -348,10 +348,39 @@ test('fecha límite (8.13): se elige en el detalle, la tarjeta la marca vencida 
   await page.dispatchEvent('#d-due-time', 'change');
   for (let i = 0; i < 100 && (await task('m1-07')).due !== '2020-01-01T09:30'; i++) await new Promise((r) => setTimeout(r, 30));
   assert.equal((await task('m1-07')).due, '2020-01-01T09:30');
-  await page.click('.due-row button:has-text("Quitar")');
+  await page.click('button[aria-label="Quitar fecha"]');
   for (let i = 0; i < 100 && (await task('m1-07')).due !== undefined; i++) await new Promise((r) => setTimeout(r, 30));
   assert.equal((await task('m1-07')).due, undefined);
   await page.waitForFunction(() => !document.querySelector('.card[data-id="m1-07"] .duemark'));
+});
+
+test('detalle (13.3): pasos sin bajar a 1440×900, título sin borde en reposo, propiedades en chips que se editan en el lugar', async () => {
+  const page = await open({ viewport: { width: 1440, height: 900 } });
+  await page.click('.card[data-id="m1-03"]');
+  await page.waitForSelector('#detail .checklist li');
+  // Los pasos (5) se ven enteros sin bajar el panel.
+  const last = await page.locator('#detail .checklist li').last().evaluate((e) => e.getBoundingClientRect().bottom);
+  assert.ok(last < 900, `último paso hasta ${last} px`);
+  assert.equal(await page.locator('#detail').evaluate((e) => e.scrollTop), 0);
+  // Abrir no enfoca el título: sin borde hasta que se lo enfoca.
+  const border = () => page.locator('#d-title').evaluate((e) => getComputedStyle(e).borderTopColor);
+  assert.equal(await border(), 'rgba(0, 0, 0, 0)');
+  await page.focus('#d-title');
+  assert.notEqual(await border(), 'rgba(0, 0, 0, 0)');
+  await page.locator('.detail .close').focus();
+  // Una fila de chips: hito, fecha, prioridad, responsable y etiquetas; los vacíos, apagados.
+  assert.deepEqual(await page.locator('#detail .props .pk').allTextContents(), ['Hito', 'Vence', 'Prioridad', 'Responsable', 'Etiquetas']);
+  assert.equal(await page.locator('#detail .props .pchip.empty').count(), 4);
+  await page.selectOption('#d-ms', 'm02');
+  for (let i = 0; i < 100 && (await task('m1-03')).milestone !== 'm02'; i++) await new Promise((r) => setTimeout(r, 30));
+  assert.equal((await task('m1-03')).milestone, 'm02');
+  await page.selectOption('#d-priority', 'low');
+  await page.waitForSelector('#detail .pchip.prio-low');
+  assert.equal(await page.locator('#detail .props .pchip.empty').count(), 3);
+  // El orden: estado, pasos y notas antes que referencias y "Cómo probarlo".
+  const order = await page.locator('#detail > *').evaluateAll((els) => els.map((e) => e.matches('.seg') ? 'estado' : e.querySelector('.checklist, .addcl') ? 'pasos' : e.querySelector('#d-notes') ? 'notas' : e.querySelector('#d-test') ? 'prueba' : e.matches('.refs') ? 'refs' : null).filter(Boolean));
+  assert.deepEqual([...new Set(order)], ['estado', 'pasos', 'notas', 'refs', 'prueba']); // vínculos también es .refs
+  await page.context().close();
 });
 
 test('"← Inicio": aparece solo si el Inicio está corriendo, y apunta a él', async () => {
