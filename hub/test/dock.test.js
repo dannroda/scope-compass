@@ -453,3 +453,24 @@ test('dock: encuentra el hub por el registro aunque no esté en el puerto de la 
     await hub.app.close();
   }
 });
+
+test('dock: sin hub al abrir, el sondeo lo encuentra en otro puerto que la config y no vuelve al de la config', { skip }, async () => {
+  const { registerHub, unregisterHub } = await import('../src/registry.js');
+  const cfgPath = join(dir, 'compass', 'config.json');
+  await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), port: 1 }));
+  const app = createServer({ projectDir: dir, store: createJsonFilesStore(join(dir, 'compass'), { validators: V }), validators: V });
+  const { port } = await listen(app, 0);
+  try {
+    const r = await godotLive(['poll_registry', dir, String(port)], (line) => { if (line === 'READY') registerHub({ port, project: dir }); });
+    expectOk(r, 'poll_registry');
+  } finally {
+    unregisterHub();
+    await app.close();
+  }
+});
+
+test('dock: etiquetas, prioridad y responsable en la lista y el detalle; el botón de Archivos según views', { skip }, async () => {
+  await setTask('m1-04', { status: 'todo', priority: 'high', assignee: 'ana', tags: ['arte', 'audio'] });
+  await setTask('m1-05', { priority: 'low' });
+  expectOk(await godot('props', dir, 'm1-04', 'm1-05', 'm1-07'), 'props');
+});

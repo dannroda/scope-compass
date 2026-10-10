@@ -1442,7 +1442,7 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 **Notas:** Visto en Project Epiphany (m11-20) el 2026-10-10. Hecho: solo fallaba scompass show; la web y el dock ya separaban la ref sin sección (12.1).
 
-## M14 — Archivos del repo  (3/3)
+## M14 — Archivos del repo  (4/4)
 
 Ver los archivos del repo y su estado de git desde la web, sin salir del tablero.
 
@@ -1481,3 +1481,13 @@ Ver los archivos del repo y su estado de git desde la web, sin salir del tablero
 - [x] README, web/README y §16.6 (views) al día
 
 **Notas:** Spec §22 (Archivos del repo: qué archivos, la pestaña, cuándo se actualiza, solo local, rutas de /api/files) con §22.1; D34 (de lectura, solo lo que git no ignora, Host 127.0.0.1/localhost, sin vigilar el repo entero). §16.6 suma files a views y a la plantilla juego; §21 dice que Nueva tarea flota en el teléfono; §10.4 apunta a §22. README (M14 en el estado y una coma que faltaba), web/README y hub/README al día. Hecho: M14 documentado; suite 338/1 (la bandeja §16.8, inestable con la suite completa, pasa 3/3 sola).
+
+### 14.4 Dock al día: prioridad, responsable y etiquetas, botón de Archivos y el puerto con el Inicio · Hecho
+
+- [x] El puerto: con el Inicio abierto, lo que abre el dock va al puerto del Inicio
+  reload() pisaba client.port con el de la config mientras abría el WebSocket recién encontrado por el sondeo: quedaba la base /p/<proyecto> con el puerto 4711.
+- [x] Prioridad, responsable y etiquetas en la lista y el detalle del dock
+- [x] Botón para abrir la pestaña Archivos en el navegador
+- [x] Tests del dock y spec §19 y §22
+
+**Notas:** Visto con el Inicio abierto: el dock abría el tablero en 127.0.0.1:4711/p/<proyecto>. Causa: con el dock sin hub, el sondeo de cada 3 s encontraba el Inicio (puerto 4700, base /p/<proyecto>) y, antes de que abriera el WebSocket, reload() volvía client.port al de la config sin tocar la base; la carga, las escrituras y lo que abre en el navegador iban a ese puerto. Pasaba también tras home restart, o con un hub suelto en otro puerto que la config. reload() ya no toca el puerto: lo elige detect(), que vuelve a la config si no encuentra hub. web_url() arma lo que abre el navegador (tablero, documentos, archivos). Hecho: arreglado el puerto; la fila muestra · Alta (solo la alta, como la tarjeta web) · @responsable · #etiquetas y el detalle Prioridad x · @responsable · #etiquetas; botón de Archivos al lado de Abrir el tablero, visible si views no está o incluye files. Tests poll_registry y props en dock.test.js; spec §19 y §22.

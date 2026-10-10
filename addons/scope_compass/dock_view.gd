@@ -64,6 +64,7 @@ var outdated: Array = []
 var milestone_select: OptionButton
 var reload_button: Button
 var browser_button: Button
+var files_button: Button
 var new_row: HBoxContainer
 var new_title: LineEdit
 var tree: Tree
@@ -76,6 +77,7 @@ var detail: VBoxContainer
 var detail_title: Label
 ## Fecha límite de la tarea abierta (solo lectura: se edita en la web o con `scompass set --due`).
 var detail_due: Label
+var detail_props: Label
 var status_select: OptionButton
 var steps_box: VBoxContainer
 var refs_box: VBoxContainer
@@ -135,9 +137,9 @@ func reload() -> void:
 		if not _reload_again:
 			break
 	_loading = false
+	# Solo el puerto de la config: el que se usa lo elige detect() (que vuelve a la config si no encuentra hub).
+	# Pisarlo acá, mientras el WebSocket recién encontrado abre, dejaba el dock en ese puerto con la base del Inicio.
 	client.config_port = board.port()
-	if not online:
-		client.port = client.config_port
 	_uncommitted = _count_uncommitted()
 	tasks_collapsed = bool(get_pref.call("tasks_collapsed", false))
 	var remembered: String = get_pref.call("milestone", "")
@@ -253,6 +255,11 @@ func create_task(title: String) -> void:
 		_render()
 	else:
 		show_notice("No se pudo crear la tarea.")
+
+
+## La UI web del hub conectado (un hub suelto o el Inicio, con su base), con un #hash opcional.
+func web_url(hash := "") -> String:
+	return client.base_url() + "/" + hash
 
 
 ## Versión del addon (plugin.cfg, al lado de este script).
@@ -624,8 +631,11 @@ func _build() -> void:
 	reload_button.pressed.connect(reload)
 	head.add_child(reload_button)
 	browser_button = _icon_button("browser", "Abrir el tablero en el navegador")
-	browser_button.pressed.connect(func(): OS.shell_open(client.base_url() + "/"))
+	browser_button.pressed.connect(func(): OS.shell_open(web_url()))
 	head.add_child(browser_button)
+	files_button = _icon_button("folder", "Ver los archivos del repo y su estado de git en el navegador")
+	files_button.pressed.connect(func(): OS.shell_open(web_url("#files")))
+	head.add_child(files_button)
 
 	new_row = HBoxContainer.new()
 	add_child(new_row)
@@ -683,6 +693,10 @@ func _build() -> void:
 	detail.add_child(detail_title)
 	detail_due = Label.new()
 	detail.add_child(detail_due)
+	detail_props = Label.new()
+	detail_props.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail_props.custom_minimum_size.x = WRAP_MIN_WIDTH
+	detail.add_child(detail_props)
 	var srow := HBoxContainer.new()
 	detail.add_child(srow)
 	var slabel := Label.new()
@@ -771,6 +785,10 @@ func _render() -> void:
 	warnings_label.visible = board.warnings.size() > 0
 	warnings_label.text = "\n".join(board.warnings.map(func(w): return "%s · %s" % [w.path, w.message]))
 	browser_button.disabled = not online
+	files_button.disabled = not online
+	# Sin views en la config se ven todas las pestañas; con views, solo si incluye files.
+	var views = board.config.get("views") if board.config is Dictionary else null
+	files_button.visible = not (views is Array) or views.has("files")
 	new_row.visible = online
 
 	milestone_select.clear()
@@ -818,7 +836,9 @@ func _render_tree() -> void:
 		for t in items:
 			var it := tree.create_item(g)
 			var code := str(t.get("code", ""))
-			it.set_text(0, ((code + "  " if code != "" else "") + str(t.title)).replace("`", ""))
+			# Como la tarjeta de la web: la prioridad solo si es alta, el responsable y las etiquetas.
+			var marks := ([PRIORITIES.high] if t.get("priority") == "high" else []) + _who_and_tags(t)
+			it.set_text(0, ((code + "  " if code != "" else "") + str(t.title)).replace("`", "") + "".join(marks.map(func(m): return " · " + m)))
 			var st := Board.steps(t)
 			var col1 := "%d/%d" % st if st[1] > 0 else ""
 			var ds := Board.due_state(t)
@@ -838,6 +858,20 @@ func _render_tree() -> void:
 				it.set_tooltip_text(0, "%s\nBloqueada por: %s" % [t.title, "; ".join(blockers.map(board.task_name))])
 			if t.id == selected_task:
 				it.select(0)
+
+
+const PRIORITIES := { "high": "Alta", "medium": "Media", "low": "Baja" }
+
+
+## Responsable y etiquetas de la tarea (M11, spec §19), para la lista y el detalle: "@ana", "#arte #audio".
+func _who_and_tags(t: Dictionary) -> Array:
+	var out := []
+	if str(t.get("assignee", "")) != "":
+		out.append("@" + str(t.assignee))
+	var tags = t.get("tags", [])
+	if tags is Array and not tags.is_empty():
+		out.append(" ".join(tags.map(func(x): return "#" + str(x))))
+	return out
 
 
 ## Encabezado del bloque de tareas y estado del divisor (plegado: el detalle usa todo el alto).
@@ -867,6 +901,10 @@ func _render_detail() -> void:
 		detail_due.add_theme_color_override("font_color", TODAY_COLOR)
 	else:
 		detail_due.remove_theme_color_override("font_color")
+	var prio := str(t.get("priority", ""))
+	var props := (["Prioridad " + PRIORITIES[prio].to_lower()] if PRIORITIES.has(prio) else []) + _who_and_tags(t)
+	detail_props.visible = not props.is_empty()
+	detail_props.text = " · ".join(props)
 	for i in status_select.item_count:
 		if status_select.get_item_metadata(i) == t.status:
 			status_select.select(i)
@@ -1031,7 +1069,7 @@ func _render_refs(t: Dictionary) -> void:
 		head.add_child(toggle)
 		if online:
 			var web := _icon_button("browser", "Abrir en el navegador")
-			web.pressed.connect(func(): OS.shell_open("%s/#docs/%s/%s" % [client.base_url(), str(d.alias).uri_encode(), str(s.id).uri_encode()]))
+			web.pressed.connect(func(): OS.shell_open(web_url("#docs/%s/%s" % [str(d.alias).uri_encode(), str(s.id).uri_encode()])))
 			head.add_child(web)
 		if open:
 			var box := VBoxContainer.new()
@@ -1059,7 +1097,7 @@ func _render_whole_ref(r: Dictionary, d) -> void:
 	head.add_child(title)
 	if online:
 		var web := _icon_button("browser", "Abrir en el navegador")
-		web.pressed.connect(func(): OS.shell_open("%s/#docs/%s" % [client.base_url(), str(d.alias).uri_encode()]))
+		web.pressed.connect(func(): OS.shell_open(web_url("#docs/" + str(d.alias).uri_encode())))
 		head.add_child(web)
 
 

@@ -537,3 +537,35 @@ func test_registry(a: Array) -> void:
 	var v = await _online_view(a[0], c)
 	if v == null: return
 	_check(c, v.client.port == int(a[1]) and v.client.config_port != v.client.port, "puerto %d (config %d)" % [v.client.port, v.client.config_port])
+
+
+# Sin hub al abrir el dock; después aparece en otro puerto que el de la config (como el Inicio): el sondeo lo
+# encuentra y todo apunta ahí, la carga y lo que abre en el navegador.
+func test_poll_registry(a: Array) -> void:
+	var c := "poll_registry"
+	var v := await _view(a[0])
+	if not _check(c, not v.online, "ya estaba conectado"): return
+	print("READY")
+	if not _check(c, await _until(func(): return v.online and not v._loading and v.board.tasks.size() > 0 and v.board.tasks[0].has("etag"), 10.0), "no cargó del hub (puerto %d)" % v.client.port): return
+	_check(c, v.web_url("#files") == "http://127.0.0.1:%s/#files" % a[1], "abre " + v.web_url("#files"))
+
+
+# Etiquetas, prioridad y responsable (M11): en la fila, la prioridad solo si es alta (como la tarjeta de la web);
+# en el detalle, todo. El botón de Archivos se ve si la config no tiene views o si incluye files.
+func test_props(a: Array) -> void:
+	var c := "props"
+	var v := await _view(a[0])
+	v.current_milestone = "m01"
+	_select(v, a[1])
+	if not _check(c, v.detail_props.visible and v.detail_props.text == "Prioridad alta · @ana · #arte #audio", "detalle: " + v.detail_props.text): return
+	var row: TreeItem = v.tree.get_selected()
+	if not _check(c, row != null and row.get_text(0).ends_with(" · Alta · @ana · #arte #audio"), "fila: " + (row.get_text(0) if row else "sin fila")): return
+	_select(v, a[2])
+	row = v.tree.get_selected()
+	if not _check(c, v.detail_props.text == "Prioridad baja" and not row.get_text(0).contains("Baja"), "baja: %s / %s" % [v.detail_props.text, row.get_text(0)]): return
+	_select(v, a[3])
+	if not _check(c, not v.detail_props.visible, "sin nada no muestra nada: " + v.detail_props.text): return
+	if not _check(c, v.files_button.visible, "sin views falta el botón de Archivos"): return
+	v.board.config.views = ["board", "docs"]
+	v._render()
+	_check(c, not v.files_button.visible, "views sin files y el botón se ve")

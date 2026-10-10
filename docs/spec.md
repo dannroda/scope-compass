@@ -748,7 +748,7 @@ Tests: el primero en `hub/test/m9-criteria.test.js`; los cambios en vivo y el hu
 ## 19. Lista y filtros (M11)
 <!-- id: lista-y-filtros -->
 
-**Objetivo:** encontrar tareas en un tablero grande. La UI web suma una vista de lista y una barra de filtros que comparten el tablero y la lista; la tarea suma etiquetas, prioridad y responsable (D32). El dock de Godot no cambia.
+**Objetivo:** encontrar tareas en un tablero grande. La UI web suma una vista de lista y una barra de filtros que comparten el tablero y la lista; la tarea suma etiquetas, prioridad y responsable (D32). El dock de Godot no filtra; desde la 14.4 muestra la prioridad, el responsable y las etiquetas (en la fila, la prioridad solo si es alta, como la tarjeta de la web).
 
 **Filtros** (se combinan entre sí y con el hito elegido):
 
@@ -893,6 +893,7 @@ scompass doc diff <alias> [--json]          # diff contra HEAD y "Secciones toca
       - Un binario, un archivo de más de 1 MB o un enlace simbólico no se muestran: se dice qué son. Un enlace no se sigue.
     - **Cambios:** con cambios, *Ver los cambios* muestra el diff contra HEAD. Un archivo modificado abre directamente ahí.
   - **Cuándo se actualiza:** la lista se vuelve a leer al entrar a la pestaña, con cualquier evento del hub, al volver a la ventana y con *Actualizar*. Los cambios hechos en el editor no avisan solos: el hub no vigila el repo entero.
+- **Desde el dock:** un botón al lado de *Abrir el tablero* abre la pestaña Archivos en el navegador (si `views` la incluye).
 - **Solo local:** el hub y el Inicio atienden solo pedidos dirigidos a `127.0.0.1` o `localhost` (403 si no). Así, una página de otro sitio que hace que su nombre apunte a 127.0.0.1 (DNS rebinding) no puede leer el tablero ni los archivos. Con token (§12), manda el token.
 
 | Método | Ruta | Qué hace |
