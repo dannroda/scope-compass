@@ -393,3 +393,86 @@ test('refs check cuenta los enlaces del detalle de un paso', async () => {
   assert.equal(await run(['--dir', dir, '--direct', 'refs', 'check', '--json'], { out: { write: (s) => { out += s; } }, err: { write() {} } }), 1);
   assert.deepEqual(JSON.parse(out).broken.filter((b) => b.task === 'm1-06').map((b) => [b.ref, b.where]), [['gdd#no-existe', 'paso 1 (detalle)']]);
 });
+
+// --- Biblioteca (M12): árbol por carpetas, búsqueda, ficha del documento, alta y baja ---
+async function library() {
+  const { mkdir } = await import('node:fs/promises');
+  const files = {
+    'docs/enemigos.md': '# Enemigos\n<!-- id: enemigos -->\n\n## Slime\n<!-- id: slime -->\n\nEl slime se divide al recibir un golpe.\n\n## Murciélago\n<!-- id: murcielago -->\n\nVuela en círculos.\n',
+    'docs/arte/paleta.md': '# Paleta\n<!-- id: paleta -->\n\nColores cálidos.\n',
+    'docs/arte/sonido.md': '# Sonido\n<!-- id: sonido -->\n\nEl slime hace blop.\n',
+    'docs/notas/ideas.md': '# Ideas\n<!-- id: ideas -->\n',
+    'docs/tareas.md': '# Export\n'
+  };
+  for (const [f, text] of Object.entries(files)) {
+    await mkdir(dirname(join(dir, f)), { recursive: true });
+    await writeFile(join(dir, f), text);
+  }
+  const cfg = join(dir, 'compass', 'config.json');
+  await writeFile(cfg, canonical({ ...JSON.parse(await readFile(cfg, 'utf8')), docs: [{ alias: 'gdd', path: 'gdd.md' }, { alias: 'docs', path: 'docs/**/*.md' }] }));
+  await setTask('m1-06', { refs: [{ doc: 'docs/enemigos.md' }], notes: 'el [[docs/enemigos#slime]] se divide' });
+}
+
+test('12.5: la biblioteca agrupa los documentos por carpeta con sus tareas; navegar el árbol y la ficha', async () => {
+  await library();
+  const page = await open('#docs/docs%2Fenemigos');
+  await page.waitForSelector('.doc-tree .tree-doc');
+  const tree = await page.$$eval('.doc-tree details', (ds) => ds.map((d) => [d.querySelector('summary').textContent, [...d.querySelectorAll('.tree-doc')].map((a) => a.querySelector('.t').textContent + (a.querySelector('.n') ? ' ' + a.querySelector('.n').textContent : ''))]));
+  // El export (docs/tareas.md) no es un documento; enemigos.md lo citan m1-06 (ref y enlace).
+  assert.deepEqual(tree, [['Raíz del proyecto', ['gdd.md 3']], ['docs/', ['enemigos.md 1']], ['docs/arte/', ['paleta.md', 'sonido.md']], ['docs/notas/', ['ideas.md']]]);
+  assert.equal(await page.getAttribute('.tree-doc[aria-current="page"]', 'href'), '#docs/docs%2Fenemigos');
+  // Ficha: título, ruta, de dónde sale, tareas y secciones sin tareas.
+  assert.match(await page.textContent('.doc-card'), /Enemigos.*docs\/enemigos\.md.*Incluido por el patrón docs\/\*\*\/\*\.md/);
+  assert.equal(await page.locator('.doc-card #doc-rm').count(), 0, 'un documento de un patrón no se quita solo');
+  await page.waitForSelector('.backlinks .bl-task');
+  assert.match(await page.textContent('.backlinks .label'), /Referencian el documento · 1 tarea/);
+  assert.equal(await page.textContent('.unplanned summary'), 'Secciones sin tareas · 2 de 3');
+  // Navegar por el árbol; las carpetas se pliegan.
+  await page.click('.tree-doc:has-text("paleta.md")');
+  await page.waitForSelector('article.doc-body[data-ready="1"][data-alias="docs/arte/paleta"]');
+  assert.match(await page.textContent('article.doc-body'), /Colores cálidos/);
+  await page.click('.doc-tree summary:has-text("docs/arte/")');
+  assert.equal(await page.isVisible('.tree-doc:has-text("sonido.md")'), false);
+  await page.close();
+});
+
+test('12.5: buscar un término en todos los documentos y saltar a la sección', async () => {
+  await library();
+  const page = await open('#docs/gdd');
+  await page.fill('#doc-q', 'SLIME');
+  await page.waitForSelector('.doc-results .res-doc');
+  assert.match(await page.textContent('.doc-results > p'), /3 coincidencias en 2 documentos/);
+  assert.deepEqual(await page.$$eval('.res-doc h3', (hs) => hs.map((x) => x.firstChild.textContent)), ['Sonido', 'Enemigos'], 'en el orden de los documentos');
+  assert.deepEqual(await page.$$eval('.res-doc mark', (ms) => ms.map((m) => m.textContent)), ['slime', 'Slime', 'slime'], 'resalta sin importar mayúsculas');
+  // La caja no pierde lo escrito si llega un cambio del hub.
+  await setTask('m1-02', { title: 'Cambiada mientras se busca' });
+  await page.waitForTimeout(300);
+  assert.equal(await page.inputValue('#doc-q'), 'SLIME');
+  await page.click('.res-doc a:has-text("se divide")');
+  await page.waitForSelector('article.doc-body[data-ready="1"][data-alias="docs/enemigos"]');
+  assert.match(page.url(), /#docs\/docs%2Fenemigos\/slime$/);
+  assert.equal(await page.inputValue('#doc-q'), '', 'ir a un resultado limpia la búsqueda');
+  assert.equal(await page.locator('.doc-results').count(), 0);
+  await page.close();
+});
+
+test('12.5: agregar un documento desde la web y quitarlo', async () => {
+  await writeFile(join(dir, 'guion.md'), '# Guion\n<!-- id: guion -->\n');
+  const page = await open('#docs/gdd');
+  const cfgDocs = async () => JSON.parse(await readFile(join(dir, 'compass', 'config.json'), 'utf8')).docs;
+  await page.click('#doc-add-btn');
+  await page.fill('#doc-alias', 'guion');
+  await page.fill('#doc-path', 'nada.md');
+  await page.click('#doc-add button[type="submit"]');
+  await page.waitForSelector('.toast:has-text("no existe el archivo nada.md")');
+  await page.fill('#doc-path', 'guion.md');
+  await page.click('#doc-add button[type="submit"]');
+  await page.waitForSelector('.tree-doc[aria-current="page"]:has-text("guion.md")');
+  assert.equal(await page.isHidden('#doc-add'), true);
+  assert.deepEqual(await cfgDocs(), [{ alias: 'gdd', path: 'gdd.md' }, { alias: 'guion', path: 'guion.md' }]);
+  await page.click('#doc-rm');
+  await page.click('.doc-card button:has-text("Quitar")');
+  await page.waitForFunction(() => !document.querySelector('.tree-doc[href="#docs/guion"]'));
+  assert.deepEqual(await cfgDocs(), [{ alias: 'gdd', path: 'gdd.md' }]);
+  await page.close();
+});

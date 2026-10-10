@@ -233,8 +233,47 @@ span.link-task { flex: 1 1 12ch; }
 .bl-task .code { font-family: var(--font-mono); font-size: 12px; color: var(--muted); flex: none; }
 /* El título va en un solo bloque: suelto, cada `código` era un ítem flex y se partía letra por letra. */
 .bl-task .t { min-width: 0; overflow-wrap: anywhere; }
+/* Biblioteca (M12, §20): buscador y "+ Documento" arriba; árbol de documentos e índice a la izquierda; ficha a la derecha. */
+#doc-q { flex: 1 1 240px; min-width: 0; max-width: 480px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 10px; min-height: 38px; }
+.docs-info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1 1 auto; min-width: 0; }
+.docs-info .fragile, .docs-info .btn { margin-left: auto; }
+.docs-info .fragile + .btn { margin-left: 0; }
+.docs-bar #doc-add-btn { margin-left: 0; }
+.doc-add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.doc-add input { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 6px 10px; min-height: 38px; min-width: 0; }
+#doc-alias { flex: 0 1 160px; } #doc-path { flex: 1 1 260px; }
+.doc-add label { font-size: 13px; color: var(--muted); }
+.doc-add p { flex-basis: 100%; }
+.docs-side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.docs-side .toc { position: static; max-height: none; overflow: visible; }
+.doc-tree { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; }
+.doc-tree summary { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding: 4px 6px; cursor: pointer; overflow-wrap: anywhere; }
+.tree-doc { display: flex; align-items: baseline; gap: 8px; padding: 4px 6px 4px 14px; border-radius: 6px; color: var(--fg); text-decoration: none; font-size: 14px; }
+.tree-doc:hover { background: var(--surface-2); }
+.tree-doc[aria-current="page"] { background: var(--accent-soft); font-weight: 700; }
+.tree-doc.missing .t { color: var(--danger); text-decoration: line-through; }
+.tree-doc .t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.tree-doc .n { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.doc-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.doc-card h2 { margin: 0; font-size: 17px; line-height: 1.25; overflow-wrap: anywhere; }
+.doc-card .bad { color: var(--danger); }
+.doc-git { display: inline-flex; align-items: center; gap: 6px; }
+.doc-git .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--s-done); }
+.doc-git:not(.clean) { color: var(--s-review); } .doc-git:not(.clean) .dot { background: var(--s-review); }
+.doc-git.deleted { color: var(--danger); } .doc-git.deleted .dot { background: var(--danger); }
+.unplanned summary { cursor: pointer; }
+.unplanned ul { margin: 6px 0 0; padding-left: 18px; font-size: 14px; display: flex; flex-direction: column; gap: 2px; }
+.unplanned a { color: var(--fg); }
+.doc-results { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.res-doc h3 { margin: 6px 0 4px; font-size: 17px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.res-doc ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.res-doc a { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 6px 8px; border-radius: 8px; color: var(--fg); text-decoration: none; }
+.res-doc a:hover { background: var(--bg); }
+.res-sec { font-weight: 700; }
+.snip { flex-basis: 100%; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.snip mark { background: var(--accent-soft); color: var(--fg); border-radius: 2px; }
 @media (max-width: 1180px) { .docs-grid { grid-template-columns: 220px minmax(0, 1fr); } .backlinks { grid-column: 1 / -1; position: static; } }
-@media (max-width: 760px) { .docs-grid { grid-template-columns: minmax(0, 1fr); } .toc { position: static; max-height: 40vh; } .doc-article { padding: 4px 14px 16px; } }
+@media (max-width: 760px) { .docs-grid { grid-template-columns: minmax(0, 1fr); } .docs-side { position: static; max-height: none; } .docs-side .toc { max-height: 40vh; overflow-y: auto; } .doc-article { padding: 4px 14px 16px; } }
 
 /* Borde para cambiar el ancho del panel de detalle. */
 /* Fijo a la pantalla (el panel tiene scroll propio), sobre el borde izquierdo del panel. */

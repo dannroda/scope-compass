@@ -10,6 +10,8 @@
   const S = { project: '', milestones: [], tasks: [], warnings: [], filter: pref('filter') || 'all', openId: null, confirmDelete: false, loaded: false, offline: false, connected: false,
     // Documentos (M6): índice de /api/docs, vista actual por el hash, referencias desplegadas, HTML en caché.
     docs: [], view: 'board', doc: '', sec: '', refsOpen: new Set(), refSearch: null,
+    // Biblioteca (M12): entradas de config.json › docs, búsqueda de texto, carpetas plegadas, alta y baja.
+    docEntries: [], docQ: '', docResults: null, foldersClosed: new Set(), docAdd: false, docRemove: null,
     // Vínculos entre tareas: buscador abierto ({ type, q }) o null.
     linkSearch: null,
     // Pasos: detalles desplegados y el paso en edición ("tarea:índice").
@@ -62,6 +64,11 @@
     remove: (id, etag) => call('DELETE', '/api/tasks/' + encodeURIComponent(id), undefined, etag),
     docs: () => call('GET', '/api/docs'),
     doc: (alias) => call('GET', '/api/docs/' + encodeURIComponent(alias)),
+    docSearch: (q) => call('GET', '/api/docs/search?q=' + encodeURIComponent(q)),
+    docAdd: (alias, path) => call('POST', '/api/docs', { alias, path }),
+    docRemove: (alias) => call('DELETE', '/api/docs/' + encodeURIComponent(alias)),
+    docDiff: (alias) => call('GET', '/api/docs/' + encodeURIComponent(alias) + '/diff'),
+    docLog: (alias) => call('GET', '/api/docs/' + encodeURIComponent(alias) + '/log'),
     section: (alias, id) => call('GET', '/api/docs/' + encodeURIComponent(alias) + '/sections/' + encodeURIComponent(id)),
     lists: () => call('GET', '/api/lists'),
     git: () => call('GET', '/api/git'),
@@ -967,53 +974,213 @@
   let docObserver = null;
   const backlinkTask = (t) => h('a', { href: '#', class: 'bl-task', onclick: (e) => { e.preventDefault(); goToTask(t.id); } },
     h('span', { class: 'dot', style: 'background:' + STATUSES.find((x) => x.id === t.status).color }), t.code ? h('span', { class: 'code' }, t.code) : null, h('span', { class: 't' }, rich(t.title)));
+  // --- Biblioteca de documentos (M12, spec §20): árbol por carpetas, búsqueda, ficha del documento, alta y baja ---
+  const fileName = (path) => path.replace(/^.*\//, '');
+  const folderOf = (path) => (path.includes('/') ? path.replace(/[^/]*$/, '') : '');
+  // Tareas que citan cada documento (ruta → Set de ids), enteras o por sección, en una sola pasada.
+  function tasksByDoc() {
+    const m = new Map();
+    const add = (key, id) => { const d = docByKey(key); if (d) { if (!m.has(d.path)) m.set(d.path, new Set()); m.get(d.path).add(id); } };
+    for (const t of S.tasks) {
+      for (const r of refsOf(t)) add(r.doc, t.id);
+      for (const txt of [t.notes, t.test, ...checklistOf(t).flatMap((c) => [c.text, c.detail])]) {
+        for (const x of String(txt || '').replace(/`[^`]*`/g, '').matchAll(LINK)) add(x[1], t.id);
+      }
+    }
+    return m;
+  }
+  // La entrada de config.json › docs que trae el documento: la suya, o el patrón que lo incluye.
+  const entryOf = (d) => S.docEntries.find((e) => e.alias === d.alias) ||
+    S.docEntries.find((e) => e.path.includes('*') && d.alias.startsWith(e.alias + '/'));
+
+  function docTree(cur) {
+    const counts = tasksByDoc();
+    const folders = new Map();
+    for (const d of S.docs) { const f = folderOf(d.path); if (!folders.has(f)) folders.set(f, []); folders.get(f).push(d); }
+    return h('nav', { class: 'doc-tree', 'aria-label': 'Documentos del proyecto' }, [...folders.keys()].sort().map((f) => h('details', {
+      class: 'folder', open: !S.foldersClosed.has(f),
+      ontoggle: (e) => { if (e.target.open) S.foldersClosed.delete(f); else S.foldersClosed.add(f); } },
+      h('summary', null, f || 'Raíz del proyecto'),
+      folders.get(f).sort((a, b) => a.path.localeCompare(b.path)).map((d) => {
+        const n = counts.get(d.path)?.size || 0;
+        return h('a', { href: '#docs/' + encodeURIComponent(d.alias), class: 'tree-doc' + (d.missing ? ' missing' : ''), 'aria-current': d === cur ? 'page' : null,
+          title: (d.missing ? 'No está: ' + d.path : docTitle(d)) + ' · ' + (n ? n + (n === 1 ? ' tarea' : ' tareas') : 'sin tareas: todavía no planificado') },
+          h('span', { class: 'toc-dot' + (n ? ' has' : '') }), h('span', { class: 't' }, fileName(d.path)), n ? h('span', { class: 'n' }, n) : null);
+      }))));
+  }
+
+  // Resultados de la búsqueda de texto (12.4), por documento. Las palabras buscadas se resaltan en el fragmento.
+  function highlight(text, q) {
+    const fold = (x) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const f = fold(text);
+    const words = fold(q).split(/\s+/).filter(Boolean);
+    if (f.length !== text.length) return text; // con caracteres que cambian de largo al plegarse, sin resaltar
+    const marks = [];
+    for (const w of words) for (let i = f.indexOf(w); i >= 0; i = f.indexOf(w, i + w.length)) marks.push([i, i + w.length]);
+    marks.sort((a, b) => a[0] - b[0]);
+    const out = [];
+    let last = 0;
+    for (const [a, b] of marks) { if (a < last) continue; out.push(text.slice(last, a), h('mark', null, text.slice(a, b))); last = b; }
+    out.push(text.slice(last));
+    return out;
+  }
+  function docResults() {
+    const r = S.docResults;
+    if (!r || r.q !== S.docQ.trim()) return h('div', { class: 'doc-results' }, h('p', { class: 'muted' }, 'Buscando…'));
+    const groups = new Map();
+    for (const x of r.results) { if (!groups.has(x.alias)) groups.set(x.alias, []); groups.get(x.alias).push(x); }
+    const go = (e) => { S.docQ = ''; S.docResults = null; const q = document.getElementById('doc-q'); if (q) q.value = ''; if (e.currentTarget.getAttribute('href') === location.hash) { e.preventDefault(); renderDocs(true); } };
+    return h('div', { class: 'doc-results', role: 'region', 'aria-label': 'Resultados de la búsqueda' },
+      h('p', { class: 'muted small' }, r.results.length ? r.results.length + (r.more ? '+' : '') + (r.results.length === 1 ? ' coincidencia' : ' coincidencias') + ' en ' + groups.size + (groups.size === 1 ? ' documento' : ' documentos') : 'Ninguna línea de los documentos tiene esas palabras.'),
+      [...groups].map(([alias, xs]) => {
+        const d = docByKey(alias);
+        return h('section', { class: 'res-doc' }, h('h3', null, d ? docTitle(d) : alias, h('span', { class: 'ref-id' }, xs[0].path)),
+          h('ul', null, xs.map((x) => h('li', null, h('a', { href: '#docs/' + encodeURIComponent(alias) + (x.section ? '/' + encodeURIComponent(x.section) : ''), onclick: go },
+            h('span', { class: 'res-sec' }, x.title ? rich(x.title, true) : 'Antes del primer título'), h('span', { class: 'ref-id' }, 'línea ' + x.line),
+            h('span', { class: 'snip' }, highlight(x.snippet, S.docQ)))))));
+      }));
+  }
+  let searchTimer = null;
+  function searchDocs(q) {
+    S.docQ = q;
+    clearTimeout(searchTimer);
+    if (!q.trim()) { S.docResults = null; renderDocs(true); return; }
+    renderDocs();
+    searchTimer = setTimeout(() => api.docSearch(q.trim()).then((r) => { if (r.q === S.docQ.trim()) { S.docResults = r; renderDocs(); } }).catch(() => {}), 180);
+  }
+
+  // Agregar un documento (12.2): un archivo o un patrón; el hub reescribe config.json y avisa doc_changed.
+  async function addDoc(e) {
+    e.preventDefault();
+    const alias = document.getElementById('doc-alias').value.trim(), path = document.getElementById('doc-path').value.trim();
+    if (!alias || !path) return;
+    try {
+      const r = await api.docAdd(alias, path);
+      [S.docs, S.docEntries] = await Promise.all([api.docs().then((x) => x.docs), api.config().then((c) => c.docs ?? [])]);
+      S.docAdd = false;
+      e.target.reset();
+      toast('Agregado: ' + r.path);
+      const first = S.docs.find((d) => d.alias === r.alias || d.alias.startsWith(r.alias + '/'));
+      if (first) location.hash = '#docs/' + encodeURIComponent(first.alias); else render();
+    } catch (err) { toast(err.message || 'No se pudo agregar.'); }
+  }
+  async function removeDoc(alias) {
+    try {
+      await api.docRemove(alias);
+      [S.docs, S.docEntries] = await Promise.all([api.docs().then((x) => x.docs), api.config().then((c) => c.docs ?? [])]);
+      S.docRemove = null;
+      toast('Quitado de compass/config.json: ' + alias + ' (el archivo sigue ahí)');
+      location.hash = '#docs';
+      render();
+    } catch (err) { toast(err.message || 'No se pudo quitar.'); }
+  }
+
+  // La barra de arriba se arma una sola vez (como la de filtros): el buscador y el formulario no pierden lo escrito
+  // ni el foco cuando el hub manda un cambio.
+  function docsBar(box) {
+    if (box.querySelector('.docs-bar')) return;
+    const q = h('input', { type: 'search', id: 'doc-q', placeholder: 'Buscar en los documentos', autocomplete: 'off', value: S.docQ,
+      oninput: (e) => searchDocs(e.target.value),
+      onkeydown: (e) => { if (e.key === 'Escape' && e.target.value) { e.preventDefault(); e.stopPropagation(); e.target.value = ''; searchDocs(''); } } });
+    box.append(
+      h('div', { class: 'docs-bar' }, h('label', { for: 'doc-q', class: 'sr' }, 'Buscar en los documentos'), q, h('span', { class: 'docs-info' }),
+        h('button', { class: 'btn ghost small', type: 'button', id: 'doc-add-btn', 'aria-expanded': 'false',
+          onclick: () => { S.docAdd = !S.docAdd; renderDocs(); if (S.docAdd) document.getElementById('doc-alias').focus(); } }, '+ Documento')),
+      h('form', { class: 'doc-add', id: 'doc-add', hidden: true, onsubmit: addDoc },
+        h('label', { for: 'doc-alias' }, 'Alias'), h('input', { id: 'doc-alias', placeholder: 'enemigos', autocomplete: 'off', required: true, pattern: '[a-z0-9][a-z0-9_\\-]*', title: 'Minúsculas, números, - y _' }),
+        h('label', { for: 'doc-path' }, 'Archivo o patrón'), h('input', { id: 'doc-path', placeholder: 'docs/enemigos.md o docs/**/*.md', autocomplete: 'off', required: true }),
+        h('button', { class: 'btn primary small', type: 'submit' }, 'Agregar'),
+        h('button', { class: 'btn ghost small', type: 'button', onclick: () => { S.docAdd = false; renderDocs(); } }, 'Cancelar'),
+        h('p', { class: 'muted small' }, 'Ruta desde la raíz del proyecto. Se anota en compass/config.json › docs; el archivo no se toca.')));
+  }
+
+  // Ficha del documento: de dónde sale, su estado de git y qué tareas lo citan (12.5).
+  const GIT_TEXT = { clean: 'Sin cambios', modified: 'Modificado sin commitear', added: 'Nuevo (agregado a git)', untracked: 'Nuevo, sin seguir en git', deleted: 'Borrado', renamed: 'Renombrado' };
+  function docCard(d) {
+    const e = entryOf(d);
+    const own = e && e.alias === d.alias;
+    return h('div', { class: 'doc-card' },
+      h('h2', null, d.missing ? fileName(d.path) : docTitle(d)),
+      h('code', null, d.path),
+      d.missing ? h('p', { class: 'small bad' }, 'El archivo no está.') : null,
+      d.git ? h('p', { class: 'small doc-git ' + d.git }, h('span', { class: 'dot' }), GIT_TEXT[d.git] || d.git) : null,
+      own ? (S.docRemove === d.alias
+        ? h('p', { class: 'confirm small' }, '¿Dejar de mostrarlo? El archivo no se borra.',
+          h('button', { class: 'btn danger small', type: 'button', onclick: () => removeDoc(d.alias) }, 'Quitar'),
+          h('button', { class: 'btn small', type: 'button', onclick: () => { S.docRemove = null; renderDocs(); } }, 'No'))
+        : h('button', { class: 'btn ghost small', type: 'button', id: 'doc-rm', onclick: () => { S.docRemove = d.alias; renderDocs(); } }, 'Quitar del proyecto'))
+        : e ? h('p', { class: 'muted small' }, 'Incluido por el patrón ', h('code', null, e.path), '.') : null);
+  }
+
   function renderDocs(rebuildArticle) {
     const box = document.getElementById('docs');
     if (S.view !== 'docs') { box.replaceChildren(); return; }
-    if (!S.docs.length) { box.replaceChildren(h('div', { class: 'notice' }, 'Este proyecto no tiene documentos configurados. Agregalos en ', h('code', null, 'compass/config.json › docs'), '.')); return; }
+    docsBar(box);
+    const form = document.getElementById('doc-add');
+    form.hidden = !S.docAdd && S.docs.length > 0;
+    document.getElementById('doc-add-btn').setAttribute('aria-expanded', String(!form.hidden));
+    const q = document.getElementById('doc-q');
+    q.hidden = !S.docs.length;
+    const info = box.querySelector('.docs-info');
+    let body = box.querySelector('.docs-body');
+    if (!body) { body = h('div', { class: 'docs-body' }); box.append(body); }
+    if (!S.docs.length) {
+      info.replaceChildren();
+      body.replaceChildren(h('div', { class: 'notice' }, 'Este proyecto no tiene documentos todavía. Agregá uno arriba (o con ', h('code', null, 'scompass doc add <alias> <ruta>'), ').'));
+      return;
+    }
     const d = docByKey(S.doc) || S.docs[0];
     S.doc = d.alias;
     const sec = sectionOf(d, S.sec);
     const broken = allBroken();
-    const existing = box.querySelector('article.doc-body');
+    const searching = !!S.docQ.trim();
+    const existing = body.querySelector('article.doc-body');
     const keepArticle = existing && existing.dataset.alias === d.alias && existing.dataset.ready === '1' && docCache.get(d.alias) && !rebuildArticle;
     const article = keepArticle ? existing : htmlBox('doc-body', docHtml(d.alias), 'article');
     article.dataset.alias = d.alias;
     article.dataset.ready = docCache.get(d.alias) ? '1' : '0';
     article.classList.add('doc-article');
     const counts = new Map(d.sections.map((s) => [s.id, tasksFor(d, s.id).length]));
-    box.replaceChildren(
-      h('div', { class: 'docs-bar' },
-        S.docs.length > 1 ? h('select', { 'aria-label': 'Documento', onchange: (e) => { location.hash = '#docs/' + encodeURIComponent(e.target.value); } },
-          S.docs.map((x) => h('option', { value: x.alias, selected: x.alias === d.alias }, x.path))) : h('code', null, d.path),
-        h('span', { class: 'pill' + (broken.length ? ' bad' : '') }, h('span', { class: 'dot' }), broken.length === 1 ? '1 referencia rota' : broken.length + ' referencias rotas'),
-        // Enlace [[alias#id]] a la sección actual, para pegarlo en notas o pasos (6.6).
-        sec && !sec.explicit ? h('span', { class: 'fragile', title: 'Agregá <!-- id: … --> debajo del título en ' + d.path + ' (o scompass doc stamp-ids ' + d.alias + ')' },
-          'Sin id: el enlace se rompe si cambiás el título') : null,
-        // Sin sección elegida, el enlace es al documento entero: [[alias]].
-        h('button', { class: 'btn ghost small copy-link', type: 'button', title: 'Copia [[' + d.alias + (sec ? '#' + sec.id : '') + ']] para pegar en notas o pasos',
-          onclick: () => copy('[[' + d.alias + (sec ? '#' + sec.id : '') + ']]') }, sec ? 'Copiar enlace' : 'Copiar enlace al documento')),
-      h('div', { class: 'docs-grid' },
-        h('nav', { class: 'toc', 'aria-label': 'Índice de ' + d.path }, d.sections.map((s) => h('a', {
+    const unplanned = d.sections.filter((s) => !counts.get(s.id));
+    info.replaceChildren(...[
+      h('span', { class: 'pill' + (broken.length ? ' bad' : '') }, h('span', { class: 'dot' }), broken.length === 1 ? '1 referencia rota' : broken.length + ' referencias rotas'),
+      // Enlace [[alias#id]] a la sección actual, para pegarlo en notas o pasos (6.6).
+      sec && !sec.explicit ? h('span', { class: 'fragile', title: 'Agregá <!-- id: … --> debajo del título en ' + d.path + ' (o scompass doc stamp-ids ' + d.alias + ')' },
+        'Sin id: el enlace se rompe si cambiás el título') : null,
+      // Sin sección elegida, el enlace es al documento entero: [[alias]].
+      h('button', { class: 'btn ghost small copy-link', type: 'button', title: 'Copia [[' + d.alias + (sec ? '#' + sec.id : '') + ']] para pegar en notas o pasos',
+        onclick: () => copy('[[' + d.alias + (sec ? '#' + sec.id : '') + ']]') }, sec ? 'Copiar enlace' : 'Copiar enlace al documento')].filter(Boolean));
+    const whole = tasksFor(d, null);
+    body.replaceChildren(h('div', { class: 'docs-grid' },
+      h('div', { class: 'docs-side' },
+        docTree(d),
+        d.sections.length ? h('nav', { class: 'toc', 'aria-label': 'Índice de ' + d.path }, d.sections.map((s) => h('a', {
           href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(s.id), 'aria-current': s.id === S.sec ? 'true' : null,
           style: 'padding-left:' + (6 + (s.level - 1) * 12) + 'px', title: counts.get(s.id) ? counts.get(s.id) + ' tareas' : 'Sin tareas: todavía no planificada'
         }, h('span', { class: 'toc-dot' + (counts.get(s.id) ? ' has' : '') }), h('span', { class: 't' }, rich(s.title)),
-          counts.get(s.id) ? h('span', { class: 'n' }, counts.get(s.id)) : null))),
-        article,
-        h('aside', { class: 'backlinks', 'aria-label': 'Tareas que referencian esta sección' },
-          sec ? [h('div', { class: 'label' }, 'Referenciada por · ' + (counts.get(sec.id) === 1 ? '1 tarea' : counts.get(sec.id) + ' tareas')),
-            ...tasksFor(d, sec.id).map(backlinkTask),
-            counts.get(sec.id) ? null : h('p', { class: 'muted small' }, 'Ninguna tarea referencia esta sección: parte del diseño todavía sin planificar.')]
-            : [h('div', { class: 'label' }, 'Referencian el documento · ' + (tasksFor(d, null).length === 1 ? '1 tarea' : tasksFor(d, null).length + ' tareas')),
-              ...tasksFor(d, null).map(backlinkTask),
-              h('p', { class: 'muted small' }, 'Elegí una sección del índice para ver qué tareas la referencian.')])));
-    observeHeadings(article);
+          counts.get(s.id) ? h('span', { class: 'n' }, counts.get(s.id)) : null))) : null),
+      searching ? docResults() : article,
+      h('aside', { class: 'backlinks', 'aria-label': 'Ficha del documento' },
+        docCard(d),
+        sec ? [h('div', { class: 'label' }, 'Referenciada por · ' + (counts.get(sec.id) === 1 ? '1 tarea' : counts.get(sec.id) + ' tareas')),
+          ...tasksFor(d, sec.id).map(backlinkTask),
+          counts.get(sec.id) ? null : h('p', { class: 'muted small' }, 'Ninguna tarea referencia esta sección: parte del diseño todavía sin planificar.')]
+          : [h('div', { class: 'label' }, 'Referencian el documento · ' + (whole.length === 1 ? '1 tarea' : whole.length + ' tareas')),
+            ...whole.map(backlinkTask),
+            h('p', { class: 'muted small' }, 'Elegí una sección del índice para ver qué tareas la referencian.')],
+        // Diseño sin planificar: las secciones que ninguna tarea cita.
+        !sec && unplanned.length ? h('details', { class: 'unplanned' }, h('summary', { class: 'label' }, 'Secciones sin tareas · ' + unplanned.length + ' de ' + d.sections.length),
+          h('ul', null, unplanned.map((s) => h('li', null, h('a', { href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(s.id) }, rich(s.title)))))) : null)));
+    if (!searching) observeHeadings(article); else docObserver?.disconnect();
   }
   // Al bajar por el documento, el índice y los backlinks siguen a la sección visible.
   function observeHeadings(article) {
     docObserver?.disconnect();
     if (!('IntersectionObserver' in window)) return;
+    // El primer aviso es el del armado, no de un scroll: abrir un documento sin sección deja la ficha del documento entero.
+    let initial = true;
     docObserver = new IntersectionObserver((entries) => {
+      if (initial) { initial = false; return; }
       const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
       const id = top?.target.dataset.section;
       if (id && id !== S.sec && !scrollingTo) {
@@ -1044,7 +1211,7 @@
   function docChanged(alias) {
     for (const k of [...sectionCache.keys()]) if (k.startsWith(alias + '#')) sectionCache.delete(k);
     docCache.delete(alias);
-    api.docs().then((r) => { S.docs = r.docs; render(); }).catch(() => {});
+    Promise.all([api.docs(), api.config()]).then(([r, c]) => { S.docs = r.docs; S.docEntries = c.docs ?? []; render(); }).catch(() => {});
   }
   // Vista Listas (8.4, spec §16.4). La regla de tildar (lo que se repite avanza) y el id de una lista nueva los
   // pone el hub: la web solo muestra y manda.
@@ -1373,6 +1540,7 @@
         S.lists = l.lists;
         S.views = Array.isArray(config.views) && config.views.length ? config.views : ['board', 'lists', 'docs'];
         S.docs = d.docs;
+        S.docEntries = config.docs ?? [];
         sectionCache.clear();
         docCache.clear();
         S.project = config.project || '';

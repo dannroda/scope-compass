@@ -1253,7 +1253,7 @@ Ver y encontrar tareas en un tablero grande: vista de lista y filtros en la UI w
 
 **Prueba:** npm test (hub/test/filters.test.js, ui-filters.test.js y los de schema, API y export)
 
-## M12 — Biblioteca de documentos  (4/8)
+## M12 — Biblioteca de documentos  (5/8)
 
 Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos archivos, enlaces a documentos enteros, búsqueda y el estado de git de cada uno.
 
@@ -1313,7 +1313,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Notas:** Ampliar git.js: por documento, estado (sin cambios, modificado, nuevo sin seguir, borrado), último commit (hash corto, fecha, autor, asunto) y diff contra HEAD. Historial con git log --follow. Sin repo: los campos quedan vacíos, nada falla. Solo lectura: la app nunca commitea (spec §4.5). Hecho: docsStatus hace un solo git status del proyecto (no un proceso por documento, ni rutas en la línea de comandos, que en Windows tiene tope) y pasa las rutas, que porcelain da desde la raíz del repo, a relativas al proyecto. /api/docs y /api/docs/:alias traen git (clean|modified|added|untracked|deleted|renamed; sin repo no va, y /api/docs dice repo). GET /api/docs/:alias/diff trae además las secciones tocadas (diffSections, para la 12.6) y /log el historial. Un archivo sin seguir no sale en git diff: se arma entero como agregado. El hub manda docs_git { repo, docs: { alias: estado } } cuando cambia alguno; mira después de doc_changed y, mientras haya documentos con cambios, cada gitPollMs (un commit no toca los archivos).
 
-### 12.4 Búsqueda de texto en los documentos · Pendiente
+### 12.4 Búsqueda de texto en los documentos · Hecho
 
 - [x] docs.js: searchDocs(docs, q) → [{ alias, section, line, snippet }]
 - [x] API GET /api/docs/search?q=
@@ -1326,15 +1326,15 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 ### 12.5 Biblioteca en la web · Pendiente
 
-- [ ] Árbol de documentos por carpeta con contadores de tareas
-- [ ] Caja de búsqueda con resultados por documento y sección
-- [ ] Ficha del documento: tareas, secciones sin tareas, estado de git
-- [ ] Agregar / quitar documento desde la UI
-- [ ] Detalle de tarea: refs a documento entero y `[[alias]]` en el texto
+- [x] Árbol de documentos por carpeta con contadores de tareas
+- [x] Caja de búsqueda con resultados por documento y sección
+- [x] Ficha del documento: tareas, secciones sin tareas, estado de git
+- [x] Agregar / quitar documento desde la UI
+- [x] Detalle de tarea: refs a documento entero y `[[alias]]` en el texto
 
 **Prueba:** Con 5+ documentos en carpetas: navegar el árbol, buscar un término y saltar a la sección, ver qué tareas referencian el documento.
 
-**Notas:** La vista Docs pasa de un selector a un explorador: árbol por carpetas a la izquierda, búsqueda arriba y, por documento, ficha con secciones, tareas que lo referencian (a nivel documento y por sección) y estado de git. Resaltar documentos o secciones sin tareas (diseño sin planificar). Agregar y quitar documentos desde la UI.
+**Notas:** La vista Docs pasa de un selector a un explorador: árbol por carpetas a la izquierda, búsqueda arriba y, por documento, ficha con secciones, tareas que lo referencian (a nivel documento y por sección) y estado de git. Resaltar documentos o secciones sin tareas (diseño sin planificar). Agregar y quitar documentos desde la UI. Hecho: a la izquierda el árbol (una carpeta por grupo, plegable; el número es cuántas tareas citan el documento, entero o por sección; punto apagado si ninguna) y debajo el índice del documento abierto. La barra de arriba (buscador y + Documento) se arma una sola vez, como la de filtros, para no perder lo escrito cuando llega un cambio. La búsqueda reemplaza el artículo por los resultados, por documento, con las palabras resaltadas; ir a uno limpia la búsqueda. La ficha (aside) dice título, ruta, estado de git, de qué entrada sale (un documento de un patrón no se quita solo) y Quitar del proyecto con confirmación; sin sección elegida, Secciones sin tareas. El paso 5 ya estaba desde la 12.1. Arreglado de paso: al abrir un documento, el IntersectionObserver elegía enseguida la primera sección y la ficha del documento entero no se veía; ahora ignora su primer aviso (el del armado).
 
 ### 12.6 Cambios y diff de documentos en la web · Pendiente
 
