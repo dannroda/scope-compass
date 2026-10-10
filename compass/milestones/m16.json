@@ -4,7 +4,8 @@
     "En el teléfono, el tablero se desliza de costado, una columna por pantalla, en vez de apilar las columnas.",
     "En el teléfono, Documentos muestra fijos abajo el índice, para saltar de sección, y las tareas de la sección que se está leyendo.",
     "Las notas y los demás campos de texto del detalle crecen con el texto, sin arrastrar la esquina.",
-    "Un clic afuera del detalle de la tarea lo cierra."
+    "Un clic afuera del detalle de la tarea lo cierra.",
+    "En el teléfono el detalle de la tarea ocupa toda la pantalla; desde 761 px es un panel al costado."
   ],
   "goal": "Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren por la red de casa (D36).",
   "order": 16,

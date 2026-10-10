@@ -285,6 +285,17 @@ test('un clic afuera del detalle lo cierra; otra tarjeta cambia de tarea; adentr
   assert.equal(await cli(['move', 'm1-06', 'done']), 0);
 });
 
+test('el detalle ocupa toda la pantalla hasta 760 px; más ancho, es un panel al costado (16.6)', async () => {
+  for (const [opts, full] of [[{ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, true],
+    [{ viewport: { width: 602, height: 1120 }, hasTouch: true, isMobile: true }, true], [{ viewport: { width: 900, height: 900 } }, false]]) {
+    const page = await open(opts);
+    await page.click('.card[data-id="m1-07"]');
+    const [w, vw] = await page.locator('#detail').evaluate((e) => [e.getBoundingClientRect().width, innerWidth]);
+    full ? assert.equal(w, vw, `${vw} px: toda la pantalla`) : assert.equal(w, 460, `${vw} px: panel de 460`);
+    await page.context().close();
+  }
+});
+
 // --- Criterios de §14 con UI (3.8) ---
 
 const REFERENCE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'docs', 'reference', 'tablero-artifact.html');

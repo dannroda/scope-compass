@@ -328,7 +328,10 @@ a.link-task:hover code { text-decoration: underline; }
 .detail .resize { position: fixed; top: 0; bottom: 0; right: calc(min(var(--detail-w, 460px), 100%) - 8px); width: 8px; cursor: col-resize; z-index: 11; }
 .detail .resize:hover, .detail .resize:focus-visible, body.resizing .detail .resize { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); outline: none; }
 body.resizing { cursor: col-resize; user-select: none; }
-@media (max-width: 560px) { .detail .resize { display: none; } }
+/* Hasta 760 px el detalle ocupa toda la pantalla (16.6): al lado quedarían menos de 300 px de tablero. Su scroll no
+   arrastra el de la página de atrás. */
+.detail { overscroll-behavior: contain; }
+@media (max-width: 760px) { .detail { width: 100%; border-left: 0; } .detail .resize { display: none; } }
 
 /* Indicador de conexión con el hub (3.3). */
 .conn { font-family: var(--font-mono); font-size: 12px; color: var(--danger); border: 1px dashed var(--danger); border-radius: 999px; padding: 4px 10px; margin-left: auto; margin-right: 12px; }

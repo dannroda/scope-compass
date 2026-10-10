@@ -964,7 +964,7 @@ Con `--lan` (D36) el tablero se abre en el teléfono. Lo que se ajustó al usarl
 
 - **Campos de texto del detalle** (notas, *Cómo probarlo* y el detalle de un paso): crecen con lo que se escribe (`field-sizing: content`), así no hace falta arrastrar la esquina, que en el teléfono es chica. En los navegadores sin `field-sizing` la esquina sigue estando.
 
-- **Detalle de la tarea:** un clic afuera lo cierra (en el teléfono, en la franja que queda a su izquierda cuando no ocupa todo el ancho). Si ese clic abre otra tarea (una tarjeta, una fila de la lista), cambia de tarea en vez de cerrar. Cuenta dónde empieza el clic: arrastrar una selección desde las notas hasta afuera no lo cierra.
+- **Detalle de la tarea:** hasta 760 px ocupa toda la pantalla, porque al lado quedarían menos de 300 px de tablero; más ancho, es el panel de siempre al costado (16.6). Un clic afuera del panel lo cierra (16.5); a pantalla completa se cierra con *Cerrar* o Esc. Si ese clic abre otra tarea (una tarjeta, una fila de la lista), cambia de tarea en vez de cerrar. Cuenta dónde empieza el clic: arrastrar una selección desde las notas hasta afuera no lo cierra.
 
 ### 24.1 Criterios de aceptación de M16
 <!-- id: criterios-telefono -->
@@ -973,5 +973,6 @@ Con `--lan` (D36) el tablero se abre en el teléfono. Lo que se ajustó al usarl
 - [x] En el teléfono, Documentos muestra fijos abajo el índice, para saltar de sección, y las tareas de la sección que se está leyendo.
 - [x] Las notas y los demás campos de texto del detalle crecen con el texto, sin arrastrar la esquina.
 - [x] Un clic afuera del detalle de la tarea lo cierra.
+- [x] En el teléfono el detalle de la tarea ocupa toda la pantalla; desde 761 px es un panel al costado.
 
-Tests: `ui-filters.test.js` (13.4, a 390×844; 16.1, táctil a 602 px y con mouse a 900), `ui-docs.test.js` (16.2 y 16.4, a 390 y táctil a 900) y `ui.test.js` (16.3 y 16.5).
+Tests: `ui-filters.test.js` (13.4, a 390×844; 16.1, táctil a 602 px y con mouse a 900), `ui-docs.test.js` (16.2 y 16.4, a 390 y táctil a 900) y `ui.test.js` (16.3, 16.5 y 16.6).

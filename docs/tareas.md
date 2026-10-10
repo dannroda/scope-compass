@@ -1566,7 +1566,7 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 
 **Notas:** Hecho: spec §23 (el dato, CLI, web, dock) con §23.1 y cómo se probó la parte del editor; D35 (files aparte de refs, rutas y no uid://, solo lo que git lista, tareas de un archivo calculadas en el cliente). §11 y §11.1 marcan hechos el módulo de referencias a res://, las tareas del script abierto y abrir desde la tarea. README (M15 en el estado), web/README e instalar.md (cómo se vinculan y se abren). Suite completa: 345 pasan, 0 fallan.
 
-## M16 — Uso en el teléfono  (5/5)
+## M16 — Uso en el teléfono  (6/6)
 
 Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren por la red de casa (D36).
 
@@ -1575,6 +1575,7 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 - En el teléfono, Documentos muestra fijos abajo el índice, para saltar de sección, y las tareas de la sección que se está leyendo.
 - Las notas y los demás campos de texto del detalle crecen con el texto, sin arrastrar la esquina.
 - Un clic afuera del detalle de la tarea lo cierra.
+- En el teléfono el detalle de la tarea ocupa toda la pantalla; desde 761 px es un panel al costado.
 
 ### 16.1 Tablero deslizable en el teléfono · Hecho
 
@@ -1632,5 +1633,15 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 **Prueba:** Con el detalle abierto: tildar un paso no lo cierra; arrastrar una selección desde las notas hasta afuera tampoco; una tarjeta de otra columna abre esa tarea; un clic en el título del proyecto lo cierra. El test falla sin el cambio.
 
 **Notas:** Pedido del usuario (2026-10-10): al abrir una tarea, un clic afuera del panel debería cerrarlo. Hecho: dos escuchas en document, sin fondo nuevo (con el panel abierto se sigue pudiendo arrastrar y abrir otras tarjetas). pointerdown anota la tarea abierta si empieza fuera de #detail; click cierra si sigue abierta la misma. Así un clic que abre otra tarea (tarjeta, fila de la lista) cambia de tarea, una selección que sale del panel no cierra, y un botón del detalle que se redibuja (queda fuera del documento al llegar el click) tampoco. Las otras vistas ya cierran la tarea al entrar, así que sus enlaces a tareas no chocan.
+
+**Referencias:** `docs/spec.md#telefono`
+
+### 16.6 Detalle de la tarea a pantalla completa en el teléfono · Hecho
+
+**Etiquetas:** `ui`
+
+**Prueba:** A 390 y 602 px táctil el detalle mide todo el ancho; a 900 con mouse, 460 px. El test falla sin el cambio (a 602 quedaba de 460).
+
+**Notas:** Pedido del usuario (2026-10-10): en el teléfono la tarea debería ocupar toda la pantalla, según el tamaño. Hecho: hasta 760 px el detalle va a todo el ancho y sin el borde para cambiar su ancho (antes, solo bajo 460 px, así que en su teléfono de unos 600 quedaba una franja); desde 761 es el panel de siempre (el ancho elegido, 460 por defecto), con al menos 300 px de tablero al lado. 760 es el corte que ya usan Documentos, Listas y Archivos. De paso: overscroll-behavior: contain, así el scroll del detalle no arrastra la página de atrás.
 
 **Referencias:** `docs/spec.md#telefono`
