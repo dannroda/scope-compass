@@ -1,0 +1,53 @@
+{
+  "checklist": [
+    {
+      "detail": "El hub escucha solo en 127.0.0.1 y sin auth (spec §servidor). createServer ya acepta un token, pero como header Authorization: Bearer, que el navegador del teléfono no puede mandar. Hoy funciona un túnel SSH desde el teléfono (Termux / Termius).",
+      "done": false,
+      "text": "Relevar el estado actual"
+    },
+    {
+      "detail": "(a) --lan escuchando en la IP local + token por link que queda en cookie (y QR en la CLI); (b) auth de verdad: usuario/contraseña o passkey con sesión; (c) Tailscale (o similar) y seguir escuchando solo en la interfaz de la VPN; (d) reverse proxy con login delante (Caddy + basic auth, Cloudflare Access). Para cada una: seguridad en un wifi compartido, fricción en el teléfono, trabajo en el hub, si sirve también para el hosting de §12.",
+      "done": false,
+      "text": "Comparar opciones de acceso"
+    },
+    {
+      "detail": "HTTP sin TLS en la LAN (token o cookie viajan en claro), el WebSocket también autenticado, CSRF en la API de escritura, endpoints peligrosos (/api/shutdown, restart) que no deberían quedar expuestos, el Inicio (multi-hub) que proxea proyectos, y revocar el acceso.",
+      "done": false,
+      "text": "Riesgos a cubrir"
+    },
+    {
+      "detail": "Android e iPhone si se puede: login, tiempo real por WebSocket, PWA instalable.",
+      "done": false,
+      "text": "Probar en un teléfono real"
+    },
+    {
+      "detail": "Registrar en docs/decisiones.md la opción elegida y lo descartado; dejar las tareas de implementación en M7.",
+      "done": false,
+      "text": "Decisión"
+    }
+  ],
+  "code": "7.1",
+  "created_at": "2026-10-10T06:13:05.047Z",
+  "milestone": "m07",
+  "notes": "Pedido desde Project Epiphany (2026-10-10): ver el panel en el teléfono por el wifi de casa. Puede convenir auth de verdad en vez de un token suelto.",
+  "order": 1,
+  "priority": "medium",
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "hosting"
+    },
+    {
+      "doc": "docs/spec.md",
+      "section": "servidor"
+    }
+  ],
+  "status": "todo",
+  "tags": [
+    "investigacion",
+    "seguridad"
+  ],
+  "test": "Hay una decisión registrada con la comparación de opciones, y una prueba de concepto de la elegida abre el tablero desde el teléfono por el wifi sin que otro dispositivo de la red pueda entrar sin credenciales.",
+  "title": "Investigar: abrir el hub desde el teléfono por la LAN",
+  "updated_at": "2026-10-10T06:13:06.996Z"
+}
