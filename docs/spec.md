@@ -962,10 +962,13 @@ Con `--lan` (D36) el tablero se abre en el teléfono. Lo que se ajustó al usarl
 - **Tablero (≤ 560 px, o táctil hasta 980 px):** las columnas, de hasta 360 px, van lado a lado y se deslizan de costado, una por pantalla con la siguiente asomando, y al soltar encajan en una (`scroll-snap`). Apiladas, quedaban interminables. Las vacías son angostas: solo el título. El desplazamiento se mantiene con los cambios en vivo.
 - **Documentos (≤ 760 px, o táctil hasta 1180 px):** la ficha del documento queda al final, así que las tareas de la sección que se lee van en una barra fija abajo: cuántas son y un enlace a cada una, que se desliza de costado si no entran. La sección es la que sigue el índice al bajar (§20). Una sección sin tareas no muestra barra, y tampoco la búsqueda ni el diff.
 
+- **Campos de texto del detalle** (notas, *Cómo probarlo* y el detalle de un paso): crecen con lo que se escribe (`field-sizing: content`), así no hace falta arrastrar la esquina, que en el teléfono es chica. En los navegadores sin `field-sizing` la esquina sigue estando.
+
 ### 24.1 Criterios de aceptación de M16
 <!-- id: criterios-telefono -->
 
 - [x] En el teléfono, el tablero se desliza de costado, una columna por pantalla, en vez de apilar las columnas.
 - [x] En el teléfono, Documentos muestra fijas abajo las tareas de la sección que se está leyendo.
+- [x] Las notas y los demás campos de texto del detalle crecen con el texto, sin arrastrar la esquina.
 
-Tests: `ui-filters.test.js` (13.4, a 390×844; 16.1, táctil a 602 px y con mouse a 900) y `ui-docs.test.js` (16.2, a 390 y táctil a 900).
+Tests: `ui-filters.test.js` (13.4, a 390×844; 16.1, táctil a 602 px y con mouse a 900), `ui-docs.test.js` (16.2, a 390 y táctil a 900) y `ui.test.js` (16.3).

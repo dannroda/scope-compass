@@ -242,6 +242,18 @@ test('atajos: N abre nueva tarea, 1–4 cambian el estado, y no se activan escri
   await page.context().close();
 });
 
+test('notas y "cómo probarlo" crecen con el texto, sin arrastrar la esquina (16.3)', async () => {
+  const page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  await page.click('.card[data-id="m1-07"]');
+  const height = () => page.locator('#d-notes').evaluate((e) => e.offsetHeight);
+  await page.fill('#d-notes', '');
+  const before = await height();
+  await page.fill('#d-notes', 'una\ndos\ntres\ncuatro\ncinco\nseis\nsiete');
+  assert.ok(await height() > before + 60, `creció de ${before} a ${await height()} px`);
+  assert.equal(await page.locator('#d-notes').evaluate((e) => e.scrollHeight <= e.clientHeight), true, 'se ve todo, sin scroll adentro');
+  await page.context().close();
+});
+
 // --- Criterios de §14 con UI (3.8) ---
 
 const REFERENCE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'docs', 'reference', 'tablero-artifact.html');

@@ -1566,13 +1566,14 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 
 **Notas:** Hecho: spec §23 (el dato, CLI, web, dock) con §23.1 y cómo se probó la parte del editor; D35 (files aparte de refs, rutas y no uid://, solo lo que git lista, tareas de un archivo calculadas en el cliente). §11 y §11.1 marcan hechos el módulo de referencias a res://, las tareas del script abierto y abrir desde la tarea. README (M15 en el estado), web/README e instalar.md (cómo se vinculan y se abren). Suite completa: 345 pasan, 0 fallan.
 
-## M16 — Uso en el teléfono  (2/2)
+## M16 — Uso en el teléfono  (3/3)
 
 Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren por la red de casa (D36).
 
 **Hecho cuando:**
 - En el teléfono, el tablero se desliza de costado, una columna por pantalla, en vez de apilar las columnas.
 - En el teléfono, Documentos muestra fijas abajo las tareas de la sección que se está leyendo.
+- Las notas y los demás campos de texto del detalle crecen con el texto, sin arrastrar la esquina.
 
 ### 16.1 Tablero deslizable en el teléfono · Hecho
 
@@ -1600,5 +1601,15 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 **Prueba:** A 390×844, en #docs/gdd/ventanas-ataque la barra está fija y pegada abajo con 2 tareas; en una sección sin tareas no hay barra; un clic lleva a la tarea; en escritorio no se ve.
 
 **Notas:** Pedido del usuario al usarlo en el teléfono (2026-10-10): en Documentos, las tareas de la sección quedaban al final, después de todo el documento. Hecho: un nav.sec-bar al final de la vista, con backlinkTask (los mismos enlaces de la ficha); escondido por CSS fuera de ≤ 760 px, donde la ficha va al final. La sección es S.sec, que ya seguía el scroll con el IntersectionObserver del índice; la barra se redibuja con renderDocs y desaparece al salir de la vista (renderDocs la vacía). Comprobado con la spec de este repo a 390×844: en #docs/spec/hosting la barra muestra 2 tareas con la 7.1 y la 7.2.
+
+**Referencias:** `docs/spec.md#telefono`
+
+### 16.3 Campos de texto del detalle que crecen solos · Hecho
+
+**Etiquetas:** `ui`
+
+**Prueba:** A 390×844 táctil, las notas vacías miden 72 px y con siete líneas crecen más de 60 px, sin scroll adentro; el test falla sin field-sizing.
+
+**Notas:** Pedido del usuario (2026-10-10): la esquina para agrandar el campo de notas es muy chica en el teléfono. Hecho: field-sizing: content en .detail textarea (notas, Cómo probarlo y el detalle de un paso, que está dentro del detalle), con el mínimo de antes; resize: vertical queda para los navegadores sin field-sizing. Sin JS: el Chromium de Playwright (153) y Chrome en Android lo soportan.
 
 **Referencias:** `docs/spec.md#telefono`
