@@ -40,12 +40,12 @@ afterEach(async () => {
   assert.deepEqual(pageErrors, [], 'errores en la página');
 });
 
-async function open(hash = '#files') {
+async function open(hash = '#files', ready = '.file-tree') {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => pageErrors.push(e.message));
   await page.goto(url + hash);
-  await page.waitForSelector('.file-tree');
+  await page.waitForSelector(ready);
   return page;
 }
 const texts = (page, sel) => page.locator(sel).allTextContents();
@@ -94,5 +94,39 @@ test('filtro por nombre y Solo con cambios; tras commitear, Actualizar saca las 
   assert.equal(await page.locator('.files-summary ol.commits li').count(), 2);
   assert.match(await page.textContent('.files-summary ol.commits li:first-child'), /Saludo y enemigo/);
   assert.equal(await page.locator('.file-tree .gitflag').count(), 0);
+  await page.context().close();
+});
+
+async function milestone(page, code) {
+  if (!(await page.isVisible(`#miles > .chip:has-text("${code}")`))) await page.click('#ms-done');
+  await page.click(`#miles .chip:has-text("${code}")`);
+}
+
+test('archivos de una tarea (15.2): llevan a Archivos, se agregan con el buscador, el que ya no está se marca, y la ficha muestra la tarea', async () => {
+  // Por la API, como un agente: el campo pasa por el schema.
+  const r = await fetch(url + 'api/tasks/m1-04', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ files: ['src/player.gd', 'src/borrado.gd'] }) });
+  assert.equal(r.status, 200);
+  const page = await open('', '.card');
+  await milestone(page, 'M1');
+  await page.click('.card[data-id="m1-04"]');
+  await page.click('#d-files-add'); // lee la lista del repo
+  await page.waitForSelector('.task-files .file-row.broken');
+  assert.deepEqual(await texts(page, '.task-files .file-row .link-task'), ['src/player.gdM', '⚠ src/borrado.gd ya no está en el repo']);
+  // El buscador: todas las palabras, sin los que ya tiene.
+  await page.fill('#d-fileq', 'src gd');
+  assert.deepEqual(await texts(page, '.task-files .ref-matches .ref-id'), ['src/enemy.gd']);
+  await page.click('.task-files .ref-matches button');
+  await page.waitForFunction(() => document.querySelectorAll('.task-files .file-row').length === 3);
+  await page.click('.task-files .file-row.broken .rm');
+  await page.waitForFunction(() => document.querySelectorAll('.task-files .file-row').length === 2);
+  assert.deepEqual((await (await fetch(url + 'api/tasks/m1-04')).json()).files, ['src/player.gd', 'src/enemy.gd']);
+  // Del detalle a la ficha del archivo, y de la ficha a la tarea.
+  await page.click('.task-files a:has-text("src/enemy.gd")');
+  await page.waitForSelector('.file-tasks .bl-task');
+  assert.equal(new URL(page.url()).hash, '#files/src%2Fenemy.gd');
+  assert.match(await page.textContent('.file-tasks'), /Citado por · 1 tarea/);
+  await page.click('.file-tasks .bl-task');
+  await page.waitForSelector('#detail:not([hidden]) .task-files');
+  assert.equal(await page.inputValue('#d-title'), (await (await fetch(url + 'api/tasks/m1-04')).json()).title);
   await page.context().close();
 });

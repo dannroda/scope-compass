@@ -13,7 +13,7 @@
     // Biblioteca (M12): entradas de config.json › docs, búsqueda de texto, carpetas plegadas, alta y baja.
     docEntries: [], docQ: '', docResults: null, foldersClosed: new Set(), docAdd: false, docRemove: null, docDiff: false,
     // Vínculos entre tareas: buscador abierto ({ type, q }) o null.
-    linkSearch: null,
+    linkSearch: null, fileSearch: null,
     // Pasos: detalles desplegados y el paso en edición ("tarea:índice").
     stepsOpen: new Set(), editStep: null,
     // Listas (D25): las del proyecto, la abierta, el ítem en edición ("lista:n") y las pestañas de config.views.
@@ -782,6 +782,7 @@
         h('textarea', { id: 'd-notes', 'data-orig': t.notes || '', onchange: (e) => updateTask(t.id, { notes: e.target.value }) }, t.notes || ''),
         linksOf(t.notes)),
       renderRefs(t),
+      renderTaskFiles(t),
       renderLinks(t),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('label', { class: 'label', for: 'd-test' }, 'Cómo probarlo'),
@@ -892,6 +893,50 @@
         open ? htmlBox('doc-body ref-body', sectionHtml(d, sec.id)) : null));
     });
     return box;
+  }
+
+  // --- Archivos del repo que toca la tarea (15.2) -----------------------------------------------
+  // Cada uno lleva a la pestaña Archivos. Para marcar los que ya no están y para buscar se lee la lista del repo.
+  const filesOf = (t) => (Array.isArray(t && t.files) ? t.files : []);
+  function renderTaskFiles(t) {
+    const data = S.filesData?.repo ? S.filesData : null;
+    const box = h('div', { class: 'refs task-files' },
+      h('div', { class: 'refs-head' }, h('span', { class: 'label' }, 'Archivos'),
+        h('button', { class: 'btn ghost small', type: 'button', id: 'd-files-add', onclick: () => {
+          S.fileSearch = S.fileSearch === null ? '' : null;
+          if (!S.filesData) loadFiles();
+          renderDetail(); document.getElementById('d-fileq')?.focus();
+        } }, S.fileSearch !== null ? 'Cerrar' : '+ Agregar')));
+    if (S.fileSearch !== null) box.append(fileSearch(t, data));
+    if (!filesOf(t).length && S.fileSearch === null) box.append(h('p', { class: 'muted small' }, 'Sin archivos del repo.'));
+    for (const f of filesOf(t)) {
+      const gone = data && !data.files.includes(f);
+      const state = data?.status[f];
+      box.append(h('div', { class: 'link-row file-row' + (gone ? ' broken' : '') },
+        gone ? h('span', { class: 'link-task' }, '⚠ ', h('code', null, f), ' ya no está en el repo')
+          : h('a', { class: 'link-task', href: '#files/' + encodeURIComponent(f), title: 'Ver en Archivos' }, h('code', null, f),
+            state ? h('span', { class: 'gitflag ' + state, title: GIT_FLAG[state]?.[1] }, GIT_FLAG[state]?.[0] ?? '•') : null),
+        h('button', { class: 'rm', type: 'button', 'aria-label': 'Quitar archivo', onclick: () => updateTask(t.id, (cur) => {
+          const next = filesOf(cur).filter((x) => x !== f);
+          return next.length === filesOf(cur).length ? null : { files: next.length ? next : null };
+        }) }, '×')));
+    }
+    return box;
+  }
+  // Buscador de archivos del repo por ruta (todas las palabras).
+  function fileSearch(t, data) {
+    const words = normText(S.fileSearch).split(/\s+/).filter(Boolean);
+    const have = new Set(filesOf(t));
+    const matches = data && words.length ? data.files.filter((p) => !have.has(p) && words.every((w) => normText(p).includes(w))).slice(0, 8) : [];
+    return h('div', { class: 'ref-search' },
+      h('label', { for: 'd-fileq', class: 'sr' }, 'Buscar archivo'),
+      h('input', { id: 'd-fileq', placeholder: 'Buscar archivo del repo por nombre', autocomplete: 'off', value: S.fileSearch, 'data-orig': S.fileSearch,
+        oninput: (e) => { S.fileSearch = e.target.value; renderDetail(); } }),
+      !data ? h('p', { class: 'muted small' }, !S.filesData ? 'Leyendo los archivos…' : S.filesData.error || 'Este proyecto no está en un repo de git: no hay archivos que citar.')
+        : h('ul', { class: 'ref-matches' }, matches.map((p) => h('li', null,
+          h('button', { type: 'button', onclick: () => { S.fileSearch = null; updateTask(t.id, (cur) => (filesOf(cur).includes(p) ? null : { files: [...filesOf(cur), p] })); } },
+            fileName(p), h('span', { class: 'ref-id' }, p))))),
+      data && words.length && !matches.length ? h('p', { class: 'muted small' }, 'Ningún archivo coincide.') : null);
   }
 
   // --- Vínculos entre tareas (misma lógica que hub/src/links.js) ---------------------------------
@@ -1353,6 +1398,7 @@
     fileCache.clear();
     filesStamp = Date.now();
     renderFiles();
+    if (S.openId) renderDetail(); // el detalle marca los archivos que ya no están y busca en la lista
   }
   function refreshFiles() { clearTimeout(filesTimer); filesTimer = setTimeout(loadFiles, 300); }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.view === 'files') refreshFiles(); });
@@ -1449,6 +1495,7 @@
     const showDiff = S.fileDiff && state !== 'clean';
     const diff = showDiff ? fileGet(path, 'diff') : null;
     const doc = S.docs.find((d) => d.path === path);
+    const citing = S.tasks.filter((t) => filesOf(t).includes(path));
     const commits = info?.commits ?? [];
     const card = h('div', { class: 'doc-card file-card' },
       h('h2', null, fileName(path)), h('code', null, path),
@@ -1458,6 +1505,8 @@
         state !== 'clean' ? h('button', { class: 'btn small' + (showDiff ? ' primary' : ''), type: 'button', id: 'file-diff-btn', 'aria-pressed': showDiff ? 'true' : 'false',
           onclick: () => { S.fileDiff = !showDiff; renderFiles(); } }, showDiff ? 'Ver el archivo' : 'Ver los cambios') : null,
         doc ? h('a', { class: 'btn ghost small', href: '#docs/' + encodeURIComponent(doc.alias) }, 'Abrir en Documentos') : null),
+      citing.length ? h('div', { class: 'affected file-tasks' }, h('div', { class: 'label' }, 'Citado por · ' + (citing.length === 1 ? '1 tarea' : citing.length + ' tareas')),
+        citing.map(backlinkTask)) : null,
       commits.length > 1 ? h('details', { class: 'history' }, h('summary', null, 'Historial · ' + commits.length + ' commits'),
         h('ol', null, commits.map((c) => h('li', null, commitLine(c), h('span', { class: 'muted' }, ' · ' + c.author))))) : null);
     let body;
@@ -1759,7 +1808,7 @@
   }
 
   function setFilter(id) { S.filter = id; pref('filter', id); render(); }
-  function openTask(id) { S.openId = id; S.confirmDelete = false; S.linkSearch = null; render(); document.getElementById('detail').focus({ preventScroll: true }); }
+  function openTask(id) { S.openId = id; S.confirmDelete = false; S.linkSearch = null; S.fileSearch = null; render(); document.getElementById('detail').focus({ preventScroll: true }); }
   function closeTask() { S.openId = null; S.confirmDelete = false; render(); }
   // Soltar una tarjeta sobre otra: toma el estado de esa columna y, si son del mismo hito, queda justo antes.
   function dropBefore(id, target) {

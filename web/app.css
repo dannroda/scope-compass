@@ -161,6 +161,8 @@ nav.views a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--
 button.link-task { border: 0; background: none; font-weight: 700; text-align: left; padding: 4px; min-height: 32px; overflow-wrap: anywhere; flex: 1 1 12ch; }
 button.link-task:hover { text-decoration: underline; }
 span.link-task { flex: 1 1 12ch; }
+a.link-task { flex: 1 1 12ch; display: inline-flex; align-items: center; gap: 8px; padding: 4px; min-height: 32px; color: var(--fg); text-decoration: none; overflow-wrap: anywhere; }
+a.link-task:hover code { text-decoration: underline; }
 .link-status { font-size: 12px; font-weight: 700; }
 .link-row .rm { border: 0; background: transparent; color: var(--muted); padding: 0 6px; min-height: 28px; }
 .seg.small { grid-template-columns: repeat(3, minmax(0, 1fr)); }
