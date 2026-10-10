@@ -92,18 +92,78 @@ static func _num(v) -> float:
 
 
 ## Documentos de config.json › docs, leídos sin hub (6.7): [{ alias, path, lines, sections: [{ id, title, level,
-## start, end, explicit }] }]. Mismas reglas que hub/src/docs.js; los patrones (docs/**/*.md) no se expanden acá.
+## start, end, explicit }] }]. Mismas reglas que docFiles y parseSections de hub/src/docs.js: un patrón
+## (docs/**/*.md) toma los archivos que no están declarados aparte ni son el export markdown, con el alias
+## "<alias>/<ruta desde la carpeta fija, sin .md>" (D33).
 static func read_docs(project_root: String, config) -> Array:
 	var out := []
 	if not config is Dictionary:
 		return out
-	for entry in config.get("docs", []):
+	var entries: Array = config.get("docs", [])
+	var taken := { str(config.get("export_md", "")): true }
+	for entry in entries:
+		if not str(entry.get("path", "")).contains("*"):
+			taken[str(entry.get("path", ""))] = true
+	for entry in entries:
+		var alias := str(entry.get("alias", ""))
 		var path := str(entry.get("path", ""))
-		if path.contains("*") or not FileAccess.file_exists(project_root.path_join(path)):
-			continue
-		var lines := FileAccess.get_file_as_string(project_root.path_join(path)).split("\n")
-		out.append({ "alias": str(entry.get("alias", "")), "path": path, "lines": lines, "sections": parse_sections(lines) })
+		var files := [[alias, path]]
+		if path.contains("*"):
+			var base := path.substr(0, path.find("*"))
+			base = base.substr(0, base.rfind("/") + 1)
+			var found := PackedStringArray()
+			_walk(project_root, base, RegEx.create_from_string("^" + _glob_regex(path) + "$"), found)
+			found.sort()
+			files = []
+			for rel in found:
+				if not taken.has(rel):
+					files.append([alias + "/" + rel.substr(base.length()).trim_suffix(".md"), rel])
+		for f in files:
+			if not FileAccess.file_exists(project_root.path_join(f[1])):
+				continue
+			var lines := FileAccess.get_file_as_string(project_root.path_join(f[1])).split("\n")
+			out.append({ "alias": f[0], "path": f[1], "lines": lines, "sections": parse_sections(lines) })
 	return out
+
+
+## Un patrón de glob como regex: "**/" cruza cero o más carpetas; "*" y "?" no cruzan "/".
+static func _glob_regex(pattern: String) -> String:
+	var re := ""
+	var i := 0
+	while i < pattern.length():
+		if pattern.substr(i, 3) == "**/":
+			re += "(?:.*/)?"
+			i += 3
+			continue
+		if pattern.substr(i, 2) == "**":
+			re += ".*"
+			i += 2
+			continue
+		var c := pattern[i]
+		if c == "*":
+			re += "[^/]*"
+		elif c == "?":
+			re += "[^/]"
+		elif "\\^$.|+()[]{}".contains(c):
+			re += "\\" + c
+		else:
+			re += c
+		i += 1
+	return re
+
+
+## Archivos debajo de rel (relativa al proyecto, terminada en "/" o vacía) que cumplen re. Como el glob del hub,
+## no entra en carpetas ocultas (.git, .godot) ni en node_modules, y no toma archivos ocultos.
+static func _walk(root: String, rel: String, re: RegEx, out: PackedStringArray) -> void:
+	var dir := root.path_join(rel)
+	if not DirAccess.dir_exists_absolute(dir):
+		return
+	for f in DirAccess.get_files_at(dir):
+		if not f.begins_with(".") and re.search(rel + f) != null:
+			out.append(rel + f)
+	for d in DirAccess.get_directories_at(dir):
+		if not d.begins_with(".") and d != "node_modules":
+			_walk(root, rel + d + "/", re, out)
 
 
 static func parse_sections(lines: PackedStringArray) -> Array:

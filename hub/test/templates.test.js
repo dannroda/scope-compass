@@ -61,6 +61,11 @@ test('juego: crea docs/gdd.md con ids, pero no pisa uno que ya exista', async ()
   let r = await init('juego', '--template', 'juego');
   assert.match(await readFile(join(r.p, 'docs', 'gdd.md'), 'utf8'), /<!-- id: mecanicas -->/);
   assert.match(r.out, /Creado docs\/gdd\.md/);
+  // Declara docs/**/*.md además del GDD (12.2): no lista el GDD dos veces ni el export (docs/tareas.md).
+  await writeFile(join(r.p, 'docs', 'enemigos.md'), '# Enemigos\n');
+  let out = '';
+  assert.equal(await run(['--dir', r.p, 'doc', 'list', '--json'], { out: { write: (x) => { out += x; } }, err: { write() {} } }), 0);
+  assert.deepEqual(JSON.parse(out).docs.map((d) => [d.alias, d.path]), [['gdd', 'docs/gdd.md'], ['docs/enemigos', 'docs/enemigos.md']]);
   const p2 = join(dir, 'con-gdd');
   await mkdir(join(p2, 'docs'), { recursive: true });
   await writeFile(join(p2, 'docs', 'gdd.md'), '# Mi GDD\n');

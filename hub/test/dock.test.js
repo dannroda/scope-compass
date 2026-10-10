@@ -343,6 +343,22 @@ test('dock sin hub: la referencia se arma con el markdown de disco, con el snipp
   expectOk(await godot('refs_offline', dir, 'm1-04'), 'refs_offline');
 });
 
+test('dock sin hub: los patrones de documentos se expanden con las reglas del hub', { skip }, async () => {
+  const { mkdir } = await import('node:fs/promises');
+  const { loadDocs } = await import('../src/docs.js');
+  for (const f of ['gdd.md', 'docs/tareas.md', 'docs/enemigos.md', 'docs/arte/paleta.md', 'docs/arte/notas.txt', 'docs/.oculto.md', 'docs/node_modules/x.md', 'docs/b (copia).md']) {
+    await mkdir(dirname(join(dir, f)), { recursive: true });
+    await writeFile(join(dir, f), '# ' + f + '\n');
+  }
+  const cfgPath = join(dir, 'compass', 'config.json');
+  const config = { ...JSON.parse(await readFile(cfgPath, 'utf8')), export_md: 'docs/tareas.md',
+    docs: [{ alias: 'gdd', path: 'gdd.md' }, { alias: 'docs', path: 'docs/**/*.md' }, { alias: 'enemigos', path: 'docs/enemigos.md' }, { alias: 'raiz', path: 'docs/*.md' }] };
+  await writeFile(cfgPath, canonical(config));
+  const expected = (await loadDocs(dir, config)).map((d) => [d.alias, d.path]);
+  assert.deepEqual(expected.map((x) => x[0]), ['gdd', 'docs/arte/paleta', 'docs/b (copia)', 'enemigos', 'raiz/b (copia)']);
+  expectOk(await godot('read_docs', dir, JSON.stringify(expected)), 'read_docs');
+});
+
 test('dock: tocar el texto de un paso despliega su detalle (no lo tilda)', { skip }, async () => {
   const p = join(dir, 'compass', 'tasks', 'm1-04.json');
   const t = JSON.parse(await readFile(p, 'utf8'));

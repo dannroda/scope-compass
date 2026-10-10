@@ -1289,16 +1289,16 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 ### 12.2 Agregar y quitar documentos sin editar config.json · Pendiente
 
-- [ ] CLI doc add / doc rm con validación de alias y ruta dentro del proyecto
-- [ ] API POST/DELETE /api/docs que reescribe config.json
-- [ ] loadDocs excluye export_md de los globs
-- [ ] Plantilla juego con glob docs/**/*.md
-- [ ] Tests
-- [ ] Dock sin hub: compass_reader.read_docs expande los globs (hoy los saltea), con las mismas reglas que loadDocs
+- [x] CLI doc add / doc rm con validación de alias y ruta dentro del proyecto
+- [x] API POST/DELETE /api/docs que reescribe config.json
+- [x] loadDocs excluye export_md de los globs
+- [x] Plantilla juego con glob docs/**/*.md
+- [x] Tests
+- [x] Dock sin hub: compass_reader.read_docs expande los globs (hoy los saltea), con las mismas reglas que loadDocs
 
 **Prueba:** doc add enemigos docs/enemigos.md lo muestra en doc list; un glob nuevo toma archivos creados después; init --template juego no lista tareas.md.
 
-**Notas:** scompass doc add <alias> <ruta|glob> y doc rm <alias>; API POST/DELETE /api/docs que escribe config.json (atómico, con etag). La plantilla juego declara docs/**/*.md en vez de solo gdd.md; el glob excluye el export_md (docs/tareas.md) para no listarse a sí mismo.
+**Notas:** scompass doc add <alias> <ruta|glob> y doc rm <alias>; API POST/DELETE /api/docs que escribe config.json (atómico). La plantilla juego declara docs/**/*.md además de gdd.md; el glob excluye el export_md (docs/tareas.md) para no listarse a sí mismo. Hecho: un patrón tampoco toma los archivos declarados aparte (el GDD no sale dos veces) ni carpetas ocultas o node_modules, y el alias de sus archivos es <alias>/<ruta desde la carpeta fija> (docs/arte/paleta), no solo el nombre: dos README en carpetas distintas chocaban (D33, a registrar en la 12.7). Sin etag en config.json: el cambio se aplica sobre la config leída en el momento y un alias o ruta repetidos dan conflicto. El hub rearma el watcher de documentos y avisa doc_changed con el alias. La ruta de la CLI es relativa a la carpeta actual, como --file.
 
 ### 12.3 Estado de git de los documentos · Pendiente
 

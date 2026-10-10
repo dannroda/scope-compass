@@ -1,8 +1,12 @@
 // Documentos del proyecto (spec §10): índice de secciones con ids estables y resolución de referencias.
 // Solo lectura: los documentos se editan donde siempre; acá se leen.
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
-import { join, relative, sep } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { canonical } from './store/canonical.js';
+import { writeAtomic } from './store/atomic.js';
+import { parseDoc } from './schema.js';
+import { StoreError } from './store/json-files.js';
 
 const HEADING = /^(#{1,6})[ \t]+(.+?)[ \t#]*$/;
 const ID_COMMENT = /^<!--\s*id:\s*([a-z0-9][a-z0-9_-]*)\s*-->\s*$/;
@@ -52,29 +56,85 @@ export function parseSections(text) {
   return { sections: heads, lines, warnings };
 }
 
+// Carpeta fija del comienzo de un patrón ("docs/**/*.md" → "docs/"; "*.md" → "").
+export const globBase = (pattern) => pattern.slice(0, pattern.indexOf('*')).replace(/[^/]*$/, '');
+// Carpetas que un patrón nunca recorre: las ocultas (.git, .godot) y node_modules.
+const SKIP_DIR = /(^|[\\/])(node_modules|\.[^\\/]+)$/;
+
 /**
- * Documentos declarados en config.json › docs: [{ alias, path }], path puede ser un patrón (docs/**\/*.md);
- * en ese caso cada archivo toma como alias "<alias>/<nombre sin .md>".
- * Devuelve [{ alias, path, sections, lines, warnings }] (path relativo al proyecto).
+ * Archivos de config.json › docs: [{ alias, path }] (path relativo al proyecto, con "/"). Una entrada puede ser
+ * un patrón (docs/**\/*.md): toma los archivos que no están declarados aparte ni son el export markdown, y cada
+ * uno tiene como alias "<alias>/<ruta desde la carpeta fija, sin .md>" (D33).
  */
-export async function loadDocs(projectDir, config) {
+export async function docFiles(projectDir, config) {
+  const entries = config?.docs ?? [];
+  const taken = new Set([...entries.filter((e) => !e.path.includes('*')).map((e) => e.path), config?.export_md].filter(Boolean));
   const out = [];
-  for (const entry of config?.docs ?? []) {
-    const files = entry.path.includes('*')
-      ? (await Array.fromAsync(glob(entry.path, { cwd: projectDir }))).sort()
-      : [entry.path];
+  for (const entry of entries) {
+    if (!entry.path.includes('*')) { out.push({ alias: entry.alias, path: entry.path }); continue; }
+    const base = globBase(entry.path);
     // Rutas dentro del proyecto siempre con "/", como en git: glob devuelve las de Windows con "\".
-    for (const rel of files.map((f) => f.split(sep).join('/'))) {
-      const text = await readFile(join(projectDir, rel), 'utf8').catch(() => null);
-      const alias = entry.path.includes('*') ? `${entry.alias}/${rel.replace(/^.*\//, '').replace(/\.md$/, '')}` : entry.alias;
-      if (text === null) {
-        out.push({ alias, path: rel, missing: true, sections: [], lines: [], warnings: [{ code: 'missing_doc', message: `no existe ${rel}` }] });
-        continue;
-      }
-      out.push({ alias, path: relative(projectDir, join(projectDir, rel)).split(sep).join('/'), ...parseSections(text) });
-    }
+    const files = (await Array.fromAsync(glob(entry.path, { cwd: projectDir, exclude: (p) => SKIP_DIR.test(p) })))
+      .map((f) => f.split(sep).join('/')).filter((f) => !taken.has(f)).sort();
+    for (const rel of files) out.push({ alias: `${entry.alias}/${rel.slice(base.length).replace(/\.md$/, '')}`, path: rel });
   }
   return out;
+}
+
+/** Los documentos de docFiles, leídos: [{ alias, path, sections, lines, warnings, missing? }]. */
+export async function loadDocs(projectDir, config) {
+  const out = [];
+  for (const { alias, path } of await docFiles(projectDir, config)) {
+    const text = await readFile(join(projectDir, path), 'utf8').catch(() => null);
+    if (text === null) {
+      out.push({ alias, path, missing: true, sections: [], lines: [], warnings: [{ code: 'missing_doc', message: `no existe ${path}` }] });
+      continue;
+    }
+    out.push({ alias, path: relative(projectDir, join(projectDir, path)).split(sep).join('/'), ...parseSections(text) });
+  }
+  return out;
+}
+
+const ALIAS = /^[a-z0-9][a-z0-9_-]*$/;
+
+/**
+ * Cambia config.json › docs (12.2): add { alias, path } o remove alias. path: relativa al proyecto (o absoluta
+ * dentro de él), un archivo que existe o un patrón con *. Lee la config en el momento, valida y escribe atómico.
+ * Devuelve la entrada agregada o quitada.
+ */
+export async function changeDocs(projectDir, validators, { add, remove }) {
+  const file = join(projectDir, 'compass', 'config.json');
+  const res = parseDoc(await readFile(file, 'utf8').catch(() => ''), 'config', validators);
+  if (!res.ok) throw new StoreError('invalid_file', `compass/config.json: ${res.message}`);
+  const config = res.doc;
+  const docs = config.docs ?? [];
+  let entry, next;
+  if (remove !== undefined) {
+    entry = docs.find((d) => d.alias === remove);
+    if (!entry) {
+      const glob = docs.find((d) => d.path.includes('*') && String(remove).startsWith(d.alias + '/'));
+      throw new StoreError('not_found', glob ? `"${remove}" sale del patrón ${glob.path}: quitá "${glob.alias}" o sacá el archivo de ahí` : `no hay un documento "${remove}"`);
+    }
+    next = docs.filter((d) => d !== entry);
+  } else {
+    const alias = String(add?.alias ?? '');
+    if (!ALIAS.test(alias)) throw new StoreError('invalid_argument', `alias inválido: "${alias}" (minúsculas, números, - y _; empieza con letra o número)`);
+    const raw = String(add?.path ?? '');
+    const rel = relative(projectDir, resolve(projectDir, raw)).split(sep).join('/');
+    if (!raw || !rel || rel.startsWith('../') || rel === '..' || isAbsolute(rel)) throw new StoreError('invalid_argument', `la ruta tiene que estar dentro del proyecto: ${raw}`);
+    if (rel === config.export_md) throw new StoreError('invalid_argument', `${rel} es el export markdown del tablero: no es un documento`);
+    if (!rel.includes('*') && !(await stat(join(projectDir, rel)).then((s) => s.isFile(), () => false))) throw new StoreError('not_found', `no existe el archivo ${rel}`);
+    const same = docs.find((d) => d.alias === alias);
+    if (same) throw new StoreError('conflict', `ya hay un documento "${alias}" (${same.path})`);
+    const dup = docs.find((d) => d.path === rel);
+    if (dup) throw new StoreError('conflict', `${rel} ya está declarado como "${dup.alias}"`);
+    entry = { alias, path: rel };
+    next = [...docs, entry];
+  }
+  const doc = { ...config, docs: next };
+  if (!next.length) delete doc.docs;
+  await writeAtomic(file, canonical(doc));
+  return entry;
 }
 
 // Documento por alias o por ruta (las refs de las tareas usan la ruta; los enlaces [[alias#id]], el alias).

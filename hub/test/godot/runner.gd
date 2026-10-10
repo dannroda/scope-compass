@@ -386,6 +386,16 @@ func test_refs_offline(a: Array) -> void:
 	await _refs_check(v, a, "refs_offline", false)
 
 
+# Sin hub, los patrones de config.json › docs se expanden como en el hub (12.2): a[1] son los [alias, ruta] esperados.
+func test_read_docs(a: Array) -> void:
+	const Reader := preload("res://addons/scope_compass/compass_reader.gd")
+	var config = JSON.parse_string(FileAccess.get_file_as_string(a[0].path_join("compass/config.json")))
+	var got := []
+	for d in Reader.read_docs(a[0], config):
+		got.append([d.alias, d.path])
+	_check("read_docs", JSON.stringify(got) == a[1], "documentos %s, esperado %s" % [JSON.stringify(got), a[1]])
+
+
 # Vínculos: la tarea bloqueada lo muestra en la lista y en el detalle; el vínculo lleva a la otra tarea.
 func test_links(a: Array) -> void:
 	var c := "links"

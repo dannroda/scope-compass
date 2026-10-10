@@ -176,13 +176,15 @@ test('tablas del documento: una columna corta no se aplasta ni parte sus palabra
   const long = 'Lista de partidas guardadas con fecha, duración y nivel; al elegir una se ve un resumen y se puede cargar o borrar. '.repeat(4);
   await writeFile(join(dir, 'gdd.md'), GDD + `\n## UI\n<!-- id: ui -->\n\n| Pantalla | Contenido |\n|---|---|\n| Selección | ${long} |\n`);
   const page = await open('#docs/gdd/ui');
-  await page.waitForSelector('article.doc-body table td');
-  const cell = await page.$eval('article.doc-body tbody td', (td) => {
+  // Se espera la condición (y no se mide una vez): el doc_changed de la escritura de arriba puede rearmar el artículo.
+  const oneLine = await page.waitForFunction(() => {
+    const td = document.querySelector('article.doc-body tbody td');
+    if (!td) return false;
     const r = document.createRange();
     r.selectNodeContents(td);
-    return { lines: r.getClientRects().length, width: td.getBoundingClientRect().width };
-  });
-  assert.equal(cell.lines, 1, '"Selección" entra en una línea');
+    return r.getClientRects().length === 1;
+  }, null, { timeout: 5000 }).then(() => true, () => false);
+  assert.ok(oneLine, '"Selección" entra en una línea');
   await page.close();
 });
 
@@ -190,8 +192,10 @@ test('tablas del documento: una columna corta no se aplasta ni parte sus palabra
 test('13.1: el código se ve sin ligaduras (<!-- no se vuelve flecha ni != un ≠)', async () => {
   await writeFile(join(dir, 'gdd.md'), GDD + '\n## Código\n<!-- id: codigo -->\n\n`!=`\n\n```\n<!-- id: x -->\n```\n');
   const page = await open('#docs/gdd/codigo');
-  await page.waitForSelector('article.doc-body pre code');
-  const lig = await page.$eval('article.doc-body', (a) => ['p code', 'pre', 'pre code'].map((q) => getComputedStyle(a.querySelector(q)).fontVariantLigatures));
+  const lig = await page.waitForFunction(() => {
+    const els = ['p code', 'pre', 'pre code'].map((q) => document.querySelector('article.doc-body ' + q));
+    return els.every(Boolean) && els.map((e) => getComputedStyle(e).fontVariantLigatures);
+  }, null, { timeout: 5000 }).then((x) => x.jsonValue());
   assert.deepEqual(lig, ['none', 'none', 'none']);
   await page.close();
 });

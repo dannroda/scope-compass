@@ -71,8 +71,13 @@ test('resolver referencias por alias o por ruta; sectionMarkdown devuelve la sec
     await mkdir(join(dir, 'docs', 'notas'), { recursive: true });
     await writeFile(join(dir, 'docs', 'notas', 'arte.md'), '# Arte\n<!-- id: arte -->\n');
     await writeFile(join(dir, 'docs', 'audio.md'), '# Audio\n');
-    const docs = await loadDocs(dir, { docs: [{ alias: 'gdd', path: 'gdd.md' }, { alias: 'docs', path: 'docs/**/*.md' }, { alias: 'falta', path: 'no.md' }] });
-    assert.deepEqual(docs.map((d) => [d.alias, d.path]), [['gdd', 'gdd.md'], ['docs/audio', 'docs/audio.md'], ['docs/arte', 'docs/notas/arte.md'], ['falta', 'no.md']]);
+    await writeFile(join(dir, 'docs', 'tareas.md'), '# Export\n');
+    await writeFile(join(dir, 'docs', 'enemigos.md'), '# Enemigos\n');
+    await mkdir(join(dir, 'docs', 'node_modules'), { recursive: true });
+    await writeFile(join(dir, 'docs', 'node_modules', 'x.md'), '# x\n');
+    const docs = await loadDocs(dir, { export_md: 'docs/tareas.md', docs: [{ alias: 'gdd', path: 'gdd.md' }, { alias: 'docs', path: 'docs/**/*.md' }, { alias: 'falta', path: 'no.md' }, { alias: 'enemigos', path: 'docs/enemigos.md' }] });
+    // El patrón no toma el export ni los declarados aparte (enemigos); el alias lleva la ruta desde docs/ (D33).
+    assert.deepEqual(docs.map((d) => [d.alias, d.path]), [['gdd', 'gdd.md'], ['docs/audio', 'docs/audio.md'], ['docs/notas/arte', 'docs/notas/arte.md'], ['falta', 'no.md'], ['enemigos', 'docs/enemigos.md']]);
     assert.equal(docs[3].warnings[0].code, 'missing_doc');
     const a = resolveRef(docs, 'gdd#ventanas-ataque');
     const b = resolveRef(docs, { doc: 'gdd.md', section: 'ventanas-ataque' });
@@ -208,6 +213,51 @@ test('referencias al documento entero: ref sin sección y [[alias]]; solo se rom
     const c = await cli('refs', 'check', '--json');
     assert.equal(c.code, 1);
     assert.deepEqual(JSON.parse(c.out).broken.map((b) => [b.ref, b.problem]), [['gdd.md#combate', 'missing_doc'], ['gdd.md', 'missing_doc']]);
+  } finally {
+    await rm(dir, { recursive: true, force: true, maxRetries: 10 });
+  }
+});
+
+test('12.2: doc add y doc rm cambian config.json › docs; un patrón toma los archivos creados después', async () => {
+  const dir = await projectWithGdd();
+  const cli = cliIn(dir);
+  const cfgDocs = async () => JSON.parse(await readFile(join(dir, 'compass', 'config.json'), 'utf8')).docs;
+  try {
+    await mkdir(join(dir, 'docs', 'arte'), { recursive: true });
+    await writeFile(join(dir, 'docs', 'enemigos.md'), '# Enemigos\n<!-- id: enemigos -->\n\n## Slime\n<!-- id: slime -->\n');
+    let r = await cli('doc', 'add', 'enemigos', 'docs/enemigos.md');
+    assert.equal(r.code, 0, r.err);
+    assert.match(r.out, /Agregado enemigos: docs\/enemigos\.md/);
+    assert.match((await cli('doc', 'list')).out, /^enemigos +docs\/enemigos\.md {2}2 secciones$/m);
+    assert.equal((await cli('ref', 'add', 'm1-07', 'enemigos#slime')).code, 0);
+
+    // Errores: alias inválido o repetido, fuera del proyecto, archivo que no existe, el export.
+    assert.match((await cli('doc', 'add', 'Mal', 'docs/enemigos.md')).err, /alias inválido/);
+    assert.match((await cli('doc', 'add', 'enemigos', 'gdd.md')).err, /ya hay un documento "enemigos"/);
+    assert.match((await cli('doc', 'add', 'otro', 'docs/enemigos.md')).err, /ya está declarado como "enemigos"/);
+    assert.match((await cli('doc', 'add', 'afuera', '../x.md')).err, /dentro del proyecto/);
+    assert.match((await cli('doc', 'add', 'nada', 'docs/nada.md')).err, /no existe el archivo docs\/nada\.md/);
+    assert.match((await cli('doc', 'add', 'tareas', 'docs/tareas.md')).err, /export markdown/);
+
+    // Un patrón: lo que está declarado aparte (enemigos) no se repite, y toma los archivos nuevos al leer.
+    r = await cli('--json', 'doc', 'add', 'docs', 'docs/**/*.md');
+    assert.deepEqual(JSON.parse(r.out), { added: { alias: 'docs', path: 'docs/**/*.md' } });
+    await writeFile(join(dir, 'docs', 'arte', 'paleta.md'), '# Paleta\n');
+    const list = JSON.parse((await cli('doc', 'list', '--json')).out).docs.map((d) => [d.alias, d.path]);
+    assert.deepEqual(list, [['gdd', 'gdd.md'], ['enemigos', 'docs/enemigos.md'], ['docs/arte/paleta', 'docs/arte/paleta.md']]);
+    // Desde una subcarpeta, la ruta es relativa a donde se está.
+    assert.equal((await run(['doc', 'add', 'paleta', 'paleta.md'], { cwd: join(dir, 'docs', 'arte'), out: { write() {} }, err: { write() {} } })), 0);
+    assert.deepEqual((await cfgDocs()).at(-1), { alias: 'paleta', path: 'docs/arte/paleta.md' });
+
+    assert.match((await cli('doc', 'rm', 'docs/arte/paleta')).err, /sale del patrón docs\/\*\*\/\*\.md/);
+    assert.equal((await cli('doc', 'rm', 'docs')).code, 0);
+    assert.equal((await cli('doc', 'rm', 'paleta')).code, 0);
+    r = await cli('doc', 'rm', 'enemigos');
+    assert.match(r.out, /Quitado enemigos/);
+    assert.ok(existsSync(join(dir, 'docs', 'enemigos.md')), 'el archivo no se toca');
+    assert.deepEqual(await cfgDocs(), [{ alias: 'gdd', path: 'gdd.md' }]);
+    assert.equal((await cli('refs', 'check')).code, 1, 'la ref a enemigos queda rota');
+    assert.equal((await cli('doc', 'rm', 'enemigos')).code, 1);
   } finally {
     await rm(dir, { recursive: true, force: true, maxRetries: 10 });
   }

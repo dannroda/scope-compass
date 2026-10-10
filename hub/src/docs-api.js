@@ -1,6 +1,6 @@
 // API de documentos (spec §10.4): índice, documento y sección renderizados, backlinks y referencias rotas.
 // Solo lectura. Los documentos se releen en cada request: son archivos chicos y siempre están al día.
-import { checkRefs, findDoc, findSection, LINK, loadDocs, refText, sectionMarkdown } from './docs.js';
+import { changeDocs, checkRefs, findDoc, findSection, LINK, loadDocs, refText, sectionMarkdown } from './docs.js';
 import { renderBBCode, renderBlocks, renderMarkdown } from './render.js';
 import { StoreError } from './store/json-files.js';
 
@@ -41,7 +41,7 @@ const sectionInfo = (d, s, links) => ({
   tasks: links.get(`${d.path}#${s.id}`) ?? []
 });
 
-export function registerDocsApi(app, { store, projectDir }) {
+export function registerDocsApi(app, { store, projectDir, validators, onDocsChanged = async () => {} }) {
   app.get('/api/docs', async () => {
     const { docs, links } = await context(store, projectDir);
     return { docs: docs.map((d) => ({ alias: d.alias, path: d.path, ...(d.missing && { missing: true }), warnings: d.warnings, tasks: links.get(d.path) ?? [], sections: d.sections.map((s) => sectionInfo(d, s, links)) })) };
@@ -66,6 +66,20 @@ export function registerDocsApi(app, { store, projectDir }) {
     // ?format=blocks: texto en BBCode y código crudo, para mostrarlo en un CodeEdit.
     if (req.query.format === 'blocks') return { alias: d.alias, path: d.path, ...sectionInfo(d, s, links), blocks: renderBlocks(markdown) };
     return { alias: d.alias, path: d.path, ...sectionInfo(d, s, links), markdown, html: renderMarkdown(markdown, inside) };
+  });
+
+  // Agregar o quitar un documento (12.2): reescribe config.json › docs. path: un archivo o un patrón con *.
+  app.post('/api/docs', async (req, reply) => {
+    const { alias, path } = req.body ?? {};
+    const entry = await changeDocs(projectDir, validators, { add: { alias, path } });
+    await onDocsChanged(entry.alias);
+    return reply.code(201).send(entry);
+  });
+
+  app.delete('/api/docs/:alias', async (req, reply) => {
+    const entry = await changeDocs(projectDir, validators, { remove: req.params.alias });
+    await onDocsChanged(entry.alias);
+    return reply.code(204).send();
   });
 
   app.get('/api/refs/broken', async () => {

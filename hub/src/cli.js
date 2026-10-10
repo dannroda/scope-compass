@@ -3,11 +3,11 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { exportMarkdown } from './export-md.js';
-import { checkRefs, loadDocs, resolveRef, sectionMarkdown, stampIds, suggestRefs } from './docs.js';
+import { changeDocs, checkRefs, loadDocs, resolveRef, sectionMarkdown, stampIds, suggestRefs } from './docs.js';
 import { writeAtomic } from './store/atomic.js';
 import { openUrl as openInBrowser } from './desktop.js';
 import { importArtifact } from './import-artifact.js';
@@ -86,6 +86,8 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   item task <lista> <n> --milestone m00 [--code 0.12]
                                             pasa el ítem a una tarea nueva y lo deja enlazado
   doc list                                  documentos de config.json con su índice de secciones
+  doc add <alias> <ruta|patrón>             declara un documento (un archivo, o un patrón como "docs/**/*.md")
+  doc rm <alias>                            deja de declararlo (el archivo no se toca)
   doc show <alias>[#<id>] [--raw]           una sección, o el documento entero sin #<id> (--raw: solo el markdown)
   doc stamp-ids <alias> [--dry-run]         agrega <!-- id: … --> a las secciones que no tienen
   refs check                                referencias rotas (sale con 1 si hay) y frágiles
@@ -605,6 +607,22 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
 
     async doc() {
       const [sub, target] = rest;
+      // Agregar o quitar un documento (12.2): con hub, por su API (así mira los documentos nuevos); sin hub, directo
+      // en config.json. La ruta se toma desde la carpeta actual, como --file.
+      if (sub === 'add' || sub === 'rm') {
+        const alias = need(target, 'el alias');
+        const path = sub === 'add' ? relative(project, resolve(cwd, need(rest[2], 'la ruta o el patrón (docs/**/*.md)'))).split(sep).join('/') : undefined;
+        let entry;
+        if (store.hub) {
+          const r = await fetch(store.hub + '/api/docs' + (sub === 'rm' ? '/' + encodeURIComponent(alias) : ''),
+            sub === 'add' ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ alias, path }) } : { method: 'DELETE' });
+          if (!r.ok) { const e = (await r.json().catch(() => null))?.error ?? {}; throw new StoreError(e.code ?? 'io_error', e.message ?? `HTTP ${r.status}`); }
+          entry = sub === 'add' ? await r.json() : { alias };
+        } else {
+          entry = await changeDocs(project, validators, sub === 'add' ? { add: { alias, path } } : { remove: alias });
+        }
+        return done({ [sub === 'add' ? 'added' : 'removed']: entry }, sub === 'add' ? `Agregado ${entry.alias}: ${entry.path}` : `Quitado ${alias} de compass/config.json (el archivo no se toca)`);
+      }
       const all = await store.loadAll();
       const docs = await loadDocs(project, all.config);
       if (sub === 'list') {
@@ -612,7 +630,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
           return done({ docs: docs.map((d) => ({ alias: d.alias, path: d.path, warnings: d.warnings,
             sections: d.sections.map(({ id, title, level, explicit }) => ({ id, title, level, explicit })) })) });
         }
-        if (!docs.length) print('Sin documentos: agregalos en compass/config.json › docs.');
+        if (!docs.length) print('Sin documentos: agregalos con scompass doc add <alias> <ruta>.');
         for (const d of docs) {
           const fragile = d.sections.filter((s) => !s.explicit).length;
           print(`${d.alias.padEnd(12)} ${d.path}  ${d.sections.length} secciones${fragile ? ` · ${fragile} sin id (frágiles)` : ''}`);

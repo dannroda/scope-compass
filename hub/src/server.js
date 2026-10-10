@@ -53,16 +53,19 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   const emit = (evt) => app.events.emit('event', evt);
 
   const watcher = watch ? createWatcher(join(projectDir, 'compass'), { validators, emit }) : null;
+  // Documentos del proyecto (§10.4): doc_changed al editarlos. Se vuelve a armar cuando cambia config.json › docs.
+  let docWatcher = null;
+  const watchDocs = async () => {
+    if (!watcher) return;
+    const { config } = await store.loadAll();
+    docWatcher?.close();
+    docWatcher = createDocWatcher(projectDir, { config, emit });
+  };
   if (watcher) {
     app.addHook('onReady', () => watcher.start());
     app.addHook('onClose', async () => watcher.close());
-    // Documentos del proyecto (§10.4): doc_changed al editarlos.
-    let docWatcher = null;
-    app.addHook('onReady', async () => {
-      const { config } = await store.loadAll();
-      docWatcher = createDocWatcher(projectDir, { docs: config?.docs, emit });
-    });
-    app.addHook('onClose', async () => docWatcher?.close());
+    app.addHook('onReady', watchDocs);
+    app.addHook('onClose', async () => { docWatcher?.close(); docWatcher = null; });
   }
   if (exportMd) {
     const auto = createAutoExport({ projectDir, store, emit, onExported: (path) => app.events.emit('exported', path) });
@@ -125,7 +128,8 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   // Para servir este hub desde otra app (el Inicio, D29): lo que necesita su WebSocket.
   app.decorate('hub', { store, publish, boards, projectDir, version: VERSION });
   registerApi(app, { store, projectDir, publish });
-  registerDocsApi(app, { store, projectDir });
+  // Un documento agregado o quitado (12.2): se miran los documentos nuevos y la UI recarga la lista.
+  registerDocsApi(app, { store, projectDir, validators, onDocsChanged: async (alias) => { await watchDocs(); emit({ type: 'doc_changed', alias }); } });
   app.register(registerWs, { store, publish, version: VERSION, boards });
 
   // Cambios sin commitear (4.4): GET /api/git, y un evento `git` cuando el número cambia después de una escritura

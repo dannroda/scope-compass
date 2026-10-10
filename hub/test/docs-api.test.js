@@ -100,6 +100,43 @@ test('GET /api/docs/:alias y /sections/:id: HTML y backlinks; 404 si no existe',
   assert.equal((await get('/api/docs/gdd/sections/nada')).status, 404);
 });
 
+test('12.2: POST y DELETE /api/docs cambian config.json, avisan doc_changed y el documento nuevo se mira', async () => {
+  await app.ready();
+  const events = [];
+  app.events.on('event', (e) => events.push(e));
+  await writeFile(join(dir, 'enemigos.md'), '# Enemigos\n');
+  const post = (body) => app.inject({ method: 'POST', url: '/api/docs', payload: body });
+  let r = await post({ alias: 'enemigos', path: 'enemigos.md' });
+  assert.equal(r.statusCode, 201);
+  assert.deepEqual(r.json(), { alias: 'enemigos', path: 'enemigos.md' });
+  assert.deepEqual(events.filter((e) => e.type === 'doc_changed'), [{ type: 'doc_changed', alias: 'enemigos' }]);
+  assert.deepEqual((await get('/api/docs')).body.docs.map((d) => d.alias), ['gdd', 'enemigos']);
+  assert.equal((await post({ alias: 'enemigos', path: 'gdd.md' })).statusCode, 409);
+  assert.equal((await post({ alias: 'x', path: '/etc/passwd' })).statusCode, 400);
+  assert.equal((await post({ alias: 'x', path: 'nada.md' })).statusCode, 404);
+  // El watcher nuevo mira el documento agregado.
+  events.length = 0;
+  await sleep(100);
+  await writeFile(join(dir, 'enemigos.md'), '# Enemigos\n\n## Slime\n');
+  const t0 = Date.now();
+  while (!events.some((e) => e.type === 'doc_changed') && Date.now() - t0 < 1000) await sleep(10);
+  assert.deepEqual(events.filter((e) => e.type === 'doc_changed'), [{ type: 'doc_changed', alias: 'enemigos' }]);
+  r = await app.inject({ method: 'DELETE', url: '/api/docs/enemigos' });
+  assert.equal(r.statusCode, 204);
+  assert.deepEqual((await get('/api/docs')).body.docs.map((d) => d.alias), ['gdd']);
+  assert.equal((await app.inject({ method: 'DELETE', url: '/api/docs/enemigos' })).statusCode, 404);
+});
+
+test('un documento de un patrón se pide por su alias con /', async () => {
+  const cfg = join(dir, 'compass', 'config.json');
+  await writeFile(cfg, canonical({ ...JSON.parse(await readFile(cfg, 'utf8')), docs: [{ alias: 'gdd', path: 'gdd.md' }, { alias: 'docs', path: 'docs/**/*.md' }] }));
+  const { mkdir } = await import('node:fs/promises');
+  await mkdir(join(dir, 'docs', 'arte'), { recursive: true });
+  await writeFile(join(dir, 'docs', 'arte', 'paleta.md'), '# Paleta\n<!-- id: paleta -->\n');
+  assert.equal((await get('/api/docs/docs%2Farte%2Fpaleta')).body.path, 'docs/arte/paleta.md');
+  assert.equal((await get('/api/docs/docs%2Farte%2Fpaleta/sections/paleta')).body.title, 'Paleta');
+});
+
 test('GET /api/refs/broken', async () => {
   const { body } = await get('/api/refs/broken');
   assert.deepEqual(body.broken.map((b) => [b.task, b.ref, b.where]), [['m1-04', 'gdd#borrada', 'notes']]);
