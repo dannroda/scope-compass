@@ -183,6 +183,13 @@ test('16.2: en el teléfono, las tareas de la sección van fijas abajo; en escri
   await page.waitForSelector('#detail:not([hidden]) #d-title');
   assert.equal(await page.locator('.sec-bar').count(), 0);
   await page.close();
+  // Un teléfono o una tableta táctil más anchos también: la ficha queda al final hasta 1180 px.
+  const ctx = await browser.newContext({ viewport: { width: 900, height: 1200 }, hasTouch: true, isMobile: true });
+  const tablet = await ctx.newPage();
+  await tablet.goto(url + '#docs/gdd/ventanas-ataque');
+  await tablet.waitForSelector('.sec-bar .bl-task');
+  assert.equal(await tablet.locator('.sec-bar').isVisible(), true);
+  await ctx.close();
 });
 
 test('editar el documento con la UI abierta la actualiza sola', async () => {

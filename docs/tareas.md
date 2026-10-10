@@ -1213,6 +1213,8 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 - [x] Los tests del dock aíslan el registro solos: node --test test/dock.test.js sin npm test usa el registro real y el Inicio del usuario sirve los proyectos temporales (y los anota en projects.json)
 - [ ] tray.test.js §16.8 (tres hubs con --tray, un solo ícono) falla a veces con la suite entera; sola y con carga de UI pasa
   Falló en 3 corridas completas del 2026-10-10 sin guardar el mensaje. La próxima vez, mirar el log entero (npm test > log) antes de tocar las esperas.
+- [ ] home-hubs «los hubs que prendió el Inicio mueren con él» falló una vez con la suite entera (2026-10-10: /api/projects/start sin hub en la respuesta); sola pasa 5 de 5. También ui-filters «detalle: prioridad, responsable y etiquetas» una vez
+  Como el paso anterior: guardar la respuesta completa la próxima vez antes de tocar esperas.
 
 **Notas:** Criterios de §18.1. Al cerrar: suite completa en la VM, y una sesión real en la máquina con Windows (Inicio con bandeja, un proyecto sincronizado por git con Linux, dock en Godot). AGENTS.md (plantilla, copia del addon y compass/) con lo que cambie para Windows.
 
@@ -1579,10 +1581,12 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 - [x] Columnas lado a lado con scroll-snap a ≤ 560 px
   Una por pantalla (86 %), con la siguiente asomando; las vacías, angostas, solo con el título.
 - [x] El desplazamiento se mantiene al redibujar (cambios en vivo, cambio de hito)
+- [x] También en teléfonos de más de 560 px: táctil (hover: none) hasta 980 px
+  El teléfono del usuario mide unos 600 px y le tocaba la grilla de dos; la primera versión solo se probó a 390.
 
 **Prueba:** A 390×844 el tablero se desplaza de costado y encaja en una columna; la página no se desplaza de costado; un cambio en vivo no devuelve el tablero a la primera columna.
 
-**Notas:** Pedido del usuario al abrirlo en el teléfono (2026-10-10): apiladas, las columnas quedaban interminables. Hecho: solo CSS en la media query del teléfono (flex con overflow-x y scroll-snap-type x mandatory, margen negativo como la fila de hitos). La comparación con el artifact (§14) ya no mira la grilla del tablero a 390 px: el artifact apilaba. Comprobado a 390×844 con toque: desliza y encaja en En curso con Revisión asomando; tras un cambio en vivo el scroll queda igual (main.board no se recrea).
+**Notas:** Pedido del usuario al abrirlo en el teléfono (2026-10-10): apiladas, las columnas quedaban interminables. Hecho: solo CSS en la media query del teléfono (flex con overflow-x y scroll-snap-type x mandatory, margen negativo como la fila de hitos). La comparación con el artifact (§14) ya no mira la grilla del tablero a 390 px: el artifact apilaba. Comprobado a 390×844 con toque: desliza y encaja en En curso con Revisión asomando; tras un cambio en vivo el scroll queda igual (main.board no se recrea). Corregido: en el teléfono del usuario (unos 600 px de ancho) seguía la grilla de dos columnas, porque el corte era 560 px y solo se había probado a 390. Ahora vale a ≤ 560 px o en pantallas táctiles (hover: none) de hasta 980 px, con columnas de hasta 360 px; con mouse, entre 561 y 980, sigue la grilla. La barra de Documentos (16.2), igual: táctil hasta 1180 px. Revisado a 390, 412, 602 y 900 táctil, y a 900 y 1440 con mouse; el test nuevo falla con el CSS anterior.
 
 **Referencias:** `docs/spec.md#telefono`
 

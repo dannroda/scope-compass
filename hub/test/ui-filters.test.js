@@ -281,6 +281,17 @@ test('teléfono (13.4): primera tarjeta antes de 450 px, hitos en una fila, colu
   await desk.context().close();
 });
 
+test('16.1: el tablero se desliza también en un teléfono de más de 560 px; con mouse sigue la grilla', async () => {
+  const board = async (opts) => {
+    const page = await open({ panel: false, ...opts });
+    const r = await page.locator('#board').evaluate((e) => ({ swipe: e.scrollWidth > e.clientWidth, display: getComputedStyle(e).display, page: document.documentElement.scrollWidth <= innerWidth }));
+    await page.context().close();
+    return r;
+  };
+  assert.deepEqual(await board({ viewport: { width: 602, height: 1120 }, hasTouch: true, isMobile: true }), { swipe: true, display: 'flex', page: true });
+  assert.deepEqual(await board({ viewport: { width: 900, height: 1000 } }), { swipe: false, display: 'grid', page: true });
+});
+
 test('lista (13.5): fechas relativas con la completa en el tooltip y sin las columnas vacías, salvo la del orden', async () => {
   const page = await open();
   await page.click('#mode-list');

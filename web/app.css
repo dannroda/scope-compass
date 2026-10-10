@@ -306,9 +306,10 @@ a.link-task:hover code { text-decoration: underline; }
 .dl.add .mk { color: var(--s-done); } .dl.del .mk { color: var(--danger); }
 .dl.hunk { margin-top: 10px; padding-block: 2px; font-family: var(--font-body); font-size: 13px; color: var(--muted); background: var(--surface-2); }
 @media (max-width: 1180px) { .docs-grid { grid-template-columns: 220px minmax(0, 1fr); } .backlinks { grid-column: 1 / -1; position: static; } }
-/* Las tareas de la sección que se lee, fijas abajo (16.2): solo en pantallas angostas, donde la ficha queda al final. */
+/* Las tareas de la sección que se lee, fijas abajo (16.2): en pantallas angostas, y táctiles mientras la ficha quede
+   al final (hasta 1180 px). */
 .sec-bar { display: none; }
-@media (max-width: 760px) {
+@media (max-width: 760px), (max-width: 1180px) and (hover: none) {
   .sec-bar { display: flex; align-items: center; gap: 8px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; overflow-x: auto; scrollbar-width: none;
     padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -6px 18px rgba(0, 0, 0, .12); }
   .sec-bar .label { flex: none; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 700; }
@@ -488,12 +489,16 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
   .sum-line { gap: 2px 12px; }
   .sum-line h2 { flex: 1 1 100%; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sum-line .progress { flex-basis: 140px; }
+  main.board { margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; }
+}
+/* El tablero se desliza de costado en vez de apilar las columnas (16.1): en el teléfono, y en cualquier pantalla
+   táctil donde no entran las cuatro (un teléfono puede medir más de 560 px). Columnas de hasta 360 px, con la
+   siguiente asomando, que encajan al soltar; las vacías, angostas: solo el título. Con mouse sigue la grilla. */
+@media (max-width: 560px), (max-width: 980px) and (hover: none) {
+  main.board { display: flex; align-items: flex-start; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  main.board > .col { flex: 0 0 min(86%, 360px); scroll-snap-align: start; }
   .col:has(> .empty-col) { min-height: 0; }
   .col > .empty-col { display: none; }
-  /* El tablero se desliza de costado en vez de apilar las columnas: una por pantalla, con la siguiente asomando, y
-     al soltar encaja en una. Las vacías, angostas: solo el título. */
-  main.board { display: flex; align-items: flex-start; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; }
-  main.board > .col { flex: 0 0 86%; scroll-snap-align: start; }
   main.board > .col:has(> .empty-col) { flex-basis: auto; }
 }
 /* Archivos del repo (M14): árbol a la izquierda, la ficha y el archivo (o el resumen del repo) a la derecha. */
