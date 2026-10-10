@@ -3,6 +3,7 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile, execFileSync } from 'node:child_process';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,12 +14,17 @@ const FIXTURE = join(REPO, 'hub', 'test', 'fixtures', 'compass');
 const hasGodot = (() => { try { execFileSync('godot', ['--version'], { stdio: 'ignore' }); return true; } catch { return false; } })();
 const skip = !hasGodot && 'sin godot en el PATH';
 let dir;
+// Registro, config y datos propios aunque se corra sin npm test: con el registro real, el Inicio del usuario
+// serviría los proyectos temporales (y los anotaría en su projects.json). Godot y scompass heredan process.env.
+const ISOLATED = mkdtempSync(join(tmpdir(), 'scompass-dock-env-'));
+Object.assign(process.env, { SCOMPASS_REGISTRY: join(ISOLATED, 'registry'), SCOMPASS_CONFIG: join(ISOLATED, 'config'), SCOMPASS_DATA: join(ISOLATED, 'data') });
 // Los íconos del addon se usan con preload: en un clon nuevo Godot tiene que importarlos primero.
-import { before } from 'node:test';
+import { before, after } from 'node:test';
+after(() => rmSync(ISOLATED, { recursive: true, force: true, maxRetries: 10 }));
 before(() => {
   if (!hasGodot) return;
   try { execFileSync('godot', ['--headless', '--path', REPO, '--import'], { stdio: 'pipe', timeout: 120000, maxBuffer: 16 << 20 }); }
-  catch (e) { throw new Error(`godot --import falló (${e.code ?? e.status}):\n${String(e.stdout ?? '').split('\n').slice(-20).join('\n')}\n${String(e.stderr ?? '').slice(-3000)}`); }
+  catch (e) { throw new Error(`godot --import falló (${e.signal ?? e.status ?? e.code}):\n${String(e.stdout ?? '').split('\n').slice(-20).join('\n')}\n${String(e.stderr ?? '').slice(-3000)}`); }
 });
 
 beforeEach(async () => {

@@ -1191,9 +1191,11 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 - [ ] Prueba en Windows en la máquina real (incluye Ctrl+C en la consola cierra ordenado el hub y el Inicio, y el clic izquierdo en el ícono abre el Inicio)
 - [ ] AGENTS.md, README y spec al día
 - [ ] Esperas de 3 s en los tests de UI que fallan a veces con la suite entera en la VM (fecha límite 8.13, listas «tildar, editar…»); solos pasan siempre
-- [ ] Dock: _scompass deja un Thread vivo si el editor se cierra mientras corre scompass (aviso «Thread object is being destroyed» en godot --import); esperar el hilo en _exit_tree
+- [x] Dock: _scompass deja un Thread vivo si el editor se cierra mientras corre scompass (aviso «Thread object is being destroyed» en godot --import); esperar el hilo en _exit_tree
   Se ve con godot --headless --path . --import: el plugin corre check_compass al abrir y el editor sale antes de que termine el hilo. Una vez el --import salió con error y tumbó toda la suite del dock.
-- [ ] Los tests del dock aíslan el registro solos: node --test test/dock.test.js sin npm test usa el registro real y el Inicio del usuario sirve los proyectos temporales (y los anota en projects.json)
+- [x] Los tests del dock aíslan el registro solos: node --test test/dock.test.js sin npm test usa el registro real y el Inicio del usuario sirve los proyectos temporales (y los anota en projects.json)
+- [ ] tray.test.js §16.8 (tres hubs con --tray, un solo ícono) falla a veces con la suite entera; sola y con carga de UI pasa
+  Falló en 3 corridas completas del 2026-10-10 sin guardar el mensaje. La próxima vez, mirar el log entero (npm test > log) antes de tocar las esperas.
 
 **Notas:** Criterios de §18.1. Al cerrar: suite completa en la VM, y una sesión real en la máquina con Windows (Inicio con bandeja, un proyecto sincronizado por git con Linux, dock en Godot). AGENTS.md (plantilla, copia del addon y compass/) con lo que cambie para Windows.
 

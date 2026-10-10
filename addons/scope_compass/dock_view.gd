@@ -97,6 +97,8 @@ var footer_label: Label
 var footer_right: Label
 var restart_button: Button
 var _poll: Timer
+## El scompass que corre en otro hilo: al cerrar el dock se espera (si el editor sale antes, el hilo sigue y Godot se cae).
+var _thread: Thread = null
 var _notice_timer: Timer
 
 
@@ -315,9 +317,13 @@ func _scompass(args: Array) -> Array:
 	if not is_inside_tree():
 		return run.call()
 	var th := Thread.new()
+	_thread = th
 	th.start(run)
-	while th.is_alive():
+	while th.is_alive() and is_inside_tree():
 		await get_tree().process_frame
+	if _thread != th: # el dock se cerró y _exit_tree ya lo esperó
+		return [-1, ""]
+	_thread = null
 	return th.wait_to_finish()
 
 
@@ -765,6 +771,10 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	client.close()
+	if _thread:
+		var th := _thread
+		_thread = null
+		th.wait_to_finish()
 
 
 # --- Render ----------------------------------------------------------------------------------
