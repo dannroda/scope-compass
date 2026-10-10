@@ -1442,7 +1442,7 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 **Notas:** Visto en Project Epiphany (m11-20) el 2026-10-10. Hecho: solo fallaba scompass show; la web y el dock ya separaban la ref sin sección (12.1).
 
-## M14 — Archivos del repo  (1/3)
+## M14 — Archivos del repo  (3/3)
 
 Ver los archivos del repo y su estado de git desde la web, sin salir del tablero.
 
@@ -1463,7 +1463,7 @@ Ver los archivos del repo y su estado de git desde la web, sin salir del tablero
 
 **Notas:** Todo de lectura, como el estado de git de los documentos (12.3): reusa git.js (docsStatus, docLog, docDiff). Hecho: hub/src/files-api.js. GET /api/files trae { repo, branch, ahead, behind, files, status, commits }: los archivos salen de git ls-files --cached --others --exclude-standard (lo seguido y lo nuevo, nunca lo ignorado), más lo que solo está en el estado (un borrado ya agregado al índice); la rama de symbolic-ref (null con HEAD suelto) y ahead/behind solo si sigue a otra; los últimos 20 commits del proyecto (docLog con follow: false sobre '.'). GET /api/files/file?path= devuelve kind text (html con Prism por extensión: .gd, .tscn/.tres/.godot/.import como ini, json, js, py, cs, glsl, yaml, html, css), markdown (renderizado), image, binary (un NUL en los primeros 8000 bytes), big (más de 1 MB), link (un enlace simbólico no se sigue: se dice adónde apunta) o missing, con git, size y su historial. /diff: contra HEAD, el nuevo entero, binary o truncated cuando no hay texto que mostrar. /raw: solo imágenes (png, jpg, gif, webp), con nosniff y CSP sandbox. Una ruta se acepta solo si git la lista (o está en el estado), sin ../, sin / adelante y sin carpetas; si no, 404. Además, el hub y el Inicio solo atienden pedidos con Host 127.0.0.1 o localhost (403 si no): una página de otro sitio que apunte su nombre a 127.0.0.1 ya no puede leer el tablero ni los archivos. Sin token nada más; con token (hosting) manda el token. Sin repo: { repo: false, files: [] }.
 
-### 14.2 Pestaña Archivos en la web · En curso
+### 14.2 Pestaña Archivos en la web · Hecho
 
 - [x] Pestaña Archivos al lado de Documentos (config.views acepta files)
 - [x] Árbol por carpetas con la marca de git, filtro por nombre y Solo con cambios
@@ -1475,7 +1475,9 @@ Ver los archivos del repo y su estado de git desde la web, sin salir del tablero
 
 **Notas:** Hecho: pestaña Archivos (#files, #files/<ruta>) después de Documentos; config.views acepta files y, sin views, se ven las cuatro (la plantilla juego la suma; el schema cambia en las tres copias). A la izquierda el árbol: carpetas plegadas, armadas solo cuando se abren (un repo grande no dibuja miles de filas), cada una con cuántos archivos con cambios tiene adentro, y cada archivo con la misma marca que Documentos (M, N, B, R). Arriba: filtro por nombre (lista plana, hasta 300), Solo con cambios (n), la rama y cuántos archivos, y Actualizar. Sin archivo elegido: la rama, cuántos commits faltan subir o traer, los cambios sin commitear y los últimos commits. Un archivo: ficha con estado, tamaño, último commit, historial y Abrir en Documentos si es un documento; el contenido resaltado, el markdown renderizado o la imagen; uno modificado abre en Ver los cambios (el diff de Documentos, sin secciones). La lista se vuelve a leer al entrar a la pestaña, con cualquier evento del hub, al volver a la ventana y con Actualizar: los cambios hechos en el editor no avisan solos. En el teléfono, con cuatro pestañas, Nueva tarea pasa a flotar abajo a la derecha. Arreglado de paso: en la 13.4 quedó una } suelta en app.css que se comía la regla de las transiciones y dejaba abierto el bloque del teléfono. dock.test.js ahora muestra la salida de Godot si falla el --import (falla a veces con la suite entera).
 
-### 14.3 Spec, decisión y guía de M14 · Pendiente
+### 14.3 Spec, decisión y guía de M14 · Hecho
 
-- [ ] Spec §22 y decisión
-- [ ] README, web/README y §16.6 (views) al día
+- [x] Spec §22 y decisión
+- [x] README, web/README y §16.6 (views) al día
+
+**Notas:** Spec §22 (Archivos del repo: qué archivos, la pestaña, cuándo se actualiza, solo local, rutas de /api/files) con §22.1; D34 (de lectura, solo lo que git no ignora, Host 127.0.0.1/localhost, sin vigilar el repo entero). §16.6 suma files a views y a la plantilla juego; §21 dice que Nueva tarea flota en el teléfono; §10.4 apunta a §22. README (M14 en el estado y una coma que faltaba), web/README y hub/README al día. Hecho: M14 documentado; suite 338/1 (la bandeja §16.8, inestable con la suite completa, pasa 3/3 sola).

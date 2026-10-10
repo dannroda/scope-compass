@@ -442,7 +442,7 @@ La referencia no puede depender del número (`11.3`) ni del texto del título (s
 - `config.json` declara los documentos: `"docs": [{ "alias": "gdd", "path": "gdd.md" }]`, o un patrón como `docs/**/*.md`.
 - El servidor parsea cada documento en un índice de secciones `{id, title, level, start, end}` y lo recalcula cuando el archivo cambia (el mismo watcher de §5.4). La UI recibe `doc_changed` por WebSocket y se actualiza.
 - Los documentos son **de solo lectura** desde la app en v2. Se siguen editando donde se editan hoy.
-- M12 suma agregar y quitar documentos, la búsqueda y el estado de git, con sus rutas y comandos (§20).
+- M12 suma agregar y quitar documentos, la búsqueda y el estado de git, con sus rutas y comandos (§20). Los demás archivos del repo se ven en la pestaña Archivos (§22).
 - Render de markdown con una librería empaquetada localmente (por ejemplo markdown-it) y resaltado de sintaxis que cubra GDScript. Hay que verificar que la librería elegida lo soporte.
 
 | Método | Ruta | Qué hace |
@@ -664,9 +664,9 @@ Solo dos fechas importan (D26): **cuándo se creó** (`created_at`, que ya exist
 ### 16.6 Vistas y plantillas
 <!-- id: v3-plantillas -->
 
-- **`views` en `config.json`:** las pestañas del proyecto, en orden; la primera es la que abre. Valores: `board`, `lists`, `docs`. Sin `views`, se ven las tres con el tablero primero (lo de hoy).
+- **`views` en `config.json`:** las pestañas del proyecto, en orden; la primera es la que abre. Valores: `board`, `lists`, `docs` y, desde M14, `files` (§22). Sin `views`, se ven todas con el tablero primero.
 - **Plantillas:** `scompass init --template juego|personal|vacio`. Una plantilla es un `config.json` prearmado más datos iniciales; no tiene código propio. Cada una es un archivo `hub/templates/proyectos/<nombre>.json` con `{ description, config?, milestones?, lists?, files? }`: `config` se mezcla con la config base, hitos y listas se escriben con el Store, y `files` crea archivos del proyecto solo si no existen. Una plantilla desconocida no crea nada.
-  - `juego`: `views` = board, lists, docs; hito M0 "Prototipo"; listas "Ideas sueltas" y "Assets a conseguir"; el documento `gdd` (`docs/gdd.md`, con un esqueleto con ids si no existe).
+  - `juego`: `views` = board, lists, docs, files; hito M0 "Prototipo"; listas "Ideas sueltas" y "Assets a conseguir"; el documento `gdd` (`docs/gdd.md`, con un esqueleto con ids si no existe).
   - `personal`: `views` = lists, board; listas "Pendientes" y "Compras"; un hito "General" para el tablero (en vez de hacer opcionales los hitos).
   - `vacio` (por defecto): lo que hacía `scompass init`, sin datos ni export.
 - `init` también anota el proyecto en el registro (§16.1).
@@ -855,7 +855,7 @@ scompass doc diff <alias> [--json]          # diff contra HEAD y "Secciones toca
   - **Cabecera:** el código de la tarea y el del hito; el nombre del hito queda en el chip.
 - **Pasos:** en escritorio, ✎ y × aparecen al pasar el mouse o con el foco. En el teléfono, o sin mouse, se ven siempre y miden 36 px o más.
 - **Teléfono (≤ 560 px):**
-  - **Encabezado:** dos filas: el título; las vistas, con *Nueva tarea* a la derecha.
+  - **Encabezado:** dos filas: el título y las vistas. *Nueva tarea* flota abajo a la derecha (desde M14: con cuatro pestañas no entra en la fila).
   - **Hitos:** van en una fila que se desplaza de costado, y la primera vez deja a la vista el elegido.
   - **Arriba del tablero:** el título del hito va en una línea con puntos suspensivos.
   - **Columnas:** las vacías son de una línea.
@@ -870,3 +870,44 @@ scompass doc diff <alias> [--json]          # diff contra HEAD y "Secciones toca
 - [x] En escritorio, a 1440×900, la primera tarjeta empieza antes de los 320 px. En el teléfono, a 390×844, empieza antes de los 450 px.
 - [x] En el detalle, los pasos aparecen sin bajar, y las propiedades van en una fila de chips.
 - [x] El código de los documentos se ve sin ligaduras, y las acciones de los pasos miden 36 px o más en el teléfono.
+
+## 22. Archivos del repo (M14)
+<!-- id: archivos-repo -->
+
+**Objetivo:** ver los archivos del repo y su estado de git desde la web, sin salir del tablero. Es de lectura, como la biblioteca (§20): la app no edita archivos, no agrega a git y no commitea (D34).
+
+- **Qué archivos:** los que git no ignora: los seguidos, incluidos los borrados del disco sin commitear, y los nuevos (`git ls-files --cached --others --exclude-standard`). Lo ignorado no aparece ni se puede pedir. Fuera de un repo, la pestaña lo dice y no muestra archivos.
+- **Pestaña Archivos:** va después de Documentos. `config.views` acepta `files`; sin `views` se ven las cuatro (§16.6).
+  - **Arriba:** el filtro por nombre y *Solo con cambios (n)*, que muestran una lista plana. También la rama, cuántos archivos hay y *Actualizar*.
+  - **Izquierda:** el árbol por carpetas. Las carpetas están plegadas y solo se arman al abrirlas. Cada carpeta dice cuántos archivos con cambios tiene adentro, y cada archivo lleva la marca de git de Documentos (M, N, B, R).
+  - **Sin archivo elegido:**
+    - la rama, y cuántos commits faltan subir o traer si sigue a una remota;
+    - los cambios sin commitear;
+    - los últimos 20 commits.
+  - **Un archivo:**
+    - **Ficha:** el estado, el tamaño, el último commit y el historial. Si es un documento declarado, *Abrir en Documentos*.
+    - **Contenido:**
+      - el código, resaltado por extensión (`.gd`; `.tscn`, `.tres`, `.godot` e `.import` como ini; json, js, py, cs, glsl, yaml, html, css);
+      - el markdown, renderizado;
+      - las imágenes (png, jpg, gif, webp).
+      - Un binario, un archivo de más de 1 MB o un enlace simbólico no se muestran: se dice qué son. Un enlace no se sigue.
+    - **Cambios:** con cambios, *Ver los cambios* muestra el diff contra HEAD. Un archivo modificado abre directamente ahí.
+  - **Cuándo se actualiza:** la lista se vuelve a leer al entrar a la pestaña, con cualquier evento del hub, al volver a la ventana y con *Actualizar*. Los cambios hechos en el editor no avisan solos: el hub no vigila el repo entero.
+- **Solo local:** el hub y el Inicio atienden solo pedidos dirigidos a `127.0.0.1` o `localhost` (403 si no). Así, una página de otro sitio que hace que su nombre apunte a 127.0.0.1 (DNS rebinding) no puede leer el tablero ni los archivos. Con token (§12), manda el token.
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/files` | Devuelve `{repo, branch, ahead?, behind?, files, status, commits}`. Sin repo: `{repo: false, files: []}` |
+| `GET` | `/api/files/file?path=` | Devuelve `{path, git, size, commits, kind}`, con `kind` en `text`, `markdown`, `image`, `binary`, `big`, `link` o `missing`. Para `text` y `markdown` trae también `html` |
+| `GET` | `/api/files/diff?path=` | Devuelve `{path, git, diff}` contra HEAD; para un nuevo, el archivo entero. Suma `binary` o `truncated` si no hay texto para mostrar |
+| `GET` | `/api/files/raw?path=` | La imagen, con `nosniff` y una CSP `sandbox`. Lo que no es imagen da 400 |
+
+Una ruta que git no lista, con `..`, absoluta o de una carpeta da 404.
+
+### 22.1 Criterios de aceptación de M14
+<!-- id: criterios-archivos-repo -->
+
+- [x] La web tiene una pestaña Archivos, al lado de Documentos, con el árbol de los archivos del repo y la marca de git de cada uno.
+- [x] Un archivo se ve en la web (texto resaltado, markdown renderizado o imagen), con su estado de git, su diff contra HEAD y su historial.
+- [x] Sin archivo elegido, la pestaña muestra la rama, los cambios sin commitear y los últimos commits.
+- [x] Solo se ven los archivos que git no ignora, y la app sigue sin escribir archivos ni commitear.

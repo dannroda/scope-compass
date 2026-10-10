@@ -277,3 +277,23 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Editar documentos desde la web: duplicaría el editor, y sin conflictos resueltos por git se perderían cambios.
   - Un índice de búsqueda: los documentos de un proyecto entran en memoria y recorrer sus líneas tarda milisegundos.
   - Un alias por nombre de archivo con sufijo numérico ante choques: cambiaría al agregar un archivo, y las referencias se romperían.
+
+## D34 · Archivos del repo: de lectura, solo lo que git no ignora, y el hub solo atiende a 127.0.0.1
+**2026-10-10 · vigente** · spec §22
+
+- **Qué:** la pestaña Archivos muestra los archivos del repo, su estado de git, su diff contra HEAD, su historial y su contenido. No los edita, no los agrega a git y no commitea, igual que con los documentos (D33).
+- **Solo lo que git no ignora:**
+  - Lo ignorado suele ser secreto (`.env`), generado (`.godot/`) o pesado. Esa lista ya la mantiene el proyecto en `.gitignore`.
+  - La API solo sirve una ruta si `git ls-files` la lista. Así no hace falta otra lista de carpetas a saltear ni otra regla contra `../`, y la ruta tiene que ser de un archivo que git ya conoce.
+- **El hub solo atiende a 127.0.0.1 o localhost:**
+  - El problema: el navegador no deja que otra página lea las respuestas del hub, salvo que esa página haga que su propio nombre apunte a 127.0.0.1 (DNS rebinding). Con los archivos del repo a la vista, eso ya no es solo el tablero.
+  - La solución: un pedido con otro Host da 403, en el hub y en el Inicio.
+  - Con token (hosting, §12), el token alcanza.
+- **Sin vigilar el repo entero:** un proyecto de Godot tiene miles de archivos, más los que importa el editor. La lista se relee al entrar a la pestaña, con los eventos del hub, al volver a la ventana y con *Actualizar*. Es un `git ls-files` y un `git status`, que tardan milisegundos.
+- **Por qué:** en un proyecto de juego, el tablero, el diseño y el código van juntos, y saber qué cambió sin abrir otra herramienta ayuda a revisar las tareas. Pero editar y commitear siguen siendo del editor y de git, para que nada entre al historial sin que alguien lo mire.
+- **Descartado:**
+  - Editar archivos desde la web: haría falta un editor de verdad, y se pisaría con el del editor de Godot.
+  - Agregar a git o commitear desde la app: ver D33.
+  - Recorrer el disco cuando no hay repo: los proyectos sin git son los personales del Inicio, que no tienen archivos propios que ver.
+  - Mostrar un SVG como imagen: puede traer scripts, así que se muestra como texto.
+  - Seguir enlaces simbólicos: uno puede apuntar fuera del proyecto.
