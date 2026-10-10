@@ -196,6 +196,7 @@ test('referencias al documento entero: ref sin sección y [[alias]]; solo se rom
     assert.equal((await cli('ref', 'add', 'm1-07', 'gdd')).code, 0);
     assert.equal((await cli('ref', 'add', 'm1-07', 'gdd#combate')).code, 0);
     assert.deepEqual(await refs(), [{ doc: 'gdd.md' }, { doc: 'gdd.md', section: 'combate' }]);
+    assert.match((await cli('show', 'm1-07')).out, /^Referencias: gdd\.md, gdd\.md#combate$/m, 'show: el documento entero sin #undefined');
     assert.match((await cli('ref', 'add', 'm1-07', 'gdd.md')).out, /ya referencia/);
     assert.equal((await cli('refs', 'check')).code, 0);
     const show = await cli('doc', 'show', 'gdd', '--raw');

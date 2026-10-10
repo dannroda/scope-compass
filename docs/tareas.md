@@ -1353,7 +1353,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 - [ ] Spec §20 y decisiones
 - [ ] AGENTS.md (plantilla, copia del addon y compass/), README y spec al día
 
-## M13 — UI más compacta  (0/7)
+## M13 — UI más compacta  (1/7)
 
 Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compactos, según la revisión de diseño del 2026-10-09 (https://claude.ai/artifact/D6vMr2tWMv9dRCX8MUv5qg).
 
@@ -1422,17 +1422,17 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 - [ ] Spec: sección de M13 con lo que cambió en la UI
 - [ ] README de web/ al día
 
-### 13.7 Bug: show muestra «doc#undefined» en referencias al documento entero · Pendiente
+### 13.7 Bug: show muestra «doc#undefined» en referencias al documento entero · Hecho
 
 **Prioridad:** baja · **Etiquetas:** `bug`, `cli`
 
-- [ ] Arreglar el formato en scompass show
+- [x] Arreglar el formato en scompass show
   hub/src/cli.js:489 arma `${r.doc}#${r.section}` sin mirar si hay sección; una ref sin #id (ref add <tarea> gdd.md) sale como gdd.md#undefined. Usar el mismo criterio que export-md.js:50 (solo doc si no hay section).
-- [ ] Revisar la web y el dock
+- [x] Revisar la web y el dock
   Que el detalle de tarea en la UI y en el dock de Godot muestren bien una ref al documento entero.
-- [ ] Test
+- [x] Test
   show de una tarea con ref sin sección imprime solo el alias.
 
 **Prueba:** scompass ref add <tarea> gdd.md y scompass show <tarea>: dice «Referencias: gdd.md», no «gdd.md#undefined»; lo mismo en la web.
 
-**Notas:** Visto en Project Epiphany (m11-20) el 2026-10-10.
+**Notas:** Visto en Project Epiphany (m11-20) el 2026-10-10. Hecho: solo fallaba scompass show; la web y el dock ya separaban la ref sin sección (12.1).

@@ -486,7 +486,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       });
       if (d.test) print(`Prueba: ${d.test}`);
       if (d.notes) print(`Notas: ${d.notes}`);
-      if (d.refs?.length) print(`Referencias: ${d.refs.map((r) => `${r.doc}#${r.section}`).join(', ')}`);
+      if (d.refs?.length) print(`Referencias: ${d.refs.map((r) => (r.section ? `${r.doc}#${r.section}` : r.doc)).join(', ')}`);
       const tasks = listTasks(await store.loadAll());
       const v = linkView(tasks, t.id);
       const line = (label, ids) => { if (ids.length) print(`${label}: ${ids.map((id) => taskLabel(tasks, id)).join('; ')}`); };
