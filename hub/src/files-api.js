@@ -16,7 +16,8 @@ const LANG = { '.gd': 'gdscript', '.gdshader': 'glsl', '.glsl': 'glsl', '.json':
 const binary = (buf) => buf.subarray(0, 8000).includes(0);
 
 // La ruta tiene que estar en lo que git lista (o en su estado: un borrado ya commiteado en el índice). Nada de ../.
-async function listed(projectDir, raw) {
+// También decide qué archivos puede citar una tarea (scompass file add, 15.1).
+export async function repoFile(projectDir, raw) {
   const path = String(raw ?? '');
   const g = await docsStatus(projectDir);
   const ok = path && !path.startsWith('/') && !/(^|\/)\.\.(\/|$)/.test(path) && !/[\\\0]/.test(path) &&
@@ -35,7 +36,7 @@ export function registerFilesApi(app, { projectDir }) {
 
   // kind: text (html resaltado), markdown (html renderizado), image (se pide a /raw), binary, big, link o missing.
   app.get('/api/files/file', async (req) => {
-    const { path, git, abs } = await listed(projectDir, req.query.path);
+    const { path, git, abs } = await repoFile(projectDir, req.query.path);
     const ext = extname(path).toLowerCase();
     const [st, commits] = await Promise.all([lstat(abs).catch(() => null), docLog(projectDir, path)]);
     const base = { path, git, commits, size: st?.size ?? 0 };
@@ -53,7 +54,7 @@ export function registerFilesApi(app, { projectDir }) {
 
   // Diff contra HEAD. Uno nuevo sin seguir se arma entero; uno binario o enorme no trae texto (binary / truncated).
   app.get('/api/files/diff', async (req) => {
-    const { path, git, abs } = await listed(projectDir, req.query.path);
+    const { path, git, abs } = await repoFile(projectDir, req.query.path);
     if (git === 'clean') return { path, git, diff: '' };
     let text = '';
     if (git === 'untracked') {
@@ -69,7 +70,7 @@ export function registerFilesApi(app, { projectDir }) {
 
   // Solo imágenes, para <img>; con sandbox, por si alguien la abre sola.
   app.get('/api/files/raw', async (req, reply) => {
-    const { path, abs } = await listed(projectDir, req.query.path);
+    const { path, abs } = await repoFile(projectDir, req.query.path);
     const type = IMAGES[extname(path).toLowerCase()];
     if (!type) throw new StoreError('invalid_argument', `${path} no es una imagen`);
     const st = await lstat(abs).catch(() => null);

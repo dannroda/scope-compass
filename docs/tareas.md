@@ -1493,3 +1493,48 @@ Ver los archivos del repo y su estado de git desde la web, sin salir del tablero
 - [x] Tests del dock y spec §19 y §22
 
 **Notas:** Visto con el Inicio abierto: el dock abría el tablero en 127.0.0.1:4711/p/<proyecto>. Causa: con el dock sin hub, el sondeo de cada 3 s encontraba el Inicio (puerto 4700, base /p/<proyecto>) y, antes de que abriera el WebSocket, reload() volvía client.port al de la config sin tocar la base; la carga, las escrituras y lo que abre en el navegador iban a ese puerto. Pasaba también tras home restart, o con un hub suelto en otro puerto que la config. reload() ya no toca el puerto: lo elige detect(), que vuelve a la config si no encuentra hub. web_url() arma lo que abre el navegador (tablero, documentos, archivos). Hecho: arreglado el puerto; la fila muestra · Alta (solo la alta, como la tarjeta web) · @responsable · #etiquetas y el detalle Prioridad x · @responsable · #etiquetas; botón de Archivos al lado de Abrir el tablero, visible si views no está o incluye files. Tests poll_registry y props en dock.test.js; spec §19 y §22.
+
+## M15 — Tareas y archivos del repo  (1/5)
+
+Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una a la otra desde la web y desde el editor de Godot.
+
+**Hecho cuando:**
+- Una tarea puede citar archivos del repo (campo files) desde la CLI, la web y el dock; refs check avisa los que ya no están.
+- En la web, el detalle de la tarea lleva a cada archivo en la pestaña Archivos, y la ficha del archivo muestra las tareas que lo citan.
+- En el dock, un archivo de la tarea se abre en el editor de Godot (script, escena o recurso); lo que Godot no ve se abre en la pestaña Archivos.
+- Con un script o una escena abiertos en el editor, el dock muestra las tareas que los citan y vincula el abierto a la tarea elegida.
+
+### 15.1 Tareas con archivos del repo: dato, CLI y chequeo · Hecho
+
+- [x] Campo files en el schema de la tarea (las tres copias)
+  Rutas desde la raíz del proyecto (la carpeta de compass/), como las lista la pestaña Archivos; sin repetir.
+- [x] scompass file add|rm <tarea> <ruta>
+  Acepta res://. Solo un archivo que git no ignora (o que existe, sin repo): lo mismo que sirve /api/files.
+- [x] show, export markdown y refs check
+  Un archivo que ya no está es una referencia rota (missing_file).
+- [x] AGENTS.md (las tres copias) y tests
+
+**Notas:** Hecho: campo files (rutas desde la raíz del proyecto, sin repetir; el schema rechaza absolutas, .. y \) en las tres copias del schema. scompass file add|rm <tarea> <ruta>: acepta res:// y ./, y solo agrega lo que sirve la pestaña Archivos (repoFile de files-api.js: lo que git lista o tiene en su estado); sin archivos, el campo se borra. show y el export markdown los listan; refs check marca missing_file si git ya no lista el archivo (se borró o se movió). AGENTS.md (las tres copias). Ojo: un hub o un Inicio que ya corría tiene el schema viejo en memoria y rechaza files hasta reiniciarlo.
+
+### 15.2 Archivos de la tarea en la web · En curso
+
+- [ ] Sección Archivos en el detalle: cada uno lleva a la pestaña Archivos, se quita con ×, y se agregan con un buscador de los archivos del repo
+- [ ] En la pestaña Archivos, la ficha muestra las tareas que citan el archivo
+- [ ] Tests de UI
+
+### 15.3 Dock: abrir los archivos de la tarea en el editor · Pendiente
+
+- [ ] Los archivos de la tarea en el detalle del dock
+- [ ] Clic: el script en el editor de scripts, la escena abierta, otro recurso en el inspector; lo que Godot no ve (markdown, compass/) en la pestaña Archivos
+- [ ] Tests
+
+### 15.4 Dock: tareas del script y la escena abiertos · Pendiente
+
+- [ ] Con el script o la escena que se edita, el dock muestra las tareas que lo citan (de cualquier hito) y lleva a cada una
+- [ ] Vincular el script o la escena abiertos a la tarea elegida
+- [ ] Tests
+
+### 15.5 Spec, decisión y guía de M15 · Pendiente
+
+- [ ] Spec §23 con criterios y decisión D35
+- [ ] README, web/README y la spec del dock (§11.1) al día

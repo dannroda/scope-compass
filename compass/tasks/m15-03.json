@@ -1,0 +1,26 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Los archivos de la tarea en el detalle del dock"
+    },
+    {
+      "done": false,
+      "text": "Clic: el script en el editor de scripts, la escena abierta, otro recurso en el inspector; lo que Godot no ve (markdown, compass/) en la pestaña Archivos"
+    },
+    {
+      "done": false,
+      "text": "Tests"
+    }
+  ],
+  "code": "15.3",
+  "created_at": "2026-10-10T20:50:02.981Z",
+  "milestone": "m15",
+  "notes": "",
+  "order": 3,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Dock: abrir los archivos de la tarea en el editor",
+  "updated_at": "2026-10-10T20:50:13.747Z"
+}

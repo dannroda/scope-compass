@@ -1,0 +1,26 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Sección Archivos en el detalle: cada uno lleva a la pestaña Archivos, se quita con ×, y se agregan con un buscador de los archivos del repo"
+    },
+    {
+      "done": false,
+      "text": "En la pestaña Archivos, la ficha muestra las tareas que citan el archivo"
+    },
+    {
+      "done": false,
+      "text": "Tests de UI"
+    }
+  ],
+  "code": "15.2",
+  "created_at": "2026-10-10T20:50:02.599Z",
+  "milestone": "m15",
+  "notes": "",
+  "order": 2,
+  "refs": [],
+  "status": "doing",
+  "test": "",
+  "title": "Archivos de la tarea en la web",
+  "updated_at": "2026-10-10T20:53:00.328Z"
+}

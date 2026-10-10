@@ -26,6 +26,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
   - `test`: cómo se comprueba que la tarea está terminada;
   - `notes`: notas libres;
   - `refs`: documentos del proyecto que la tarea cita, enteros (`{ doc }`) o una sección (`{ doc, section }`);
+  - `files`: archivos del repo que la tarea toca (scripts, escenas, recursos), con la ruta desde la raíz del proyecto (`["player/player.gd"]`);
   - `links`: vínculos con otras tareas (ver "Vínculos entre tareas").
 - En los textos, `` `así` `` se muestra como código.
 
@@ -119,7 +120,8 @@ scompass doc show spec#godot --raw # el markdown de una sección (sin #godot, el
 scompass ref add m5-02 spec#godot  # la tarea cita esa sección
 scompass ref add m5-02 spec        # la tarea cita el documento entero
 scompass ref rm m5-02 spec#godot
-scompass refs check                # referencias rotas (sale con 1 si hay)
+scompass refs check                # referencias rotas (sale con 1 si hay), también archivos que ya no están
+scompass file add m5-02 player/player.gd   # la tarea toca ese archivo (acepta res://); file rm lo quita
 scompass doc add enemigos docs/enemigos.md   # o un patrón: doc add docs "docs/**/*.md"
 scompass doc rm enemigos                     # deja de declararlo; el archivo no se toca
 scompass doc search "salto doble"            # líneas con todas las palabras, con su sección

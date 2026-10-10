@@ -1,0 +1,33 @@
+{
+  "checklist": [
+    {
+      "detail": "Rutas desde la raíz del proyecto (la carpeta de compass/), como las lista la pestaña Archivos; sin repetir.",
+      "done": true,
+      "text": "Campo files en el schema de la tarea (las tres copias)"
+    },
+    {
+      "detail": "Acepta res://. Solo un archivo que git no ignora (o que existe, sin repo): lo mismo que sirve /api/files.",
+      "done": true,
+      "text": "scompass file add|rm <tarea> <ruta>"
+    },
+    {
+      "detail": "Un archivo que ya no está es una referencia rota (missing_file).",
+      "done": true,
+      "text": "show, export markdown y refs check"
+    },
+    {
+      "done": true,
+      "text": "AGENTS.md (las tres copias) y tests"
+    }
+  ],
+  "code": "15.1",
+  "created_at": "2026-10-10T20:50:02.276Z",
+  "milestone": "m15",
+  "notes": "Hecho: campo files (rutas desde la raíz del proyecto, sin repetir; el schema rechaza absolutas, .. y \\) en las tres copias del schema. scompass file add|rm <tarea> <ruta>: acepta res:// y ./, y solo agrega lo que sirve la pestaña Archivos (repoFile de files-api.js: lo que git lista o tiene en su estado); sin archivos, el campo se borra. show y el export markdown los listan; refs check marca missing_file si git ya no lista el archivo (se borró o se movió). AGENTS.md (las tres copias). Ojo: un hub o un Inicio que ya corría tiene el schema viejo en memoria y rechaza files hasta reiniciarlo.",
+  "order": 1,
+  "refs": [],
+  "status": "done",
+  "test": "",
+  "title": "Tareas con archivos del repo: dato, CLI y chequeo",
+  "updated_at": "2026-10-10T20:53:00.098Z"
+}

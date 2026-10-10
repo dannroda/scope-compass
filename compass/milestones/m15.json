@@ -1,0 +1,12 @@
+{
+  "code": "M15",
+  "done_when": [
+    "Una tarea puede citar archivos del repo (campo files) desde la CLI, la web y el dock; refs check avisa los que ya no están.",
+    "En la web, el detalle de la tarea lleva a cada archivo en la pestaña Archivos, y la ficha del archivo muestra las tareas que lo citan.",
+    "En el dock, un archivo de la tarea se abre en el editor de Godot (script, escena o recurso); lo que Godot no ve se abre en la pestaña Archivos.",
+    "Con un script o una escena abiertos en el editor, el dock muestra las tareas que los citan y vincula el abierto a la tarea elegida."
+  ],
+  "goal": "Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una a la otra desde la web y desde el editor de Godot.",
+  "order": 15,
+  "title": "Tareas y archivos del repo"
+}

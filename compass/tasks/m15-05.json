@@ -1,0 +1,22 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Spec §23 con criterios y decisión D35"
+    },
+    {
+      "done": false,
+      "text": "README, web/README y la spec del dock (§11.1) al día"
+    }
+  ],
+  "code": "15.5",
+  "created_at": "2026-10-10T20:50:03.603Z",
+  "milestone": "m15",
+  "notes": "",
+  "order": 5,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Spec, decisión y guía de M15",
+  "updated_at": "2026-10-10T20:50:15.099Z"
+}

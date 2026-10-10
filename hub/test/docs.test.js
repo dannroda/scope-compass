@@ -351,3 +351,39 @@ test('refs suggest con Epiphany: toda propuesta apunta a una sección existente'
   const docs = await loadDocs(EPIPHANY, config);
   for (const x of JSON.parse(out).suggestions) assert.ok(resolveRef(docs, x.ref).section, x.ref);
 });
+
+// --- Archivos de la tarea (15.1) ---
+import { execFileSync } from 'node:child_process';
+
+test('file add/rm: solo archivos del repo (res:// incluido); show, export y refs check con uno que se movió', async () => {
+  const dir = await projectWithGdd();
+  const cli = cliIn(dir);
+  const git = (...a) => execFileSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { stdio: 'ignore' });
+  const files = async () => JSON.parse(await readFile(join(dir, 'compass', 'tasks', 'm1-07.json'), 'utf8')).files;
+  try {
+    await mkdir(join(dir, 'player'));
+    await writeFile(join(dir, 'player', 'player.gd'), 'extends Node\n');
+    await writeFile(join(dir, '.gitignore'), 'secreto.txt\n');
+    await writeFile(join(dir, 'secreto.txt'), 'clave\n');
+    git('init', '-q'); git('add', '-A'); git('commit', '-qm', 'base');
+    assert.equal((await cli('file', 'add', 'm1-07', 'res://player/player.gd')).code, 0);
+    assert.equal((await cli('file', 'add', 'm1-07', './gdd.md')).code, 0);
+    assert.deepEqual(await files(), ['player/player.gd', 'gdd.md']);
+    assert.match((await cli('file', 'add', 'm1-07', 'player/player.gd')).out, /ya cita/);
+    for (const bad of ['secreto.txt', 'player', '../gdd.md', '/etc/passwd', 'nada.gd']) assert.equal((await cli('file', 'add', 'm1-07', bad)).code, 1, bad);
+    assert.match((await cli('show', 'm1-07')).out, /^Archivos: player\/player\.gd, gdd\.md$/m);
+    assert.match(await readFile(join(dir, 'docs', 'tareas.md'), 'utf8'), /^\*\*Archivos:\*\* `player\/player\.gd`, `gdd\.md`$/m);
+    assert.equal((await cli('refs', 'check')).code, 0);
+
+    git('mv', 'player/player.gd', 'player/jugador.gd'); git('commit', '-qm', 'renombrar');
+    const r = await cli('refs', 'check', '--json');
+    assert.equal(r.code, 1);
+    assert.deepEqual(JSON.parse(r.out).broken.map((b) => [b.task, b.ref, b.problem]), [['m1-07', 'player/player.gd', 'missing_file']]);
+    assert.equal((await cli('file', 'rm', 'm1-07', 'player/player.gd')).code, 0);
+    assert.equal((await cli('file', 'rm', 'm1-07', 'gdd.md')).code, 0);
+    assert.equal(await files(), undefined, 'sin archivos, el campo se va');
+    assert.equal((await cli('file', 'rm', 'm1-07', 'gdd.md')).code, 1);
+  } finally {
+    await rm(dir, { recursive: true, force: true, maxRetries: 10 });
+  }
+});

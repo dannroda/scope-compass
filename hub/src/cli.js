@@ -21,7 +21,8 @@ import { outdatedFiles, TEMPLATES, updateCompass } from './update.js';
 import { listTemplates, loadTemplate as loadTemplateFile } from './templates.js';
 import { hubsOf, listHubs, liveHome, registerHub, unregisterHub } from './registry.js';
 import { createHomeServer } from './home.js';
-import { boardStatus, docDiff, docLog, docsStatus } from './git.js';
+import { boardStatus, docDiff, docLog, docsStatus, repoFiles } from './git.js';
+import { repoFile } from './files-api.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
@@ -93,9 +94,10 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   doc search "<texto>"                      líneas de los documentos con todas las palabras (sin tildes ni mayúsculas)
   doc status                                estado de git de cada documento y su último commit
   doc diff <alias>                          cambios sin commitear del documento (contra HEAD) y las secciones que toca
-  refs check                                referencias rotas (sale con 1 si hay) y frágiles
+  refs check                                referencias rotas (sale con 1 si hay) y frágiles; también archivos que ya no están
   refs suggest                              propone refs a partir de citas "gdd.md §4.3" (no aplica nada)
   ref add|rm <tarea> <alias>[#<id>]         agrega o quita una referencia (sin #<id>, al documento entero)
+  file add|rm <tarea> <ruta>                vincula un archivo del repo a la tarea (un script, una escena; acepta res://)
   link add <tarea> <blocks|blocked-by|related> <otra>
                                             vincula dos tareas (reemplaza el vínculo que tuvieran)
   link rm <tarea> <otra>                    quita el vínculo entre las dos
@@ -492,6 +494,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (d.test) print(`Prueba: ${d.test}`);
       if (d.notes) print(`Notas: ${d.notes}`);
       if (d.refs?.length) print(`Referencias: ${d.refs.map((r) => (r.section ? `${r.doc}#${r.section}` : r.doc)).join(', ')}`);
+      if (d.files?.length) print(`Archivos: ${d.files.join(', ')}`);
       const tasks = listTasks(await store.loadAll());
       const v = linkView(tasks, t.id);
       const line = (label, ids) => { if (ids.length) print(`${label}: ${ids.map((id) => taskLabel(tasks, id)).join('; ')}`); };
@@ -726,11 +729,16 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         print(s.length ? `${pending.length} por revisar, ${s.length - pending.length} ya referenciadas.` : 'No hay citas por número de sección.');
         return 0;
       }
-      const problems = checkRefs(docs, [...all.tasks].map(([id, doc]) => ({ id, ...doc })));
+      const tasks = [...all.tasks].map(([id, doc]) => ({ id, ...doc }));
+      const problems = checkRefs(docs, tasks);
+      // Archivos citados (15.1) que git ya no lista: se borraron o se movieron.
+      const [listing, g] = await Promise.all([repoFiles(project), docsStatus(project)]);
+      const known = new Set([...(listing ?? []), ...Object.keys(g.status)]);
+      for (const t of tasks) for (const f of t.files ?? []) if (!known.has(f)) problems.push({ task: t.id, ref: f, where: 'files', problem: 'missing_file' });
       const broken = problems.filter((p) => p.problem !== 'fragile');
       if (o.json) print(JSON.stringify({ broken, fragile: problems.filter((p) => p.problem === 'fragile') }));
       else {
-        const why = { missing_doc: 'no existe el documento', missing_section: 'no existe la sección', fragile: 'sin id explícito (frágil)' };
+        const why = { missing_doc: 'no existe el documento', missing_section: 'no existe la sección', missing_file: 'el archivo ya no está en el repo', fragile: 'sin id explícito (frágil)' };
         for (const p of problems) (p.problem === 'fragile' ? warn : print)(`${p.problem === 'fragile' ? 'aviso' : 'rota'}  ${p.task.padEnd(9)} ${p.ref} (${p.where}): ${why[p.problem]}`);
         if (!problems.length) print('Todas las referencias resuelven.');
       }
@@ -761,6 +769,27 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       const w = await store.patch('tasks', taskId, { refs: next }, { ifMatch: o.etag ?? cur.etag });
       return written({ id: w.id, etag: w.etag, ...w.doc }, `${taskId}: ${sub === 'add' ? 'agregada' : 'quitada'} ${target}`);
+    },
+
+    async file() {
+      const [sub, taskId, target] = rest;
+      if (sub !== 'add' && sub !== 'rm') throw new UsageError(`subcomando desconocido: file ${sub ?? ''} (add, rm)`);
+      need(taskId, 'la tarea');
+      // Desde la raíz del proyecto, como la pestaña Archivos. res:// es la misma carpeta: el dock vive en el proyecto de Godot.
+      const path = need(target, '<ruta>').replace(/^res:\/\//, '').replace(/^\.\//, '');
+      const cur = await store.get('tasks', taskId);
+      const files = cur.doc.files ?? [];
+      let next;
+      if (sub === 'add') {
+        await repoFile(project, path);
+        if (files.includes(path)) return done({ id: cur.id, etag: cur.etag, ...cur.doc }, `${taskId} ya cita ${path}`);
+        next = [...files, path];
+      } else {
+        next = files.filter((x) => x !== path);
+        if (next.length === files.length) throw new StoreError('not_found', `${taskId} no cita ${path}`);
+      }
+      const w = await store.patch('tasks', taskId, { files: next.length ? next : null }, { ifMatch: o.etag ?? cur.etag });
+      return written({ id: w.id, etag: w.etag, ...w.doc }, `${taskId}: ${sub === 'add' ? 'agregado' : 'quitado'} ${path}`);
     },
 
     async export() {

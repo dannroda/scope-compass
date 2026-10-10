@@ -1,0 +1,26 @@
+{
+  "checklist": [
+    {
+      "done": false,
+      "text": "Con el script o la escena que se edita, el dock muestra las tareas que lo citan (de cualquier hito) y lleva a cada una"
+    },
+    {
+      "done": false,
+      "text": "Vincular el script o la escena abiertos a la tarea elegida"
+    },
+    {
+      "done": false,
+      "text": "Tests"
+    }
+  ],
+  "code": "15.4",
+  "created_at": "2026-10-10T20:50:03.315Z",
+  "milestone": "m15",
+  "notes": "",
+  "order": 4,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Dock: tareas del script y la escena abiertos",
+  "updated_at": "2026-10-10T20:50:14.572Z"
+}
