@@ -11,7 +11,7 @@
     // Documentos (M6): índice de /api/docs, vista actual por el hash, referencias desplegadas, HTML en caché.
     docs: [], view: 'board', doc: '', sec: '', refsOpen: new Set(), refSearch: null,
     // Biblioteca (M12): entradas de config.json › docs, búsqueda de texto, carpetas plegadas, alta y baja.
-    docEntries: [], docQ: '', docResults: null, foldersClosed: new Set(), docAdd: false, docRemove: null,
+    docEntries: [], docQ: '', docResults: null, foldersClosed: new Set(), docAdd: false, docRemove: null, docDiff: false,
     // Vínculos entre tareas: buscador abierto ({ type, q }) o null.
     linkSearch: null,
     // Pasos: detalles desplegados y el paso en edición ("tarea:índice").
@@ -22,6 +22,8 @@
     git: null };
   const sectionCache = new Map(); // "alias#id" → html
   const docCache = new Map(); // alias → html
+  // Git de un documento (12.6): alias → { log, diff } (undefined: sin pedir; null: pidiéndose). Se olvida al cambiar.
+  const gitCache = new Map();
 
   // Cliente de la API (spec §5.2). Los errores llegan como { code, message } del hub.
   class ApiError extends Error {
@@ -1005,7 +1007,9 @@
         const n = counts.get(d.path)?.size || 0;
         return h('a', { href: '#docs/' + encodeURIComponent(d.alias), class: 'tree-doc' + (d.missing ? ' missing' : ''), 'aria-current': d === cur ? 'page' : null,
           title: (d.missing ? 'No está: ' + d.path : docTitle(d)) + ' · ' + (n ? n + (n === 1 ? ' tarea' : ' tareas') : 'sin tareas: todavía no planificado') },
-          h('span', { class: 'toc-dot' + (n ? ' has' : '') }), h('span', { class: 't' }, fileName(d.path)), n ? h('span', { class: 'n' }, n) : null);
+          h('span', { class: 'toc-dot' + (n ? ' has' : '') }), h('span', { class: 't' }, fileName(d.path)),
+          changed(d) ? h('span', { class: 'gitflag ' + d.git, title: GIT_FLAG[d.git]?.[1] }, GIT_FLAG[d.git]?.[0] ?? '•') : null,
+          n ? h('span', { class: 'n' }, n) : null);
       }))));
   }
 
@@ -1112,6 +1116,71 @@
         : e ? h('p', { class: 'muted small' }, 'Incluido por el patrón ', h('code', null, e.path), '.') : null);
   }
 
+  // --- Cambios de los documentos (12.6): marca en el árbol, diff contra HEAD, historial y secciones tocadas ---
+  // docs_git llega al editar un documento o al commitear: el estado nuevo de cada uno, y el historial puede haber
+  // cambiado aunque el estado no (un commit), así que se olvida todo lo pedido.
+  function applyDocsGit(m) {
+    for (const d of S.docs) { const g = m.repo ? m.docs?.[d.alias] : undefined; if (g) d.git = g; else delete d.git; }
+    gitCache.clear();
+    renderDocs();
+  }
+  function docGit(d, kind) {
+    const c = gitCache.get(d.alias) || {};
+    if (c[kind] === undefined) {
+      gitCache.set(d.alias, { ...c, [kind]: null });
+      (kind === 'log' ? api.docLog(d.alias) : api.docDiff(d.alias)).then((r) => {
+        const cur = gitCache.get(d.alias);
+        if (cur && cur[kind] === null) { cur[kind] = r; renderDocs(); }
+      }).catch(() => { const cur = gitCache.get(d.alias); if (cur) delete cur[kind]; });
+    }
+    return c[kind] ?? null;
+  }
+  const changed = (d) => d.git && d.git !== 'clean';
+  const GIT_FLAG = { modified: ['M', 'Modificado sin commitear'], added: ['N', 'Nuevo, agregado a git'], untracked: ['N', 'Nuevo, sin seguir en git'], deleted: ['B', 'Borrado'], renamed: ['R', 'Renombrado'] };
+  const shortDate = (iso) => { const t = new Date(iso); return isNaN(t) ? iso : t.toLocaleDateString('es', { day: 'numeric', month: 'short', ...(t.getFullYear() === new Date().getFullYear() ? {} : { year: 'numeric' }) }); };
+  const commitLine = (c) => h('span', { class: 'commit', title: c.hash + ' · ' + new Date(c.date).toLocaleString('es') + ' · ' + c.author },
+    h('code', null, c.hash), ' ', shortDate(c.date), ' · ', c.subject);
+
+  // El diff contra HEAD, línea por línea, con el título de la sección donde empieza cada bloque.
+  function diffView(d, info) {
+    if (!info) return h('div', { class: 'doc-diff' }, h('p', { class: 'muted' }, 'Cargando los cambios…'));
+    const rows = [];
+    let plus = 0, minus = 0;
+    for (const l of info.diff.split('\n')) {
+      const hk = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/.exec(l);
+      if (hk) {
+        // Las secciones de /api/docs traen lines: [primera, última], desde 1.
+        const at = Number(hk[1]);
+        const s = d.sections.findLast((x) => x.lines[0] <= at && at <= x.lines[1]);
+        rows.push(h('div', { class: 'dl hunk' }, 'Línea ' + hk[1] + (s ? ' · ' : ''), s ? rich(s.title, true) : null));
+      } else if (!rows.length || l.startsWith('\\')) continue; // encabezados de git (diff, index, ---, +++)
+      else if (l.startsWith('+')) { plus++; rows.push(h('div', { class: 'dl add' }, h('span', { class: 'mk', 'aria-label': 'agregada' }, '+'), l.slice(1))); }
+      else if (l.startsWith('-')) { minus++; rows.push(h('div', { class: 'dl del' }, h('span', { class: 'mk', 'aria-label': 'quitada' }, '−'), l.slice(1))); }
+      else if (l) rows.push(h('div', { class: 'dl' }, h('span', { class: 'mk' }, ' '), l.slice(1)));
+    }
+    return h('div', { class: 'doc-diff', role: 'region', 'aria-label': 'Cambios sin commitear' },
+      h('div', { class: 'diff-head' }, h('strong', null, 'Cambios sin commitear'), h('span', { class: 'ref-id' }, d.path + ' contra HEAD'),
+        h('span', { class: 'diff-n' }, h('span', { class: 'add' }, '+' + plus), ' ', h('span', { class: 'del' }, '−' + minus))),
+      rows.length ? h('div', { class: 'diff-body' }, rows) : h('p', { class: 'muted' }, 'Sin cambios contra HEAD.'));
+  }
+
+  // En la ficha: el último commit, los cambios (con las tareas de las secciones tocadas) y el historial.
+  function docGitCard(d, info) {
+    if (!d.git) return null;
+    const log = docGit(d, 'log');
+    const touched = info ? info.sections : [];
+    const affected = [...new Set(touched.flatMap((id) => tasksFor(d, id)))];
+    return h('div', { class: 'doc-gitcard' },
+      log === null ? h('p', { class: 'muted small' }, 'Cargando el historial…')
+        : log.commits.length ? h('p', { class: 'small' }, h('span', { class: 'muted' }, 'Último commit: '), commitLine(log.commits[0])) : h('p', { class: 'muted small' }, 'Todavía sin commits.'),
+      changed(d) ? h('button', { class: 'btn small' + (S.docDiff ? ' primary' : ''), type: 'button', id: 'doc-diff-btn', 'aria-pressed': S.docDiff ? 'true' : 'false',
+        onclick: () => { S.docDiff = !S.docDiff; renderDocs(true); } }, S.docDiff ? 'Ver el documento' : 'Ver los cambios') : null,
+      changed(d) && touched.length ? h('div', { class: 'affected' }, h('div', { class: 'label' }, 'Pueden quedar afectadas · ' + (affected.length === 1 ? '1 tarea' : affected.length + ' tareas')),
+        affected.length ? affected.map(backlinkTask) : h('p', { class: 'muted small' }, 'Ninguna tarea cita las secciones que cambiaron.')) : null,
+      log && log.commits.length > 1 ? h('details', { class: 'history' }, h('summary', null, 'Historial · ' + log.commits.length + ' commits'),
+        h('ol', null, log.commits.map((c) => h('li', null, commitLine(c), h('span', { class: 'muted' }, ' · ' + c.author))))) : null);
+  }
+
   function renderDocs(rebuildArticle) {
     const box = document.getElementById('docs');
     if (S.view !== 'docs') { box.replaceChildren(); return; }
@@ -1142,6 +1211,10 @@
     article.classList.add('doc-article');
     const counts = new Map(d.sections.map((s) => [s.id, tasksFor(d, s.id).length]));
     const unplanned = d.sections.filter((s) => !counts.get(s.id));
+    // Con cambios sin commitear se pide el diff: marca las secciones tocadas aunque no se esté mirando.
+    const diff = changed(d) ? docGit(d, 'diff') : null;
+    const touched = new Set(diff?.sections ?? []);
+    const showDiff = S.docDiff && changed(d) && !searching;
     info.replaceChildren(...[
       h('span', { class: 'pill' + (broken.length ? ' bad' : '') }, h('span', { class: 'dot' }), broken.length === 1 ? '1 referencia rota' : broken.length + ' referencias rotas'),
       // Enlace [[alias#id]] a la sección actual, para pegarlo en notas o pasos (6.6).
@@ -1158,10 +1231,12 @@
           href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(s.id), 'aria-current': s.id === S.sec ? 'true' : null,
           style: 'padding-left:' + (6 + (s.level - 1) * 12) + 'px', title: counts.get(s.id) ? counts.get(s.id) + ' tareas' : 'Sin tareas: todavía no planificada'
         }, h('span', { class: 'toc-dot' + (counts.get(s.id) ? ' has' : '') }), h('span', { class: 't' }, rich(s.title)),
+          touched.has(s.id) ? h('span', { class: 'chg', title: 'Cambió sin commitear' }, '±') : null,
           counts.get(s.id) ? h('span', { class: 'n' }, counts.get(s.id)) : null))) : null),
-      searching ? docResults() : article,
+      searching ? docResults() : showDiff ? diffView(d, diff) : article,
       h('aside', { class: 'backlinks', 'aria-label': 'Ficha del documento' },
         docCard(d),
+        docGitCard(d, diff),
         sec ? [h('div', { class: 'label' }, 'Referenciada por · ' + (counts.get(sec.id) === 1 ? '1 tarea' : counts.get(sec.id) + ' tareas')),
           ...tasksFor(d, sec.id).map(backlinkTask),
           counts.get(sec.id) ? null : h('p', { class: 'muted small' }, 'Ninguna tarea referencia esta sección: parte del diseño todavía sin planificar.')]
@@ -1171,7 +1246,7 @@
         // Diseño sin planificar: las secciones que ninguna tarea cita.
         !sec && unplanned.length ? h('details', { class: 'unplanned' }, h('summary', { class: 'label' }, 'Secciones sin tareas · ' + unplanned.length + ' de ' + d.sections.length),
           h('ul', null, unplanned.map((s) => h('li', null, h('a', { href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(s.id) }, rich(s.title)))))) : null)));
-    if (!searching) observeHeadings(article); else docObserver?.disconnect();
+    if (!searching && !showDiff) observeHeadings(article); else docObserver?.disconnect();
   }
   // Al bajar por el documento, el índice y los backlinks siguen a la sección visible.
   function observeHeadings(article) {
@@ -1211,6 +1286,7 @@
   function docChanged(alias) {
     for (const k of [...sectionCache.keys()]) if (k.startsWith(alias + '#')) sectionCache.delete(k);
     docCache.delete(alias);
+    gitCache.delete(alias);
     Promise.all([api.docs(), api.config()]).then(([r, c]) => { S.docs = r.docs; S.docEntries = c.docs ?? []; render(); }).catch(() => {});
   }
   // Vista Listas (8.4, spec §16.4). La regla de tildar (lo que se repite avanza) y el id de una lista nueva los
@@ -1574,6 +1650,7 @@
     if (m.type === 'focus') { callAttention(); return; }
     if (loading) { eventsDuringLoad = true; return; }
     if (m.type === 'doc_changed') { docChanged(m.alias); return; }
+    if (m.type === 'docs_git') { applyDocsGit(m); return; }
     if (m.type === 'git') { S.git = m; renderGit(); return; }
     if (m.type === 'upsert') { clearWarning(m.collection, m.id); apply(m.collection, m.id, m.doc); }
     else if (m.type === 'delete') { clearWarning(m.collection, m.id); apply(m.collection, m.id, null); }

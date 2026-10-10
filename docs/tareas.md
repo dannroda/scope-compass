@@ -1253,7 +1253,7 @@ Ver y encontrar tareas en un tablero grande: vista de lista y filtros en la UI w
 
 **Prueba:** npm test (hub/test/filters.test.js, ui-filters.test.js y los de schema, API y export)
 
-## M12 — Biblioteca de documentos  (5/8)
+## M12 — Biblioteca de documentos  (6/8)
 
 Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos archivos, enlaces a documentos enteros, búsqueda y el estado de git de cada uno.
 
@@ -1324,7 +1324,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Notas:** Buscar en todos los documentos declarados, sin índice externo: recorrer las líneas ya cargadas. Cada resultado dice documento, sección y un fragmento. Sin tildes ni mayúsculas, como los filtros de M11. Hecho: searchDocs devuelve { results, more } (corta en 200); una línea coincide si tiene todas las palabras; la sección es la más chica que la contiene (null antes del primer título); los comentarios <!-- id --> no cuentan; el fragmento recorta las líneas largas alrededor de la primera palabra. /api/docs/search es una ruta fija: gana sobre /api/docs/:alias (un documento con alias search no se puede pedir por ahí).
 
-### 12.5 Biblioteca en la web · Pendiente
+### 12.5 Biblioteca en la web · Hecho
 
 - [x] Árbol de documentos por carpeta con contadores de tareas
 - [x] Caja de búsqueda con resultados por documento y sección
@@ -1338,14 +1338,14 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 ### 12.6 Cambios y diff de documentos en la web · Pendiente
 
-- [ ] Marca de modificado/nuevo en el árbol, en vivo por ws
-- [ ] Vista de diff contra HEAD
-- [ ] Historial de commits del documento
-- [ ] Secciones tocadas por el diff y sus tareas
+- [x] Marca de modificado/nuevo en el árbol, en vivo por ws
+- [x] Vista de diff contra HEAD
+- [x] Historial de commits del documento
+- [x] Secciones tocadas por el diff y sus tareas
 
 **Prueba:** Editar un documento con el hub abierto: aparece la marca sin recargar, el diff muestra el cambio y las tareas de esa sección quedan señaladas.
 
-**Notas:** Marca en el árbol para documentos con cambios sin commitear. En la ficha: último commit, historial y el diff contra HEAD con líneas agregadas y quitadas. Marcar las secciones tocadas por el diff para ver qué tareas pueden quedar afectadas.
+**Notas:** Marca en el árbol para documentos con cambios sin commitear. En la ficha: último commit, historial y el diff contra HEAD con líneas agregadas y quitadas. Marcar las secciones tocadas por el diff para ver qué tareas pueden quedar afectadas. Hecho: el árbol marca M (modificado), N (nuevo) o B (borrado) y se actualiza con docs_git, sin recargar. Con cambios, la web pide el diff aunque no se mire: el índice marca ± en las secciones tocadas (también las que las contienen) y la ficha lista las tareas que pueden quedar afectadas. Ver los cambios reemplaza el documento por el diff, con el título de la sección donde empieza cada bloque. Historial plegable en la ficha. Arreglado en el hub: después de un doc_changed manda docs_git siempre, aunque no vea un cambio; si se editaba y commiteaba antes de que mirara (400 ms), la web quedaba con la marca de modificado.
 
 ### 12.7 Tests de M12, spec y guía · Pendiente
 

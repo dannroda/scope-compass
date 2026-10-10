@@ -272,6 +272,27 @@ span.link-task { flex: 1 1 12ch; }
 .res-sec { font-weight: 700; }
 .snip { flex-basis: 100%; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
 .snip mark { background: var(--accent-soft); color: var(--fg); border-radius: 2px; }
+/* Cambios sin commitear (12.6): marca en el árbol y el índice, diff contra HEAD, historial. */
+.gitflag { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--s-review); }
+.gitflag.untracked, .gitflag.added { color: var(--s-done); }
+.gitflag.deleted { color: var(--danger); }
+.toc .chg { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--s-review); }
+.doc-gitcard { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.doc-gitcard .commit code { font-size: 12px; }
+.affected { display: flex; flex-direction: column; gap: 8px; align-self: stretch; }
+.history summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+.history ol { margin: 6px 0 0; padding-left: 20px; font-size: 13px; display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.doc-diff { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 0 14px; min-width: 0; }
+.diff-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 0 16px 10px; border-bottom: 1px solid var(--line); }
+.diff-n { margin-left: auto; font-family: var(--font-mono); font-size: 13px; }
+.diff-n .add { color: var(--s-done); } .diff-n .del { color: var(--danger); }
+.diff-body { font: 500 13px/1.55 var(--font-mono); font-variant-ligatures: none; overflow-x: auto; }
+.dl { display: flex; gap: 8px; padding: 0 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.dl .mk { flex: none; width: 1ch; color: var(--muted); user-select: none; }
+.dl.add { background: color-mix(in srgb, var(--s-done) 14%, transparent); }
+.dl.del { background: color-mix(in srgb, var(--danger) 14%, transparent); }
+.dl.add .mk { color: var(--s-done); } .dl.del .mk { color: var(--danger); }
+.dl.hunk { margin-top: 10px; padding-block: 2px; font-family: var(--font-body); font-size: 13px; color: var(--muted); background: var(--surface-2); }
 @media (max-width: 1180px) { .docs-grid { grid-template-columns: 220px minmax(0, 1fr); } .backlinks { grid-column: 1 / -1; position: static; } }
 @media (max-width: 760px) { .docs-grid { grid-template-columns: minmax(0, 1fr); } .docs-side { position: static; max-height: none; } .docs-side .toc { max-height: 40vh; overflow-y: auto; } .doc-article { padding: 4px 14px 16px; } }
 

@@ -476,3 +476,31 @@ test('12.5: agregar un documento desde la web y quitarlo', async () => {
   assert.deepEqual(await cfgDocs(), [{ alias: 'gdd', path: 'gdd.md' }]);
   await page.close();
 });
+
+test('12.6: editar un documento con el hub abierto: marca sin recargar, diff, tareas de la sección tocada; al commitear se va', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const git = (...a) => execFileSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { stdio: 'ignore' });
+  git('init', '-q'); git('add', '-A'); git('commit', '-qm', 'Primer GDD');
+  const page = await open('#docs/gdd');
+  await page.waitForSelector('.doc-card .doc-git.clean');
+  await page.waitForSelector('.doc-gitcard .commit:has-text("Primer GDD")');
+  assert.equal(await page.locator('#doc-diff-btn').count(), 0, 'sin cambios no hay diff');
+  // Se edita la sección de las ventanas de ataque, que citan m1-03 y m1-04.
+  await writeFile(join(dir, 'gdd.md'), GDD.replace('Las ventanas de golpe son datos.', 'Las ventanas de golpe son datos y curvas.'));
+  await page.waitForSelector('.tree-doc .gitflag.modified', { timeout: 3000 });
+  await page.waitForSelector('.toc a[href="#docs/gdd/ventanas-ataque"] .chg');
+  assert.deepEqual(await page.$$eval('.toc a:has(.chg)', (as) => as.map((a) => a.getAttribute('href').split('/').pop())), ['juego', 'combate', 'ventanas-ataque']);
+  assert.match(await page.textContent('.affected .label'), /Pueden quedar afectadas · 2 tareas/);
+  assert.deepEqual(await page.$$eval('.affected .bl-task .code', (xs) => xs.map((x) => x.textContent)), ['1.3', '1.4']);
+  await page.click('#doc-diff-btn');
+  await page.waitForSelector('.doc-diff .dl.add');
+  assert.equal(await page.textContent('.doc-diff .dl.add'), '+Las ventanas de golpe son datos y curvas.');
+  assert.equal(await page.textContent('.doc-diff .dl.del'), '−Las ventanas de golpe son datos.');
+  assert.match(await page.textContent('.doc-diff .dl.hunk'), /Ventanas de ataque/);
+  // Commitear: la marca se va sola y el historial suma el commit (aunque se commitee antes de que el hub mire).
+  git('commit', '-qam', 'Curvas de golpe');
+  await page.waitForFunction(() => !document.querySelector('.tree-doc .gitflag'), null, { timeout: 6000 });
+  assert.equal(await page.locator('.doc-diff').count(), 0, 'sin cambios vuelve al documento');
+  await page.waitForSelector('.history summary:has-text("2 commits")');
+  await page.close();
+});
