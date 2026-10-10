@@ -184,6 +184,25 @@ export function checkRefs(docs, tasks) {
   return out;
 }
 
+/**
+ * Secciones que toca un diff unificado del documento (12.6): las que contienen una línea agregada o cambiada, o el
+ * lugar de una quitada, del lado del archivo nuevo. Una sección incluye a las de adentro, así que también se marcan
+ * las que la contienen. Devuelve los ids en el orden del documento.
+ */
+export function diffSections(doc, diff) {
+  const touched = new Set(); // líneas del archivo nuevo, 0-based
+  let line = null;
+  for (const l of String(diff).split('\n')) {
+    const h = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(l);
+    if (h) { line = Number(h[1]) - 1; continue; }
+    if (line === null || l.startsWith('\\')) continue;
+    if (l.startsWith('+')) touched.add(line++);
+    else if (l.startsWith('-')) touched.add(Math.max(line - 1, 0));
+    else line++;
+  }
+  return doc.sections.filter((s) => [...touched].some((n) => n >= s.start && n < s.end)).map((s) => s.id);
+}
+
 /** Agrega <!-- id: slug --> debajo de cada título sin id. Devuelve { text, stamped: [ids] }. */
 export function stampIds(text) {
   const { sections, lines } = parseSections(text);

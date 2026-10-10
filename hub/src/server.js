@@ -16,7 +16,8 @@ import { StoreError } from './store/json-files.js';
 import { createWatcher } from './watcher.js';
 import { flat } from './views.js';
 import { resourceDir } from './schema.js';
-import { boardStatus } from './git.js';
+import { boardStatus, docsStatus } from './git.js';
+import { docFiles } from './docs.js';
 import { liveHome } from './registry.js';
 
 export const VERSION = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8')).version;
@@ -137,19 +138,28 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   let lastGit = null;
   const gitNow = async () => boardStatus(projectDir, (await store.loadAll()).config);
   app.get('/api/git', async () => { lastGit = await gitNow(); return lastGit; });
+  // Lo mismo para los documentos (12.3): `docs_git` con el estado de cada uno ({ alias: 'modified' | 'clean' | … })
+  // cuando alguno cambia, al editarlo o al commitear.
+  let lastDocsGit = null;
+  const docsGitNow = async () => {
+    const [files, g] = await Promise.all([store.loadAll().then(({ config }) => docFiles(projectDir, config)), docsStatus(projectDir)]);
+    return { repo: g.repo, docs: Object.fromEntries(files.map((f) => [f.alias, g.repo ? g.status[f.path] ?? 'clean' : null])) };
+  };
   // Un `git commit` no toca compass/: mientras haya algo sin commitear se vuelve a mirar cada gitPollMs.
   let gitTimer = null;
   let gitClosed = false;
   const checkGit = async () => {
-    const s = await gitNow().catch(() => null);
+    const [s, d] = await Promise.all([gitNow().catch(() => null), docsGitNow().catch(() => null)]);
     if (gitClosed || !s) return;
     // La primera vez solo toma la referencia: los clientes la piden con GET /api/git al cargar.
     if (lastGit && (s.uncommitted !== lastGit.uncommitted || s.files.join() !== lastGit.files.join())) emit({ type: 'git', ...s });
     lastGit = s;
-    if (s.uncommitted > 0) gitTimer = setTimeout(checkGit, gitPollMs);
+    if (d && lastDocsGit && JSON.stringify(d) !== JSON.stringify(lastDocsGit)) emit({ type: 'docs_git', ...d });
+    if (d) lastDocsGit = d;
+    if (s.uncommitted > 0 || Object.values(d?.docs ?? {}).some((x) => x && x !== 'clean')) gitTimer = setTimeout(checkGit, gitPollMs);
   };
   const recheckGit = () => { clearTimeout(gitTimer); gitTimer = setTimeout(checkGit, 400); };
-  app.events.on('event', (e) => { if (e.type === 'upsert' || e.type === 'delete') recheckGit(); });
+  app.events.on('event', (e) => { if (e.type === 'upsert' || e.type === 'delete' || e.type === 'doc_changed') recheckGit(); });
   app.events.on('exported', recheckGit);
   app.addHook('onReady', async () => { if (watch) recheckGit(); });
   app.addHook('onClose', async () => { gitClosed = true; clearTimeout(gitTimer); });

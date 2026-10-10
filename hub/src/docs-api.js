@@ -1,6 +1,8 @@
-// API de documentos (spec §10.4): índice, documento y sección renderizados, backlinks y referencias rotas.
-// Solo lectura. Los documentos se releen en cada request: son archivos chicos y siempre están al día.
-import { changeDocs, checkRefs, findDoc, findSection, LINK, loadDocs, refText, sectionMarkdown } from './docs.js';
+// API de documentos (spec §10.4, §20): índice, documento y sección renderizados, backlinks, referencias rotas y el
+// estado de git de cada documento. Los documentos se releen en cada request: son archivos chicos y siempre están al día.
+// Lo único que escribe es config.json › docs (agregar o quitar un documento).
+import { changeDocs, checkRefs, diffSections, findDoc, findSection, LINK, loadDocs, refText, sectionMarkdown } from './docs.js';
+import { docDiff, docLog, docsStatus } from './git.js';
 import { renderBBCode, renderBlocks, renderMarkdown } from './render.js';
 import { StoreError } from './store/json-files.js';
 
@@ -41,17 +43,37 @@ const sectionInfo = (d, s, links) => ({
   tasks: links.get(`${d.path}#${s.id}`) ?? []
 });
 
+// Estado de git de un documento (12.3): clean, modified, added, untracked, deleted o renamed; sin repo, no va.
+const gitOf = (g, d) => (g.repo ? { git: g.status[d.path] ?? 'clean' } : {});
+
 export function registerDocsApi(app, { store, projectDir, validators, onDocsChanged = async () => {} }) {
   app.get('/api/docs', async () => {
-    const { docs, links } = await context(store, projectDir);
-    return { docs: docs.map((d) => ({ alias: d.alias, path: d.path, ...(d.missing && { missing: true }), warnings: d.warnings, tasks: links.get(d.path) ?? [], sections: d.sections.map((s) => sectionInfo(d, s, links)) })) };
+    const [{ docs, links }, g] = await Promise.all([context(store, projectDir), docsStatus(projectDir)]);
+    return { repo: g.repo, docs: docs.map((d) => ({ alias: d.alias, path: d.path, ...(d.missing && { missing: true }), ...gitOf(g, d), warnings: d.warnings, tasks: links.get(d.path) ?? [], sections: d.sections.map((s) => sectionInfo(d, s, links)) })) };
   });
 
   app.get('/api/docs/:alias', async (req) => {
-    const { docs, links } = await context(store, projectDir);
+    const [{ docs, links }, g] = await Promise.all([context(store, projectDir), docsStatus(projectDir)]);
     const d = getDoc(docs, req.params.alias);
-    return { alias: d.alias, path: d.path, warnings: d.warnings, tasks: links.get(d.path) ?? [], sections: d.sections.map((s) => sectionInfo(d, s, links)),
+    return { alias: d.alias, path: d.path, ...gitOf(g, d), warnings: d.warnings, tasks: links.get(d.path) ?? [], sections: d.sections.map((s) => sectionInfo(d, s, links)),
       html: renderMarkdown(d.lines.join('\n'), d.sections) };
+  });
+
+  // Diff contra HEAD (12.3) y las secciones que toca (12.6), para ver qué tareas pueden quedar afectadas.
+  app.get('/api/docs/:alias/diff', async (req) => {
+    const [{ docs }, g] = await Promise.all([context(store, projectDir), docsStatus(projectDir)]);
+    const d = getDoc(docs, req.params.alias);
+    if (!g.repo) return { alias: d.alias, path: d.path, repo: false, diff: '', sections: [] };
+    const git = g.status[d.path] ?? 'clean';
+    const diff = git === 'clean' ? '' : await docDiff(projectDir, d.path, { untracked: git === 'untracked', text: d.lines.join('\n') });
+    return { alias: d.alias, path: d.path, repo: true, git, diff, sections: diffSections(d, diff) };
+  });
+
+  // Historial del documento, del commit más nuevo al más viejo (siguiendo renombres).
+  app.get('/api/docs/:alias/log', async (req) => {
+    const [{ docs }, g] = await Promise.all([context(store, projectDir), docsStatus(projectDir)]);
+    const d = getDoc(docs, req.params.alias);
+    return { alias: d.alias, path: d.path, repo: g.repo, commits: g.repo ? await docLog(projectDir, d.path) : [] };
   });
 
   app.get('/api/docs/:alias/sections/:id', async (req) => {

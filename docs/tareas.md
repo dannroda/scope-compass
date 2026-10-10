@@ -1253,7 +1253,7 @@ Ver y encontrar tareas en un tablero grande: vista de lista y filtros en la UI w
 
 **Prueba:** npm test (hub/test/filters.test.js, ui-filters.test.js y los de schema, API y export)
 
-## M12 — Biblioteca de documentos  (2/8)
+## M12 — Biblioteca de documentos  (3/8)
 
 Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos archivos, enlaces a documentos enteros, búsqueda y el estado de git de cada uno.
 
@@ -1287,7 +1287,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Notas:** Selector de orden en la barra del tablero: orden manual (el de hoy, order), código, actualizada, creada, fecha límite, prioridad y título, ascendente o descendente. Se ordena dentro de cada columna. Reusa COLUMNS/sortedForList de la vista de lista y el mismo S.sort, así tablero y lista comparten el orden; la lista suma las columnas Actualizada y Creada. Con un orden que no es el manual, arrastrar entre columnas sigue cambiando el estado pero no reordena (aviso en el tooltip). Se recuerda por proyecto como el filtro. Solo web: no toca datos. Hecho: AGENTS.md no cambia (es solo web, sin CLI ni datos).
 
-### 12.2 Agregar y quitar documentos sin editar config.json · Pendiente
+### 12.2 Agregar y quitar documentos sin editar config.json · Hecho
 
 - [x] CLI doc add / doc rm con validación de alias y ruta dentro del proyecto
 - [x] API POST/DELETE /api/docs que reescribe config.json
@@ -1302,16 +1302,16 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 ### 12.3 Estado de git de los documentos · Pendiente
 
-- [ ] git.js: docStatus (porcelain por ruta) y lastCommit (git log -1)
-- [ ] git.js: docDiff contra HEAD y docLog con --follow
-- [ ] API: git en /api/docs, GET /api/docs/:alias/diff y /log
-- [ ] CLI doc status y doc diff <alias> [--json]
-- [ ] El watcher avisa por ws cuando cambia el estado de un documento
-- [ ] Tests (repo temporal; sin git devuelve repo: false)
+- [x] git.js: docStatus (porcelain por ruta) y lastCommit (git log -1)
+- [x] git.js: docDiff contra HEAD y docLog con --follow
+- [x] API: git en /api/docs, GET /api/docs/:alias/diff y /log
+- [x] CLI doc status y doc diff <alias> [--json]
+- [x] El watcher avisa por ws cuando cambia el estado de un documento
+- [x] Tests (repo temporal; sin git devuelve repo: false)
 
 **Prueba:** Modificar docs/gdd.md sin commitear: doc status lo marca modificado y doc diff gdd muestra el cambio; tras commitear vuelve a limpio con el commit nuevo.
 
-**Notas:** Ampliar git.js: por documento, estado (sin cambios, modificado, nuevo sin seguir, borrado), último commit (hash corto, fecha, autor, asunto) y diff contra HEAD. Historial con git log --follow. Sin repo: los campos quedan vacíos, nada falla. Solo lectura: la app nunca commitea (spec §4.5).
+**Notas:** Ampliar git.js: por documento, estado (sin cambios, modificado, nuevo sin seguir, borrado), último commit (hash corto, fecha, autor, asunto) y diff contra HEAD. Historial con git log --follow. Sin repo: los campos quedan vacíos, nada falla. Solo lectura: la app nunca commitea (spec §4.5). Hecho: docsStatus hace un solo git status del proyecto (no un proceso por documento, ni rutas en la línea de comandos, que en Windows tiene tope) y pasa las rutas, que porcelain da desde la raíz del repo, a relativas al proyecto. /api/docs y /api/docs/:alias traen git (clean|modified|added|untracked|deleted|renamed; sin repo no va, y /api/docs dice repo). GET /api/docs/:alias/diff trae además las secciones tocadas (diffSections, para la 12.6) y /log el historial. Un archivo sin seguir no sale en git diff: se arma entero como agregado. El hub manda docs_git { repo, docs: { alias: estado } } cuando cambia alguno; mira después de doc_changed y, mientras haya documentos con cambios, cada gitPollMs (un commit no toca los archivos).
 
 ### 12.4 Búsqueda de texto en los documentos · Pendiente
 

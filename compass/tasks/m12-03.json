@@ -1,38 +1,38 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "git.js: docStatus (porcelain por ruta) y lastCommit (git log -1)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "git.js: docDiff contra HEAD y docLog con --follow"
     },
     {
-      "done": false,
+      "done": true,
       "text": "API: git en /api/docs, GET /api/docs/:alias/diff y /log"
     },
     {
-      "done": false,
+      "done": true,
       "text": "CLI doc status y doc diff <alias> [--json]"
     },
     {
-      "done": false,
+      "done": true,
       "text": "El watcher avisa por ws cuando cambia el estado de un documento"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Tests (repo temporal; sin git devuelve repo: false)"
     }
   ],
   "code": "12.3",
   "created_at": "2026-10-08T04:55:37.623Z",
   "milestone": "m12",
-  "notes": "Ampliar git.js: por documento, estado (sin cambios, modificado, nuevo sin seguir, borrado), último commit (hash corto, fecha, autor, asunto) y diff contra HEAD. Historial con git log --follow. Sin repo: los campos quedan vacíos, nada falla. Solo lectura: la app nunca commitea (spec §4.5).",
+  "notes": "Ampliar git.js: por documento, estado (sin cambios, modificado, nuevo sin seguir, borrado), último commit (hash corto, fecha, autor, asunto) y diff contra HEAD. Historial con git log --follow. Sin repo: los campos quedan vacíos, nada falla. Solo lectura: la app nunca commitea (spec §4.5). Hecho: docsStatus hace un solo git status del proyecto (no un proceso por documento, ni rutas en la línea de comandos, que en Windows tiene tope) y pasa las rutas, que porcelain da desde la raíz del repo, a relativas al proyecto. /api/docs y /api/docs/:alias traen git (clean|modified|added|untracked|deleted|renamed; sin repo no va, y /api/docs dice repo). GET /api/docs/:alias/diff trae además las secciones tocadas (diffSections, para la 12.6) y /log el historial. Un archivo sin seguir no sale en git diff: se arma entero como agregado. El hub manda docs_git { repo, docs: { alias: estado } } cuando cambia alguno; mira después de doc_changed y, mientras haya documentos con cambios, cada gitPollMs (un commit no toca los archivos).",
   "order": 3,
   "refs": [],
-  "status": "todo",
+  "status": "done",
   "test": "Modificar docs/gdd.md sin commitear: doc status lo marca modificado y doc diff gdd muestra el cambio; tras commitear vuelve a limpio con el commit nuevo.",
   "title": "Estado de git de los documentos",
-  "updated_at": "2026-10-08T04:55:39.319Z"
+  "updated_at": "2026-10-10T19:03:03.987Z"
 }

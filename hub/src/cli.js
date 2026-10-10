@@ -7,7 +7,7 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { exportMarkdown } from './export-md.js';
-import { changeDocs, checkRefs, loadDocs, resolveRef, sectionMarkdown, stampIds, suggestRefs } from './docs.js';
+import { changeDocs, checkRefs, diffSections, loadDocs, resolveRef, sectionMarkdown, stampIds, suggestRefs } from './docs.js';
 import { writeAtomic } from './store/atomic.js';
 import { openUrl as openInBrowser } from './desktop.js';
 import { importArtifact } from './import-artifact.js';
@@ -21,7 +21,7 @@ import { outdatedFiles, TEMPLATES, updateCompass } from './update.js';
 import { listTemplates, loadTemplate as loadTemplateFile } from './templates.js';
 import { hubsOf, listHubs, liveHome, registerHub, unregisterHub } from './registry.js';
 import { createHomeServer } from './home.js';
-import { boardStatus } from './git.js';
+import { boardStatus, docDiff, docLog, docsStatus } from './git.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
@@ -90,6 +90,8 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   doc rm <alias>                            deja de declararlo (el archivo no se toca)
   doc show <alias>[#<id>] [--raw]           una sección, o el documento entero sin #<id> (--raw: solo el markdown)
   doc stamp-ids <alias> [--dry-run]         agrega <!-- id: … --> a las secciones que no tienen
+  doc status                                estado de git de cada documento y su último commit
+  doc diff <alias>                          cambios sin commitear del documento (contra HEAD) y las secciones que toca
   refs check                                referencias rotas (sale con 1 si hay) y frágiles
   refs suggest                              propone refs a partir de citas "gdd.md §4.3" (no aplica nada)
   ref add|rm <tarea> <alias>[#<id>]         agrega o quita una referencia (sin #<id>, al documento entero)
@@ -658,6 +660,33 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         print(`${r.doc.alias}#${id} · ${r.doc.path}, líneas ${start + 1}–${end}${explicit ? '' : ' · sin id (frágil)'}`);
         print('');
         out.write(md);
+        return 0;
+      }
+      // Estado de git de los documentos (12.3): solo lectura, la app nunca commitea (spec §4.5).
+      const GIT_LABEL = { clean: 'sin cambios', modified: 'modificado', added: 'nuevo (agregado)', untracked: 'nuevo sin seguir', deleted: 'borrado', renamed: 'renombrado' };
+      if (sub === 'status') {
+        const g = await docsStatus(project);
+        const rows = await Promise.all(docs.map(async (d) => ({ alias: d.alias, path: d.path, ...(g.repo && { git: g.status[d.path] ?? 'clean', last_commit: (await docLog(project, d.path, { limit: 1 }))[0] ?? null }) })));
+        if (o.json) return done({ repo: g.repo, docs: rows });
+        if (!g.repo) print('El proyecto no está en un repo de git.');
+        for (const r of rows) {
+          const c = r.last_commit;
+          print(`${r.alias.padEnd(12)} ${r.path}  ${g.repo ? GIT_LABEL[r.git] : ''}${c ? ` · ${c.hash} ${c.date.slice(0, 10)} ${c.author}: ${c.subject}` : g.repo ? ' · sin commits' : ''}`);
+        }
+        return 0;
+      }
+      if (sub === 'diff') {
+        const d = docs.find((x) => x.alias === need(target, 'el alias del documento') || x.path === target);
+        if (!d) throw new StoreError('not_found', `no hay un documento "${target}"`);
+        const g = await docsStatus(project);
+        const git = g.repo ? g.status[d.path] ?? 'clean' : null;
+        const diff = git && git !== 'clean' ? await docDiff(project, d.path, { untracked: git === 'untracked', text: d.lines.join('\n') }) : '';
+        const sections = diffSections(d, diff);
+        if (o.json) return done({ alias: d.alias, path: d.path, repo: g.repo, ...(g.repo && { git }), diff, sections });
+        if (!g.repo) throw new StoreError('not_found', 'el proyecto no está en un repo de git');
+        if (!diff) { print(`${d.path}: sin cambios contra HEAD.`); return 0; }
+        out.write(diff);
+        print(`Secciones tocadas: ${sections.length ? sections.join(', ') : 'ninguna'}`);
         return 0;
       }
       if (sub === 'stamp-ids') {
