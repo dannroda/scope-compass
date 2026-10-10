@@ -215,6 +215,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     const running = liveHome();
     if (running) {
       const url = `http://127.0.0.1:${running.port}/`;
+      // --lan no se le agrega a uno que ya corre (home restart repite sus mismas opciones): hay que cerrarlo.
+      if (o.lan && !running.lan) throw new StoreError('conflict', `el Inicio ya corre en ${url} (PID ${running.pid}) sin --lan: cerralo ("Salir" en la bandeja o Ctrl+C) y volvé a correr este comando`);
       if (o.open) openUrl(url);
       return done({ url, port: running.port, pid: running.pid, already: true }, `El Inicio ya corre en ${url} (PID ${running.pid})`);
     }
@@ -233,7 +235,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (e.code === 'EADDRINUSE') throw new StoreError('io_error', `el puerto ${port} está ocupado`);
       throw e;
     }
-    registerHub({ port: addr.port, kind: 'home' });
+    registerHub({ port: addr.port, kind: 'home', lan: o.lan });
     const url = `http://127.0.0.1:${addr.port}/`;
     const lan = o.lan ? lanUrls(addr.port) : undefined;
     o.json ? print(JSON.stringify({ url, port: addr.port, lan })) : print(`Inicio de Scope Compass en ${url} · ${projectsFile()} · Ctrl+C para cerrar`);
@@ -246,7 +248,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         tray = await startTray({ title: 'Scope Compass', tooltip: `Inicio · ${url}`, onActivate: () => openUrl(url),
           items: () => homeTrayItems({ app, url, openUrl, warn, close: () => ac.abort(), restart: () => { restart = true; ac.abort(); }, refresh: () => tray?.refresh() }) });
         // Recién con el ícono puesto los hubs esconden el suyo.
-        registerHub({ port: addr.port, kind: 'home', tray: true });
+        registerHub({ port: addr.port, kind: 'home', tray: true, lan: o.lan });
         app.events.on('event', (e) => { if (e.type === 'hubs' || e.type === 'projects') tray?.refresh(); });
       } catch (e) {
         warn(`sin ícono en la bandeja: ${e.message}`);

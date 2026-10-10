@@ -172,6 +172,10 @@ test('CLI: un solo Inicio por usuario', async () => {
     let out2 = '';
     assert.equal(await run(['home', '--json'], { out: { write: (s) => { out2 += s; } }, err: io.err }), 0);
     assert.deepEqual([JSON.parse(out2).port, JSON.parse(out2).already], [port, true]);
+    // Con --lan no dice "ya corre" como si nada: el que corre no está en la red (D36).
+    let err2 = '';
+    assert.equal(await run(['home', '--lan'], { out: io.out, err: { write: (s) => { err2 += s; } } }), 1);
+    assert.match(err2, /sin --lan: cerralo/);
     const health = await (await fetch(`http://127.0.0.1:${port}/api/health`)).json();
     assert.equal(health.name, 'scope-compass-home');
   } finally {

@@ -29,7 +29,7 @@
   "code": "7.1",
   "created_at": "2026-10-10T06:13:05.047Z",
   "milestone": "m07",
-  "notes": "Pedido desde Project Epiphany (2026-10-10): ver el panel en el teléfono por el wifi de casa. Por ahora alcanza con abrirlo en la red, sin login (usuario, 2026-10-10). Hecho: --lan en serve y home (listen en 0.0.0.0; las URLs de siempre siguen en 127.0.0.1 para el dock, la CLI y el Inicio, y se imprimen las direcciones de la red, también en --json). El chequeo de Host (D34) acepta una IP y no un nombre. Además, cualquier pedido con un Origin distinto de http://<Host> da 403 en el hub y en el Inicio: faltaba también en local, donde cualquier página podía hacer POST /api/shutdown o abrir el WebSocket y leer el tablero. Probado con un Inicio aislado --lan por 192.168.100.56 desde Chromium a 390×844: el tablero carga, el WebSocket conecta y un PATCH desde la página se guarda; Host malo.example y un POST con Origin ajeno dan 403. --host <ip> descartado: el dock y la CLI hablan por 127.0.0.1. De paso: el import de Godot en los tests del dock a veces aborta al salir (bug de tiempos del motor: EditorHelp::load_script_doc_cache diferido corre con EditorNode ya borrado); se reintenta una vez.",
+  "notes": "Pedido desde Project Epiphany (2026-10-10): ver el panel en el teléfono por el wifi de casa. Por ahora alcanza con abrirlo en la red, sin login (usuario, 2026-10-10). Hecho: --lan en serve y home (listen en 0.0.0.0; las URLs de siempre siguen en 127.0.0.1 para el dock, la CLI y el Inicio, y se imprimen las direcciones de la red, también en --json). El chequeo de Host (D34) acepta una IP y no un nombre. Además, cualquier pedido con un Origin distinto de http://<Host> da 403 en el hub y en el Inicio: faltaba también en local, donde cualquier página podía hacer POST /api/shutdown o abrir el WebSocket y leer el tablero. Probado con un Inicio aislado --lan por 192.168.100.56 desde Chromium a 390×844: el tablero carga, el WebSocket conecta y un PATCH desde la página se guarda; Host malo.example y un POST con Origin ajeno dan 403. --host <ip> descartado: el dock y la CLI hablan por 127.0.0.1. De paso: el import de Godot en los tests del dock a veces aborta al salir (bug de tiempos del motor: EditorHelp::load_script_doc_cache diferido corre con EditorNode ya borrado); se reintenta una vez. Encontrado al probarlo: con un Inicio ya corriendo sin --lan, scompass home --lan decía que ya corría y salía sin hacer nada; ahora el registro anota lan y el comando falla diciendo que hay que cerrarlo.",
   "order": 1,
   "priority": "medium",
   "refs": [
@@ -49,5 +49,5 @@
   ],
   "test": "D36 registra la comparación de las cuatro opciones. Con scompass home --lan, el tablero se abre y se edita desde el teléfono por el wifi de casa; un Host con nombre o un pedido con el Origin de otra página dan 403. Sin login, por pedido: es para la red de casa.",
   "title": "Investigar: abrir el hub desde el teléfono por la LAN",
-  "updated_at": "2026-10-10T22:57:09.036Z"
+  "updated_at": "2026-10-10T23:05:16.269Z"
 }
