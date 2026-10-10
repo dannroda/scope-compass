@@ -1355,7 +1355,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Notas:** Cerrar M12: tests, spec y guía al día. Hecho: los tests de UI de la biblioteca y del diff ya estaban de la 12.5 y la 12.6 (ui-docs.test.js). Spec §20 Biblioteca de documentos con sus criterios, la tabla de rutas y los comandos; §10.4 apunta a §20 y §5.5 suma los eventos git y docs_git. D33: la app declara documentos y lee git, pero no escribe documentos ni commitea; alias de patrón por ruta bajo la carpeta base. AGENTS.md (plantilla, compass/ y addon, idénticos) con doc add/rm/search/status/diff y la regla de alias; README (estado con M12), web/README y hub/README (los archivos de documentos y git).
 
-## M13 — UI más compacta  (5/7)
+## M13 — UI más compacta  (7/7)
 
 Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compactos, según la revisión de diseño del 2026-10-09 (https://claude.ai/artifact/D6vMr2tWMv9dRCX8MUv5qg).
 
@@ -1410,7 +1410,7 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 **Notas:** A 390×844 la primera tarjeta aparece a ~1220 px. Hitos en una fila con scroll horizontal; columnas vacías de una línea; acciones de los pasos (✎ ×) de 36 px o más; la cabecera del detalle con solo el código del hito. Hecho: con M13 a 390×844 la primera tarjeta queda a 399 px (373 sin el aviso de git, que ocupa una fila). Además de lo pedido: encabezado en dos filas (título; vistas con Nueva tarea a la derecha), la fila del buscador con Tablero/Lista, buscador y Filtros (el Orden baja a la segunda), y el título del hito en una línea con puntos suspensivos. La fila de hitos conserva el desplazamiento al redibujar y, la primera vez, deja a la vista el hito elegido; el desplegable de Terminados va fijo a lo ancho para que el scroll de la fila no lo recorte. Columnas vacías: solo el título con el 0, sin el texto. ✎ y × miden 36 px en el teléfono o sin mouse; en escritorio aparecen al pasar el mouse o con el foco. La cabecera del detalle dice el código del hito en todas las pantallas (el nombre está en el chip Hito y en el tooltip). Con M12 (todo hecho) la tarjeta queda más abajo, a 562 px: las tres columnas vacías van antes. El test de §14 compara una columna con tarjetas; el botón y el espacio entre columnas siguen iguales al artifact.
 
-### 13.5 Lista: fechas relativas y columnas vacías · Pendiente
+### 13.5 Lista: fechas relativas y columnas vacías · Hecho
 
 - [x] Fechas relativas en Actualizada y Creada
 - [x] Columnas sin valores escondidas
@@ -1420,10 +1420,12 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 **Notas:** Actualizada y Creada dicen todas "8 oct". Fecha relativa para lo reciente ("hace 3 h", "ayer") con la completa en el tooltip. Esconder las columnas sin ningún valor en lo que se está viendo (la de orden activo siempre visible). Hecho: menos de un minuto, "hace un momento"; después, minutos y horas cortos ("hace 5 min", "hace 3 h") hasta las 24 h, y días por calendario hasta la semana ("ayer", "anteayer", "hace 4 días"); más viejo, la fecha corta de antes. Lo da Intl.RelativeTimeFormat en español; la fecha completa queda en el tooltip. No se actualiza sola con el reloj: se recalcula cada vez que la lista se redibuja (cualquier cambio del hub). Las columnas se calculan sobre las filas que se ven (hito y filtros); la del orden elegido se ve aunque esté vacía. Con M11 quedan Código, Título, Hito, Estado, Pasos, Actualizada y Creada.
 
-### 13.6 Spec y guía de M13 · Pendiente
+### 13.6 Spec y guía de M13 · Hecho
 
-- [ ] Spec: sección de M13 con lo que cambió en la UI
-- [ ] README de web/ al día
+- [x] Spec: sección de M13 con lo que cambió en la UI
+- [x] README de web/ al día
+
+**Notas:** Hecho: spec §21 UI más compacta (M13) con lo que cambió en el encabezado, los hitos, el buscador y los filtros, el resumen, el detalle, los pasos, el teléfono, la lista y las ligaduras, y sus criterios; §19 apunta a §21 para la barra de filtros. web/README con una línea de lo compacto y el README de la raíz con M13 en el estado. AGENTS.md no cambia: M13 no toca la CLI ni los datos.
 
 ### 13.7 Bug: show muestra «doc#undefined» en referencias al documento entero · Hecho
 

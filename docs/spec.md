@@ -764,7 +764,7 @@ Tests: el primero en `hub/test/m9-criteria.test.js`; los cambios en vivo y el hu
 | Prioridad | Las de esas prioridades; `none`: sin prioridad | `--priority high,medium` |
 | Responsable | Las de ese responsable; `none`: sin responsable | `--assignee Dani` |
 
-- **Web:** la barra de filtros está arriba del tablero y de la lista. Las etiquetas y los responsables ofrecen los valores que ya existen en el proyecto. Los filtros se recuerdan por proyecto en el navegador, nunca en `compass/`. Cuando hay filtros activos, la barra dice cuántas tareas quedan ocultas y tiene un botón para limpiarlos. `/` lleva al buscador.
+- **Web:** la barra de filtros está arriba del tablero y de la lista (desde M13, detrás de *Filtros (n)*: §21). Las etiquetas y los responsables ofrecen los valores que ya existen en el proyecto. Los filtros se recuerdan por proyecto en el navegador, nunca en `compass/`. Cuando hay filtros activos, la barra dice cuántas tareas quedan ocultas y tiene un botón para limpiarlos. `/` lleva al buscador.
 - **Vista de lista:** dentro de la vista del tablero, un selector *Tablero | Lista* (la elección se recuerda). Una fila por tarea, con código, título, hito (con "Todos"), estado, pasos `x/y`, fecha límite, bloqueo, prioridad, responsable, etiquetas y las fechas de edición y de creación. Se ordena por columna con un clic en el encabezado (otro clic invierte el orden, un tercero vuelve al manual; las fechas de edición y creación empiezan por la más nueva); por defecto, el orden manual del tablero (hito, `order` y código).
 - **Orden del tablero (12.8):** un desplegable *Orden* en la barra (manual, código, título, actualizada, creada, fecha límite, prioridad) y un botón ▲/▼ para el sentido ordenan las tarjetas dentro de cada columna. Es el mismo orden que la lista: elegirlo en una vista lo cambia en la otra, y se recuerda por proyecto como el filtro. Con un orden que no es el manual, arrastrar una tarjeta solo cambia su estado; reordenar a mano requiere el orden manual. No toca datos. Un clic en la fila abre el mismo detalle que el tablero. En el teléfono quedan solo las columnas principales.
 - **Edición:** prioridad y responsable se cambian en el detalle; las etiquetas se agregan con sugerencias de las que ya existen y se quitan con ×. La tarjeta del tablero muestra el responsable, la prioridad alta y las etiquetas.
@@ -835,3 +835,38 @@ scompass doc diff <alias> [--json]          # diff contra HEAD y "Secciones toca
   - la búsqueda de texto en todos los documentos;
   - por documento, sus tareas y su estado de git.
 - [x] Cada documento muestra si tiene cambios sin commitear, su último commit y el diff contra HEAD.
+
+## 21. UI más compacta (M13)
+<!-- id: ui-compacta -->
+
+**Objetivo:** llegar a las tareas sin bajar. Antes, a 1440×900 la primera tarjeta empezaba a ~600 px, y en el teléfono a ~1200 px. La revisión de diseño es del 2026-10-09. No cambia ningún dato ni la API: solo la UI web.
+
+- **Encabezado:** el título del proyecto, "← Inicio" y las vistas (Tablero, Listas, Documentos) van en una sola fila, con la línea del encabezado debajo. Ya no dice "tareas".
+- **Hitos:** los terminados van juntos en un desplegable *Terminados (n)*, después de *Todos*. Cada uno muestra su código, su título y su avance. El hito elegido queda en la fila aunque esté terminado.
+- **Buscador y filtros:**
+  - En la fila del buscador están *Tablero | Lista*, el buscador y el botón *Filtros (n)*. Ese botón abre un panel con los filtros de §19; *n* cuenta los activos del panel.
+  - A la derecha están el orden y, con filtros, cuántas tareas quedan ocultas y *Limpiar filtros*.
+  - Los filtros y el orden se recuerdan como antes. El panel se abre cerrado.
+- **Resumen del hito:** una línea con el título, la barra y el contador. *Hecho cuando ▸* despliega el objetivo y la lista; se llama *Objetivo* si el hito no tiene lista. Abierto o cerrado se recuerda por proyecto en el navegador.
+- **Detalle de la tarea:**
+  - **Propiedades:** debajo del título, una fila de chips: hito, fecha límite (con hora si hay fecha, y × para quitarla), prioridad, responsable y etiquetas. Son los controles del navegador con forma de chip, así que un clic edita en el lugar. Los vacíos van con borde punteado y texto apagado. Una vencida va en rojo, y una de hoy en ámbar.
+  - **Orden:** el estado, los pasos, las notas, las referencias, los vínculos y *Cómo probarlo*.
+  - **Al abrir:** el foco va al panel, no al título. El título no tiene borde hasta que se lo enfoca o se le pasa el mouse, y 1–4 cambian el estado enseguida.
+  - **Cabecera:** el código de la tarea y el del hito; el nombre del hito queda en el chip.
+- **Pasos:** en escritorio, ✎ y × aparecen al pasar el mouse o con el foco. En el teléfono, o sin mouse, se ven siempre y miden 36 px o más.
+- **Teléfono (≤ 560 px):**
+  - **Encabezado:** dos filas: el título; las vistas, con *Nueva tarea* a la derecha.
+  - **Hitos:** van en una fila que se desplaza de costado, y la primera vez deja a la vista el elegido.
+  - **Arriba del tablero:** el título del hito va en una línea con puntos suspensivos.
+  - **Columnas:** las vacías son de una línea.
+- **Lista:**
+  - *Actualizada* y *Creada* dicen la fecha relativa si es de la última semana ("hace un momento", "hace 3 h", "ayer"). Si es más vieja, dicen la fecha corta. La fecha completa va en el tooltip.
+  - Las columnas sin ningún valor en las filas que se ven se esconden. La del orden elegido se ve siempre.
+- **Código sin ligaduras (13.1):** `code` y `pre` usan `font-variant-ligatures: none`. Si no, JetBrains Mono mostraría `<!--` como una flecha y `!=` como ≠.
+
+### 21.1 Criterios de aceptación de M13
+<!-- id: criterios-ui-compacta -->
+
+- [x] En escritorio, a 1440×900, la primera tarjeta empieza antes de los 320 px. En el teléfono, a 390×844, empieza antes de los 450 px.
+- [x] En el detalle, los pasos aparecen sin bajar, y las propiedades van en una fila de chips.
+- [x] El código de los documentos se ve sin ligaduras, y las acciones de los pasos miden 36 px o más en el teléfono.
