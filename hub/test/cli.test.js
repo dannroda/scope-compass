@@ -224,6 +224,18 @@ test('serve --exit-on-stdin-close: se cierra cuando se corta la entrada; sin la 
   assert.equal(await exit(without), 0);
 });
 
+test('serve --lan: escucha también en la red y dice en qué direcciones (D36)', async () => {
+  const { spawn } = await import('node:child_process');
+  const p = spawn(process.execPath, [join(REPO, 'hub', 'bin', 'scompass.js'), '--dir', dir, '--json', 'serve', '--port', '0', '--lan']);
+  const out = JSON.parse(String(await new Promise((r) => p.stdout.once('data', r))));
+  assert.match(out.url, /^http:\/\/127\.0\.0\.1:\d+\/$/, 'el dock y la CLI siguen por 127.0.0.1');
+  assert.ok(Array.isArray(out.lan));
+  for (const u of [out.url, ...out.lan]) assert.equal((await fetch(u + 'api/health')).status, 200, u);
+  const exited = new Promise((r) => p.on('exit', r));
+  await fetch(out.url + 'api/shutdown', { method: 'POST' });
+  assert.equal(await exited, 0);
+});
+
 test('serve --log: la salida se agrega al archivo (el dock en Windows, sin sh)', async () => {
   const { spawn } = await import('node:child_process');
   const { readFile: rf, writeFile: wf } = await import('node:fs/promises');

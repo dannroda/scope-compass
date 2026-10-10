@@ -215,10 +215,11 @@ Reglas que hacen esto posible:
 <!-- id: arranque -->
 
 ```
-npx scompass serve [--dir <proyecto>] [--port 4711] [--open]
+npx scompass serve [--dir <proyecto>] [--port 4711] [--open] [--lan]
 ```
 
 - Escucha **solo en `127.0.0.1`**. No hay autenticación porque no sale de la máquina.
+- `--lan` (también en `scompass home`) escucha además en la red, para abrirlo desde el teléfono en casa. No hay login, así que es solo para una red de confianza. Los pedidos con el `Origin` de otra página dan 403, también en local (D36).
 - `--open` abre el navegador por defecto.
 - Si `compass/` no existe, ofrece crearla (`scompass init`).
 
@@ -518,6 +519,8 @@ Un plugin de editor (`addons/scopecompass/`, GDScript) con tres niveles de integ
 <!-- id: hosting -->
 
 **Objetivo:** ver y editar el tablero desde el teléfono sin tener la PC encendida, en un servidor privado.
+
+**Mientras tanto, en casa:** `scompass home --lan` abre el Inicio en la red local, con la PC encendida y sin login (§5.1). D36 compara las opciones para salir de casa: la recomendada es Tailscale.
 
 - **Mismo hub, otro lugar:** una imagen Docker del mismo código, con `DocSource` en modo upload. **El `Store` sigue siendo archivos JSON**, dentro de un clon del repo en el servidor (§12.1).
 - **Privacidad:** preferentemente sin exponerlo a internet, dentro de una red privada tipo Tailscale (teléfono y PC en la misma red). Alternativa: túnel con login delante (por ejemplo Cloudflare Tunnel + Access).

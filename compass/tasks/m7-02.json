@@ -1,0 +1,38 @@
+{
+  "checklist": [
+    {
+      "detail": "Debería andar sin cambios: es una IP más, y el hub escucha en todas las interfaces.",
+      "done": false,
+      "text": "Probar --lan por la IP de Tailscale (100.x) desde el teléfono con datos móviles"
+    },
+    {
+      "detail": "Aceptar el nombre *.ts.net en el chequeo de Host si tailscale serve lo reenvía, y ver que el WebSocket pase por wss://.",
+      "done": false,
+      "text": "HTTPS con tailscale serve"
+    },
+    {
+      "detail": "Manifest y service worker; caché del último estado para leer sin conexión (§12).",
+      "done": false,
+      "text": "PWA instalable sobre HTTPS"
+    }
+  ],
+  "code": "7.2",
+  "created_at": "2026-10-10T22:57:09.278Z",
+  "milestone": "m07",
+  "notes": "La opción recomendada en D36 para cuando la red de casa no alcance: cifrado de punta a punta, solo tus dispositivos y HTTPS sin escribir autenticación.",
+  "order": 2,
+  "priority": "low",
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "hosting"
+    }
+  ],
+  "status": "todo",
+  "tags": [
+    "seguridad"
+  ],
+  "test": "Desde el teléfono, fuera de casa, el tablero se abre por HTTPS dentro de la tailnet, se instala como app y otro dispositivo fuera de la tailnet no llega.",
+  "title": "Acceso fuera de casa con Tailscale",
+  "updated_at": "2026-10-10T22:57:24.759Z"
+}

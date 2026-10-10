@@ -289,6 +289,7 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - El problema: el navegador no deja que otra página lea las respuestas del hub, salvo que esa página haga que su propio nombre apunte a 127.0.0.1 (DNS rebinding). Con los archivos del repo a la vista, eso ya no es solo el tablero.
   - La solución: un pedido con otro Host da 403, en el hub y en el Inicio.
   - Con token (hosting, §12), el token alcanza.
+  - D36 suma una IP como Host (para `--lan`) y corta los pedidos con el `Origin` de otra página.
 - **Sin vigilar el repo entero:** un proyecto de Godot tiene miles de archivos, más los que importa el editor. La lista se relee al entrar a la pestaña, con los eventos del hub, al volver a la ventana y con *Actualizar*. Es un `git ls-files` y un `git status`, que tardan milisegundos.
 - **Por qué:** en un proyecto de juego, el tablero, el diseño y el código van juntos, y saber qué cambió sin abrir otra herramienta ayuda a revisar las tareas. Pero editar y commitear siguen siendo del editor y de git, para que nada entre al historial sin que alguien lo mire.
 - **Descartado:**
@@ -316,3 +317,34 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Una línea dentro del archivo (`player.gd:42`): se corre con cada cambio.
   - Enlaces en línea a archivos dentro de las notas.
   - Mostrar las tareas terminadas de un archivo arriba de la lista: es lo pendiente lo que sirve mientras se edita.
+
+## D36 · Teléfono en casa: `--lan` sin login; para salir de casa, Tailscale
+**2026-10-10 · vigente** · spec §5.1, §12
+
+- **Qué:** `scompass home --lan` (y `serve --lan`) escucha en todas las interfaces, además de 127.0.0.1, y dice en qué direcciones de la red se abre. No hay login: cualquiera en esa red ve y edita todos los proyectos del Inicio y lee los archivos del repo. Es para la red de casa.
+- **`--lan` y no `--host <ip>`:** el dock, la CLI y el Inicio hablan con los hubs por 127.0.0.1. Si el hub escuchara solo en la IP de la red, dejarían de encontrarlo.
+- **Lo que cambia en el chequeo de D34:**
+  - Acepta un Host que sea una IP, además de localhost. Un nombre sigue dando 403, así que el DNS rebinding sigue cortado.
+  - Un pedido con el `Origin` de otra página da 403, en el hub y en el Inicio: ni escrituras (CSRF) ni WebSocket. Esto faltaba también en local: cualquier página podía apagar el hub con un POST a `/api/shutdown`, o abrir el WebSocket y leer el tablero. El dock y la CLI no mandan `Origin`.
+- **Las cuatro opciones, para cuando la red de casa no alcance:**
+
+| | (a) Token por link que queda en una cookie, con QR | (b) Usuario y contraseña, o passkey | (c) Tailscale | (d) Proxy con login delante (Caddy con basic auth, Cloudflare Tunnel + Access) |
+|---|---|---|---|---|
+| **En un wifi compartido** | Débil sin TLS: el token y la cookie viajan en claro | Igual que (a) sin TLS; la passkey ni anda sin HTTPS | Buena: cifrado de punta a punta y solo tus dispositivos | Basic auth en HTTP viaja en claro; Access es buena |
+| **En el teléfono** | Escanear el QR una vez | Entrar en cada dispositivo | Instalar la app y tener la VPN prendida (en Android, una VPN a la vez) | El navegador pide la clave y la recuerda; Access pide un código por mail cada tanto |
+| **Trabajo en el hub** | Chico: el link que deja la cookie y chequearla también en el WebSocket | El más grande: usuarios, hash, sesiones, login y revocar | Ninguno por la IP de Tailscale con `--lan`; con HTTPS (`tailscale serve`), aceptar su nombre en el chequeo de Host | Aceptar el nombre del proxy en el chequeo de Host |
+| **Fuera de casa** | No | Solo exponiéndolo a internet | Sí | Con Cloudflare, sí |
+| **HTTPS (PWA instalable)** | No | No | Sí, con `tailscale serve` | Sí |
+| **Para el hosting de §12** | Detrás de TLS | Sí, y es lo que haría falta con varias personas | Sí: es lo que §12 prefiere | Sí: es la alternativa de §12 |
+
+- **Para después:** (c). Cubre fuera de casa y da HTTPS, que la PWA necesita, sin escribir autenticación. (a) si hace falta algo intermedio en una red con invitados. (b) recién con varias personas.
+- **Riesgos de `--lan`, aceptados para casa:**
+  - HTTP en claro: el tablero y los archivos viajan sin cifrar por el wifi.
+  - Toda la API queda abierta a la red: apagar y reiniciar, prender y apagar hubs desde el Inicio, y el selector de carpetas, que se abre en la PC.
+  - El Inicio muestra todos los proyectos registrados. Los hubs sueltos siguen en 127.0.0.1, y el Inicio los reenvía.
+  - No hay acceso que revocar: se corta reiniciando sin `--lan`.
+- **Descartado:**
+  - `--host <ip>`: ver arriba.
+  - Dejar `/api/shutdown` y `restart` solo para 127.0.0.1: el Inicio igual deja apagar hubs desde la red, así que no cerraba nada.
+  - Un QR en la terminal: sería una dependencia para no tipear una IP una vez (después queda en favoritos).
+  - Que la PWA se pueda instalar: sin HTTPS el navegador no la instala. Queda para (c).

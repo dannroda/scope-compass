@@ -2,6 +2,7 @@
 // Sin hub escribe directo en compass/ con el store json-files (misma validación y escritura atómica).
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { networkInterfaces } from 'node:os';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,6 +33,9 @@ import { DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, splitList } from 
 
 const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
 const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
+// --lan (D36): las direcciones de este equipo en la red, para abrir el hub o el Inicio desde el teléfono.
+const lanUrls = (port) => Object.values(networkInterfaces()).flat().filter((a) => a.family === 'IPv4' && !a.internal).map((a) => `http://${a.address}:${port}/`);
+const LAN_WARNING = 'sin login: cualquiera en esta red puede ver y editar';
 
 const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
 
@@ -41,13 +45,15 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   update [--check]                          pone al día los archivos generados de compass/ (schema/ y AGENTS.md,
                                             la guía para agentes); --check solo avisa y sale con 1 si hay algo viejo
   serve [--port 4711] [--open] [--force]    levanta el hub en 127.0.0.1 (uno por proyecto; Ctrl+C para cerrar)
+        [--lan]                             también en la red, para el teléfono (sin login: solo en una red de
+                                            confianza, como la de casa)
         [--exit-on-stdin-close]             se cierra cuando se corta su entrada (lo usa el dock de Godot)
         [--tray]                            ícono en la bandeja del sistema, con "Detener hub"
         [--log <archivo>]                   agrega la salida a ese archivo (el dock en Windows)
   restart                                   reinicia el hub de este proyecto (para cargar código nuevo)
   hubs                                      hubs activos de todos los proyectos
   home [--port 4700] [--open] [--tray]      levanta el Inicio: todos los proyectos del equipo (uno solo por usuario;
-                                            si ya corre, dice dónde)
+       [--lan]                              si ya corre, dice dónde); --lan como en serve
   home restart                              reinicia el Inicio (para cargar código nuevo), en el mismo puerto
   home list                                 proyectos conocidos en este equipo, con el estado de su hub
   home add [<carpeta>]                      anota un proyecto sin levantar su hub (por defecto, el de --dir)
@@ -129,7 +135,7 @@ const OPTIONS = {
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
   raw: { type: 'boolean' }, check: { type: 'boolean' }, template: { type: 'string' }, due: { type: 'string' }, repeat: { type: 'string' },
-  port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, force: { type: 'boolean' }, log: { type: 'string' },
+  port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, lan: { type: 'boolean' }, force: { type: 'boolean' }, log: { type: 'string' },
   q: { type: 'string' }, blocked: { type: 'boolean' }, unblocked: { type: 'boolean' }, 'pending-steps': { type: 'boolean' }, 'with-refs': { type: 'boolean' },
   tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, assignee: { type: 'string' },
   title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
@@ -222,14 +228,16 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     let restart = false;
     const app = createHomeServer({ validators, onRestart: () => { restart = true; ac.abort(); }, onShutdown: () => ac.abort() });
     let addr;
-    try { addr = await listen(app, port); } catch (e) {
+    try { addr = await listen(app, port, { lan: o.lan }); } catch (e) {
       await app.close();
       if (e.code === 'EADDRINUSE') throw new StoreError('io_error', `el puerto ${port} está ocupado`);
       throw e;
     }
     registerHub({ port: addr.port, kind: 'home' });
-    const url = `http://${addr.address}:${addr.port}/`;
-    o.json ? print(JSON.stringify({ url, port: addr.port })) : print(`Inicio de Scope Compass en ${url} · ${projectsFile()} · Ctrl+C para cerrar`);
+    const url = `http://127.0.0.1:${addr.port}/`;
+    const lan = o.lan ? lanUrls(addr.port) : undefined;
+    o.json ? print(JSON.stringify({ url, port: addr.port, lan })) : print(`Inicio de Scope Compass en ${url} · ${projectsFile()} · Ctrl+C para cerrar`);
+    if (lan && !o.json) print(`En la red (${LAN_WARNING}): ${lan.join(' ') || 'ninguna dirección'}`);
     if (o.open) openUrl(url);
     const ac = new AbortController();
     let tray = null;
@@ -350,7 +358,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (!o.json) app.events.on('event', (e) => { if (e.type === 'warning') warn(`aviso [${e.code}] ${e.path}: ${e.message}`); });
       let addr;
       try {
-        addr = await listen(app, port);
+        addr = await listen(app, port, { lan: o.lan });
       } catch (e) {
         await app.close();
         if (e.code === 'EADDRINUSE') throw new StoreError('io_error', `el puerto ${port} está ocupado (¿ya hay un hub corriendo?)`);
@@ -359,8 +367,10 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       registerHub({ port: addr.port, project, attached: !!o['exit-on-stdin-close'] });
       // Registro de proyectos (D23): el Inicio lo conoce aunque después se apague. Un registro roto no frena al hub.
       try { await recordProject(project, { seen: true }); } catch (e) { warn(`aviso: no se anotó el proyecto en ${projectsFile()}: ${e.message}`); }
-      const url = `http://${addr.address}:${addr.port}/`;
-      o.json ? print(JSON.stringify({ url, port: addr.port, project })) : print(`Scope Compass en ${url} · ${project} · Ctrl+C para cerrar`);
+      const url = `http://127.0.0.1:${addr.port}/`;
+      const lan = o.lan ? lanUrls(addr.port) : undefined;
+      o.json ? print(JSON.stringify({ url, port: addr.port, project, lan })) : print(`Scope Compass en ${url} · ${project} · Ctrl+C para cerrar`);
+      if (lan && !o.json) print(`En la red (${LAN_WARNING}): ${lan.join(' ') || 'ninguna dirección'}`);
       const openBoard = () => openInBrowser(url, { onError: () => warn(`no se pudo abrir el navegador: ${url}`) });
       if (o.open) openBoard();
       // Desde la bandeja: si ya hay un tablero abierto que puede notificar, se le pide que llame la atención en

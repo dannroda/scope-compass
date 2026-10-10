@@ -1,5 +1,5 @@
 // Hub de Scope Compass (spec §5): Fastify sobre el store json-files de un proyecto.
-// createServer arma la app sin escuchar (los tests usan inject); listen la abre solo en 127.0.0.1.
+// createServer arma la app sin escuchar (los tests usan inject); listen la abre en 127.0.0.1 (o en la red, con lan).
 import { EventEmitter } from 'node:events';
 import { createServer as netServer } from 'node:net';
 import { readFileSync } from 'node:fs';
@@ -28,12 +28,19 @@ export const WEB_DIR = resourceDir('web');
 // Archivos de la UI (spec §7). Rutas fijas, sin comodín: un /api/... inexistente sigue siendo un 404 JSON.
 const WEB_TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8', '.svg': 'image/svg+xml' };
 
-// En local, solo pedidos dirigidos a 127.0.0.1 o localhost (14.1): una página de otro sitio que hace que su nombre
-// apunte a 127.0.0.1 (DNS rebinding) no puede leer el tablero ni los archivos del repo. El Inicio hace lo mismo.
+// Sin token, solo pedidos dirigidos a localhost o a una IP (14.1; la IP de la red con --lan, D36): una página de otro
+// sitio que hace que su nombre apunte acá (DNS rebinding) no puede leer el tablero ni los archivos del repo. Y nada
+// que venga de una página de otro origen (Origin distinto del Host): ni escrituras (CSRF) ni el WebSocket. El dock y
+// la CLI no mandan Origin. El Inicio hace lo mismo.
 export function localOnly(app) {
   app.addHook('onRequest', async (req, reply) => {
-    if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/i.test(req.headers.host ?? '')) {
-      return reply.code(403).send({ error: { code: 'forbidden', message: 'el hub solo atiende pedidos a 127.0.0.1 o localhost' } });
+    const host = req.headers.host ?? '';
+    const origin = req.headers.origin;
+    if (!/^(localhost|\d{1,3}(\.\d{1,3}){3}|\[[\da-f:.]+\])(:\d+)?$/i.test(host)) {
+      return reply.code(403).send({ error: { code: 'forbidden', message: 'el hub solo atiende pedidos a localhost o a una IP' } });
+    }
+    if (origin !== undefined && origin !== `http://${host}`) {
+      return reply.code(403).send({ error: { code: 'forbidden', message: `el hub no atiende pedidos de otra página (${origin})` } });
     }
   });
 }
@@ -224,7 +231,8 @@ export async function freePortFrom(port, tries = 20) {
   return null;
 }
 
-export async function listen(app, port) {
-  await app.listen({ host: HOST, port });
+// lan (D36): en todas las interfaces, para abrirlo desde el teléfono; el dock y la CLI siguen por 127.0.0.1.
+export async function listen(app, port, { lan = false } = {}) {
+  await app.listen({ host: lan ? '0.0.0.0' : HOST, port });
   return app.server.address();
 }

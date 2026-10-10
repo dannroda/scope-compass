@@ -716,7 +716,7 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 **Notas:** Pedido del usuario: los pasos eran ambiguos cortos o demasiado largos para el dock. `checklist[].detail` opcional. Web: ▸ despliega, ✎ edita texto y detalle (vacío lo quita). Dock: ▸ debajo del checkbox. CLI: `step add|set|rm`, `show` con el detalle sangrado. Export md con el detalle sangrado (y `tools/artifact_to_md.py`, para seguir idénticos). Los enlaces del detalle cuentan en refs check, backlinks y refs suggest. `refs suggest` también reconoce "en el GDD (§4.3)".
 
-## M7 — Hosting privado  (0/1)
+## M7 — Hosting privado  (0/2)
 
 El mismo hub en un servidor privado para usarlo desde el teléfono, con git como almacenamiento (§12).
 
@@ -725,26 +725,43 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
 
-### 7.1 Investigar: abrir el hub desde el teléfono por la LAN · Pendiente
+### 7.1 Investigar: abrir el hub desde el teléfono por la LAN · Revisión
 
 **Prioridad:** media · **Etiquetas:** `investigacion`, `seguridad`
 
-- [ ] Relevar el estado actual
+- [x] Relevar el estado actual
   El hub escucha solo en 127.0.0.1 y sin auth (spec §servidor). createServer ya acepta un token, pero como header Authorization: Bearer, que el navegador del teléfono no puede mandar. Hoy funciona un túnel SSH desde el teléfono (Termux / Termius).
-- [ ] Comparar opciones de acceso
+- [x] Comparar opciones de acceso
   (a) --lan escuchando en la IP local + token por link que queda en cookie (y QR en la CLI); (b) auth de verdad: usuario/contraseña o passkey con sesión; (c) Tailscale (o similar) y seguir escuchando solo en la interfaz de la VPN; (d) reverse proxy con login delante (Caddy + basic auth, Cloudflare Access). Para cada una: seguridad en un wifi compartido, fricción en el teléfono, trabajo en el hub, si sirve también para el hosting de §12.
-- [ ] Riesgos a cubrir
+- [x] Riesgos a cubrir
   HTTP sin TLS en la LAN (token o cookie viajan en claro), el WebSocket también autenticado, CSRF en la API de escritura, endpoints peligrosos (/api/shutdown, restart) que no deberían quedar expuestos, el Inicio (multi-hub) que proxea proyectos, y revocar el acceso.
 - [ ] Probar en un teléfono real
-  Android e iPhone si se puede: login, tiempo real por WebSocket, PWA instalable.
-- [ ] Decisión
+  Android e iPhone si se puede, con scompass home --lan: abrir la dirección que escribe, editar y ver los cambios en vivo (WebSocket). Login y PWA quedan para 7.2 (D36).
+- [x] Decisión
   Registrar en docs/decisiones.md la opción elegida y lo descartado; dejar las tareas de implementación en M7.
 
-**Prueba:** Hay una decisión registrada con la comparación de opciones, y una prueba de concepto de la elegida abre el tablero desde el teléfono por el wifi sin que otro dispositivo de la red pueda entrar sin credenciales.
+**Prueba:** D36 registra la comparación de las cuatro opciones. Con scompass home --lan, el tablero se abre y se edita desde el teléfono por el wifi de casa; un Host con nombre o un pedido con el Origin de otra página dan 403. Sin login, por pedido: es para la red de casa.
 
-**Notas:** Pedido desde Project Epiphany (2026-10-10): ver el panel en el teléfono por el wifi de casa. Puede convenir auth de verdad en vez de un token suelto.
+**Notas:** Pedido desde Project Epiphany (2026-10-10): ver el panel en el teléfono por el wifi de casa. Por ahora alcanza con abrirlo en la red, sin login (usuario, 2026-10-10). Hecho: --lan en serve y home (listen en 0.0.0.0; las URLs de siempre siguen en 127.0.0.1 para el dock, la CLI y el Inicio, y se imprimen las direcciones de la red, también en --json). El chequeo de Host (D34) acepta una IP y no un nombre. Además, cualquier pedido con un Origin distinto de http://<Host> da 403 en el hub y en el Inicio: faltaba también en local, donde cualquier página podía hacer POST /api/shutdown o abrir el WebSocket y leer el tablero. Probado con un Inicio aislado --lan por 192.168.100.56 desde Chromium a 390×844: el tablero carga, el WebSocket conecta y un PATCH desde la página se guarda; Host malo.example y un POST con Origin ajeno dan 403. --host <ip> descartado: el dock y la CLI hablan por 127.0.0.1. De paso: el import de Godot en los tests del dock a veces aborta al salir (bug de tiempos del motor: EditorHelp::load_script_doc_cache diferido corre con EditorNode ya borrado); se reintenta una vez.
 
 **Referencias:** `docs/spec.md#hosting`, `docs/spec.md#servidor`
+
+### 7.2 Acceso fuera de casa con Tailscale · Pendiente
+
+**Prioridad:** baja · **Etiquetas:** `seguridad`
+
+- [ ] Probar --lan por la IP de Tailscale (100.x) desde el teléfono con datos móviles
+  Debería andar sin cambios: es una IP más, y el hub escucha en todas las interfaces.
+- [ ] HTTPS con tailscale serve
+  Aceptar el nombre *.ts.net en el chequeo de Host si tailscale serve lo reenvía, y ver que el WebSocket pase por wss://.
+- [ ] PWA instalable sobre HTTPS
+  Manifest y service worker; caché del último estado para leer sin conexión (§12).
+
+**Prueba:** Desde el teléfono, fuera de casa, el tablero se abre por HTTPS dentro de la tailnet, se instala como app y otro dispositivo fuera de la tailnet no llega.
+
+**Notas:** La opción recomendada en D36 para cuando la red de casa no alcance: cifrado de punta a punta, solo tus dispositivos y HTTPS sin escribir autenticación.
+
+**Referencias:** `docs/spec.md#hosting`
 
 ## M8 — Inicio, listas y plantillas (v3)  (17/17)
 

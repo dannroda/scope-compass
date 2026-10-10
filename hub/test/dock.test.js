@@ -21,10 +21,15 @@ Object.assign(process.env, { SCOMPASS_REGISTRY: join(ISOLATED, 'registry'), SCOM
 // Los íconos del addon se usan con preload: en un clon nuevo Godot tiene que importarlos primero.
 import { before, after } from 'node:test';
 after(() => rmSync(ISOLATED, { recursive: true, force: true, maxRetries: 10 }));
+// Con un reintento: con la suite entera en paralelo, Godot 4.8 a veces aborta al salir del --import. El hilo que
+// carga la documentación deja diferido EditorHelp::load_script_doc_cache, que corre con el EditorNode ya borrado
+// ("Parameter "singleton" is null" en is_cmdline_mode). Es del motor, de tiempos, y la importación ya terminó.
 before(() => {
   if (!hasGodot) return;
-  try { execFileSync('godot', ['--headless', '--path', REPO, '--import'], { stdio: 'pipe', timeout: 120000, maxBuffer: 16 << 20 }); }
-  catch (e) { throw new Error(`godot --import falló (${e.signal ?? e.status ?? e.code}):\n${String(e.stdout ?? '').split('\n').slice(-20).join('\n')}\n${String(e.stderr ?? '').slice(-3000)}`); }
+  for (let i = 0; ; i++) {
+    try { execFileSync('godot', ['--headless', '--path', REPO, '--import'], { stdio: 'pipe', timeout: 120000, maxBuffer: 16 << 20 }); return; }
+    catch (e) { if (i === 0) continue; throw new Error(`godot --import falló (${e.signal ?? e.status ?? e.code}):\n${String(e.stdout ?? '').split('\n').slice(-20).join('\n')}\n${String(e.stderr ?? '').slice(-3000)}`); }
+  }
 });
 
 beforeEach(async () => {

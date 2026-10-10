@@ -19,7 +19,7 @@ Organizador de proyectos de videojuegos: tablero de tareas por hito, con los dat
 ## Principios
 
 1. **Los datos viven en git; la app es opcional.** Un archivo JSON por hito y por tarea, en `compass/` dentro de cada proyecto. Se leen y editan a mano (ver [`compass/README.md`](compass/README.md)).
-2. **Local primero.** El hub escucha en `127.0.0.1`. El hosting privado para el teléfono viene después y usa git como almacenamiento.
+2. **Local primero.** El hub escucha en `127.0.0.1`. Con `--lan` se abre desde el teléfono en la red de casa, sin login (D36). El hosting privado viene después y usa git como almacenamiento.
 3. **Personas, agentes y el editor por igual.** UI web para personas, CLI con `--json` para agentes, WebSocket para el dock de Godot.
 
 ## Estructura

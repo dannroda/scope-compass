@@ -83,13 +83,22 @@ test('solo rutas que git lista: ni lo ignorado, ni ../, ni una carpeta', async (
   }
 });
 
-test('el hub solo atiende pedidos a 127.0.0.1 o localhost (DNS rebinding)', async () => {
+test('el hub solo atiende pedidos a localhost o a una IP (DNS rebinding) y de su propia página (CSRF)', async () => {
   assert.equal((await app.inject({ url: '/api/files', headers: { host: 'malo.example:4711' } })).statusCode, 403);
   assert.equal((await app.inject({ url: '/api/files', headers: { host: 'localhost:4711' } })).statusCode, 200);
+  assert.equal((await app.inject({ url: '/api/files', headers: { host: '192.168.1.5:4711' } })).statusCode, 200, 'la IP de la red, con --lan');
+  // Otra página no escribe ni abre el WebSocket (un POST sin cuerpo bastaba para apagar el hub).
+  const from = (origin, method = 'GET', url = '/api/files') => app.inject({ method, url, headers: { host: '127.0.0.1:4711', origin } });
+  assert.equal((await from('http://malo.example', 'POST', '/api/shutdown')).statusCode, 403);
+  assert.equal((await from('null', 'POST', '/api/shutdown')).statusCode, 403);
+  assert.equal((await from('http://127.0.0.1:9999')).statusCode, 403, 'otro puerto es otra página');
+  assert.equal((await app.inject({ url: '/ws', headers: { host: '127.0.0.1:4711', origin: 'http://malo.example', connection: 'upgrade', upgrade: 'websocket', 'sec-websocket-version': '13', 'sec-websocket-key': 'dGhlIHNhbXBsZSBub25jZQ==' } })).statusCode, 403, 'el WebSocket tampoco');
+  assert.equal((await from('http://127.0.0.1:4711')).statusCode, 200, 'su propia página sí');
   const { createHomeServer } = await import('../src/home.js');
   const home = createHomeServer({ validators: V });
   try {
     assert.equal((await home.inject({ url: '/api/projects', headers: { host: 'malo.example' } })).statusCode, 403, 'el Inicio también');
+    assert.equal((await home.inject({ method: 'POST', url: '/api/shutdown', headers: { origin: 'http://malo.example' } })).statusCode, 403);
     assert.equal((await home.inject({ url: '/api/projects' })).statusCode, 200);
   } finally { await home.close(); }
 });
