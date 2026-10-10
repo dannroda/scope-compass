@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import { registerApi } from './api.js';
 import { registerDocsApi } from './docs-api.js';
+import { registerFilesApi } from './files-api.js';
 import { createDocWatcher } from './doc-watcher.js';
 import { createAutoExport } from './auto-export.js';
 import { registerWs } from './ws.js';
@@ -26,6 +27,16 @@ export const WEB_DIR = resourceDir('web');
 
 // Archivos de la UI (spec §7). Rutas fijas, sin comodín: un /api/... inexistente sigue siendo un 404 JSON.
 const WEB_TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8', '.svg': 'image/svg+xml' };
+
+// En local, solo pedidos dirigidos a 127.0.0.1 o localhost (14.1): una página de otro sitio que hace que su nombre
+// apunte a 127.0.0.1 (DNS rebinding) no puede leer el tablero ni los archivos del repo. El Inicio hace lo mismo.
+export function localOnly(app) {
+  app.addHook('onRequest', async (req, reply) => {
+    if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/i.test(req.headers.host ?? '')) {
+      return reply.code(403).send({ error: { code: 'forbidden', message: 'el hub solo atiende pedidos a 127.0.0.1 o localhost' } });
+    }
+  });
+}
 
 const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, invalid_file: 409, io_error: 500 };
 
@@ -85,6 +96,7 @@ export function createServer({ projectDir, store, validators, watch = false, exp
     }
   };
 
+  if (!token) localOnly(app);
   if (token) {
     app.addHook('onRequest', async (req, reply) => {
       if (req.headers.authorization !== `Bearer ${token}`) {
@@ -131,6 +143,7 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   registerApi(app, { store, projectDir, publish });
   // Un documento agregado o quitado (12.2): se miran los documentos nuevos y la UI recarga la lista.
   registerDocsApi(app, { store, projectDir, validators, onDocsChanged: async (alias) => { await watchDocs(); emit({ type: 'doc_changed', alias }); } });
+  registerFilesApi(app, { projectDir });
   app.register(registerWs, { store, publish, version: VERSION, boards });
 
   // Cambios sin commitear (4.4): GET /api/git, y un evento `git` cuando el número cambia después de una escritura

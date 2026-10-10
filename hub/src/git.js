@@ -52,9 +52,12 @@ export async function docsStatus(projectDir) {
   return { repo: true, status };
 }
 
-/** Commits que tocaron el archivo, del más nuevo al más viejo, siguiendo renombres: [{ hash, date, author, subject }]. */
-export async function docLog(projectDir, path, { limit = 20 } = {}) {
-  const out = await git(projectDir, ['log', '--follow', `-n${limit}`, '--format=%h%x1f%aI%x1f%an%x1f%s%x1e', '--', path]);
+/**
+ * Commits que tocaron el archivo, del más nuevo al más viejo, siguiendo renombres: [{ hash, date, author, subject }].
+ * Con follow: false, los de una carpeta ('.': todo el proyecto, 14.1).
+ */
+export async function docLog(projectDir, path, { limit = 20, follow = true } = {}) {
+  const out = await git(projectDir, ['log', ...(follow ? ['--follow'] : []), `-n${limit}`, '--format=%h%x1f%aI%x1f%an%x1f%s%x1e', '--', path]);
   return (out ?? '').split('\x1e').map((l) => l.trim()).filter(Boolean).map((l) => {
     const [hash, date, author, subject] = l.split('\x1f');
     return { hash, date, author, subject };
@@ -72,4 +75,18 @@ export async function docDiff(projectDir, path, { untracked = false, text = '' }
   }
   const lines = text.replace(/\n$/, '').split('\n');
   return text ? `--- /dev/null\n+++ b/${path}\n@@ -0,0 +1,${lines.length} @@\n${lines.map((l) => '+' + l).join('\n')}\n` : '';
+}
+
+// Archivos del repo (14.1). Lo que git no ignora: los seguidos (también los borrados del disco sin commitear) y los
+// nuevos. Rutas relativas al proyecto, con "/". only: una ruta exacta, para saber si está. Sin repo, null.
+export async function repoFiles(projectDir, only = null) {
+  const out = await git(projectDir, ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', only === null ? '.' : ':(literal)' + only]);
+  return out === null ? null : [...new Set(out.split('\0').filter(Boolean))].sort();
+}
+
+/** { branch, ahead, behind }: la rama (null si HEAD está suelto) y, si sigue a otra, cuántos commits le lleva y le faltan. */
+export async function repoBranch(projectDir) {
+  const [branch, ab] = await Promise.all([git(projectDir, ['symbolic-ref', '--short', '-q', 'HEAD']), git(projectDir, ['rev-list', '--left-right', '--count', '@{upstream}...HEAD'])]);
+  const [behind, ahead] = ab ? ab.trim().split(/\s+/).map(Number) : [];
+  return { branch: branch?.trim() || null, ...(ab && { ahead, behind }) };
 }

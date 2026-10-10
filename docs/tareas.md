@@ -1441,3 +1441,39 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 **Prueba:** scompass ref add <tarea> gdd.md y scompass show <tarea>: dice «Referencias: gdd.md», no «gdd.md#undefined»; lo mismo en la web.
 
 **Notas:** Visto en Project Epiphany (m11-20) el 2026-10-10. Hecho: solo fallaba scompass show; la web y el dock ya separaban la ref sin sección (12.1).
+
+## M14 — Archivos del repo  (0/3)
+
+Ver los archivos del repo y su estado de git desde la web, sin salir del tablero.
+
+**Hecho cuando:**
+- La web tiene una pestaña Archivos, al lado de Documentos, con el árbol de los archivos del repo y la marca de git de cada uno.
+- Un archivo se ve en la web (texto con resaltado, markdown renderizado o imagen), con su estado de git, su diff contra HEAD y su historial.
+- Sin archivo elegido, la pestaña muestra la rama, los cambios sin commitear y los últimos commits.
+- Solo se ven los archivos que git no ignora, y la app sigue sin escribir archivos ni commitear.
+
+### 14.1 API de archivos del repo y su estado de git · En curso
+
+- [x] GET /api/files: archivos que git no ignora, su estado, la rama y los últimos commits
+- [x] GET /api/files/file, /diff y /raw: contenido con resaltado, diff contra HEAD, historial e imágenes
+- [x] Solo rutas que git lista; el hub solo atiende pedidos a 127.0.0.1 o localhost
+- [x] Tests de la API
+
+**Prueba:** En un repo con un archivo modificado, uno nuevo y uno ignorado: /api/files lista los dos primeros con su estado y no el ignorado; /api/files/file de un .gd trae el código resaltado; pedir el ignorado o ../ da 404.
+
+**Notas:** Todo de lectura, como el estado de git de los documentos (12.3): reusa git.js (docsStatus, docLog, docDiff). Hecho: hub/src/files-api.js. GET /api/files trae { repo, branch, ahead, behind, files, status, commits }: los archivos salen de git ls-files --cached --others --exclude-standard (lo seguido y lo nuevo, nunca lo ignorado), más lo que solo está en el estado (un borrado ya agregado al índice); la rama de symbolic-ref (null con HEAD suelto) y ahead/behind solo si sigue a otra; los últimos 20 commits del proyecto (docLog con follow: false sobre '.'). GET /api/files/file?path= devuelve kind text (html con Prism por extensión: .gd, .tscn/.tres/.godot/.import como ini, json, js, py, cs, glsl, yaml, html, css), markdown (renderizado), image, binary (un NUL en los primeros 8000 bytes), big (más de 1 MB), link (un enlace simbólico no se sigue: se dice adónde apunta) o missing, con git, size y su historial. /diff: contra HEAD, el nuevo entero, binary o truncated cuando no hay texto que mostrar. /raw: solo imágenes (png, jpg, gif, webp), con nosniff y CSP sandbox. Una ruta se acepta solo si git la lista (o está en el estado), sin ../, sin / adelante y sin carpetas; si no, 404. Además, el hub y el Inicio solo atienden pedidos con Host 127.0.0.1 o localhost (403 si no): una página de otro sitio que apunte su nombre a 127.0.0.1 ya no puede leer el tablero ni los archivos. Sin token nada más; con token (hosting) manda el token. Sin repo: { repo: false, files: [] }.
+
+### 14.2 Pestaña Archivos en la web · Pendiente
+
+- [ ] Pestaña Archivos al lado de Documentos (config.views acepta files)
+- [ ] Árbol por carpetas con la marca de git, filtro por nombre y Solo con cambios
+- [ ] Archivo: contenido, estado, Ver los cambios e historial
+- [ ] Sin archivo elegido: rama, cambios sin commitear y últimos commits
+- [ ] Tests de UI
+
+**Prueba:** Abrir Archivos, ver un archivo modificado marcado en el árbol, abrirlo, ver sus cambios, commitear desde la terminal y que la marca se vaya al actualizar.
+
+### 14.3 Spec, decisión y guía de M14 · Pendiente
+
+- [ ] Spec §22 y decisión
+- [ ] README, web/README y §16.6 (views) al día

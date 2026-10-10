@@ -28,7 +28,7 @@ import { checkItem } from './lists.js';
 import { pickFolder } from './desktop.js';
 import { folderName, forgetProject, loadProjects, projectsDataDir, projectsFile, projectsStatus, ProjectsError, recordProject } from './projects.js';
 import { hubsOf, listHubs } from './registry.js';
-import { VERSION, WEB_DIR } from './server.js';
+import { localOnly, VERSION, WEB_DIR } from './server.js';
 import { createHttpStore, detectHub } from './store/http.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { loadCompass } from './store/load.js';
@@ -49,6 +49,7 @@ const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, inva
 // (medio segundo: un hub que se levanta se ve en el Inicio en menos de 1 s, §16.8).
 export function createHomeServer({ validators, now = () => new Date(), pollMs = 500, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null }) {
   const app = Fastify({ logger, forceCloseConnections: true });
+  localOnly(app);
   const events = new EventEmitter();
   app.decorate('events', events);
   const emit = (e) => events.emit('event', e);

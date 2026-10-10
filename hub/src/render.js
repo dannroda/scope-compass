@@ -23,6 +23,13 @@ md.renderer.rules.link_open = (tokens, i, opts, env, self) => {
   return self.renderToken(tokens, i, opts);
 };
 
+/** Un archivo de código entero (14.1): resaltado si Prism conoce el lenguaje; si no, escapado. */
+export function renderCode(text, lang) {
+  const l = ALIASES[lang] ?? lang;
+  const known = !!(l && Prism.languages[l]);
+  return `<pre class="code${known ? ' language-' + l : ''}"><code>${known ? Prism.highlight(text, Prism.languages[l], l) : md.utils.escapeHtml(text)}</code></pre>`;
+}
+
 /**
  * HTML de un fragmento de markdown. sections: las secciones de ese fragmento, en orden: cada título recibe
  * id="sec-<id>" y data-section, para enlazar desde el índice y las referencias.

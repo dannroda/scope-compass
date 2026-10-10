@@ -1,0 +1,12 @@
+{
+  "code": "M14",
+  "done_when": [
+    "La web tiene una pestaña Archivos, al lado de Documentos, con el árbol de los archivos del repo y la marca de git de cada uno.",
+    "Un archivo se ve en la web (texto con resaltado, markdown renderizado o imagen), con su estado de git, su diff contra HEAD y su historial.",
+    "Sin archivo elegido, la pestaña muestra la rama, los cambios sin commitear y los últimos commits.",
+    "Solo se ven los archivos que git no ignora, y la app sigue sin escribir archivos ni commitear."
+  ],
+  "goal": "Ver los archivos del repo y su estado de git desde la web, sin salir del tablero.",
+  "order": 14,
+  "title": "Archivos del repo"
+}
