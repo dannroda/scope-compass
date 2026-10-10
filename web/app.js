@@ -1819,6 +1819,12 @@
   function setFilter(id) { S.filter = id; pref('filter', id); render(); }
   function openTask(id) { S.openId = id; S.confirmDelete = false; S.linkSearch = null; S.fileSearch = null; render(); document.getElementById('detail').focus({ preventScroll: true }); }
   function closeTask() { S.openId = null; S.confirmDelete = false; render(); }
+  // Un clic afuera del detalle lo cierra, salvo que ese clic abra otra tarea (una tarjeta, una fila, un enlace). Cuenta
+  // dónde empezó: arrastrar una selección desde las notas hasta afuera no lo cierra, y un botón del detalle que se
+  // redibuja (y queda fuera del documento) tampoco.
+  let openAtDown = null;
+  document.addEventListener('pointerdown', (e) => { openAtDown = S.openId && !e.target.closest('#detail') ? S.openId : null; });
+  document.addEventListener('click', () => { if (openAtDown && openAtDown === S.openId) closeTask(); openAtDown = null; });
   // Soltar una tarjeta sobre otra: toma el estado de esa columna y, si son del mismo hito, queda justo antes.
   function dropBefore(id, target) {
     const t = S.tasks.find((x) => x.id === id);

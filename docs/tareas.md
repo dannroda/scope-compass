@@ -1566,7 +1566,7 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 
 **Notas:** Hecho: spec §23 (el dato, CLI, web, dock) con §23.1 y cómo se probó la parte del editor; D35 (files aparte de refs, rutas y no uid://, solo lo que git lista, tareas de un archivo calculadas en el cliente). §11 y §11.1 marcan hechos el módulo de referencias a res://, las tareas del script abierto y abrir desde la tarea. README (M15 en el estado), web/README e instalar.md (cómo se vinculan y se abren). Suite completa: 345 pasan, 0 fallan.
 
-## M16 — Uso en el teléfono  (4/4)
+## M16 — Uso en el teléfono  (5/5)
 
 Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren por la red de casa (D36).
 
@@ -1574,6 +1574,7 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 - En el teléfono, el tablero se desliza de costado, una columna por pantalla, en vez de apilar las columnas.
 - En el teléfono, Documentos muestra fijos abajo el índice, para saltar de sección, y las tareas de la sección que se está leyendo.
 - Las notas y los demás campos de texto del detalle crecen con el texto, sin arrastrar la esquina.
+- Un clic afuera del detalle de la tarea lo cierra.
 
 ### 16.1 Tablero deslizable en el teléfono · Hecho
 
@@ -1621,5 +1622,15 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 **Prueba:** A 390×844 táctil, en #docs/gdd/ventanas-ataque el desplegable de la barra lista las cuatro secciones con la actual elegida; elegir camara cambia el hash y dice Sin tareas; elegir juego la deja arriba.
 
 **Notas:** Pedido del usuario (2026-10-10): un desplegable con el índice en la barra de las referencias, para navegar más fácil. Hecho: un select nativo (en el teléfono abre el selector del sistema) a la izquierda de la barra de 16.2, con las secciones sangradas por nivel y la actual elegida; elegir una cambia el hash como los enlaces del índice. Las tareas van al lado en su propio contenedor que se desliza, así el desplegable queda fijo. La barra ahora está siempre que el documento tenga secciones: sin tareas dice Sin tareas. Visto con la spec de este repo a 390 y 602 px.
+
+**Referencias:** `docs/spec.md#telefono`
+
+### 16.5 Un clic afuera cierra el detalle de la tarea · Hecho
+
+**Etiquetas:** `ui`
+
+**Prueba:** Con el detalle abierto: tildar un paso no lo cierra; arrastrar una selección desde las notas hasta afuera tampoco; una tarjeta de otra columna abre esa tarea; un clic en el título del proyecto lo cierra. El test falla sin el cambio.
+
+**Notas:** Pedido del usuario (2026-10-10): al abrir una tarea, un clic afuera del panel debería cerrarlo. Hecho: dos escuchas en document, sin fondo nuevo (con el panel abierto se sigue pudiendo arrastrar y abrir otras tarjetas). pointerdown anota la tarea abierta si empieza fuera de #detail; click cierra si sigue abierta la misma. Así un clic que abre otra tarea (tarjeta, fila de la lista) cambia de tarea, una selección que sale del panel no cierra, y un botón del detalle que se redibuja (queda fuera del documento al llegar el click) tampoco. Las otras vistas ya cierran la tarea al entrar, así que sus enlaces a tareas no chocan.
 
 **Referencias:** `docs/spec.md#telefono`

@@ -254,6 +254,37 @@ test('notas y "cómo probarlo" crecen con el texto, sin arrastrar la esquina (16
   await page.context().close();
 });
 
+test('un clic afuera del detalle lo cierra; otra tarjeta cambia de tarea; adentro o arrastrando una selección, no (16.5)', async () => {
+  const page = await open();
+  const openId = () => page.evaluate(() => (document.getElementById('detail').hidden ? null : document.querySelector('#detail #d-title')?.value));
+  await page.click('.card[data-id="m1-07"]');
+  const title = await openId();
+  assert.ok(title);
+  // Adentro: tildar un paso redibuja el detalle, y sigue abierto.
+  await page.locator('#detail .checklist input').first().click();
+  await page.waitForTimeout(300);
+  assert.equal(await openId(), title, 'un clic adentro no lo cierra');
+  // Una selección que empieza en las notas y termina afuera.
+  const notes = await page.locator('#d-notes').boundingBox();
+  await page.mouse.move(notes.x + notes.width - 10, notes.y + 10);
+  await page.mouse.down();
+  await page.mouse.move(40, notes.y + 10, { steps: 5 });
+  await page.mouse.up();
+  assert.equal(await openId(), title, 'arrastrar hasta afuera no lo cierra');
+  // Otra tarjeta: cambia de tarea.
+  // Una tarjeta que el detalle no tape: m1-06 pasa a Pendiente, la primera columna.
+  assert.equal(await cli(['move', 'm1-06', 'todo']), 0);
+  await page.waitForSelector('.col[aria-label="Pendiente"] .card[data-id="m1-06"]');
+  await page.click('.card[data-id="m1-06"]');
+  const other = await openId();
+  assert.ok(other && other !== title, 'otra tarjeta abre otra tarea');
+  // Afuera, en el título del proyecto: se cierra.
+  await page.click('h1');
+  assert.equal(await page.isHidden('#detail'), true);
+  await page.context().close();
+  assert.equal(await cli(['move', 'm1-06', 'done']), 0);
+});
+
 // --- Criterios de §14 con UI (3.8) ---
 
 const REFERENCE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'docs', 'reference', 'tablero-artifact.html');
