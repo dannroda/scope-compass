@@ -1,7 +1,7 @@
 {
   "description": "Proyecto de juego: tablero por hitos, listas de ideas y assets, y los documentos de docs/, con el GDD",
   "config": {
-    "views": ["board", "lists", "docs"],
+    "views": ["board", "lists", "docs", "files"],
     "docs": [{ "alias": "gdd", "path": "docs/gdd.md" }, { "alias": "docs", "path": "docs/**/*.md" }]
   },
   "milestones": {

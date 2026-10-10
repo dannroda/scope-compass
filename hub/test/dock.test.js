@@ -15,7 +15,11 @@ const skip = !hasGodot && 'sin godot en el PATH';
 let dir;
 // Los íconos del addon se usan con preload: en un clon nuevo Godot tiene que importarlos primero.
 import { before } from 'node:test';
-before(() => { if (hasGodot) execFileSync('godot', ['--headless', '--path', REPO, '--import'], { stdio: 'ignore', timeout: 120000 }); });
+before(() => {
+  if (!hasGodot) return;
+  try { execFileSync('godot', ['--headless', '--path', REPO, '--import'], { stdio: 'pipe', timeout: 120000, maxBuffer: 16 << 20 }); }
+  catch (e) { throw new Error(`godot --import falló (${e.code ?? e.status}):\n${String(e.stdout ?? '').split('\n').slice(-20).join('\n')}\n${String(e.stderr ?? '').slice(-3000)}`); }
+});
 
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'scompass-dock-'));

@@ -17,13 +17,18 @@
     // Pasos: detalles desplegados y el paso en edición ("tarea:índice").
     stepsOpen: new Set(), editStep: null,
     // Listas (D25): las del proyecto, la abierta, el ítem en edición ("lista:n") y las pestañas de config.views.
-    lists: [], list: '', editItem: null, views: ['board', 'lists', 'docs'], viewsApplied: false,
+    lists: [], list: '', editItem: null, views: ['board', 'lists', 'docs', 'files'], viewsApplied: false,
+    // Archivos del repo (M14): lo de /api/files, el filtro, Solo con cambios, el archivo abierto, sus carpetas abiertas
+    // y si se ven sus cambios en lugar del archivo.
+    filesData: null, fileQ: '', filesChanged: false, file: '', fileShown: null, filesOpen: new Set(), fileDiff: false,
     // Cambios sin commitear en compass/ y el export (4.4), de /api/git y el evento `git`.
     git: null };
   const sectionCache = new Map(); // "alias#id" → html
   const docCache = new Map(); // alias → html
   // Git de un documento (12.6): alias → { log, diff } (undefined: sin pedir; null: pidiéndose). Se olvida al cambiar.
   const gitCache = new Map();
+  // Archivos del repo (14.2): ruta → { info, diff }, igual que gitCache. Se olvida al volver a leer la lista.
+  const fileCache = new Map();
 
   // Cliente de la API (spec §5.2). Los errores llegan como { code, message } del hub.
   class ApiError extends Error {
@@ -74,6 +79,9 @@
     section: (alias, id) => call('GET', '/api/docs/' + encodeURIComponent(alias) + '/sections/' + encodeURIComponent(id)),
     lists: () => call('GET', '/api/lists'),
     git: () => call('GET', '/api/git'),
+    files: () => call('GET', '/api/files'),
+    file: (path) => call('GET', '/api/files/file?path=' + encodeURIComponent(path)),
+    fileDiff: (path) => call('GET', '/api/files/diff?path=' + encodeURIComponent(path)),
     home: () => call('GET', '/api/home'),
     listCreate: (title) => call('POST', '/api/lists', { title }),
     listPatch: (id, patch, etag) => call('PATCH', '/api/lists/' + encodeURIComponent(id), patch, etag),
@@ -996,6 +1004,13 @@
 
   // Vista Documentos: índice, documento y tareas que referencian la sección actual.
   function readHash() {
+    const wasFiles = S.view === 'files';
+    const f = /^#files(?:\/(.+))?$/.exec(location.hash);
+    if (f) {
+      S.view = 'files'; S.openId = null; S.confirmDelete = false; S.file = f[1] ? decodeURIComponent(f[1]) : '';
+      if (!wasFiles && S.filesData) refreshFiles(); // al volver a la pestaña, la lista puede estar vieja
+      return;
+    }
     const l = /^#lists(?:\/([^/]+))?$/.exec(location.hash);
     if (l) { S.view = 'lists'; S.openId = null; S.confirmDelete = false; if (l[1]) S.list = decodeURIComponent(l[1]); return; }
     const m = /^#docs(?:\/([^/]+)(?:\/([^/]+))?)?$/.exec(location.hash);
@@ -1325,6 +1340,178 @@
     gitCache.delete(alias);
     Promise.all([api.docs(), api.config()]).then(([r, c]) => { S.docs = r.docs; S.docEntries = c.docs ?? []; render(); }).catch(() => {});
   }
+
+  // --- Archivos del repo (M14, spec §22) ---
+  // Lo que git no ignora, con su estado. Se vuelve a leer al entrar a la pestaña, con cualquier evento del hub, al
+  // volver a la ventana y con Actualizar: los cambios hechos en el editor no avisan solos.
+  let filesLoading = false, filesTimer = null, filesStamp = 0;
+  async function loadFiles() {
+    if (filesLoading) return;
+    filesLoading = true;
+    try { S.filesData = await api.files(); } catch (e) { S.filesData = { error: e.message }; }
+    filesLoading = false;
+    fileCache.clear();
+    filesStamp = Date.now();
+    renderFiles();
+  }
+  function refreshFiles() { clearTimeout(filesTimer); filesTimer = setTimeout(loadFiles, 300); }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.view === 'files') refreshFiles(); });
+  // info (/api/files/file) o diff de un archivo: undefined sin pedir, null pidiéndose; al llegar, se redibuja.
+  function fileGet(path, kind) {
+    const c = fileCache.get(path) ?? {};
+    if (c[kind] !== undefined) return c[kind];
+    c[kind] = null;
+    fileCache.set(path, c);
+    (kind === 'info' ? api.file(path) : api.fileDiff(path)).then((r) => { c[kind] = r; }, (e) => { c[kind] = { error: e.message }; })
+      .then(() => { if (S.view === 'files' && S.file === path) renderFiles(); });
+    return null;
+  }
+  const fmtSize = (n) => (n < 1024 ? n + ' B' : n < 1 << 20 ? Math.round(n / 1024) + ' KB' : (n / 1048576).toFixed(1) + ' MB');
+  const fileLink = (path, state, label) => h('a', { href: '#files/' + encodeURIComponent(path), class: 'tree-doc', 'aria-current': S.file === path ? 'page' : null,
+    title: path + (state ? ' · ' + GIT_TEXT[state] : '') },
+    h('span', { class: 't' }, label), state ? h('span', { class: 'gitflag ' + state, title: GIT_FLAG[state]?.[1] }, GIT_FLAG[state]?.[0] ?? '•') : null);
+
+  // Barra de arriba: se arma una vez, como la de Documentos, para que el filtro no pierda el foco.
+  function filesBar(box) {
+    if (box.querySelector('.files-bar')) return;
+    const q = h('input', { type: 'search', id: 'file-q', placeholder: 'Filtrar archivos por nombre', autocomplete: 'off', value: S.fileQ,
+      oninput: (e) => { S.fileQ = e.target.value; renderFiles(); },
+      onkeydown: (e) => { if (e.key === 'Escape' && e.target.value) { e.preventDefault(); e.stopPropagation(); e.target.value = ''; S.fileQ = ''; renderFiles(); } } });
+    box.append(h('div', { class: 'docs-bar files-bar' }, h('label', { for: 'file-q', class: 'sr' }, 'Filtrar archivos por nombre'), q,
+      h('button', { type: 'button', class: 'chip small', id: 'files-changed', onclick: () => { S.filesChanged = !S.filesChanged; renderFiles(); } }),
+      h('span', { class: 'docs-info files-info' }),
+      h('button', { class: 'btn ghost small', type: 'button', id: 'files-refresh', title: 'Volver a leer los archivos y el estado de git', onclick: loadFiles }, 'Actualizar')),
+    h('div', { class: 'files-body' }));
+  }
+
+  // Árbol por carpetas (se arma una vez por lista). Cada carpeta cuenta los archivos con cambios que tiene adentro.
+  function fileTreeOf(data) {
+    if (data.tree) return data.tree;
+    const root = { path: '', dirs: new Map(), files: [], changes: 0 };
+    for (const p of data.files) {
+      const parts = p.split('/');
+      let node = root;
+      if (data.status[p]) root.changes++;
+      for (const name of parts.slice(0, -1)) {
+        const path = node.path + name + '/';
+        if (!node.dirs.has(name)) node.dirs.set(name, { path, name, dirs: new Map(), files: [], changes: 0 });
+        node = node.dirs.get(name);
+        if (data.status[p]) node.changes++;
+      }
+      node.files.push(p);
+    }
+    return (data.tree = root);
+  }
+  function fileTree(data) {
+    const words = normText(S.fileQ).split(/\s+/).filter(Boolean);
+    // Con filtro o "Solo con cambios", una lista plana de rutas.
+    if (words.length || S.filesChanged) {
+      const hits = data.files.filter((p) => (!S.filesChanged || data.status[p]) && words.every((w) => normText(p).includes(w)));
+      return h('nav', { class: 'doc-tree file-tree', 'aria-label': 'Archivos encontrados' },
+        hits.length ? hits.slice(0, 300).map((p) => fileLink(p, data.status[p], p)) : h('p', { class: 'muted small' }, S.filesChanged && !words.length ? 'Sin cambios: todo está commiteado.' : 'Ningún archivo coincide.'),
+        hits.length > 300 ? h('p', { class: 'muted small' }, 'Y ' + (hits.length - 300) + ' más: afiná el filtro.') : null);
+    }
+    // Las carpetas se arman solo si están abiertas: un repo grande no dibuja miles de filas.
+    const level = (node) => [
+      ...[...node.dirs.values()].sort((a, b) => byText(a.name, b.name)).map((d) => h('details', { class: 'folder', open: S.filesOpen.has(d.path),
+        ontoggle: (e) => {
+          if (e.target.open === S.filesOpen.has(d.path)) return; // el aviso de cuando se dibuja abierta
+          if (e.target.open) { S.filesOpen.add(d.path); renderFiles(); } else S.filesOpen.delete(d.path);
+        } },
+        h('summary', null, d.name + '/', d.changes ? h('span', { class: 'gitflag modified', title: d.changes === 1 ? '1 archivo con cambios' : d.changes + ' archivos con cambios' }, d.changes) : null),
+        S.filesOpen.has(d.path) ? h('div', { class: 'tree-in' }, level(d)) : null)),
+      ...node.files.map((p) => fileLink(p, data.status[p], fileName(p)))
+    ];
+    return h('nav', { class: 'doc-tree file-tree', 'aria-label': 'Archivos del repo' }, level(fileTreeOf(data)));
+  }
+
+  // Sin archivo elegido: la rama, los cambios sin commitear y los últimos commits.
+  function repoSummary(data, changed) {
+    const remote = data.ahead === undefined ? 'Sin rama remota que seguir.'
+      : !data.ahead && !data.behind ? 'Al día con la rama remota.'
+      : [data.ahead ? data.ahead + (data.ahead === 1 ? ' commit sin subir' : ' commits sin subir') : null, data.behind ? data.behind + ' por traer' : null].filter(Boolean).join(' · ') + '.';
+    return h('div', { class: 'doc-article files-summary' },
+      h('h2', null, data.branch ? 'Rama ' + data.branch : 'HEAD suelto, sin rama'),
+      h('p', { class: 'muted small' }, remote),
+      h('h3', null, 'Cambios sin commitear · ' + changed.length),
+      changed.length ? h('ul', { class: 'changes' }, changed.map((p) => h('li', null, fileLink(p, data.status[p], p))))
+        : h('p', { class: 'muted' }, 'Ninguno: todo está commiteado.'),
+      h('h3', null, 'Últimos commits'),
+      data.commits.length ? h('ol', { class: 'commits' }, data.commits.map((c) => h('li', null, commitLine(c), h('span', { class: 'muted' }, ' · ' + c.author))))
+        : h('p', { class: 'muted' }, 'Todavía sin commits.'));
+  }
+
+  // Un archivo: su ficha (estado, último commit, historial) y su contenido o sus cambios contra HEAD.
+  function fileView(data, path) {
+    const state = data.status[path] ?? 'clean';
+    if (!data.files.includes(path)) return h('div', { class: 'notice' }, 'No hay un archivo ', h('code', null, path), ' en el repo (o git lo ignora).');
+    const info = fileGet(path, 'info');
+    const showDiff = S.fileDiff && state !== 'clean';
+    const diff = showDiff ? fileGet(path, 'diff') : null;
+    const doc = S.docs.find((d) => d.path === path);
+    const commits = info?.commits ?? [];
+    const card = h('div', { class: 'doc-card file-card' },
+      h('h2', null, fileName(path)), h('code', null, path),
+      h('p', { class: 'small doc-git ' + state }, h('span', { class: 'dot' }), GIT_TEXT[state] || state, info?.size ? h('span', { class: 'muted' }, ' · ' + fmtSize(info.size)) : null),
+      commits.length ? h('p', { class: 'small' }, h('span', { class: 'muted' }, 'Último commit: '), commitLine(commits[0])) : info ? h('p', { class: 'muted small' }, 'Todavía sin commits.') : null,
+      h('div', { class: 'file-actions' },
+        state !== 'clean' ? h('button', { class: 'btn small' + (showDiff ? ' primary' : ''), type: 'button', id: 'file-diff-btn', 'aria-pressed': showDiff ? 'true' : 'false',
+          onclick: () => { S.fileDiff = !showDiff; renderFiles(); } }, showDiff ? 'Ver el archivo' : 'Ver los cambios') : null,
+        doc ? h('a', { class: 'btn ghost small', href: '#docs/' + encodeURIComponent(doc.alias) }, 'Abrir en Documentos') : null),
+      commits.length > 1 ? h('details', { class: 'history' }, h('summary', null, 'Historial · ' + commits.length + ' commits'),
+        h('ol', null, commits.map((c) => h('li', null, commitLine(c), h('span', { class: 'muted' }, ' · ' + c.author))))) : null);
+    let body;
+    if (showDiff) {
+      body = diff?.error ? h('div', { class: 'notice' }, diff.error)
+        : diff?.binary ? h('div', { class: 'notice' }, 'Archivo binario o muy grande: cambió, pero no hay un diff de texto para mostrar.')
+        : h('div', null, diffView({ path, sections: [] }, diff), diff?.truncated ? h('p', { class: 'muted small' }, 'El diff es muy largo: se muestra el principio.') : null);
+    } else if (!info) body = h('p', { class: 'muted' }, 'Cargando…');
+    else if (info.error) body = h('div', { class: 'notice' }, info.error);
+    else body = ({
+      text: () => htmlBox('doc-body file-code', info.html),
+      markdown: () => htmlBox('doc-body doc-article', info.html, 'article'),
+      image: () => h('div', { class: 'file-image' }, h('img', { src: BASE + 'api/files/raw?path=' + encodeURIComponent(path) + '&t=' + filesStamp, alt: path })),
+      binary: () => h('div', { class: 'notice' }, 'Archivo binario (' + fmtSize(info.size) + '): no se muestra.'),
+      big: () => h('div', { class: 'notice' }, 'Archivo de ' + fmtSize(info.size) + ': es muy grande para mostrarlo acá.'),
+      link: () => h('div', { class: 'notice' }, 'Enlace simbólico a ', h('code', null, info.target), ': no se sigue.'),
+      missing: () => h('div', { class: 'notice' }, state === 'deleted' ? 'Borrado del disco sin commitear: Ver los cambios muestra lo que tenía.' : 'No está en el disco.')
+    })[info.kind]?.() ?? h('div', { class: 'notice' }, 'No se puede mostrar.');
+    return h('div', { class: 'file-view' }, card, body);
+  }
+
+  function renderFiles() {
+    const box = document.getElementById('files');
+    if (S.view !== 'files') { box.replaceChildren(); return; }
+    filesBar(box);
+    const data = S.filesData;
+    const body = box.querySelector('.files-body');
+    const info = box.querySelector('.files-info');
+    const chip = document.getElementById('files-changed');
+    if (!data || data.error || !data.repo) {
+      if (!data) loadFiles();
+      chip.hidden = true;
+      info.replaceChildren();
+      body.replaceChildren(h('div', { class: 'notice' }, !data ? 'Leyendo los archivos…' : data.error ? data.error : 'Este proyecto no está en un repo de git: no hay archivos ni cambios que mostrar.'));
+      return;
+    }
+    const changed = data.files.filter((p) => data.status[p]);
+    chip.hidden = false;
+    chip.replaceChildren('Solo con cambios', h('span', { class: 'n' }, changed.length));
+    chip.setAttribute('aria-pressed', S.filesChanged ? 'true' : 'false');
+    info.replaceChildren(h('span', { class: 'muted small' }, (data.branch ? data.branch : 'HEAD suelto') + ' · ' + data.files.length + ' archivos'));
+    // Un archivo recién abierto: sus carpetas se abren y, si cambió (no si es nuevo), se ven primero sus cambios.
+    if (S.file !== S.fileShown) {
+      S.fileShown = S.file;
+      const parts = S.file.split('/');
+      for (let i = 1; i < parts.length; i++) S.filesOpen.add(parts.slice(0, i).join('/') + '/');
+      S.fileDiff = ['modified', 'deleted', 'renamed'].includes(data.status[S.file]);
+    }
+    const scroll = body.querySelector('.files-side')?.scrollTop ?? 0;
+    const side = h('div', { class: 'files-side' }, fileTree(data));
+    body.replaceChildren(h('div', { class: 'files-grid' }, side, S.file ? fileView(data, S.file) : repoSummary(data, changed)));
+    side.scrollTop = scroll;
+  }
+
   // Vista Listas (8.4, spec §16.4). La regla de tildar (lo que se repite avanza) y el id de una lista nueva los
   // pone el hub: la web solo muestra y manda.
   const EVERY = { day: 'cada día', week: 'cada semana', month: 'cada mes', year: 'cada año' };
@@ -1550,7 +1737,7 @@
 
   function render() {
     renderGit();
-    renderMiles(); renderFilters(); renderSummary(); renderWarnings(); renderBoard(); renderTaskList(); renderDetail(); renderDocs(); renderLists(); renderConn();
+    renderMiles(); renderFilters(); renderSummary(); renderWarnings(); renderBoard(); renderTaskList(); renderDetail(); renderDocs(); renderFiles(); renderLists(); renderConn();
     // La vista se aplica al final: renderSummary muestra su caja por su cuenta.
     const boardView = S.view === 'board';
     for (const id of ['miles', 'filters', 'summary', 'new-btn']) document.getElementById(id).hidden = !boardView;
@@ -1558,10 +1745,11 @@
     document.getElementById('tasklist').hidden = !boardView || S.mode !== 'list';
     if (!boardView) document.getElementById('new-form').hidden = true;
     document.getElementById('docs').hidden = S.view !== 'docs';
+    document.getElementById('files').hidden = S.view !== 'files';
     document.getElementById('lists').hidden = S.view !== 'lists';
     // Pestañas en el orden de config.views; las que no están se esconden (la del tablero, si es la actual, no).
     const nav = document.querySelector('nav.views');
-    for (const v of ['board', 'lists', 'docs']) {
+    for (const v of ['board', 'lists', 'docs', 'files']) {
       const tab = document.getElementById('tab-' + v);
       tab.setAttribute('aria-current', S.view === v ? 'page' : 'false');
       tab.hidden = !S.views.includes(v) && S.view !== v;
@@ -1650,7 +1838,7 @@
           api.lists().catch(() => ({ lists: [], warnings: [] }))]);
         S.git = await api.git().catch(() => null);
         S.lists = l.lists;
-        S.views = Array.isArray(config.views) && config.views.length ? config.views : ['board', 'lists', 'docs'];
+        S.views = Array.isArray(config.views) && config.views.length ? config.views : ['board', 'lists', 'docs', 'files'];
         S.docs = d.docs;
         S.docEntries = config.docs ?? [];
         sectionCache.clear();
@@ -1674,7 +1862,7 @@
     // config.views (§16.6): sin hash, se abre la primera; una pestaña que el proyecto no tiene no se muestra.
     if (!S.viewsApplied && !S.offline) {
       S.viewsApplied = true;
-      if (!location.hash && S.views[0] !== 'board') { history.replaceState(null, '', S.views[0] === 'lists' ? '#lists' : '#docs'); readHash(); }
+      if (!location.hash && S.views[0] !== 'board') { history.replaceState(null, '', '#' + S.views[0]); readHash(); }
     }
     S.loaded = true;
     render();
@@ -1685,6 +1873,7 @@
     if (m.type === 'hello') { load(); return; }
     if (m.type === 'focus') { callAttention(); return; }
     if (loading) { eventsDuringLoad = true; return; }
+    if (S.view === 'files') refreshFiles(); // cualquier cambio puede tocar el estado de git de algún archivo
     if (m.type === 'doc_changed') { docChanged(m.alias); return; }
     if (m.type === 'docs_git') { applyDocsGit(m); return; }
     if (m.type === 'git') { S.git = m; renderGit(); return; }

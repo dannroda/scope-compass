@@ -132,7 +132,6 @@ main.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); ga
 
 @media (max-width: 980px) { main.board { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sum-body { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 560px) { main.board { grid-template-columns: minmax(0, 1fr); } .wrap { padding-inline: 16px; } }
-}
 @media (prefers-reduced-motion: no-preference) { .card, .chip, .btn { transition: border-color .15s, background-color .15s; } }
 
 /* Archivos que el hub no pudo leer (3.5). */
@@ -459,14 +458,16 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
 .tasks td .tag { margin: 0 4px 2px 0; }
 .tasks .duemark, .tasks .blockmark { white-space: nowrap; }
 @media (max-width: 760px) { .tasks .opt { display: none; } .tasks td.title { min-width: 9em; } .tasks td, .tasks th button { padding-inline: 8px; } .tasks .duemark { white-space: normal; } .tasks .st-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
-/* Teléfono (13.4): menos filas antes de las tareas; al final, para ganarle a las reglas de cada parte. Encabezado en dos filas (título; vistas y Nueva tarea), hitos en
+/* Teléfono (13.4): menos filas antes de las tareas; al final, para ganarle a las reglas de cada parte. Encabezado en dos filas (título; vistas), hitos en
    una fila que se desplaza de costado, resumen más chico y columnas vacías de una línea. */
 @media (max-width: 560px) {
   .wrap { padding-top: 12px; gap: 12px; }
   header.top { justify-content: flex-start; gap: 4px 8px; padding-bottom: 4px; }
   .brand { display: contents; }
   nav.views { order: 1; gap: 14px; }
-  #new-btn { order: 2; margin-left: auto; padding: 4px 12px; font-size: 14px; align-self: center; }
+  /* Nueva tarea flota abajo a la derecha: con cuatro pestañas no entra en su fila (14.2). El detalle la tapa. */
+  #new-btn { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 5; box-shadow: 0 6px 18px rgba(0, 0, 0, .22); }
+  .wrap { padding-bottom: 80px; }
   .conn, .gitmark { order: 3; margin: 0; }
   nav.miles { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; }
   nav.miles > * { flex: none; }
@@ -477,3 +478,23 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
   .sum-line .progress { flex-basis: 140px; }
   .col:has(> .empty-col) { min-height: 0; }
   .col > .empty-col { display: none; }
+}
+/* Archivos del repo (M14): árbol a la izquierda, la ficha y el archivo (o el resumen del repo) a la derecha. */
+.files { display: flex; flex-direction: column; gap: 12px; }
+#file-q { flex: 1 1 240px; min-width: 0; max-width: 420px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 10px; min-height: 38px; }
+.files-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; align-items: start; }
+.files-side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
+.file-tree summary .gitflag { margin-left: 6px; }
+.file-tree .tree-in { padding-left: 12px; border-left: 1px solid var(--line); margin-left: 8px; }
+.file-tree .tree-doc { padding-left: 6px; }
+.file-view { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.file-card code { font-size: 12px; }
+.file-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.file-code pre { margin: 0; tab-size: 4; }
+.file-image { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; text-align: center; }
+.file-image img { max-width: 100%; image-rendering: pixelated; background: repeating-conic-gradient(var(--surface-2) 0 25%, transparent 0 50%) 0 0 / 16px 16px; }
+.files-summary h2 { margin: 16px 0 2px; font-size: 20px; }
+.files-summary h3 { margin: 18px 0 6px; font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.files-summary ul.changes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.files-summary ol.commits { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+@media (max-width: 760px) { .files-grid { grid-template-columns: minmax(0, 1fr); } .files-side { position: static; max-height: 45vh; } }
