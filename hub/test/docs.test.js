@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadDocs, parseSections, resolveRef, sectionMarkdown, slugify } from '../src/docs.js';
+import { loadDocs, parseSections, resolveRef, searchDocs, sectionMarkdown, slugify } from '../src/docs.js';
 import { run } from '../src/cli.js';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -261,6 +261,36 @@ test('12.2: doc add y doc rm cambian config.json › docs; un patrón toma los a
   } finally {
     await rm(dir, { recursive: true, force: true, maxRetries: 10 });
   }
+});
+
+test('12.4: doc search encuentra la sección de enemigos.md con su fragmento, sin tildes ni mayúsculas', async () => {
+  const dir = await projectWithGdd();
+  const cli = cliIn(dir);
+  try {
+    await writeFile(join(dir, 'enemigos.md'), '# Enemigos\n<!-- id: enemigos -->\n\n## Slime\n<!-- id: slime -->\n\nEl slime se divide al recibir un golpe crítico.\n');
+    assert.equal((await cli('doc', 'add', 'enemigos', 'enemigos.md')).code, 0);
+    let r = await cli('doc', 'search', 'slime');
+    assert.equal(r.code, 0);
+    assert.equal(r.out, 'enemigos#slime  enemigos.md:4  ## Slime\nenemigos#slime  enemigos.md:7  El slime se divide al recibir un golpe crítico.\n2 coincidencias.\n');
+    // Todas las palabras, en cualquier orden; "CRITICO" encuentra "crítico". Los comentarios de id no cuentan.
+    const j = JSON.parse((await cli('doc', 'search', 'CRITICO', 'slime', '--json')).out);
+    assert.deepEqual(j.results.map((x) => [x.alias, x.section, x.title, x.line]), [['enemigos', 'slime', 'Slime', 7]]);
+    assert.deepEqual(JSON.parse((await cli('doc', 'search', 'id:', '--json')).out).results, []);
+    assert.match((await cli('doc', 'search', 'nada parecido')).out, /Ninguna coincidencia/);
+  } finally {
+    await rm(dir, { recursive: true, force: true, maxRetries: 10 });
+  }
+});
+
+test('searchDocs: el fragmento recorta las líneas largas y corta en limit', () => {
+  const long = 'x'.repeat(100) + ' palabra ' + 'y'.repeat(300);
+  const doc = { alias: 'a', path: 'a.md', ...parseSections('intro palabra\n# T\n' + long + '\npalabra\n') };
+  const r = searchDocs([doc], 'palabra');
+  assert.deepEqual(r.results.map((x) => [x.section, x.line]), [[null, 1], ['t', 3], ['t', 4]]);
+  assert.match(r.results[1].snippet, /^…x+ palabra y+…$/);
+  assert.ok(r.results[1].snippet.length < 200);
+  assert.deepEqual(searchDocs([doc], 'palabra', { limit: 2 }).more, true);
+  assert.deepEqual(searchDocs([doc], '  ').results, []);
 });
 
 test('stamp-ids estampa el slug actual (las refs frágiles siguen resolviendo) y no toca lo demás', async () => {

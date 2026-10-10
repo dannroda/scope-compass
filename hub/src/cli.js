@@ -7,7 +7,7 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { exportMarkdown } from './export-md.js';
-import { changeDocs, checkRefs, diffSections, loadDocs, resolveRef, sectionMarkdown, stampIds, suggestRefs } from './docs.js';
+import { changeDocs, checkRefs, diffSections, loadDocs, resolveRef, searchDocs, sectionMarkdown, stampIds, suggestRefs } from './docs.js';
 import { writeAtomic } from './store/atomic.js';
 import { openUrl as openInBrowser } from './desktop.js';
 import { importArtifact } from './import-artifact.js';
@@ -90,6 +90,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   doc rm <alias>                            deja de declararlo (el archivo no se toca)
   doc show <alias>[#<id>] [--raw]           una sección, o el documento entero sin #<id> (--raw: solo el markdown)
   doc stamp-ids <alias> [--dry-run]         agrega <!-- id: … --> a las secciones que no tienen
+  doc search "<texto>"                      líneas de los documentos con todas las palabras (sin tildes ni mayúsculas)
   doc status                                estado de git de cada documento y su último commit
   doc diff <alias>                          cambios sin commitear del documento (contra HEAD) y las secciones que toca
   refs check                                referencias rotas (sale con 1 si hay) y frágiles
@@ -687,6 +688,14 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         if (!diff) { print(`${d.path}: sin cambios contra HEAD.`); return 0; }
         out.write(diff);
         print(`Secciones tocadas: ${sections.length ? sections.join(', ') : 'ninguna'}`);
+        return 0;
+      }
+      // Texto en todos los documentos (12.4): cada línea con la sección donde está, para seguir con doc show.
+      if (sub === 'search') {
+        const r = searchDocs(docs.filter((d) => !d.missing), need(rest.slice(1).join(' ').trim() || undefined, 'el texto a buscar'));
+        if (o.json) return done(r);
+        for (const x of r.results) print(`${x.alias}${x.section ? '#' + x.section : ''}  ${x.path}:${x.line}  ${x.snippet}`);
+        print(r.results.length ? `${r.results.length}${r.more ? '+' : ''} coincidencias.` : 'Ninguna coincidencia.');
         return 0;
       }
       if (sub === 'stamp-ids') {

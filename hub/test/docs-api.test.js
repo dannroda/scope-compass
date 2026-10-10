@@ -137,6 +137,13 @@ test('un documento de un patrón se pide por su alias con /', async () => {
   assert.equal((await get('/api/docs/docs%2Farte%2Fpaleta/sections/paleta')).body.title, 'Paleta');
 });
 
+test('12.4: GET /api/docs/search devuelve documento, sección, línea y fragmento', async () => {
+  const { body } = await get('/api/docs/search?q=' + encodeURIComponent('camara'));
+  assert.deepEqual(body.results.map((r) => [r.alias, r.section, r.line, r.snippet]), [['gdd', 'camara', 19, '## Cámara']]);
+  assert.equal(body.more, false);
+  assert.deepEqual((await get('/api/docs/search')).body.results, []);
+});
+
 test('GET /api/refs/broken', async () => {
   const { body } = await get('/api/refs/broken');
   assert.deepEqual(body.broken.map((b) => [b.task, b.ref, b.where]), [['m1-04', 'gdd#borrada', 'notes']]);

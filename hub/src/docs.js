@@ -203,6 +203,35 @@ export function diffSections(doc, diff) {
   return doc.sections.filter((s) => [...touched].some((n) => n >= s.start && n < s.end)).map((s) => s.id);
 }
 
+const fold = (x) => String(x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+/**
+ * Búsqueda de texto en los documentos (12.4): las líneas que tienen todas las palabras, sin distinguir mayúsculas ni
+ * tildes, como los filtros de M11. Sin índice: recorre las líneas ya cargadas. Devuelve { results, more } con
+ * results: [{ alias, path, section, title, line, snippet }] (line desde 1; section y title, los de la sección más
+ * chica que contiene la línea, o null antes del primer título) y more: true si cortó en limit.
+ */
+export function searchDocs(docs, q, { limit = 200 } = {}) {
+  const words = fold(q).split(/\s+/).filter(Boolean);
+  const results = [];
+  if (!words.length) return { results, more: false };
+  for (const d of docs) {
+    for (let i = 0; i < d.lines.length; i++) {
+      const text = d.lines[i];
+      const f = fold(text);
+      if (!words.every((w) => f.includes(w)) || ID_COMMENT.test(text.trim())) continue;
+      if (results.length === limit) return { results, more: true };
+      const s = d.sections.findLast((x) => x.start <= i && i < x.end) ?? null;
+      // Un fragmento de la línea alrededor de la primera palabra (las líneas de un párrafo pueden ser largas).
+      const at = Math.max(0, f.indexOf(words[0]) - 60);
+      const cut = text.slice(at, at + 180).trim();
+      results.push({ alias: d.alias, path: d.path, section: s?.id ?? null, title: s?.title ?? null, line: i + 1,
+        snippet: (at > 0 ? '…' : '') + cut + (at + 180 < text.length ? '…' : '') });
+    }
+  }
+  return { results, more: false };
+}
+
 /** Agrega <!-- id: slug --> debajo de cada título sin id. Devuelve { text, stamped: [ids] }. */
 export function stampIds(text) {
   const { sections, lines } = parseSections(text);

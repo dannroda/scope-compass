@@ -1253,7 +1253,7 @@ Ver y encontrar tareas en un tablero grande: vista de lista y filtros en la UI w
 
 **Prueba:** npm test (hub/test/filters.test.js, ui-filters.test.js y los de schema, API y export)
 
-## M12 — Biblioteca de documentos  (3/8)
+## M12 — Biblioteca de documentos  (4/8)
 
 Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos archivos, enlaces a documentos enteros, búsqueda y el estado de git de cada uno.
 
@@ -1300,7 +1300,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Notas:** scompass doc add <alias> <ruta|glob> y doc rm <alias>; API POST/DELETE /api/docs que escribe config.json (atómico). La plantilla juego declara docs/**/*.md además de gdd.md; el glob excluye el export_md (docs/tareas.md) para no listarse a sí mismo. Hecho: un patrón tampoco toma los archivos declarados aparte (el GDD no sale dos veces) ni carpetas ocultas o node_modules, y el alias de sus archivos es <alias>/<ruta desde la carpeta fija> (docs/arte/paleta), no solo el nombre: dos README en carpetas distintas chocaban (D33, a registrar en la 12.7). Sin etag en config.json: el cambio se aplica sobre la config leída en el momento y un alias o ruta repetidos dan conflicto. El hub rearma el watcher de documentos y avisa doc_changed con el alias. La ruta de la CLI es relativa a la carpeta actual, como --file.
 
-### 12.3 Estado de git de los documentos · Pendiente
+### 12.3 Estado de git de los documentos · Hecho
 
 - [x] git.js: docStatus (porcelain por ruta) y lastCommit (git log -1)
 - [x] git.js: docDiff contra HEAD y docLog con --follow
@@ -1315,14 +1315,14 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 ### 12.4 Búsqueda de texto en los documentos · Pendiente
 
-- [ ] docs.js: searchDocs(docs, q) → [{ alias, section, line, snippet }]
-- [ ] API GET /api/docs/search?q=
-- [ ] CLI doc search "<texto>" [--json]
-- [ ] Tests
+- [x] docs.js: searchDocs(docs, q) → [{ alias, section, line, snippet }]
+- [x] API GET /api/docs/search?q=
+- [x] CLI doc search "<texto>" [--json]
+- [x] Tests
 
 **Prueba:** scompass doc search slime encuentra la sección de enemigos.md con su fragmento; la API devuelve lo mismo.
 
-**Notas:** Buscar en todos los documentos declarados, sin índice externo: recorrer las líneas ya cargadas. Cada resultado dice documento, sección y un fragmento. Sin tildes ni mayúsculas, como los filtros de M11.
+**Notas:** Buscar en todos los documentos declarados, sin índice externo: recorrer las líneas ya cargadas. Cada resultado dice documento, sección y un fragmento. Sin tildes ni mayúsculas, como los filtros de M11. Hecho: searchDocs devuelve { results, more } (corta en 200); una línea coincide si tiene todas las palabras; la sección es la más chica que la contiene (null antes del primer título); los comentarios <!-- id --> no cuentan; el fragmento recorta las líneas largas alrededor de la primera palabra. /api/docs/search es una ruta fija: gana sobre /api/docs/:alias (un documento con alias search no se puede pedir por ahí).
 
 ### 12.5 Biblioteca en la web · Pendiente
 

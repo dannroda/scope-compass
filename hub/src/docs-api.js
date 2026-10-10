@@ -1,7 +1,7 @@
 // API de documentos (spec §10.4, §20): índice, documento y sección renderizados, backlinks, referencias rotas y el
 // estado de git de cada documento. Los documentos se releen en cada request: son archivos chicos y siempre están al día.
 // Lo único que escribe es config.json › docs (agregar o quitar un documento).
-import { changeDocs, checkRefs, diffSections, findDoc, findSection, LINK, loadDocs, refText, sectionMarkdown } from './docs.js';
+import { changeDocs, checkRefs, diffSections, findDoc, findSection, LINK, loadDocs, refText, searchDocs, sectionMarkdown } from './docs.js';
 import { docDiff, docLog, docsStatus } from './git.js';
 import { renderBBCode, renderBlocks, renderMarkdown } from './render.js';
 import { StoreError } from './store/json-files.js';
@@ -50,6 +50,13 @@ export function registerDocsApi(app, { store, projectDir, validators, onDocsChan
   app.get('/api/docs', async () => {
     const [{ docs, links }, g] = await Promise.all([context(store, projectDir), docsStatus(projectDir)]);
     return { repo: g.repo, docs: docs.map((d) => ({ alias: d.alias, path: d.path, ...(d.missing && { missing: true }), ...gitOf(g, d), warnings: d.warnings, tasks: links.get(d.path) ?? [], sections: d.sections.map((s) => sectionInfo(d, s, links)) })) };
+  });
+
+  // Búsqueda de texto en todos los documentos (12.4). Ruta fija: gana sobre /api/docs/:alias.
+  app.get('/api/docs/search', async (req) => {
+    const { docs } = await context(store, projectDir);
+    const q = String(req.query.q ?? '');
+    return { q, ...searchDocs(docs.filter((d) => !d.missing), q) };
   });
 
   app.get('/api/docs/:alias', async (req) => {
