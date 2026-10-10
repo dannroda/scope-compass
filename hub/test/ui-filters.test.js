@@ -264,6 +264,7 @@ test('teléfono (13.4): primera tarjeta antes de 450 px, hitos en una fila, colu
   assert.equal(tops.length, 1, 'los hitos en una sola fila');
   assert.ok(await page.locator('#miles').evaluate((e) => e.scrollWidth > e.clientWidth), 'la fila se desplaza de costado');
   assert.ok(await page.locator('.col[aria-label="Revisión"]').evaluate((e) => e.offsetHeight) < 60, 'columna vacía de una línea');
+  assert.ok(await page.locator('#board').evaluate((e) => e.scrollWidth > e.clientWidth && getComputedStyle(e).scrollSnapType.startsWith('x')), 'el tablero se desliza de costado y encaja en una columna (16.1)');
   await page.click('.card[data-id="m1-04"]');
   const sizes = await page.locator('#detail .checklist .rm').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return Math.min(r.width, r.height); }));
   assert.ok(sizes.length && sizes.every((x) => x >= 36), `✎ y ×: ${sizes}`);

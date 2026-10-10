@@ -260,7 +260,8 @@ async function looks(page) {
       primary: cs('.btn.primary', ['backgroundColor', 'color', 'borderRadius', 'fontWeight', 'minHeight']),
       // El resumen del hito ya no es el del artifact: es una línea (13.2).
       summary: cs('section.summary', ['backgroundColor', 'borderRadius']),
-      board: cs('main.board', ['gridTemplateColumns', 'gap']),
+      // En el teléfono el tablero se desliza de costado (16.1); el artifact apilaba las columnas.
+      board: innerWidth > 560 ? cs('main.board', ['gridTemplateColumns', 'gap']) : null,
       // Una columna con tarjetas si hay (el artifact de referencia no tiene): en el teléfono, las vacías son de una línea (13.4).
       col: cs(document.querySelector('.col:not(:has(> .empty-col))') ? '.col:not(:has(> .empty-col))' : '.col', ['backgroundColor', 'borderRadius', 'padding', 'minHeight']),
       colTitle: cs('.col h3', ['fontSize', 'textTransform', 'letterSpacing'])

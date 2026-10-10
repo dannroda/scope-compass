@@ -861,7 +861,7 @@ scompass doc diff <alias> [--json]          # diff contra HEAD y "Secciones toca
   - **Encabezado:** dos filas: el título y las vistas. *Nueva tarea* flota abajo a la derecha (desde M14: con cuatro pestañas no entra en la fila).
   - **Hitos:** van en una fila que se desplaza de costado, y la primera vez deja a la vista el elegido.
   - **Arriba del tablero:** el título del hito va en una línea con puntos suspensivos.
-  - **Columnas:** las vacías son de una línea.
+  - **Columnas:** se deslizan de costado, una por pantalla con la siguiente asomando, y al soltar encajan en una (M16). Las vacías son angostas: solo el título.
 - **Lista:**
   - *Actualizada* y *Creada* dicen la fecha relativa si es de la última semana ("hace un momento", "hace 3 h", "ayer"). Si es más vieja, dicen la fecha corta. La fecha completa va en el tooltip.
   - Las columnas sin ningún valor en las filas que se ven se esconden. La del orden elegido se ve siempre.

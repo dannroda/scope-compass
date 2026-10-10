@@ -131,7 +131,7 @@ main.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); ga
 .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
 
 @media (max-width: 980px) { main.board { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sum-body { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 560px) { main.board { grid-template-columns: minmax(0, 1fr); } .wrap { padding-inline: 16px; } }
+@media (max-width: 560px) { .wrap { padding-inline: 16px; } }
 @media (prefers-reduced-motion: no-preference) { .card, .chip, .btn { transition: border-color .15s, background-color .15s; } }
 
 /* Archivos que el hub no pudo leer (3.5). */
@@ -480,6 +480,11 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
   .sum-line .progress { flex-basis: 140px; }
   .col:has(> .empty-col) { min-height: 0; }
   .col > .empty-col { display: none; }
+  /* El tablero se desliza de costado en vez de apilar las columnas: una por pantalla, con la siguiente asomando, y
+     al soltar encaja en una. Las vacías, angostas: solo el título. */
+  main.board { display: flex; align-items: flex-start; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; }
+  main.board > .col { flex: 0 0 86%; scroll-snap-align: start; }
+  main.board > .col:has(> .empty-col) { flex-basis: auto; }
 }
 /* Archivos del repo (M14): árbol a la izquierda, la ficha y el archivo (o el resumen del repo) a la derecha. */
 .files { display: flex; flex-direction: column; gap: 12px; }

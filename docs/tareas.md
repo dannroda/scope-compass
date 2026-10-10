@@ -742,7 +742,7 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 
 **Prueba:** D36 registra la comparación de las cuatro opciones. Con scompass home --lan, el tablero se abre y se edita desde el teléfono por el wifi de casa; un Host con nombre o un pedido con el Origin de otra página dan 403. Sin login, por pedido: es para la red de casa.
 
-**Notas:** Pedido desde Project Epiphany (2026-10-10): ver el panel en el teléfono por el wifi de casa. Por ahora alcanza con abrirlo en la red, sin login (usuario, 2026-10-10). Hecho: --lan en serve y home (listen en 0.0.0.0; las URLs de siempre siguen en 127.0.0.1 para el dock, la CLI y el Inicio, y se imprimen las direcciones de la red, también en --json). El chequeo de Host (D34) acepta una IP y no un nombre. Además, cualquier pedido con un Origin distinto de http://<Host> da 403 en el hub y en el Inicio: faltaba también en local, donde cualquier página podía hacer POST /api/shutdown o abrir el WebSocket y leer el tablero. Probado con un Inicio aislado --lan por 192.168.100.56 desde Chromium a 390×844: el tablero carga, el WebSocket conecta y un PATCH desde la página se guarda; Host malo.example y un POST con Origin ajeno dan 403. --host <ip> descartado: el dock y la CLI hablan por 127.0.0.1. De paso: el import de Godot en los tests del dock a veces aborta al salir (bug de tiempos del motor: EditorHelp::load_script_doc_cache diferido corre con EditorNode ya borrado); se reintenta una vez.
+**Notas:** Pedido desde Project Epiphany (2026-10-10): ver el panel en el teléfono por el wifi de casa. Por ahora alcanza con abrirlo en la red, sin login (usuario, 2026-10-10). Hecho: --lan en serve y home (listen en 0.0.0.0; las URLs de siempre siguen en 127.0.0.1 para el dock, la CLI y el Inicio, y se imprimen las direcciones de la red, también en --json). El chequeo de Host (D34) acepta una IP y no un nombre. Además, cualquier pedido con un Origin distinto de http://<Host> da 403 en el hub y en el Inicio: faltaba también en local, donde cualquier página podía hacer POST /api/shutdown o abrir el WebSocket y leer el tablero. Probado con un Inicio aislado --lan por 192.168.100.56 desde Chromium a 390×844: el tablero carga, el WebSocket conecta y un PATCH desde la página se guarda; Host malo.example y un POST con Origin ajeno dan 403. --host <ip> descartado: el dock y la CLI hablan por 127.0.0.1. De paso: el import de Godot en los tests del dock a veces aborta al salir (bug de tiempos del motor: EditorHelp::load_script_doc_cache diferido corre con EditorNode ya borrado); se reintenta una vez. Encontrado al probarlo: con un Inicio ya corriendo sin --lan, scompass home --lan decía que ya corría y salía sin hacer nada; ahora el registro anota lan y el comando falla diciendo que hay que cerrarlo.
 
 **Referencias:** `docs/spec.md#hosting`, `docs/spec.md#servidor`
 
@@ -1563,3 +1563,23 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 - [x] README, web/README y la spec del dock (§11.1) al día
 
 **Notas:** Hecho: spec §23 (el dato, CLI, web, dock) con §23.1 y cómo se probó la parte del editor; D35 (files aparte de refs, rutas y no uid://, solo lo que git lista, tareas de un archivo calculadas en el cliente). §11 y §11.1 marcan hechos el módulo de referencias a res://, las tareas del script abierto y abrir desde la tarea. README (M15 en el estado), web/README e instalar.md (cómo se vinculan y se abren). Suite completa: 345 pasan, 0 fallan.
+
+## M16 — Uso en el teléfono  (1/2)
+
+Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren por la red de casa (D36).
+
+**Hecho cuando:**
+- En el teléfono, el tablero se desliza de costado, una columna por pantalla, en vez de apilar las columnas.
+- En el teléfono, Documentos muestra fijas abajo las tareas de la sección que se está leyendo.
+
+### 16.1 Tablero deslizable en el teléfono · Hecho
+
+**Etiquetas:** `ui`
+
+- [x] Columnas lado a lado con scroll-snap a ≤ 560 px
+  Una por pantalla (86 %), con la siguiente asomando; las vacías, angostas, solo con el título.
+- [x] El desplazamiento se mantiene al redibujar (cambios en vivo, cambio de hito)
+
+### 16.2 Tareas de la sección, fijas abajo en Documentos · En curso
+
+**Etiquetas:** `ui`
