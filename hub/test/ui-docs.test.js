@@ -74,7 +74,7 @@ async function open(hash = '') {
 
 test('§10.6: una tarea con refs muestra la sección renderizada en su detalle, con GDScript resaltado', async () => {
   const page = await open();
-  await page.click('.chip:has-text("M1")');
+  await milestone(page, 'M1');
   await page.click('.card[data-id="m1-03"]');
   await page.waitForSelector('.ref-body pre.code.language-gdscript .token.keyword');
   assert.match(await page.textContent('.ref-toggle'), /Ventanas de ataque/);
@@ -86,7 +86,7 @@ test('§10.6: una tarea con refs muestra la sección renderizada en su detalle, 
 
 test('agregar una referencia con el buscador y quitarla', async () => {
   const page = await open();
-  await page.click('.chip:has-text("M1")');
+  await milestone(page, 'M1');
   await page.click('.card[data-id="m1-07"]');
   await page.click('.refs-head button:has-text("Agregar")');
   await page.fill('#d-refq', 'camar');
@@ -102,7 +102,7 @@ test('agregar una referencia con el buscador y quitarla', async () => {
 test('12.1: referencia al documento entero desde el buscador, [[gdd]] en notas y backlinks del documento', async () => {
   await setTask('m1-06', { notes: 'todo el [[gdd]], no `[[gdd]]`' });
   const page = await open();
-  await page.click('.chip:has-text("M1")');
+  await milestone(page, 'M1');
   await page.click('.card[data-id="m1-07"]');
   await page.click('.refs-head button:has-text("Agregar")');
   await page.fill('#d-refq', 'gdd');
@@ -132,7 +132,7 @@ test('12.1: referencia al documento entero desde el buscador, [[gdd]] en notas y
 
 test('referencia rota: aviso en el detalle y en la tarjeta', async () => {
   const page = await open();
-  await page.click('.chip:has-text("M1")');
+  await milestone(page, 'M1');
   assert.match(await page.getAttribute('.card[data-id="m1-05"] .refmark', 'class'), /bad/);
   await page.click('.card[data-id="m1-05"]');
   assert.match(await page.textContent('.ref.broken'), /Referencia rota: gdd\.md#borrada/);
@@ -207,7 +207,7 @@ test('6.6: [[gdd#id]] en pasos y notas se ve con el título actual; roto, marcad
     title: 'Tarea con [[gdd#combate]]'
   });
   const page = await open();
-  await page.click('.chip:has-text("M1")');
+  await milestone(page, 'M1');
   assert.match(await page.textContent('.card[data-id="m1-06"] .t'), /^Tarea con Combate$/, 'en la tarjeta, texto sin enlace');
   assert.equal(await page.locator('.card[data-id="m1-06"] a').count(), 0);
   await page.click('.card[data-id="m1-06"]');
@@ -240,7 +240,7 @@ test('§10.6: editar gdd.md con la app abierta actualiza la vista en menos de 1 
 
 test('§10.6: borrar una sección referenciada marca la tarea en vivo, y refs check la lista', async () => {
   const page = await open();
-  await page.click('.chip:has-text("M1")');
+  await milestone(page, 'M1');
   assert.doesNotMatch(await page.getAttribute('.card[data-id="m1-03"] .refmark', 'class'), /bad/);
   await writeFile(join(dir, 'gdd.md'), GDD.replace(/### Ventanas de ataque[\s\S]*?(?=## Cámara)/, ''));
   await page.waitForFunction(() => /bad/.test(document.querySelector('.card[data-id="m1-03"] .refmark')?.className), null, { timeout: 2000 });
@@ -258,7 +258,7 @@ test('vínculos: "bloqueada por" con el buscador, marca en la tarjeta, se ve des
   await setTask('m1-03', { status: 'todo' });
   await setTask('m1-05', { status: 'doing' });
   const page = await open();
-  await page.click('.chip:has-text("M1")');
+  await milestone(page, 'M1');
   await page.click('.card[data-id="m1-03"]');
   assert.match(await page.textContent('.links'), /Sin vínculos/);
   await page.click('.links .refs-head button:has-text("Agregar")');
@@ -287,7 +287,7 @@ test('vínculos: "bloqueada por" con el buscador, marca en la tarjeta, se ve des
 
 test('"+ Agregar" abre el buscador y "Cerrar" lo cierra', async () => {
   const page = await open();
-  await page.click('.chip:has-text("M1")');
+  await milestone(page, 'M1');
   await page.click('.card[data-id="m1-07"]');
   await page.click('.refs-head button:has-text("Agregar")');
   assert.equal(await page.isVisible('#d-refq'), true);
@@ -304,7 +304,7 @@ test('"+ Agregar" abre el buscador y "Cerrar" lo cierra', async () => {
 
 test('el panel de detalle se agranda arrastrando su borde, con el teclado, y se recuerda', async () => {
   const page = await open();
-  await page.click('.chip:has-text("M1")');
+  await milestone(page, 'M1');
   await page.click('.card[data-id="m1-03"]');
   const width = () => page.$eval('#detail', (el) => Math.round(el.getBoundingClientRect().width));
   assert.equal(await width(), 460);
@@ -353,7 +353,7 @@ test('"Copiar enlace": copia [[alias#id]] de la sección actual y avisa si la se
 test('pasos: ▸ despliega el detalle; ✎ edita texto y detalle (vacío lo quita); un [[enlace]] en el detalle cuenta', async () => {
   await setTask('m1-06', { checklist: [{ text: 'Acciones de juego', done: false, detail: 'interact (B / E), ver [[gdd#camara]]' }, { text: 'Sin detalle', done: false }] });
   const page = await open();
-  await page.click('.chip:has-text("M1")');
+  await milestone(page, 'M1');
   await page.click('.card[data-id="m1-06"]');
   assert.equal(await page.locator('.checklist li').nth(1).locator('.step-toggle').count(), 0);
   assert.equal(await page.locator('.step-detail').count(), 0);
@@ -504,3 +504,9 @@ test('12.6: editar un documento con el hub abierto: marca sin recargar, diff, ta
   await page.waitForSelector('.history summary:has-text("2 commits")');
   await page.close();
 });
+
+// Elige un hito por su código; los terminados están dentro de "Terminados" (13.2).
+async function milestone(page, code) {
+  if (!(await page.isVisible(`#miles > .chip:has-text("${code}")`))) await page.click('#ms-done');
+  await page.click(`#miles .chip:has-text("${code}")`);
+}

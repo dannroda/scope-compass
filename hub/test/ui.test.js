@@ -201,7 +201,7 @@ test('"Agregar paso" no pierde lo escrito mientras vuelve la respuesta de otro c
 
 test('arrastrar una tarjeta sobre otra del mismo hito la deja justo antes', async () => {
   const page = await open();
-  await page.click('.chip:has-text("M1")');
+  await milestone(page, 'M1');
   const ids = () => page.$$eval('.col[aria-label="Hecho"] .card', (els) => els.map((e) => e.dataset.id));
   const before = await ids();
   assert.deepEqual(before.slice(0, 3), ['m1-01', 'm1-02', 'm1-03']);
@@ -258,7 +258,8 @@ async function looks(page) {
       body: cs('body', ['backgroundColor', 'color', 'fontFamily', 'fontSize', 'lineHeight']),
       h1: cs('h1', ['fontFamily', 'fontSize', 'letterSpacing']),
       primary: cs('.btn.primary', ['backgroundColor', 'color', 'borderRadius', 'fontWeight', 'minHeight']),
-      summary: cs('section.summary', ['backgroundColor', 'borderRadius', 'padding', 'gridTemplateColumns']),
+      // El resumen del hito ya no es el del artifact: es una línea (13.2).
+      summary: cs('section.summary', ['backgroundColor', 'borderRadius']),
       board: cs('main.board', ['gridTemplateColumns', 'gap']),
       col: cs('.col', ['backgroundColor', 'borderRadius', 'padding', 'minHeight']),
       colTitle: cs('.col h3', ['fontSize', 'textTransform', 'letterSpacing'])
@@ -366,3 +367,9 @@ test('"← Inicio": aparece solo si el Inicio está corriendo, y apunta a él', 
     unregisterHub(process.ppid);
   }
 });
+
+// Elige un hito por su código; los terminados están dentro de "Terminados" (13.2).
+async function milestone(page, code) {
+  if (!(await page.isVisible(`#miles > .chip:has-text("${code}")`))) await page.click('#ms-done');
+  await page.click(`#miles .chip:has-text("${code}")`);
+}

@@ -42,12 +42,14 @@ afterEach(async () => {
 });
 
 async function open(opts = {}) {
-  const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, ...opts });
+  const { panel, ...ctxOpts } = opts;
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, ...ctxOpts });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => pageErrors.push(e.message));
   await page.goto(url);
   await page.waitForSelector('.card');
   await page.click('#miles .chip:has-text("M1")');
+  if (panel !== false) await page.click('#f-panel'); // los filtros están en un panel (13.2)
   return page;
 }
 const task = async (id) => JSON.parse(await readFile(join(compass, 'tasks', `${id}.json`), 'utf8'));
@@ -209,6 +211,47 @@ test('una tarea nueva que los filtros ocultan lo avisa', async () => {
   await page.fill('#new-title', 'Tarea nueva');
   await page.click('#new-form button[type="submit"]');
   await page.waitForSelector('#toast:has-text("los filtros la ocultan")');
+  await page.context().close();
+});
+
+test('parte de arriba compacta (13.2): primera tarjeta antes de 320 px, hitos terminados juntos, resumen en una línea y panel de filtros', async () => {
+  const page = await open({ viewport: { width: 1440, height: 900 }, panel: false });
+  const top = (sel) => page.locator(sel).first().evaluate((e) => e.getBoundingClientRect().top);
+  assert.ok(await top('#board .card') < 320, `primera tarjeta a ${await top('#board .card')} px`);
+  assert.equal(await page.textContent('h1'), 'Scope Compass', 'sin "tareas"');
+  // M0 está terminado: va en "Terminados"; elegirlo lo deja a la vista y cierra el desplegable.
+  assert.equal(await page.textContent('#ms-done'), 'Terminados1');
+  assert.equal(await page.isVisible('#miles .chip:has-text("M0")'), false);
+  await page.click('#ms-done');
+  await page.click('#miles .ms-done .chip:has-text("M0")');
+  assert.equal(await page.getAttribute('#miles > .chip:has-text("M0")', 'aria-pressed'), 'true');
+  assert.equal(await page.locator('#miles details[open]').count(), 0);
+  assert.equal(await page.locator('#ms-done').count(), 0, 'sin otro terminado, no hay grupo');
+  await page.click('#miles .chip:has-text("M1")');
+  // El resumen es una línea; "Hecho cuando" despliega el objetivo y la lista, y se recuerda.
+  assert.ok((await page.locator('#summary').evaluate((e) => e.offsetHeight)) < 60);
+  assert.equal(await page.isVisible('#sum-body'), false);
+  await page.click('#sum-more');
+  await page.waitForSelector('#sum-body li:has-text("sin servidor")');
+  assert.match(await page.textContent('#sum-body p'), /^Leer y escribir compass\//);
+  // Los filtros están detrás de "Filtros (n)"; el orden queda a la vista.
+  assert.equal(await page.isVisible('#f-more'), false);
+  assert.equal(await page.isVisible('#f-sort'), true);
+  await page.click('#f-panel');
+  await pick(page, 'due', 'overdue');
+  await page.click('#f-pendingSteps');
+  assert.equal(await page.textContent('#f-panel'), 'Filtros2▴');
+  await page.click('#f-panel');
+  assert.equal(await page.isVisible('#f-more'), false);
+  assert.equal(await page.getAttribute('#f-panel', 'aria-expanded'), 'false');
+  assert.deepEqual(await cards(page), [], 'vencida y con pasos pendientes: ninguna');
+  await page.reload();
+  await page.waitForSelector('#sum-body');
+  assert.equal(await page.textContent('#f-panel'), 'Filtros2▾', 'el filtro se recuerda');
+  assert.equal(await page.getAttribute('#sum-more', 'aria-expanded'), 'true');
+  await page.click('#f-clear');
+  await page.click('#sum-more');
+  assert.equal(await page.locator('#sum-body').count(), 0);
   await page.context().close();
 });
 

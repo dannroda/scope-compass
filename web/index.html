@@ -17,17 +17,19 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <nav class="home-bar" aria-label="Inicio">
-      <a class="home-link" id="home-link" href="#" hidden>← Inicio</a>
-      <label for="project-switch" class="sr">Proyecto</label>
-      <select id="project-switch" hidden></select>
-    </nav>
-    <h1><span id="project">Scope Compass</span> <small>tareas</small></h1>
+    <div class="brand">
+      <nav class="home-bar" aria-label="Inicio">
+        <a class="home-link" id="home-link" href="#" hidden>← Inicio</a>
+        <label for="project-switch" class="sr">Proyecto</label>
+        <select id="project-switch" hidden></select>
+      </nav>
+      <h1><span id="project">Scope Compass</span></h1>
+      <nav class="views" aria-label="Vistas"><a href="#" id="tab-board">Tablero</a><a href="#lists" id="tab-lists">Listas</a><a href="#docs" id="tab-docs">Documentos</a></nav>
+    </div>
     <span class="conn" id="conn" role="status" hidden>Sin conexión con el hub · reintentando</span>
     <span class="gitmark" id="git" role="status" hidden></span>
     <button class="btn primary" id="new-btn" type="button">Nueva tarea</button>
   </header>
-  <nav class="views" aria-label="Vistas"><a href="#" id="tab-board">Tablero</a><a href="#lists" id="tab-lists">Listas</a><a href="#docs" id="tab-docs">Documentos</a></nav>
   <nav class="miles" id="miles" aria-label="Hitos"></nav>
   <section class="filters" id="filters" aria-label="Filtros"></section>
   <form class="newtask" id="new-form" hidden>

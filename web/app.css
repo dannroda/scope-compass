@@ -43,7 +43,7 @@ code { font-family: var(--font-mono); font-size: .82em; background: var(--surfac
 
 header.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; }
 h1 { margin: 0; font-family: var(--font-display); font-size: clamp(22px, 3vw, 30px); letter-spacing: .08em; text-wrap: balance; }
-h1 small { font-family: var(--font-body); font-size: 15px; letter-spacing: 0; color: var(--muted); font-weight: 500; margin-left: 10px; }
+.brand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; min-width: 0; }
 .btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 14px; min-height: 40px; }
 .btn:hover { border-color: var(--accent); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
@@ -57,8 +57,13 @@ nav.miles { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip[aria-pressed="true"] .n { color: var(--on-accent); }
 .chip.complete:not([aria-pressed="true"]) { color: var(--s-done); border-color: var(--s-done); }
 
-section.summary { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; }
-.summary h2 { margin: 0 0 4px; font-family: var(--font-display); font-size: 20px; letter-spacing: .04em; text-wrap: balance; }
+section.summary { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; display: flex; flex-direction: column; gap: 10px; }
+/* Resumen del hito en una línea; el objetivo y "Hecho cuando" se despliegan (13.2). */
+.sum-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; }
+.sum-line .progress { margin: 0; flex: 1 1 240px; }
+.sum-more { margin-left: auto; border: 0; background: transparent; color: var(--accent); font-size: 14px; padding: 4px 6px; min-height: 32px; }
+.sum-body { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; padding: 10px 0 6px; border-top: 1px solid var(--line); }
+.summary h2 { margin: 0; font-family: var(--font-display); font-size: 20px; letter-spacing: .04em; text-wrap: balance; }
 .summary p { margin: 0; color: var(--muted); max-width: 65ch; }
 .summary .label { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
 .summary ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
@@ -122,7 +127,7 @@ main.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); ga
 .notice { background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 16px 18px; color: var(--muted); }
 .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
 
-@media (max-width: 980px) { main.board { grid-template-columns: repeat(2, minmax(0, 1fr)); } section.summary { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 980px) { main.board { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sum-body { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 560px) { main.board { grid-template-columns: minmax(0, 1fr); } .wrap { padding-inline: 16px; } }
 @media (prefers-reduced-motion: no-preference) { .card, .chip, .btn { transition: border-color .15s, background-color .15s; } }
 
@@ -133,7 +138,9 @@ main.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); ga
 .warnings ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
 
 /* --- Documentos y referencias (M6) --- */
-nav.views { display: flex; gap: 20px; border-bottom: 1px solid var(--line); margin-top: -6px; }
+nav.views { display: flex; gap: 20px; }
+/* Las vistas van en el encabezado, al lado del título (13.2); la línea de abajo es la del encabezado. */
+header.top { border-bottom: 1px solid var(--line); padding-bottom: 6px; }
 nav.views a { padding: 6px 2px; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; font-size: 16px; }
 nav.views a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--accent); font-weight: 700; }
 .muted { color: var(--muted); }
@@ -357,7 +364,7 @@ ul.items > .item:first-child { border-top: 0; }
 .gitmark { font-family: var(--font-mono); font-size: 12px; color: var(--s-review); border: 1px solid var(--s-review); border-radius: 999px; padding: 4px 10px; margin-left: auto; cursor: help; }
 .conn:not([hidden]) + .gitmark { margin-left: 0; }
 /* Barra del Inicio (D29): "← Inicio" y, dentro del Inicio, el selector de proyecto; arriba del título. */
-.home-bar { flex-basis: 100%; display: flex; align-items: center; gap: 12px; margin-bottom: -8px; min-height: 0; }
+.home-bar { display: flex; align-items: center; gap: 12px; min-height: 0; }
 .home-bar:not(:has(:not([hidden]))) { display: none; }
 .home-link { font-size: 14px; color: var(--accent); text-decoration: none; }
 .home-link:hover { text-decoration: underline; }
@@ -388,6 +395,22 @@ ul.items > .item:first-child { border-top: 0; }
 .fdrop-body input { accent-color: var(--accent); width: 16px; height: 16px; flex: none; }
 .fdrop-body p { padding: 6px 8px; }
 .f-count { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-left: 4px; }
+/* Fila del buscador: "Filtros (n)" abre el panel con los filtros; el orden, a la derecha (13.2). */
+.f-side { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.f-sort { display: inline-flex; gap: 6px; }
+.fdrop.sort .fdrop-body { left: auto; right: 0; }
+#f-panel .caret { color: var(--muted); font-size: 11px; }
+#f-panel .n { font-family: var(--font-mono); font-size: 11px; background: var(--accent); color: var(--on-accent); border-radius: 999px; padding: 0 6px; }
+#f-panel.on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.f-more { padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+/* Hitos terminados, juntos en un desplegable con el aspecto de los chips. */
+.ms-done > summary { min-height: 36px; padding: 6px 12px; font-size: 15px; }
+.ms-done > summary .n { background: none; color: var(--muted); padding: 0; font-size: 12px; }
+.ms-done .fdrop-body { min-width: 280px; max-height: 60vh; gap: 2px; }
+.ms-done .fdrop-body .chip { border: 0; border-radius: 6px; justify-content: flex-start; min-width: 0; text-align: left; }
+.ms-done .fdrop-body .chip:hover { background: var(--bg); }
+.ms-done .chip .n { order: 1; margin-left: auto; }
+.ms-done .ms-title { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .progress .hidden-n { color: var(--s-review); }
 /* Marcas de prioridad, responsable y etiquetas (D32), en la tarjeta, la lista y el detalle. */
 .card .meta .who { margin-left: auto; font-family: var(--font-body); font-size: 13px; overflow-wrap: anywhere; }

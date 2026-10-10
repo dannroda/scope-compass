@@ -1377,15 +1377,15 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 ### 13.2 Tablero: parte de arriba compacta · Pendiente
 
-- [ ] Resumen del hito en una línea con "Hecho cuando" desplegable
-- [ ] Chip "Terminados (n)" que agrupa los hitos hechos (el elegido siempre visible)
-- [ ] Botón "Filtros (n)" con panel; Orden a la derecha
-- [ ] Encabezado sin "tareas"
-- [ ] Tests de UI (posición de la primera tarjeta, filtros desde el panel)
+- [x] Resumen del hito en una línea con "Hecho cuando" desplegable
+- [x] Chip "Terminados (n)" que agrupa los hitos hechos (el elegido siempre visible)
+- [x] Botón "Filtros (n)" con panel; Orden a la derecha
+- [x] Encabezado sin "tareas"
+- [x] Tests de UI (posición de la primera tarjeta, filtros desde el panel)
 
 **Prueba:** A 1440×900 con M12 elegido la primera tarjeta empieza antes de los 320 px; los filtros y el orden siguen funcionando y recordándose.
 
-**Notas:** Hoy la primera tarjeta empieza a ~580 px en escritorio. Resumen del hito en una línea (título, barra, contador y "Hecho cuando ▸" que despliega la lista, recordado por proyecto). Hitos terminados agrupados en "Terminados (n) ▾". "Orden" a la derecha de la fila del buscador; los 9 filtros detrás de un botón "Filtros (n)" que abre un panel. Sacar el "tareas" del encabezado.
+**Notas:** Hoy la primera tarjeta empieza a ~580 px en escritorio. Resumen del hito en una línea (título, barra, contador y "Hecho cuando ▸" que despliega la lista, recordado por proyecto). Hitos terminados agrupados en "Terminados (n) ▾". "Orden" a la derecha de la fila del buscador; los 9 filtros detrás de un botón "Filtros (n)" que abre un panel. Sacar el "tareas" del encabezado. Hecho: con M12 elegido a 1440×900 la primera tarjeta queda a 301 px (antes 622). Lo que más ganó, además de lo pedido: las pestañas Tablero/Listas/Documentos y el "← Inicio" van en la fila del título, con la línea del encabezado debajo. El resumen despliega el objetivo y "Hecho cuando" ("Objetivo" si el hito no tiene la lista); abierto o cerrado se recuerda por proyecto, no por hito. "Terminados (n)" va después de Todos y lista código, título y avance; el hito elegido queda en la fila aunque esté terminado. "Filtros (n)" cuenta los filtros del panel (no el texto, que está a la vista); el contador de ocultas y Limpiar filtros quedan en la fila. El panel no se recuerda abierto. Los tests que elegían M1 (terminado en el fixture) pasan por "Terminados"; el de §14 ya no compara el padding ni la grilla del resumen.
 
 ### 13.3 Detalle: propiedades en chips y pasos arriba · Pendiente
 

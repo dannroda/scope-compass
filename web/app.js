@@ -228,7 +228,7 @@
   const BLOCK_FILTERS = [['', 'Con y sin bloqueo'], ['yes', 'Bloqueadas'], ['no', 'No bloqueadas']];
   const emptyFilter = () => ({ q: '', status: [], due: '', blocked: '', pendingSteps: false, withRefs: false, tags: [], priority: [], assignee: [] });
   // Se recuerdan por proyecto. Dentro del Inicio todos los tableros comparten el origen (D29): la clave lleva la ruta.
-  const FILTER_KEY = 'taskFilter:' + BASE, MODE_KEY = 'boardMode:' + BASE, SORT_KEY = 'listSort:' + BASE;
+  const FILTER_KEY = 'taskFilter:' + BASE, MODE_KEY = 'boardMode:' + BASE, SORT_KEY = 'listSort:' + BASE, SUM_KEY = 'summaryOpen:' + BASE;
   function readJsonPref(key, fallback) { try { return JSON.parse(pref(key) || 'null') ?? fallback; } catch (e) { return fallback; } }
   S.f = { ...emptyFilter(), ...readJsonPref(FILTER_KEY, {}) };
   S.mode = pref(MODE_KEY) === 'list' ? 'list' : 'board';
@@ -272,20 +272,30 @@
       const q = h('input', { type: 'search', id: 'f-q', placeholder: 'Buscar por título o código', autocomplete: 'off', value: S.f.q,
         oninput: (e) => setF({ q: e.target.value }),
         onkeydown: (e) => { if (e.key === 'Escape' && e.target.value) { e.preventDefault(); e.stopPropagation(); e.target.value = ''; setF({ q: '' }); } } });
+      // Los filtros van en un panel que abre "Filtros (n)" (13.2); a la derecha, el orden.
       bar.append(h('div', { class: 'f-main' },
         h('div', { class: 'mode-switch', role: 'group', 'aria-label': 'Vista del tablero' },
           h('button', { type: 'button', id: 'mode-board', onclick: () => setMode('board') }, 'Tablero'),
           h('button', { type: 'button', id: 'mode-list', onclick: () => setMode('list') }, 'Lista')),
-        h('label', { for: 'f-q', class: 'sr' }, 'Buscar tareas'), q),
-      h('div', { class: 'f-more' }));
+        h('label', { for: 'f-q', class: 'sr' }, 'Buscar tareas'), q,
+        h('button', { type: 'button', class: 'chip small', id: 'f-panel', 'aria-controls': 'f-more', 'aria-expanded': 'false',
+          onclick: () => { S.filtersOpen = !S.filtersOpen; renderFilters(); } }),
+        h('div', { class: 'f-side' })),
+      h('div', { class: 'f-more', id: 'f-more' }));
     }
     document.getElementById('mode-board').setAttribute('aria-pressed', S.mode === 'board' ? 'true' : 'false');
     document.getElementById('mode-list').setAttribute('aria-pressed', S.mode === 'list' ? 'true' : 'false');
     const q = document.getElementById('f-q');
     if (q.value !== S.f.q) q.value = S.f.q;
-    const more = bar.querySelector('.f-more');
-    const open = [...more.querySelectorAll('details[open]')].map((d) => d.dataset.key);
-    const focus = more.contains(document.activeElement) ? document.activeElement.id : null;
+    const more = bar.querySelector('.f-more'), side = bar.querySelector('.f-side');
+    const n = ['status', 'due', 'blocked', 'pendingSteps', 'withRefs', 'tags', 'priority', 'assignee'].filter((k) => Array.isArray(S.f[k]) ? S.f[k].length : S.f[k]).length;
+    const panel = document.getElementById('f-panel');
+    panel.replaceChildren(...['Filtros', n ? h('span', { class: 'n' }, n) : null, h('span', { class: 'caret', 'aria-hidden': 'true' }, S.filtersOpen ? '▴' : '▾')].filter(Boolean));
+    panel.setAttribute('aria-expanded', S.filtersOpen ? 'true' : 'false');
+    panel.classList.toggle('on', n > 0);
+    more.hidden = !S.filtersOpen;
+    const open = [...bar.querySelectorAll('details[open]')].map((d) => d.dataset.key);
+    const focus = more.contains(document.activeElement) || side.contains(document.activeElement) ? document.activeElement.id : null;
     // Desplegable con casillas: el resumen dice cuántos valores hay elegidos.
     const multi = (key, label, options) => {
       const sel = S.f[key];
@@ -325,8 +335,12 @@
     const sortDir = S.sort ? h('button', { type: 'button', class: 'chip small', id: 'f-sort-dir', 'aria-label': S.sort.dir === 1 ? 'Ascendente' : 'Descendente',
       title: 'Invertir el orden', onclick: () => setSort({ ...S.sort, dir: -S.sort.dir }) }, S.sort.dir === 1 ? '▲' : '▼') : null;
     const total = visibleTasks().length, shown = shownTasks().length;
+    side.replaceChildren(...[
+      filterActive() ? h('span', { class: 'f-count', role: 'status' }, shown + ' de ' + total + (total - shown ? ' · ' + (total - shown) + ' ocultas' : '')) : null,
+      filterActive() ? h('button', { type: 'button', class: 'btn ghost small', id: 'f-clear', onclick: () => { setF(emptyFilter()); document.getElementById('f-q').focus(); } }, 'Limpiar filtros') : null,
+      h('span', { class: 'f-sort' }, sortDrop, sortDir)
+    ].filter(Boolean));
     more.replaceChildren(...[
-      sortDrop, sortDir,
       multi('status', 'Estado', STATUSES.map((s) => [s.id, s.label])),
       single('due', 'Fecha límite', DUE_FILTERS),
       single('blocked', 'Bloqueo', BLOCK_FILTERS),
@@ -334,15 +348,13 @@
       toggle('withRefs', 'Con referencias'),
       multi('tags', 'Etiquetas', values(allTags(), S.f.tags)),
       multi('priority', 'Prioridad', [...PRIORITIES, ['none', 'Sin prioridad']]),
-      multi('assignee', 'Responsable', [...values(allAssignees(), S.f.assignee), ['none', 'Sin responsable']]),
-      filterActive() ? h('span', { class: 'f-count', role: 'status' }, shown + ' de ' + total + (total - shown ? ' · ' + (total - shown) + ' ocultas' : '')) : null,
-      filterActive() ? h('button', { type: 'button', class: 'btn ghost small', id: 'f-clear', onclick: () => { setF(emptyFilter()); document.getElementById('f-q').focus(); } }, 'Limpiar filtros') : null
-    ].filter(Boolean));
+      multi('assignee', 'Responsable', [...values(allAssignees(), S.f.assignee), ['none', 'Sin responsable']])
+    ]);
     if (focus) document.getElementById(focus)?.focus();
   }
   // Un clic afuera cierra los desplegables de los filtros.
   document.addEventListener('click', (e) => {
-    for (const d of document.querySelectorAll('#filters details[open]')) if (!d.contains(e.target)) d.open = false;
+    for (const d of document.querySelectorAll('#filters details[open], #miles details[open]')) if (!d.contains(e.target)) d.open = false;
   });
 
   // Vista de lista: una fila por tarea, ordenable por columna. Sin orden elegido, el del tablero (sortTasks).
@@ -428,17 +440,25 @@
 
   function renderMiles() {
     const nav = document.getElementById('miles');
+    const wasOpen = !!nav.querySelector('details[open]');
     nav.replaceChildren();
     const all = S.tasks.length, allDone = S.tasks.filter((t) => t.status === 'done').length;
     nav.append(h('button', { class: 'chip', type: 'button', 'aria-pressed': S.filter === 'all' ? 'true' : 'false', onclick: () => setFilter('all') },
       'Todos', h('span', { class: 'n' }, allDone + '/' + all)));
+    // Los hitos terminados van juntos en "Terminados (n)", salvo el elegido, que queda a la vista (13.2).
+    const done = [];
     for (const m of S.milestones) {
       const ts = S.tasks.filter((t) => t.milestone === m.id);
       const d = ts.filter((t) => t.status === 'done').length;
       const complete = ts.length > 0 && d === ts.length;
-      nav.append(h('button', { class: 'chip' + (complete ? ' complete' : ''), type: 'button', title: m.title, 'aria-pressed': S.filter === m.id ? 'true' : 'false', onclick: () => setFilter(m.id) },
-        m.code, h('span', { class: 'n' }, ts.length ? d + '/' + ts.length : '—')));
+      const chip = h('button', { class: 'chip' + (complete ? ' complete' : ''), type: 'button', title: m.title, 'aria-pressed': S.filter === m.id ? 'true' : 'false',
+        onclick: (e) => { const dd = e.currentTarget.closest('details'); if (dd) dd.open = false; setFilter(m.id); } },
+        m.code, h('span', { class: 'n' }, ts.length ? d + '/' + ts.length : '—'));
+      if (complete && S.filter !== m.id) { chip.append(h('span', { class: 'ms-title' }, m.title)); done.push(chip); } else nav.append(chip);
     }
+    if (done.length) nav.insertBefore(h('details', { class: 'fdrop ms-done', open: wasOpen },
+      h('summary', { id: 'ms-done' }, 'Terminados', h('span', { class: 'n' }, done.length)),
+      h('div', { class: 'fdrop-body' }, done)), nav.children[1] || null);
     const sel = document.getElementById('new-ms');
     const cur = sel.value;
     sel.replaceChildren(...S.milestones.map((m) => h('option', { value: m.id }, m.code + ' · ' + m.title)));
@@ -465,20 +485,20 @@
     const pct = ts.length ? Math.round((d / ts.length) * 100) : 0;
     const hidden = ts.length - ts.filter((t) => taskMatches(t)).length;
     const m = S.filter === 'all' ? null : msById(S.filter);
-    const left = h('div', null,
+    // Una línea (13.2): título, barra y contador. El objetivo y "Hecho cuando" se despliegan, y eso se recuerda.
+    const when = m && Array.isArray(m.done_when) ? m.done_when : [];
+    const more = m && (m.goal || when.length);
+    const open = more && pref(SUM_KEY) === '1';
+    box.append(h('div', { class: 'sum-line' },
       h('h2', null, m ? m.code + ' · ' + m.title : 'Todos los hitos'),
-      h('p', null, rich(m ? m.goal : 'Todas las tareas de ' + (S.project || 'este proyecto') + '. Elegí un hito para ver su objetivo.')),
       h('div', { class: 'progress' }, h('div', { class: 'bar', role: 'img', 'aria-label': pct + '% hecho' }, h('i', { style: 'width:' + pct + '%' })), d + '/' + ts.length + ' tareas',
-        hidden ? h('span', { class: 'hidden-n' }, '· ' + (hidden === 1 ? '1 oculta' : hidden + ' ocultas') + ' por los filtros') : null));
-    const right = h('div', null);
-    if (m && Array.isArray(m.done_when) && m.done_when.length) {
-      right.append(h('div', { class: 'label' }, 'Hecho cuando'), h('ul', null, m.done_when.map((x) => h('li', null, rich(x)))));
-    } else if (!m) {
-      right.append(h('div', { class: 'label' }, 'Por estado'),
-        h('ul', null, STATUSES.map((s) => h('li', null, s.label + ': ' + S.tasks.filter((t) => t.status === s.id).length))));
-    }
+        hidden ? h('span', { class: 'hidden-n' }, '· ' + (hidden === 1 ? '1 oculta' : hidden + ' ocultas') + ' por los filtros') : null),
+      more ? h('button', { type: 'button', class: 'sum-more', id: 'sum-more', 'aria-expanded': open ? 'true' : 'false', 'aria-controls': 'sum-body',
+        onclick: () => { pref(SUM_KEY, open ? '' : '1'); renderSummary(); } }, when.length ? 'Hecho cuando' : 'Objetivo', h('span', { 'aria-hidden': 'true' }, open ? ' ▾' : ' ▸')) : null));
+    if (open) box.append(h('div', { class: 'sum-body', id: 'sum-body' },
+      m.goal ? h('p', null, rich(m.goal)) : null,
+      when.length ? h('div', null, h('div', { class: 'label' }, 'Hecho cuando'), h('ul', null, when.map((x) => h('li', null, rich(x))))) : null));
     box.hidden = false;
-    box.append(left, right);
   }
 
   function renderBoard() {
