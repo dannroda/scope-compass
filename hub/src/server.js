@@ -24,7 +24,7 @@ export const HOST = '127.0.0.1';
 export const WEB_DIR = resourceDir('web');
 
 // Archivos de la UI (spec §7). Rutas fijas, sin comodín: un /api/... inexistente sigue siendo un 404 JSON.
-const WEB_TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8' };
+const WEB_TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8', '.svg': 'image/svg+xml' };
 
 const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, invalid_file: 409, io_error: 500 };
 
@@ -174,6 +174,7 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   app.get('/', (req, reply) => serveWeb(reply, '', 'index.html'));
   app.get('/app.css', (req, reply) => serveWeb(reply, '', 'app.css'));
   app.get('/app.js', (req, reply) => serveWeb(reply, '', 'app.js'));
+  app.get('/favicon.svg', (req, reply) => serveWeb(reply, '', 'favicon.svg'));
   app.get('/fonts/:file', (req, reply) => serveWeb(reply, 'fonts', req.params.file));
 
   return app;

@@ -63,6 +63,8 @@ test('sin hub suelto: el Inicio sirve el tablero, la API y el WebSocket del proy
   assert.equal(page.status, 200);
   assert.match(await page.text(), /<script src="app\.js"/);
   assert.equal((await fetch(base + '/p/vida/app.css')).headers.get('content-type'), 'text/css; charset=utf-8');
+  // El favicon (el ícono de la bandeja), en el tablero y en el Inicio.
+  for (const u of ['/p/vida/favicon.svg', '/favicon.svg']) assert.equal((await fetch(base + u)).headers.get('content-type'), 'image/svg+xml', u);
   assert.equal((await fetch(base + '/p/vida', { redirect: 'manual' })).headers.get('location'), '/p/vida/');
   // La API, con etag y escrituras.
   const t = (await (await fetch(base + '/p/vida/api/tasks/m1-04')).json());

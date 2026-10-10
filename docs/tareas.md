@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-10-09
+> Generado: 2026-10-10
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -716,7 +716,7 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 **Notas:** Pedido del usuario: los pasos eran ambiguos cortos o demasiado largos para el dock. `checklist[].detail` opcional. Web: ▸ despliega, ✎ edita texto y detalle (vacío lo quita). Dock: ▸ debajo del checkbox. CLI: `step add|set|rm`, `show` con el detalle sangrado. Export md con el detalle sangrado (y `tools/artifact_to_md.py`, para seguir idénticos). Los enlaces del detalle cuentan en refs check, backlinks y refs suggest. `refs suggest` también reconoce "en el GDD (§4.3)".
 
-## M7 — Hosting privado
+## M7 — Hosting privado  (0/1)
 
 El mismo hub en un servidor privado para usarlo desde el teléfono, con git como almacenamiento (§12).
 
@@ -724,6 +724,27 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 - Desde el teléfono se ve y se edita el tablero (PWA).
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
 - El hub pide token y no queda expuesto a internet sin login.
+
+### 7.1 Investigar: abrir el hub desde el teléfono por la LAN · Pendiente
+
+**Prioridad:** media · **Etiquetas:** `investigacion`, `seguridad`
+
+- [ ] Relevar el estado actual
+  El hub escucha solo en 127.0.0.1 y sin auth (spec §servidor). createServer ya acepta un token, pero como header Authorization: Bearer, que el navegador del teléfono no puede mandar. Hoy funciona un túnel SSH desde el teléfono (Termux / Termius).
+- [ ] Comparar opciones de acceso
+  (a) --lan escuchando en la IP local + token por link que queda en cookie (y QR en la CLI); (b) auth de verdad: usuario/contraseña o passkey con sesión; (c) Tailscale (o similar) y seguir escuchando solo en la interfaz de la VPN; (d) reverse proxy con login delante (Caddy + basic auth, Cloudflare Access). Para cada una: seguridad en un wifi compartido, fricción en el teléfono, trabajo en el hub, si sirve también para el hosting de §12.
+- [ ] Riesgos a cubrir
+  HTTP sin TLS en la LAN (token o cookie viajan en claro), el WebSocket también autenticado, CSRF en la API de escritura, endpoints peligrosos (/api/shutdown, restart) que no deberían quedar expuestos, el Inicio (multi-hub) que proxea proyectos, y revocar el acceso.
+- [ ] Probar en un teléfono real
+  Android e iPhone si se puede: login, tiempo real por WebSocket, PWA instalable.
+- [ ] Decisión
+  Registrar en docs/decisiones.md la opción elegida y lo descartado; dejar las tareas de implementación en M7.
+
+**Prueba:** Hay una decisión registrada con la comparación de opciones, y una prueba de concepto de la elegida abre el tablero desde el teléfono por el wifi sin que otro dispositivo de la red pueda entrar sin credenciales.
+
+**Notas:** Pedido desde Project Epiphany (2026-10-10): ver el panel en el teléfono por el wifi de casa. Puede convenir auth de verdad en vez de un token suelto.
+
+**Referencias:** `docs/spec.md#hosting`, `docs/spec.md#servidor`
 
 ## M8 — Inicio, listas y plantillas (v3)  (17/17)
 
@@ -1332,7 +1353,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 - [ ] Spec §20 y decisiones
 - [ ] AGENTS.md (plantilla, copia del addon y compass/), README y spec al día
 
-## M13 — UI más compacta  (0/6)
+## M13 — UI más compacta  (0/7)
 
 Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compactos, según la revisión de diseño del 2026-10-09 (https://claude.ai/artifact/D6vMr2tWMv9dRCX8MUv5qg).
 
@@ -1400,3 +1421,18 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 - [ ] Spec: sección de M13 con lo que cambió en la UI
 - [ ] README de web/ al día
+
+### 13.7 Bug: show muestra «doc#undefined» en referencias al documento entero · Pendiente
+
+**Prioridad:** baja · **Etiquetas:** `bug`, `cli`
+
+- [ ] Arreglar el formato en scompass show
+  hub/src/cli.js:489 arma `${r.doc}#${r.section}` sin mirar si hay sección; una ref sin #id (ref add <tarea> gdd.md) sale como gdd.md#undefined. Usar el mismo criterio que export-md.js:50 (solo doc si no hay section).
+- [ ] Revisar la web y el dock
+  Que el detalle de tarea en la UI y en el dock de Godot muestren bien una ref al documento entero.
+- [ ] Test
+  show de una tarea con ref sin sección imprime solo el alias.
+
+**Prueba:** scompass ref add <tarea> gdd.md y scompass show <tarea>: dice «Referencias: gdd.md», no «gdd.md#undefined»; lo mismo en la web.
+
+**Notas:** Visto en Project Epiphany (m11-20) el 2026-10-10.

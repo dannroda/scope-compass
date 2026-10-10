@@ -358,7 +358,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   app.decorate('poll', poll);
 
   // La página del Inicio (web/home.*), con los estilos y las fuentes del tablero. Rutas fijas, como en el hub.
-  const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2' };
+  const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
   const serveWeb = async (reply, rel) => {
     const missing = new StoreError('not_found', `no existe /${rel}`);
     const ext = rel.slice(rel.lastIndexOf('.'));
@@ -368,7 +368,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     return reply.type(TYPES[ext]).header('cache-control', 'no-cache').send(body);
   };
   app.get('/', (req, reply) => serveWeb(reply, 'home.html'));
-  for (const f of ['home.js', 'home.css', 'app.css']) app.get('/' + f, (req, reply) => serveWeb(reply, f));
+  for (const f of ['home.js', 'home.css', 'app.css', 'favicon.svg']) app.get('/' + f, (req, reply) => serveWeb(reply, f));
   app.get('/fonts/:file', (req, reply) => serveWeb(reply, 'fonts/' + req.params.file));
 
   app.register(async (scope) => {

@@ -128,6 +128,7 @@ test('sirve la UI de web/ y nada fuera de ella', async () => {
   assert.match(index.body, /<script src="app.js"/);
   assert.match((await app.inject('/app.js')).headers['content-type'], /javascript/);
   assert.match((await app.inject('/app.css')).headers['content-type'], /text\/css/);
+  assert.match((await app.inject('/favicon.svg')).headers['content-type'], /image\/svg\+xml/);
   for (const url of ['/fonts/..%2F..%2Fpackage.json', '/fonts/.hidden.woff2', '/fonts/nada.woff2', '/README.md', '/api/nada']) {
     const r = await app.inject(url);
     assert.equal(r.statusCode, 404, url);
