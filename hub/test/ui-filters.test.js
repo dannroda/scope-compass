@@ -280,6 +280,25 @@ test('teléfono (13.4): primera tarjeta antes de 450 px, hitos en una fila, colu
   await desk.context().close();
 });
 
+test('lista (13.5): fechas relativas con la completa en el tooltip y sin las columnas vacías, salvo la del orden', async () => {
+  const page = await open();
+  await page.click('#mode-list');
+  await page.click('details[data-key="assignee"] summary');
+  await page.check('#f-assignee-Claude');
+  assert.deepEqual(await rows(page), ['m1-04']);
+  // m1-04 no tiene fecha límite: esa columna no está. Las demás tienen algún valor.
+  assert.deepEqual(await page.locator('#tasklist th').allTextContents(), ['Código', 'Título', 'Hito', 'Estado', 'Pasos', 'Bloqueo', 'Prioridad', 'Responsable', 'Etiquetas', 'Actualizada', 'Creada']);
+  // Recién editada (en beforeEach): "hace un momento"; creada hace más de una semana: la fecha corta.
+  const [upd, created] = await page.locator('#tasklist tr[data-id="m1-04"] td.when time').all();
+  assert.equal(await upd.textContent(), 'hace un momento');
+  assert.match(await created.textContent(), /^\d{1,2} [a-z]+\.?( \d{4})?$/);
+  assert.match(await upd.getAttribute('title'), /\d{1,2}\/\d{1,2}\/\d{4}/);
+  // Ordenar por fecha límite la muestra aunque esté vacía.
+  await pick(page, 'sort', 'due');
+  assert.ok((await page.locator('#tasklist th').allTextContents()).includes('Fecha límite ▲'));
+  await page.context().close();
+});
+
 // Elige una opción de un desplegable de una sola opción (fecha, bloqueo): se cierra solo.
 async function pick(page, key, value) {
   await page.click(`#f-${key}`);

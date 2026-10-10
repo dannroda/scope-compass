@@ -1,26 +1,26 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Fechas relativas en Actualizada y Creada"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Columnas sin valores escondidas"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Tests de UI"
     }
   ],
   "code": "13.5",
   "created_at": "2026-10-09T05:12:56.637Z",
   "milestone": "m13",
-  "notes": "Actualizada y Creada dicen todas \"8 oct\". Fecha relativa para lo reciente (\"hace 3 h\", \"ayer\") con la completa en el tooltip. Esconder las columnas sin ningún valor en lo que se está viendo (la de orden activo siempre visible).",
+  "notes": "Actualizada y Creada dicen todas \"8 oct\". Fecha relativa para lo reciente (\"hace 3 h\", \"ayer\") con la completa en el tooltip. Esconder las columnas sin ningún valor en lo que se está viendo (la de orden activo siempre visible). Hecho: menos de un minuto, \"hace un momento\"; después, minutos y horas cortos (\"hace 5 min\", \"hace 3 h\") hasta las 24 h, y días por calendario hasta la semana (\"ayer\", \"anteayer\", \"hace 4 días\"); más viejo, la fecha corta de antes. Lo da Intl.RelativeTimeFormat en español; la fecha completa queda en el tooltip. No se actualiza sola con el reloj: se recalcula cada vez que la lista se redibuja (cualquier cambio del hub). Las columnas se calculan sobre las filas que se ven (hito y filtros); la del orden elegido se ve aunque esté vacía. Con M11 quedan Código, Título, Hito, Estado, Pasos, Actualizada y Creada.",
   "order": 5,
   "refs": [],
-  "status": "todo",
+  "status": "done",
   "test": "Con M11 elegido no aparecen las columnas vacías; una tarea editada recién dice \"hace un momento\".",
   "title": "Lista: fechas relativas y columnas vacías",
-  "updated_at": "2026-10-09T05:12:57.574Z"
+  "updated_at": "2026-10-10T19:50:26.880Z"
 }

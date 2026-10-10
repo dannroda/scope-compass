@@ -1355,7 +1355,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Notas:** Cerrar M12: tests, spec y guía al día. Hecho: los tests de UI de la biblioteca y del diff ya estaban de la 12.5 y la 12.6 (ui-docs.test.js). Spec §20 Biblioteca de documentos con sus criterios, la tabla de rutas y los comandos; §10.4 apunta a §20 y §5.5 suma los eventos git y docs_git. D33: la app declara documentos y lee git, pero no escribe documentos ni commitea; alias de patrón por ruta bajo la carpeta base. AGENTS.md (plantilla, compass/ y addon, idénticos) con doc add/rm/search/status/diff y la regla de alias; README (estado con M12), web/README y hub/README (los archivos de documentos y git).
 
-## M13 — UI más compacta  (4/7)
+## M13 — UI más compacta  (5/7)
 
 Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compactos, según la revisión de diseño del 2026-10-09 (https://claude.ai/artifact/D6vMr2tWMv9dRCX8MUv5qg).
 
@@ -1398,7 +1398,7 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 **Notas:** Hito, fecha, prioridad, responsable y etiquetas ocupan ~450 px antes de los pasos. Pasan a una fila de chips que se editan al hacer clic (vacíos en tono apagado). El título sin borde en reposo, con borde al enfocarlo. Hecho: los chips son los mismos controles nativos (select, date, input con datalist) con aspecto de chip y field-sizing: content, así que un clic ya edita en el lugar y no hay estados de edición nuevos; cada uno lleva su nombre chico adelante (Hito, Vence, Prioridad, Responsable, Etiquetas). Vacíos: borde punteado y texto apagado; vencida en rojo, hoy en ámbar, prioridad alta en rojo. La hora aparece cuando hay fecha, y × quita la fecha. Orden: título, chips, estado, pasos, notas, referencias, vínculos y Cómo probarlo. Con 5 pasos, a 1440×900 los pasos empiezan a 339 px (antes 519). El título ya tenía borde transparente: se veía con borde porque abrir la tarea lo enfocaba; ahora el foco va al panel (tabindex -1), y de paso 1–4 cambian el estado apenas se abre.
 
-### 13.4 Teléfono: menos filas antes de las tareas · Pendiente
+### 13.4 Teléfono: menos filas antes de las tareas · Hecho
 
 - [x] Hitos en una fila con scroll horizontal
 - [x] Columnas vacías de una línea
@@ -1412,13 +1412,13 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 ### 13.5 Lista: fechas relativas y columnas vacías · Pendiente
 
-- [ ] Fechas relativas en Actualizada y Creada
-- [ ] Columnas sin valores escondidas
-- [ ] Tests de UI
+- [x] Fechas relativas en Actualizada y Creada
+- [x] Columnas sin valores escondidas
+- [x] Tests de UI
 
 **Prueba:** Con M11 elegido no aparecen las columnas vacías; una tarea editada recién dice "hace un momento".
 
-**Notas:** Actualizada y Creada dicen todas "8 oct". Fecha relativa para lo reciente ("hace 3 h", "ayer") con la completa en el tooltip. Esconder las columnas sin ningún valor en lo que se está viendo (la de orden activo siempre visible).
+**Notas:** Actualizada y Creada dicen todas "8 oct". Fecha relativa para lo reciente ("hace 3 h", "ayer") con la completa en el tooltip. Esconder las columnas sin ningún valor en lo que se está viendo (la de orden activo siempre visible). Hecho: menos de un minuto, "hace un momento"; después, minutos y horas cortos ("hace 5 min", "hace 3 h") hasta las 24 h, y días por calendario hasta la semana ("ayer", "anteayer", "hace 4 días"); más viejo, la fecha corta de antes. Lo da Intl.RelativeTimeFormat en español; la fecha completa queda en el tooltip. No se actualiza sola con el reloj: se recalcula cada vez que la lista se redibuja (cualquier cambio del hub). Las columnas se calculan sobre las filas que se ven (hito y filtros); la del orden elegido se ve aunque esté vacía. Con M11 quedan Código, Título, Hito, Estado, Pasos, Actualizada y Creada.
 
 ### 13.6 Spec y guía de M13 · Pendiente
 

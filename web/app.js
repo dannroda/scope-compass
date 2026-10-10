@@ -374,13 +374,18 @@
     { key: 'updated', label: 'Actualizada', val: (t) => t.updated_at || null, opt: true, newestFirst: true },
     { key: 'created', label: 'Creada', val: (t) => t.created_at || null, opt: true, newestFirst: true }
   ];
-  // Fecha corta para la lista ("8 oct", con el año si no es el actual); la completa en el tooltip.
+  // Fecha de edición o creación en la lista: relativa si es de la última semana ("hace un momento", "hace 3 h",
+  // "ayer"); si no, corta ("8 oct", con el año si no es el actual). La completa, en el tooltip (13.5).
+  const RTF = new Intl.RelativeTimeFormat('es', { numeric: 'auto', style: 'short' }), RTF_DAYS = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
   function stamp(iso) {
     if (!iso) return null;
     const d = new Date(iso);
     if (isNaN(d)) return null;
-    const short = d.toLocaleDateString('es', { day: 'numeric', month: 'short', ...(d.getFullYear() === new Date().getFullYear() ? {} : { year: 'numeric' }) });
-    return h('time', { datetime: iso, title: d.toLocaleString('es') }, short);
+    const now = new Date(), secs = (now - d) / 1000;
+    const days = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+    const text = secs < 60 ? 'hace un momento' : secs < 3600 ? RTF.format(-Math.floor(secs / 60), 'minute') : secs < 86400 ? RTF.format(-Math.floor(secs / 3600), 'hour')
+      : days < 7 ? RTF_DAYS.format(-days, 'day') : d.toLocaleDateString('es', { day: 'numeric', month: 'short', ...(d.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }) });
+    return h('time', { datetime: iso, title: d.toLocaleString('es') }, text);
   }
   const sortLabel = (key) => COLUMNS.find((c) => c.key === key)?.label ?? key;
   function sortedForList(ts) {
@@ -410,7 +415,9 @@
       box.replaceChildren(h('div', { class: 'notice' }, S.loaded ? (filterActive() ? 'Ninguna tarea con estos filtros.' : 'Sin tareas.') : 'Cargando tareas…'));
       return;
     }
-    const head = h('tr', null, COLUMNS.map((c) => {
+    // Sin las columnas que no tienen ningún valor en lo que se ve; la del orden elegido, siempre (13.5).
+    const cols = COLUMNS.filter((c) => S.sort?.key === c.key || ts.some((t) => { const v = c.val(t); return v !== null && v !== ''; }));
+    const head = h('tr', null, cols.map((c) => {
       const on = S.sort?.key === c.key;
       return h('th', { scope: 'col', class: c.opt ? 'opt' : null, 'aria-sort': on ? (S.sort.dir === 1 ? 'ascending' : 'descending') : null },
         h('button', { type: 'button', 'data-sort': c.key, onclick: () => sortBy(c.key), title: 'Ordenar por ' + c.label.toLowerCase() },
@@ -421,19 +428,22 @@
       const m = msById(t.milestone);
       const p = clProgress(t);
       const blockers = openBlockers(t);
+      const cells = {
+        code: h('td', { class: 'code' }, t.code || ''),
+        title: h('td', { class: 'title' }, h('button', { type: 'button', class: 'row-open', onclick: () => openTask(t.id) }, rich(t.title, true))),
+        milestone: h('td', { class: 'opt code' }, m ? h('span', { title: m.title }, m.code) : t.milestone),
+        status: h('td', null, h('span', { class: 'st', title: s.label }, h('span', { class: 'dot', style: 'background:' + s.color }), h('span', { class: 'st-l' }, s.label))),
+        steps: h('td', { class: 'opt code' }, p.total ? p.done + '/' + p.total : ''),
+        due: h('td', null, t.due ? dueMark(t) : null),
+        blocked: h('td', { class: 'opt' }, blockers.length ? h('span', { class: 'blockmark', title: 'Bloqueada por: ' + blockers.map(taskName).join('; ') }, 'Bloqueada') : null),
+        priority: h('td', { class: 'opt' }, t.priority ? h('span', { class: 'prio ' + t.priority }, PRIORITY_LABEL[t.priority] || t.priority) : null),
+        assignee: h('td', { class: 'opt' }, t.assignee || ''),
+        tags: h('td', { class: 'opt' }, tagsOf(t).map((x) => h('span', { class: 'tag' }, x))),
+        updated: h('td', { class: 'opt when' }, stamp(t.updated_at)),
+        created: h('td', { class: 'opt when' }, stamp(t.created_at))
+      };
       return h('tr', { 'data-id': t.id, 'aria-current': S.openId === t.id ? 'true' : null, onclick: (e) => { if (!e.target.closest('button')) openTask(t.id); } },
-        h('td', { class: 'code' }, t.code || ''),
-        h('td', { class: 'title' }, h('button', { type: 'button', class: 'row-open', onclick: () => openTask(t.id) }, rich(t.title, true))),
-        h('td', { class: 'opt code' }, m ? h('span', { title: m.title }, m.code) : t.milestone),
-        h('td', null, h('span', { class: 'st', title: s.label }, h('span', { class: 'dot', style: 'background:' + s.color }), h('span', { class: 'st-l' }, s.label))),
-        h('td', { class: 'opt code' }, p.total ? p.done + '/' + p.total : ''),
-        h('td', null, t.due ? dueMark(t) : null),
-        h('td', { class: 'opt' }, blockers.length ? h('span', { class: 'blockmark', title: 'Bloqueada por: ' + blockers.map(taskName).join('; ') }, 'Bloqueada') : null),
-        h('td', { class: 'opt' }, t.priority ? h('span', { class: 'prio ' + t.priority }, PRIORITY_LABEL[t.priority] || t.priority) : null),
-        h('td', { class: 'opt' }, t.assignee || ''),
-        h('td', { class: 'opt' }, tagsOf(t).map((x) => h('span', { class: 'tag' }, x))),
-        h('td', { class: 'opt when' }, stamp(t.updated_at)),
-        h('td', { class: 'opt when' }, stamp(t.created_at)));
+        cols.map((c) => cells[c.key]));
     });
     box.replaceChildren(h('div', { class: 'table-wrap' }, h('table', { class: 'tasks' }, h('thead', null, head), h('tbody', null, rows))));
   }
