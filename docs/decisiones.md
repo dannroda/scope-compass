@@ -297,3 +297,22 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Recorrer el disco cuando no hay repo: los proyectos sin git son los personales del Inicio, que no tienen archivos propios que ver.
   - Mostrar un SVG como imagen: puede traer scripts, así que se muestra como texto.
   - Seguir enlaces simbólicos: uno puede apuntar fuera del proyecto.
+
+## D35 · Tareas con archivos: un campo files con rutas del repo, aparte de las referencias a documentos
+**2026-10-10 · vigente** · spec §23
+
+- **Qué:** la tarea cita los archivos que toca en un campo propio, `files`, con rutas desde la raíz del proyecto. No usa `refs`, que sigue siendo de documentos y secciones.
+- **Por qué aparte:**
+  - Una referencia a un documento tiene secciones, ids estables, backlinks por sección y texto renderizado en el detalle.
+  - Un archivo del repo es solo una ruta que se abre en otro lado: en la pestaña Archivos o en el editor de Godot.
+  - Mezclarlos complicaba `refs check` y la búsqueda de secciones, sin ganar nada.
+- **Rutas y no uid:// de Godot:**
+  - La ruta se lee en el JSON y en los diffs, y la CLI, la web y un agente la entienden sin Godot.
+  - El costo es que mover un archivo rompe la cita. `refs check` lo avisa (`missing_file`), igual que una sección borrada.
+  - Resolver uid:// en Node obligaría a leer los `.uid` y los encabezados de cada recurso.
+- **Solo archivos que git lista:** son los mismos que muestra la pestaña Archivos (D34). Así una tarea no cita algo ignorado (`.godot/`, secretos) que nadie más ve. El dock vincula el script o la escena abiertos sin esa verificación: están en el disco y, en la práctica, en el repo.
+- **Las tareas de un archivo se calculan en el cliente:** la web y el dock ya tienen todas las tareas, así que la API no cambia.
+- **Descartado:**
+  - Una línea dentro del archivo (`player.gd:42`): se corre con cada cambio.
+  - Enlaces en línea a archivos dentro de las notas.
+  - Mostrar las tareas terminadas de un archivo arriba de la lista: es lo pendiente lo que sirve mientras se edita.

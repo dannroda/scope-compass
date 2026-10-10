@@ -38,6 +38,7 @@ Si `scompass` no está en el PATH del editor, indicá su ruta en Editor Settings
 
 - Proyecto sin tablero: en el dock, **Crear compass/** con la plantilla Juego, Personal o Vacío (o `scompass init --template juego` en la raíz del proyecto).
 - Para editar: **Iniciar hub** en el dock, o `scompass serve --open` en una terminal.
+- Tareas y código (M15): una tarea cita los scripts y escenas que toca. Se agregan con **+ Vincular** en el dock (el script o la escena que estás editando), con **+ Agregar** en la sección Archivos del detalle web o con `scompass file add <tarea> <ruta>`. En el dock, un clic en el archivo lo abre en el editor y, arriba de la lista, aparecen las tareas del script o la escena abiertos.
 - Todos los proyectos juntos: `scompass home --tray` levanta el Inicio, con un solo ícono en la bandeja (en Windows también: el área de notificación, junto al reloj). Sirve cada proyecto en `/p/<proyecto>/` sin procesos aparte; el dock y la CLI lo usan solos. `scompass home restart` (o "Reiniciar Inicio") carga una versión nueva.
 - Varios proyectos a la vez: cada hub usa el puerto de su `compass/config.json` (4711 por defecto); si está ocupado, toma el siguiente libre solo.
 - Tras actualizar Scope Compass: reiniciá los hubs que estuvieran corriendo (`scompass restart`, o "Reiniciar hub" en el dock); el dock y la CLI avisan si el hub es de otra versión.

@@ -1494,7 +1494,7 @@ Ver los archivos del repo y su estado de git desde la web, sin salir del tablero
 
 **Notas:** Visto con el Inicio abierto: el dock abría el tablero en 127.0.0.1:4711/p/<proyecto>. Causa: con el dock sin hub, el sondeo de cada 3 s encontraba el Inicio (puerto 4700, base /p/<proyecto>) y, antes de que abriera el WebSocket, reload() volvía client.port al de la config sin tocar la base; la carga, las escrituras y lo que abre en el navegador iban a ese puerto. Pasaba también tras home restart, o con un hub suelto en otro puerto que la config. reload() ya no toca el puerto: lo elige detect(), que vuelve a la config si no encuentra hub. web_url() arma lo que abre el navegador (tablero, documentos, archivos). Hecho: arreglado el puerto; la fila muestra · Alta (solo la alta, como la tarjeta web) · @responsable · #etiquetas y el detalle Prioridad x · @responsable · #etiquetas; botón de Archivos al lado de Abrir el tablero, visible si views no está o incluye files. Tests poll_registry y props en dock.test.js; spec §19 y §22.
 
-## M15 — Tareas y archivos del repo  (4/5)
+## M15 — Tareas y archivos del repo  (5/5)
 
 Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una a la otra desde la web y desde el editor de Godot.
 
@@ -1540,7 +1540,9 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 
 **Notas:** Hecho: el plugin avisa al dock qué script (editor_script_changed del ScriptEditor) y qué escena (scene_changed) se editan; un script incorporado a una escena (res://x.tscn::GDScript_…) no cuenta. Arriba de la lista, las tareas sin terminar que citan el script o la escena abiertos, de cualquier hito (archivo · tarea); un clic lleva a la tarea y cambia de hito si hace falta. En el detalle, con hub, '+ Vincular player.gd' agrega el script o la escena abiertos que la tarea no cita. Verificado en un editor real sin ventana (proyecto de prueba con el addon y un plugin que abre el script y la escena): la caja muestra la tarea con cada uno. Test editing en dock.test.js.
 
-### 15.5 Spec, decisión y guía de M15 · En curso
+### 15.5 Spec, decisión y guía de M15 · Hecho
 
-- [ ] Spec §23 con criterios y decisión D35
-- [ ] README, web/README y la spec del dock (§11.1) al día
+- [x] Spec §23 con criterios y decisión D35
+- [x] README, web/README y la spec del dock (§11.1) al día
+
+**Notas:** Hecho: spec §23 (el dato, CLI, web, dock) con §23.1 y cómo se probó la parte del editor; D35 (files aparte de refs, rutas y no uid://, solo lo que git lista, tareas de un archivo calculadas en el cliente). §11 y §11.1 marcan hechos el módulo de referencias a res://, las tareas del script abierto y abrir desde la tarea. README (M15 en el estado), web/README e instalar.md (cómo se vinculan y se abren). Suite completa: 345 pasan, 0 fallan.

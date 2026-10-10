@@ -489,7 +489,7 @@ Módulos posibles, en el orden en que tendrían sentido para este proyecto:
 |---|---|---|
 | **Decisiones** | Las "decisiones abiertas" del GDD como entidades con estado (abierta, decidida), opciones, la decisión tomada y las tareas afectadas | Hoy son checkboxes sueltos al final del GDD |
 | **Dock de Godot** | Ya planificado como v1.5 (§11.1) | Trabajar sin salir del editor, que es donde está el foco |
-| **Referencias a `res://`** | Vincular tareas con escenas, scripts y recursos; desde el dock, abrir el archivo | Cierra el ciclo tarea ↔ código |
+| **Referencias a `res://`** | Vincular tareas con escenas, scripts y recursos; desde el dock, abrir el archivo (hecho en M15, §23) | Cierra el ciclo tarea ↔ código |
 | **Bugs y playtests** | Reportes de playtest con build, pasos, gravedad; se convierten en tareas | Llega en M10, cuando haya playtesters |
 | **Assets** | Qué arte, audio y animaciones hacen falta, de dónde salen (KayKit, propio) y su estado | El proyecto mezcla packs y assets propios |
 | **Builds** | Qué build tiene qué tareas cerradas; notas de versión generadas | Útil desde que haya exports para terceros |
@@ -504,8 +504,8 @@ Un plugin de editor (`addons/scopecompass/`, GDScript) con tres niveles de integ
 3. **Integración con el editor:**
    - **Dock** con las tareas del hito actual (un `Tree` con columnas por estado, o una lista filtrada).
    - **Secciones del GDD dentro del editor:** `RichTextLabel` no entiende markdown pero sí BBCode, así que el servidor expone `GET /api/docs/:alias/sections/:id?format=blocks`: el texto en BBCode y cada bloque de código crudo. El dock muestra el texto en `RichTextLabel` y los snippets en un `CodeEdit` de solo lectura con el `GDScriptSyntaxHighlighter` del editor, así se ven como en el editor de scripts (colores, fuente y tema del usuario). Sin hub, el dock parte el markdown de disco de la misma forma. (`?format=bbcode` devuelve la sección entera en BBCode.)
-   - **Tareas del script abierto:** con la señal `editor_script_changed` del `ScriptEditor`, el dock muestra las tareas vinculadas a ese archivo (requiere las referencias a `res://` del módulo de la tabla).
-   - **Abrir desde la tarea:** `EditorInterface.edit_script(script, línea)` o `EditorInterface.open_scene_from_path(path)` para saltar al archivo vinculado.
+   - **Tareas del script abierto:** con la señal `editor_script_changed` del `ScriptEditor`, el dock muestra las tareas vinculadas a ese archivo, y también a la escena abierta (hecho en M15, §23).
+   - **Abrir desde la tarea:** `EditorInterface.edit_script(script)` o `EditorInterface.open_scene_from_path(path)` para saltar al archivo vinculado (hecho en M15, §23, sin línea).
    - **Levantar el servidor desde el plugin:** `OS.create_process("node", [...])` al activar el plugin y `OS.kill(pid)` al desactivarlo, así no hace falta abrir una terminal.
 
 **Desde el juego (debug):** en builds de debug, un atajo en el juego puede mandar un reporte a `POST /api/tasks` con captura de pantalla, escena y posición del player. Es la base del módulo de bugs y playtests.
@@ -912,3 +912,41 @@ Una ruta que git no lista, con `..`, absoluta o de una carpeta da 404.
 - [x] Un archivo se ve en la web (texto resaltado, markdown renderizado o imagen), con su estado de git, su diff contra HEAD y su historial.
 - [x] Sin archivo elegido, la pestaña muestra la rama, los cambios sin commitear y los últimos commits.
 - [x] Solo se ven los archivos que git no ignora, y la app sigue sin escribir archivos ni commitear.
+
+## 23. Tareas y archivos del repo (M15)
+<!-- id: tareas-archivos -->
+
+**Objetivo:** vincular tareas con los scripts, escenas y demás archivos del repo que tocan, y llegar de una a la otra desde la web y desde el editor de Godot. Es el módulo "Referencias a `res://`" de §11 y el nivel 3 de §11.1 (D35).
+
+- **El dato:** `files` en la tarea, opcional: rutas desde la raíz del proyecto (la carpeta de `compass/`, que es la de `res://`), como las lista la pestaña Archivos (§22): `["player/player.gd", "niveles/nivel1.tscn"]`. Sin repetir; el schema rechaza rutas absolutas, con `..` o con `\`. Sin archivos, el campo no está.
+- **CLI:**
+  - `scompass file add <tarea> <ruta>` acepta `res://` y `./`, y solo agrega un archivo que la pestaña Archivos sirve: lo que git lista, no lo ignorado.
+  - `scompass file rm <tarea> <ruta>` lo quita.
+  - `show` y el export markdown los listan.
+  - `refs check` marca `missing_file` cuando git ya no lista un archivo citado (se borró o se movió) y sale con 1, como con una sección que ya no existe.
+- **Web:**
+  - **Detalle:** la sección *Archivos*, entre *Referencias* y *Vínculos*.
+    - Cada archivo lleva a la pestaña Archivos con su marca de git.
+    - El que git ya no lista se marca *ya no está en el repo*.
+    - *×* lo quita, y *+ Agregar* busca por ruta en la lista del repo.
+  - **Pestaña Archivos:** la ficha de un archivo suma *Citado por · n tareas*; cada una lleva al tablero con la tarea abierta. Se calcula en la web, que ya tiene todas las tareas: la API no cambia.
+- **Dock:**
+  - **Detalle:** los archivos de la tarea, en rojo el que no está en el disco. Un clic hace lo mismo que un doble clic en el FileSystem:
+    - el script va al editor de scripts (`edit_script`);
+    - la escena se abre (`open_scene_from_path`);
+    - otro recurso va al inspector.
+    - Lo que Godot no abre como recurso (markdown, JSON, o lo que no ve: `compass/` y las carpetas con `.gdignore`) se abre en la pestaña Archivos del navegador; sin hub, el dock lo avisa.
+  - **Lo que se edita:** el plugin le avisa al dock qué script (`editor_script_changed`) y qué escena (`scene_changed`) están abiertos.
+    - Arriba de la lista van las tareas sin terminar que los citan, de cualquier hito. Un clic lleva a la tarea.
+    - Con hub, el detalle ofrece *+ Vincular player.gd* para sumar el script o la escena abiertos a la tarea elegida.
+    - Un script incorporado a una escena no es un archivo propio y no cuenta.
+
+### 23.1 Criterios de aceptación de M15
+<!-- id: criterios-tareas-archivos -->
+
+- [x] Una tarea puede citar archivos del repo (campo `files`) desde la CLI, la web y el dock; `refs check` avisa los que ya no están.
+- [x] En la web, el detalle de la tarea lleva a cada archivo en la pestaña Archivos, y la ficha del archivo muestra las tareas que lo citan.
+- [x] En el dock, un archivo de la tarea se abre en el editor de Godot (script, escena o recurso); lo que Godot no ve se abre en la pestaña Archivos.
+- [x] Con un script o una escena abiertos en el editor, el dock muestra las tareas que los citan y vincula el abierto a la tarea elegida.
+
+Tests: `docs.test.js` (CLI), `ui-files.test.js` (web) y `dock.test.js` (`task_files`, `editing`). La parte del editor (abrir con `edit_script` y `open_scene_from_path`, y las señales del script y la escena) se comprobó en un editor real sin ventana, con un proyecto de prueba; los tests del dock la simulan.
