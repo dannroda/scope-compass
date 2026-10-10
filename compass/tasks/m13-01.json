@@ -1,16 +1,17 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "font-variant-ligatures: none en code y pre (web y Inicio)"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Backticks alrededor de `[[alias]]` en compass/milestones/m12.json"
     },
     {
-      "done": false,
-      "text": "Test de UI: el ancho de `!=` es de dos caracteres"
+      "detail": "Las ligaduras de JetBrains Mono conservan el ancho de cada carácter: el ancho de != no cambia, así que el test mira font-variant-ligatures calculado.",
+      "done": true,
+      "text": "Test de UI: code y pre sin ligaduras"
     }
   ],
   "code": "13.1",
@@ -19,8 +20,8 @@
   "notes": "JetBrains Mono trae ligaduras: en la vista Documentos `<!-- id -->` se ve como flechas y `!=` como ≠. El \"Hecho cuando\" de M12 nombra `[[alias]]` sin backticks y desde la 12.1 se muestra como enlace roto.",
   "order": 1,
   "refs": [],
-  "status": "todo",
+  "status": "done",
   "test": "Un bloque de código con `<!-- id: x -->` y `!=` se ve tal cual; el resumen de M12 no muestra ⚠.",
   "title": "Bugs: ligaduras en el código y `[[alias]]` en M12",
-  "updated_at": "2026-10-09T05:13:04.713Z"
+  "updated_at": "2026-10-10T18:50:30.007Z"
 }

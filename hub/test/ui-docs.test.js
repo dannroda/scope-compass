@@ -186,6 +186,16 @@ test('tablas del documento: una columna corta no se aplasta ni parte sus palabra
   await page.close();
 });
 
+// Las ligaduras de JetBrains Mono conservan el ancho de cada carácter, así que se mira el estilo, no el ancho.
+test('13.1: el código se ve sin ligaduras (<!-- no se vuelve flecha ni != un ≠)', async () => {
+  await writeFile(join(dir, 'gdd.md'), GDD + '\n## Código\n<!-- id: codigo -->\n\n`!=`\n\n```\n<!-- id: x -->\n```\n');
+  const page = await open('#docs/gdd/codigo');
+  await page.waitForSelector('article.doc-body pre code');
+  const lig = await page.$eval('article.doc-body', (a) => ['p code', 'pre', 'pre code'].map((q) => getComputedStyle(a.querySelector(q)).fontVariantLigatures));
+  assert.deepEqual(lig, ['none', 'none', 'none']);
+  await page.close();
+});
+
 test('6.6: [[gdd#id]] en pasos y notas se ve con el título actual; roto, marcado; en `código`, literal', async () => {
   await setTask('m1-06', {
     notes: 'Ver [[gdd#ventanas-ataque]] y [[gdd#borrada]]; ejemplo: `[[gdd#camara]]`',

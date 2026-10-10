@@ -1258,7 +1258,7 @@ Ver y encontrar tareas en un tablero grande: vista de lista y filtros en la UI w
 Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos archivos, enlaces a documentos enteros, búsqueda y el estado de git de cada uno.
 
 **Hecho cuando:**
-- Una tarea puede referenciar un documento entero (ref sin sección o [[alias]]), y refs check lo valida.
+- Una tarea puede referenciar un documento entero (ref sin sección o `[[alias]]`), y refs check lo valida.
 - Los documentos se agregan y quitan desde la CLI y la web sin editar config.json; la plantilla juego declara un glob de docs/.
 - La web tiene una biblioteca: árbol por carpetas, búsqueda de texto en todos los documentos y, por documento, sus tareas y su estado de git.
 - Cada documento muestra si tiene cambios sin commitear, su último commit y el diff contra HEAD.
@@ -1353,7 +1353,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 - [ ] Spec §20 y decisiones
 - [ ] AGENTS.md (plantilla, copia del addon y compass/), README y spec al día
 
-## M13 — UI más compacta  (1/7)
+## M13 — UI más compacta  (2/7)
 
 Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compactos, según la revisión de diseño del 2026-10-09 (https://claude.ai/artifact/D6vMr2tWMv9dRCX8MUv5qg).
 
@@ -1362,11 +1362,12 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 - En el detalle, los pasos aparecen sin bajar, con las propiedades en una fila de chips.
 - El código de los documentos se ve sin ligaduras y las acciones de los pasos miden 36 px o más en el teléfono.
 
-### 13.1 Bugs: ligaduras en el código y `[[alias]]` en M12 · Pendiente
+### 13.1 Bugs: ligaduras en el código y `[[alias]]` en M12 · Hecho
 
-- [ ] font-variant-ligatures: none en code y pre (web y Inicio)
-- [ ] Backticks alrededor de `[[alias]]` en compass/milestones/m12.json
-- [ ] Test de UI: el ancho de `!=` es de dos caracteres
+- [x] font-variant-ligatures: none en code y pre (web y Inicio)
+- [x] Backticks alrededor de `[[alias]]` en compass/milestones/m12.json
+- [x] Test de UI: code y pre sin ligaduras
+  Las ligaduras de JetBrains Mono conservan el ancho de cada carácter: el ancho de != no cambia, así que el test mira font-variant-ligatures calculado.
 
 **Prueba:** Un bloque de código con `<!-- id: x -->` y `!=` se ve tal cual; el resumen de M12 no muestra ⚠.
 
