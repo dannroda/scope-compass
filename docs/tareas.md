@@ -1253,7 +1253,7 @@ Ver y encontrar tareas en un tablero grande: vista de lista y filtros en la UI w
 
 **Prueba:** npm test (hub/test/filters.test.js, ui-filters.test.js y los de schema, API y export)
 
-## M12 — Biblioteca de documentos  (6/8)
+## M12 — Biblioteca de documentos  (8/8)
 
 Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos archivos, enlaces a documentos enteros, búsqueda y el estado de git de cada uno.
 
@@ -1336,7 +1336,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Notas:** La vista Docs pasa de un selector a un explorador: árbol por carpetas a la izquierda, búsqueda arriba y, por documento, ficha con secciones, tareas que lo referencian (a nivel documento y por sección) y estado de git. Resaltar documentos o secciones sin tareas (diseño sin planificar). Agregar y quitar documentos desde la UI. Hecho: a la izquierda el árbol (una carpeta por grupo, plegable; el número es cuántas tareas citan el documento, entero o por sección; punto apagado si ninguna) y debajo el índice del documento abierto. La barra de arriba (buscador y + Documento) se arma una sola vez, como la de filtros, para no perder lo escrito cuando llega un cambio. La búsqueda reemplaza el artículo por los resultados, por documento, con las palabras resaltadas; ir a uno limpia la búsqueda. La ficha (aside) dice título, ruta, estado de git, de qué entrada sale (un documento de un patrón no se quita solo) y Quitar del proyecto con confirmación; sin sección elegida, Secciones sin tareas. El paso 5 ya estaba desde la 12.1. Arreglado de paso: al abrir un documento, el IntersectionObserver elegía enseguida la primera sección y la ficha del documento entero no se veía; ahora ignora su primer aviso (el del armado).
 
-### 12.6 Cambios y diff de documentos en la web · Pendiente
+### 12.6 Cambios y diff de documentos en la web · Hecho
 
 - [x] Marca de modificado/nuevo en el árbol, en vivo por ws
 - [x] Vista de diff contra HEAD
@@ -1347,11 +1347,13 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Notas:** Marca en el árbol para documentos con cambios sin commitear. En la ficha: último commit, historial y el diff contra HEAD con líneas agregadas y quitadas. Marcar las secciones tocadas por el diff para ver qué tareas pueden quedar afectadas. Hecho: el árbol marca M (modificado), N (nuevo) o B (borrado) y se actualiza con docs_git, sin recargar. Con cambios, la web pide el diff aunque no se mire: el índice marca ± en las secciones tocadas (también las que las contienen) y la ficha lista las tareas que pueden quedar afectadas. Ver los cambios reemplaza el documento por el diff, con el título de la sección donde empieza cada bloque. Historial plegable en la ficha. Arreglado en el hub: después de un doc_changed manda docs_git siempre, aunque no vea un cambio; si se editaba y commiteaba antes de que mirara (400 ms), la web quedaba con la marca de modificado.
 
-### 12.7 Tests de M12, spec y guía · Pendiente
+### 12.7 Tests de M12, spec y guía · Hecho
 
-- [ ] Tests de UI de la biblioteca y el diff
-- [ ] Spec §20 y decisiones
-- [ ] AGENTS.md (plantilla, copia del addon y compass/), README y spec al día
+- [x] Tests de UI de la biblioteca y el diff
+- [x] Spec §20 y decisiones
+- [x] AGENTS.md (plantilla, copia del addon y compass/), README y spec al día
+
+**Notas:** Cerrar M12: tests, spec y guía al día. Hecho: los tests de UI de la biblioteca y del diff ya estaban de la 12.5 y la 12.6 (ui-docs.test.js). Spec §20 Biblioteca de documentos con sus criterios, la tabla de rutas y los comandos; §10.4 apunta a §20 y §5.5 suma los eventos git y docs_git. D33: la app declara documentos y lee git, pero no escribe documentos ni commitea; alias de patrón por ruta bajo la carpeta base. AGENTS.md (plantilla, compass/ y addon, idénticos) con doc add/rm/search/status/diff y la regla de alias; README (estado con M12), web/README y hub/README (los archivos de documentos y git).
 
 ## M13 — UI más compacta  (2/7)
 

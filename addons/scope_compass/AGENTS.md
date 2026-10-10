@@ -111,7 +111,7 @@ scompass item task assets 3 --milestone m06         # pasa el ítem a una tarea 
 
 ## Documentos y referencias
 
-Los documentos citables están en `compass/config.json` › `docs` (alias y ruta). Una referencia apunta a una sección por su id estable (`<!-- id: … -->` debajo del título), o al documento entero si va sin `#<id>`. En notas, prueba y pasos, `[[alias#id]]` enlaza una sección y `[[alias]]` el documento.
+Los documentos citables están en `compass/config.json` › `docs` (alias y ruta, o un patrón como `docs/**/*.md`). Se declaran con `doc add`, no editando la config. Un archivo de un patrón toma el alias del patrón más su ruta bajo la carpeta del patrón, sin `.md`: `docs/notas/arte.md` es `docs/notas/arte`. Una referencia apunta a una sección por su id estable (`<!-- id: … -->` debajo del título), o al documento entero si va sin `#<id>`. En notas, prueba y pasos, `[[alias#id]]` enlaza una sección y `[[alias]]` el documento.
 
 ```sh
 scompass doc list                  # documentos con su índice de secciones
@@ -120,6 +120,11 @@ scompass ref add m5-02 spec#godot  # la tarea cita esa sección
 scompass ref add m5-02 spec        # la tarea cita el documento entero
 scompass ref rm m5-02 spec#godot
 scompass refs check                # referencias rotas (sale con 1 si hay)
+scompass doc add enemigos docs/enemigos.md   # o un patrón: doc add docs "docs/**/*.md"
+scompass doc rm enemigos                     # deja de declararlo; el archivo no se toca
+scompass doc search "salto doble"            # líneas con todas las palabras, con su sección
+scompass doc status                          # estado de git de cada documento y su último commit
+scompass doc diff gdd                        # cambios sin commitear y las secciones que tocan
 ```
 
 ## Proyectos del equipo

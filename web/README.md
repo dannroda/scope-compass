@@ -10,3 +10,4 @@ Es el port de `../docs/reference/tablero-artifact.html` (spec §7). El CSS y el 
 - `fonts/`: Cinzel, Alegreya Sans y JetBrains Mono (subconjunto latino de `@fontsource` 5.3.0, licencias OFL al lado). No hace ninguna petición fuera del hub.
 - Lo que escribís en el detalle no se pierde cuando se redibuja. Soltar una tarjeta sobre otra del mismo hito la deja antes. Atajos: `N` nueva tarea, `1`–`4` estado de la tarea abierta, `Esc` cierra.
 - Tablero o lista (una fila por tarea, ordenable por columna), con filtros por texto, estado, fecha, bloqueo, pasos, referencias, etiquetas, prioridad y responsable (spec §19). Los filtros y la vista se recuerdan por proyecto en el navegador. Atajo: `/` va al buscador.
+- Documentos como biblioteca (spec §20): árbol por carpetas con cuántas tareas citan cada uno, búsqueda de texto en todos, ficha con sus tareas y su estado de git, y el diff contra HEAD con las secciones que toca. Se agregan y se quitan sin editar `config.json`.

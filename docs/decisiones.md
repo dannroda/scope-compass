@@ -264,3 +264,16 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
 - **Etiquetas libres:** no hay una lista de etiquetas del proyecto en `config.json`. Las sugerencias salen de las que ya usan las tareas. Una lista fija obligaría a editar la config antes de etiquetar, y un error de tipeo se ve en el filtro y se corrige igual.
 - **Responsable como texto:** no hay usuarios en Scope Compass (local, un solo usuario por ahora). Un nombre o el de un agente alcanza para filtrar "lo mío".
 - **Descartado:** prioridad numérica (1–5): tres niveles alcanzan y se leen sin pensar. Filtrar en el hub con parámetros de `/api/tasks`: el tablero ya tiene todas las tareas en memoria y filtra al instante.
+
+## D33 · Biblioteca de documentos: la app declara documentos y lee git, pero no escribe documentos ni commitea
+**2026-10-10 · vigente** · spec §20
+
+- **Qué:** la app solo agrega y quita entradas de `config.json › docs`. Los documentos se siguen editando en el editor de cada uno. La búsqueda, el estado de git, el diff y la historia son de lectura: la app nunca hace `git add` ni `commit`.
+- **Alias de un patrón:** cada archivo de un patrón toma el alias del patrón más su ruta bajo la carpeta base del patrón, sin `.md` (`docs/notas/arte`). Antes era el nombre del archivo, y dos `README.md` en carpetas distintas chocaban.
+- **Qué saltea un patrón:** el export del tablero, los archivos que ya están declarados aparte (conservan su alias), las carpetas ocultas y `node_modules`.
+- **Escritura de `config.json`:** `doc add` y `doc rm` aplican el cambio sobre la config tal como está en ese momento, con escritura atómica y sin etag. La config la toca una persona a mano muy de vez en cuando, y releerla justo antes de escribir alcanza.
+- **Por qué:** el texto del diseño es de quien lo escribe, y git es la historia (D1). Si la app commiteara, mezclaría cambios del tablero con cambios del diseño en commits que nadie revisó. Ver qué cambió y qué tareas cita cada sección tocada alcanza para decidir qué revisar.
+- **Descartado:**
+  - Editar documentos desde la web: duplicaría el editor, y sin conflictos resueltos por git se perderían cambios.
+  - Un índice de búsqueda: los documentos de un proyecto entran en memoria y recorrer sus líneas tarda milisegundos.
+  - Un alias por nombre de archivo con sufijo numérico ante choques: cambiaría al agregar un archivo, y las referencias se romperían.

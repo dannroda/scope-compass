@@ -273,6 +273,8 @@ Servidor → cliente:
 {"type": "upsert", "collection": "tasks", "id": "m0-03", "doc": { "...": "..." }}
 {"type": "delete", "collection": "tasks", "id": "m0-03"}
 {"type": "doc_changed", "alias": "gdd"}
+{"type": "git", "repo": true, "uncommitted": 2, "files": ["compass/tasks/m0-03.json", "docs/tareas.md"]}
+{"type": "docs_git", "repo": true, "docs": {"gdd": "modified"}}
 {"type": "warning", "code": "invalid_file", "path": "compass/tasks/x.json", "message": "..."}
 {"type": "focus"}
 ```
@@ -440,6 +442,7 @@ La referencia no puede depender del número (`11.3`) ni del texto del título (s
 - `config.json` declara los documentos: `"docs": [{ "alias": "gdd", "path": "gdd.md" }]`, o un patrón como `docs/**/*.md`.
 - El servidor parsea cada documento en un índice de secciones `{id, title, level, start, end}` y lo recalcula cuando el archivo cambia (el mismo watcher de §5.4). La UI recibe `doc_changed` por WebSocket y se actualiza.
 - Los documentos son **de solo lectura** desde la app en v2. Se siguen editando donde se editan hoy.
+- M12 suma agregar y quitar documentos, la búsqueda y el estado de git, con sus rutas y comandos (§20).
 - Render de markdown con una librería empaquetada localmente (por ejemplo markdown-it) y resaltado de sintaxis que cubra GDScript. Hay que verificar que la librería elegida lo soporte.
 
 | Método | Ruta | Qué hace |
@@ -774,3 +777,61 @@ Tests: el primero en `hub/test/m9-criteria.test.js`; los cambios en vivo y el hu
 - [x] Tablero y lista se filtran por texto, estado, fecha, bloqueo, pasos, referencias, etiqueta, prioridad y responsable, y el filtro se recuerda al recargar.
 - [x] Etiquetas, prioridad y responsable se editan desde la web y desde la CLI, y se ven en `docs/tareas.md`.
 - [x] `scompass list` filtra con las mismas reglas que la web.
+
+## 20. Biblioteca de documentos (M12)
+<!-- id: biblioteca-documentos -->
+
+**Objetivo:** explorar los documentos del proyecto como una biblioteca: muchos archivos en carpetas, enlaces a documentos enteros (§10.2), búsqueda de texto y el estado de git de cada uno. La app sigue sin escribir documentos ni commitear (D33): lo único que cambia es `config.json › docs`.
+
+- **Agregar y quitar:** `scompass doc add <alias> <ruta|patrón>` y `doc rm <alias>`, `POST` y `DELETE /api/docs`, y en la web *+ Documento* y *Quitar del proyecto*. La ruta se resuelve desde la carpeta actual y se guarda relativa al proyecto. Tiene que estar dentro del proyecto, existir (salvo un patrón) y no ser el export (`docs/tareas.md`). El alias es `[a-z0-9][a-z0-9_-]*`. Un alias o una ruta repetidos fallan con `conflict`. Quitar no toca el archivo. El hub vuelve a vigilar los documentos y avisa con `doc_changed`.
+- **Patrones:** `docs/**/*.md` declara todos los markdown de la carpeta.
+  - Cada archivo toma como alias el del patrón más su ruta bajo la carpeta base del patrón, sin `.md`. Con `{alias: "docs", path: "docs/**/*.md"}`, `docs/notas/arte.md` es `docs/notas/arte`. Así, dos `README.md` en carpetas distintas no chocan.
+  - Un patrón saltea el export, los archivos declarados aparte, las carpetas ocultas y `node_modules`.
+  - Un documento que sale de un patrón no se quita solo: se quita el patrón.
+  - La plantilla *juego* declara `docs/**/*.md` además del GDD.
+  - El dock de Godot expande los patrones con las mismas reglas, sin hub.
+- **Búsqueda:** devuelve las líneas que tienen todas las palabras, sin distinguir mayúsculas ni tildes. Cada resultado trae el documento, la sección más chica que contiene la línea y un fragmento alrededor de la primera palabra. Las líneas `<!-- id: … -->` no cuentan. Hay hasta 200 resultados; si hay más, `more: true`.
+- **Git:**
+  - Cada documento tiene su estado contra HEAD: `clean`, `modified`, `added`, `untracked`, `deleted` o `renamed`. También su último commit y su historia (`git log --follow`).
+  - El diff contra HEAD trae las secciones que toca. Una sección cuenta si el diff agrega o borra una línea suya, y con ella cuentan sus secciones padre. Un documento sin seguir se muestra entero como agregado.
+  - Fuera de un repo no hay estado (`repo: false`).
+  - El hub publica `docs_git` (`{repo, docs: {alias: estado}}`) cuando cambia el estado de algún documento, y siempre después de un `doc_changed`. Mientras haya documentos sin commitear, lo vuelve a mirar, para enterarse del commit.
+- **Web:** la vista Documentos es una biblioteca.
+  - **Izquierda:** el árbol por carpetas, plegables. Cada documento muestra cuántas tareas lo citan, entero o por sección, y una marca si tiene cambios sin commitear. Debajo, el índice del documento abierto, con una marca en las secciones que toca el diff.
+  - **Arriba:** el buscador. Los resultados reemplazan al documento, agrupados por documento y con las palabras resaltadas; un clic lleva a la sección.
+  - **Derecha:** la ficha del documento:
+    - título y ruta, y de qué entrada sale;
+    - estado de git, último commit e historia;
+    - las tareas que lo citan y, sin sección elegida, las secciones sin tareas (diseño sin planificar);
+    - *Quitar del proyecto*.
+  - **Ver los cambios:** con cambios sin commitear, muestra el diff con la sección de cada bloque. Lista las tareas que citan las secciones tocadas, que pueden necesitar revisión.
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/docs` | `{repo, docs}`: cada documento con su índice y su estado de git (`git`) |
+| `POST` | `/api/docs` | `{alias, path}`: declara un documento o un patrón; 201 con la entrada |
+| `DELETE` | `/api/docs/:alias` | Deja de declararlo (204) |
+| `GET` | `/api/docs/search?q=` | `{results: [{alias, path, section, title, line, snippet}], more}` |
+| `GET` | `/api/docs/:alias/diff` | `{git, diff, sections}`: el diff contra HEAD y las secciones que toca |
+| `GET` | `/api/docs/:alias/log` | `{commits: [{hash, date, author, subject}]}`, los últimos 20 |
+
+El alias de un documento de un patrón lleva `/`: en la URL va codificado (`%2F`).
+
+```
+scompass doc add <alias> <ruta|patrón>      # "docs/**/*.md" declara la carpeta entera
+scompass doc rm <alias>
+scompass doc search "<texto>" [--json]
+scompass doc status [--json]                # estado de git y último commit de cada documento
+scompass doc diff <alias> [--json]          # diff contra HEAD y "Secciones tocadas: …"
+```
+
+### 20.1 Criterios de aceptación de M12
+<!-- id: criterios-biblioteca -->
+
+- [x] Una tarea puede referenciar un documento entero (ref sin sección o `[[alias]]`), y `refs check` la valida.
+- [x] Los documentos se agregan y se quitan desde la CLI y desde la web sin editar `config.json`. La plantilla *juego* declara un patrón de `docs/`.
+- [x] La web tiene una biblioteca con:
+  - el árbol por carpetas;
+  - la búsqueda de texto en todos los documentos;
+  - por documento, sus tareas y su estado de git.
+- [x] Cada documento muestra si tiene cambios sin commitear, su último commit y el diff contra HEAD.

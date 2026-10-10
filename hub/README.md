@@ -10,7 +10,10 @@ Estructura prevista:
 bin/scompass.js      CLI
 src/server.js        Fastify: API REST, WebSocket, estáticos (sirve ../web)
 src/store/           interfaz Store + json-files.js
-src/docs/            interfaz DocSource (v2)
+src/docs.js          documentos: índice de secciones, patrones, búsqueda, doc add/rm (§10, §20)
+src/docs-api.js      rutas /api/docs y /api/refs
+src/doc-watcher.js   vigila los documentos y avisa doc_changed
+src/git.js           estado de git del tablero (§4.4) y de los documentos (§20)
 src/schema.js        carga ../schema
 src/registry.js      hubs vivos ($XDG_RUNTIME_DIR/scope-compass/hubs; en Windows, %TEMP%\scope-compass\hubs)
 src/projects.js      proyectos conocidos (~/.config/scope-compass/projects.json; en Windows, %APPDATA%, D23)
