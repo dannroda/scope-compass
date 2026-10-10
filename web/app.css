@@ -306,6 +306,16 @@ a.link-task:hover code { text-decoration: underline; }
 .dl.add .mk { color: var(--s-done); } .dl.del .mk { color: var(--danger); }
 .dl.hunk { margin-top: 10px; padding-block: 2px; font-family: var(--font-body); font-size: 13px; color: var(--muted); background: var(--surface-2); }
 @media (max-width: 1180px) { .docs-grid { grid-template-columns: 220px minmax(0, 1fr); } .backlinks { grid-column: 1 / -1; position: static; } }
+/* Las tareas de la sección que se lee, fijas abajo (16.2): solo en pantallas angostas, donde la ficha queda al final. */
+.sec-bar { display: none; }
+@media (max-width: 760px) {
+  .sec-bar { display: flex; align-items: center; gap: 8px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; overflow-x: auto; scrollbar-width: none;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -6px 18px rgba(0, 0, 0, .12); }
+  .sec-bar .label { flex: none; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 700; }
+  .sec-bar .bl-task { flex: none; max-width: 75vw; }
+  .sec-bar .bl-task .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .docs-body:has(.sec-bar) { padding-bottom: 64px; }
+}
 @media (max-width: 760px) { .docs-grid { grid-template-columns: minmax(0, 1fr); } .docs-side { position: static; max-height: none; } .docs-side .toc { max-height: 40vh; overflow-y: auto; } .doc-article { padding: 4px 14px 16px; } }
 
 /* Borde para cambiar el ancho del panel de detalle. */

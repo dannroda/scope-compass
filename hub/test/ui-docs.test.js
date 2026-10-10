@@ -64,8 +64,8 @@ async function setTask(id, changes) {
   await writeFile(p, canonical({ ...JSON.parse(await readFile(p, 'utf8')), ...changes }));
 }
 const task = async (id) => JSON.parse(await readFile(join(dir, 'compass', 'tasks', `${id}.json`), 'utf8'));
-async function open(hash = '') {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+async function open(hash = '', viewport = { width: 1440, height: 900 }) {
+  const page = await browser.newPage({ viewport });
   page.on('pageerror', (e) => pageErrors.push(e.message));
   await page.goto(url + hash);
   await page.waitForSelector(hash ? '.toc a' : '.card');
@@ -160,6 +160,28 @@ test('§10.6: la vista Documentos muestra los backlinks correctos por sección',
   await page.click('.backlinks .bl-task >> nth=0');
   await page.waitForSelector('#detail:not([hidden]) #d-title');
   assert.equal(await page.isHidden('#docs'), true);
+  await page.close();
+});
+
+test('16.2: en el teléfono, las tareas de la sección van fijas abajo; en escritorio, en la ficha', async () => {
+  const desk = await open('#docs/gdd/ventanas-ataque');
+  await desk.waitForSelector('.backlinks .bl-task');
+  assert.equal(await desk.isHidden('.sec-bar'), true, 'en escritorio no');
+  await desk.close();
+  const page = await open('#docs/gdd/ventanas-ataque', { width: 390, height: 844 });
+  await page.waitForSelector('.sec-bar .bl-task');
+  const bar = await page.locator('.sec-bar').evaluate((e) => ({ pos: getComputedStyle(e).position, bottom: Math.round(e.getBoundingClientRect().bottom), text: e.textContent }));
+  assert.equal(bar.pos, 'fixed');
+  assert.equal(bar.bottom, 844, 'pegada abajo');
+  assert.match(bar.text, /^2 tareas.*1\.3.*1\.4/);
+  // Una sección sin tareas no tiene barra.
+  await page.click('.toc a[href="#docs/gdd/camara"]');
+  await page.waitForFunction(() => !document.querySelector('.sec-bar'));
+  // Desde la barra se va a la tarea.
+  await page.click('.toc a[href="#docs/gdd/ventanas-ataque"]');
+  await page.click('.sec-bar .bl-task >> nth=0');
+  await page.waitForSelector('#detail:not([hidden]) #d-title');
+  assert.equal(await page.locator('.sec-bar').count(), 0);
   await page.close();
 });
 

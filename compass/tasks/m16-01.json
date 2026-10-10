@@ -15,12 +15,17 @@
   "milestone": "m16",
   "notes": "Pedido del usuario al abrirlo en el teléfono (2026-10-10): apiladas, las columnas quedaban interminables. Hecho: solo CSS en la media query del teléfono (flex con overflow-x y scroll-snap-type x mandatory, margen negativo como la fila de hitos). La comparación con el artifact (§14) ya no mira la grilla del tablero a 390 px: el artifact apilaba. Comprobado a 390×844 con toque: desliza y encaja en En curso con Revisión asomando; tras un cambio en vivo el scroll queda igual (main.board no se recrea).",
   "order": 1,
-  "refs": [],
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "telefono"
+    }
+  ],
   "status": "done",
   "tags": [
     "ui"
   ],
   "test": "A 390×844 el tablero se desplaza de costado y encaja en una columna; la página no se desplaza de costado; un cambio en vivo no devuelve el tablero a la primera columna.",
   "title": "Tablero deslizable en el teléfono",
-  "updated_at": "2026-10-10T23:08:34.833Z"
+  "updated_at": "2026-10-10T23:10:05.888Z"
 }

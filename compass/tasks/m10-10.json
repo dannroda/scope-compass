@@ -33,6 +33,11 @@
       "detail": "Falló en 3 corridas completas del 2026-10-10 sin guardar el mensaje. La próxima vez, mirar el log entero (npm test > log) antes de tocar las esperas.",
       "done": false,
       "text": "tray.test.js §16.8 (tres hubs con --tray, un solo ícono) falla a veces con la suite entera; sola y con carga de UI pasa"
+    },
+    {
+      "detail": "Como el paso anterior: guardar la respuesta completa la próxima vez antes de tocar esperas.",
+      "done": false,
+      "text": "home-hubs «los hubs que prendió el Inicio mueren con él» falló una vez con la suite entera (2026-10-10: /api/projects/start sin hub en la respuesta); sola pasa 5 de 5. También ui-filters «detalle: prioridad, responsable y etiquetas» una vez"
     }
   ],
   "code": "10.10",
@@ -49,5 +54,5 @@
   "status": "todo",
   "test": "",
   "title": "Tests de M10, spec y guía",
-  "updated_at": "2026-10-10T20:48:34.850Z"
+  "updated_at": "2026-10-10T23:11:23.756Z"
 }

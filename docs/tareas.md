@@ -1564,7 +1564,7 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 
 **Notas:** Hecho: spec §23 (el dato, CLI, web, dock) con §23.1 y cómo se probó la parte del editor; D35 (files aparte de refs, rutas y no uid://, solo lo que git lista, tareas de un archivo calculadas en el cliente). §11 y §11.1 marcan hechos el módulo de referencias a res://, las tareas del script abierto y abrir desde la tarea. README (M15 en el estado), web/README e instalar.md (cómo se vinculan y se abren). Suite completa: 345 pasan, 0 fallan.
 
-## M16 — Uso en el teléfono  (1/2)
+## M16 — Uso en el teléfono  (2/2)
 
 Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren por la red de casa (D36).
 
@@ -1580,6 +1580,21 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
   Una por pantalla (86 %), con la siguiente asomando; las vacías, angostas, solo con el título.
 - [x] El desplazamiento se mantiene al redibujar (cambios en vivo, cambio de hito)
 
-### 16.2 Tareas de la sección, fijas abajo en Documentos · En curso
+**Prueba:** A 390×844 el tablero se desplaza de costado y encaja en una columna; la página no se desplaza de costado; un cambio en vivo no devuelve el tablero a la primera columna.
+
+**Notas:** Pedido del usuario al abrirlo en el teléfono (2026-10-10): apiladas, las columnas quedaban interminables. Hecho: solo CSS en la media query del teléfono (flex con overflow-x y scroll-snap-type x mandatory, margen negativo como la fila de hitos). La comparación con el artifact (§14) ya no mira la grilla del tablero a 390 px: el artifact apilaba. Comprobado a 390×844 con toque: desliza y encaja en En curso con Revisión asomando; tras un cambio en vivo el scroll queda igual (main.board no se recrea).
+
+**Referencias:** `docs/spec.md#telefono`
+
+### 16.2 Tareas de la sección, fijas abajo en Documentos · Hecho
 
 **Etiquetas:** `ui`
+
+- [x] Barra fija abajo a ≤ 760 px con las tareas de la sección visible
+  Cuántas son y un enlace a cada una (los mismos de la ficha), deslizable de costado; sin barra si la sección no tiene tareas, en la búsqueda o en el diff.
+
+**Prueba:** A 390×844, en #docs/gdd/ventanas-ataque la barra está fija y pegada abajo con 2 tareas; en una sección sin tareas no hay barra; un clic lleva a la tarea; en escritorio no se ve.
+
+**Notas:** Pedido del usuario al usarlo en el teléfono (2026-10-10): en Documentos, las tareas de la sección quedaban al final, después de todo el documento. Hecho: un nav.sec-bar al final de la vista, con backlinkTask (los mismos enlaces de la ficha); escondido por CSS fuera de ≤ 760 px, donde la ficha va al final. La sección es S.sec, que ya seguía el scroll con el IntersectionObserver del índice; la barra se redibuja con renderDocs y desaparece al salir de la vista (renderDocs la vacía). Comprobado con la spec de este repo a 390×844: en #docs/spec/hosting la barra muestra 2 tareas con la 7.1 y la 7.2.
+
+**Referencias:** `docs/spec.md#telefono`

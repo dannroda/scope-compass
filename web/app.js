@@ -1341,7 +1341,10 @@
             h('p', { class: 'muted small' }, 'Elegí una sección del índice para ver qué tareas la referencian.')],
         // Diseño sin planificar: las secciones que ninguna tarea cita.
         !sec && unplanned.length ? h('details', { class: 'unplanned' }, h('summary', { class: 'label' }, 'Secciones sin tareas · ' + unplanned.length + ' de ' + d.sections.length),
-          h('ul', null, unplanned.map((s) => h('li', null, h('a', { href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(s.id) }, rich(s.title)))))) : null)));
+          h('ul', null, unplanned.map((s) => h('li', null, h('a', { href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(s.id) }, rich(s.title)))))) : null)),
+      // En el teléfono la ficha queda al final: las tareas de la sección que se lee van fijas abajo (16.2).
+      sec && counts.get(sec.id) && !searching && !showDiff ? h('nav', { class: 'sec-bar', 'aria-label': 'Tareas de la sección' },
+        h('span', { class: 'label' }, counts.get(sec.id) === 1 ? '1 tarea' : counts.get(sec.id) + ' tareas'), ...tasksFor(d, sec.id).map(backlinkTask)) : null);
     if (!searching && !showDiff) observeHeadings(article); else docObserver?.disconnect();
   }
   // Al bajar por el documento, el índice y los backlinks siguen a la sección visible.

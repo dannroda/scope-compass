@@ -953,3 +953,19 @@ Una ruta que git no lista, con `..`, absoluta o de una carpeta da 404.
 - [x] Con un script o una escena abiertos en el editor, el dock muestra las tareas que los citan y vincula el abierto a la tarea elegida.
 
 Tests: `docs.test.js` (CLI), `ui-files.test.js` (web) y `dock.test.js` (`task_files`, `editing`). La parte del editor (abrir con `edit_script` y `open_scene_from_path`, y las señales del script y la escena) se comprobó en un editor real sin ventana, con un proyecto de prueba; los tests del dock la simulan.
+
+## 24. Uso en el teléfono (M16)
+<!-- id: telefono -->
+
+Con `--lan` (D36) el tablero se abre en el teléfono. Lo que se ajustó al usarlo ahí, siempre en pantallas angostas:
+
+- **Tablero (≤ 560 px):** las columnas van lado a lado y se deslizan de costado, una por pantalla con la siguiente asomando, y al soltar encajan en una (`scroll-snap`). Apiladas, quedaban interminables. Las vacías son angostas: solo el título. El desplazamiento se mantiene con los cambios en vivo.
+- **Documentos (≤ 760 px):** la ficha del documento queda al final, así que las tareas de la sección que se lee van en una barra fija abajo: cuántas son y un enlace a cada una, que se desliza de costado si no entran. La sección es la que sigue el índice al bajar (§20). Una sección sin tareas no muestra barra, y tampoco la búsqueda ni el diff.
+
+### 24.1 Criterios de aceptación de M16
+<!-- id: criterios-telefono -->
+
+- [x] En el teléfono, el tablero se desliza de costado, una columna por pantalla, en vez de apilar las columnas.
+- [x] En el teléfono, Documentos muestra fijas abajo las tareas de la sección que se está leyendo.
+
+Tests: `ui-filters.test.js` (13.4, el tablero a 390×844) y `ui-docs.test.js` (16.2).
