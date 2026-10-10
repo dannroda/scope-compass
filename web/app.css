@@ -111,6 +111,9 @@ main.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); ga
 .checklist li.has-detail .step-text { cursor: pointer; }
 .checklist li.done .step-text { color: var(--muted); text-decoration: line-through; }
 .checklist .rm { border: 0; background: transparent; color: var(--muted); padding: 0 6px; min-height: 28px; }
+/* En escritorio, ✎ y × aparecen al pasar el mouse (o con el foco); en el teléfono están siempre y miden 36 px (13.4). */
+@media (hover: hover) and (min-width: 561px) { .checklist li:not(:hover, :focus-within) .rm { opacity: 0; } }
+@media (max-width: 560px), (hover: none) { .checklist .rm, .checklist .step-toggle { min-width: 36px; min-height: 36px; margin-block: -6px; } }
 .checklist li { flex-wrap: wrap; }
 .checklist .step-toggle { border: 0; background: transparent; color: var(--accent); padding: 0 6px; min-height: 28px; }
 .step-detail { flex-basis: 100%; margin: 2px 0 4px 28px; padding: 6px 10px; border-left: 2px solid var(--line); color: var(--fg); font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -129,6 +132,7 @@ main.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); ga
 
 @media (max-width: 980px) { main.board { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sum-body { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 560px) { main.board { grid-template-columns: minmax(0, 1fr); } .wrap { padding-inline: 16px; } }
+}
 @media (prefers-reduced-motion: no-preference) { .card, .chip, .btn { transition: border-color .15s, background-color .15s; } }
 
 /* Archivos que el hub no pudo leer (3.5). */
@@ -455,3 +459,21 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
 .tasks td .tag { margin: 0 4px 2px 0; }
 .tasks .duemark, .tasks .blockmark { white-space: nowrap; }
 @media (max-width: 760px) { .tasks .opt { display: none; } .tasks td.title { min-width: 9em; } .tasks td, .tasks th button { padding-inline: 8px; } .tasks .duemark { white-space: normal; } .tasks .st-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
+/* Teléfono (13.4): menos filas antes de las tareas; al final, para ganarle a las reglas de cada parte. Encabezado en dos filas (título; vistas y Nueva tarea), hitos en
+   una fila que se desplaza de costado, resumen más chico y columnas vacías de una línea. */
+@media (max-width: 560px) {
+  .wrap { padding-top: 12px; gap: 12px; }
+  header.top { justify-content: flex-start; gap: 4px 8px; padding-bottom: 4px; }
+  .brand { display: contents; }
+  nav.views { order: 1; gap: 14px; }
+  #new-btn { order: 2; margin-left: auto; padding: 4px 12px; font-size: 14px; align-self: center; }
+  .conn, .gitmark { order: 3; margin: 0; }
+  nav.miles { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; }
+  nav.miles > * { flex: none; }
+  .ms-done .fdrop-body { position: fixed; top: auto; left: 16px; right: 16px; max-width: none; }
+  #f-q { flex: 1 1 110px; }
+  .sum-line { gap: 2px 12px; }
+  .sum-line h2 { flex: 1 1 100%; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sum-line .progress { flex-basis: 140px; }
+  .col:has(> .empty-col) { min-height: 0; }
+  .col > .empty-col { display: none; }

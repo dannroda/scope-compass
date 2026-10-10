@@ -1,34 +1,34 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Hitos en una fila con scroll horizontal"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Columnas vacías de una línea"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Acciones de los pasos de 36 px en el teléfono, visibles al pasar el mouse en escritorio"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Cabecera del detalle: código del hito, sin el nombre"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Tests de UI a 390 px"
     }
   ],
   "code": "13.4",
   "created_at": "2026-10-09T05:12:54.889Z",
   "milestone": "m13",
-  "notes": "A 390×844 la primera tarjeta aparece a ~1220 px. Hitos en una fila con scroll horizontal; columnas vacías de una línea; acciones de los pasos (✎ ×) de 36 px o más; la cabecera del detalle con solo el código del hito.",
+  "notes": "A 390×844 la primera tarjeta aparece a ~1220 px. Hitos en una fila con scroll horizontal; columnas vacías de una línea; acciones de los pasos (✎ ×) de 36 px o más; la cabecera del detalle con solo el código del hito. Hecho: con M13 a 390×844 la primera tarjeta queda a 399 px (373 sin el aviso de git, que ocupa una fila). Además de lo pedido: encabezado en dos filas (título; vistas con Nueva tarea a la derecha), la fila del buscador con Tablero/Lista, buscador y Filtros (el Orden baja a la segunda), y el título del hito en una línea con puntos suspensivos. La fila de hitos conserva el desplazamiento al redibujar y, la primera vez, deja a la vista el hito elegido; el desplegable de Terminados va fijo a lo ancho para que el scroll de la fila no lo recorte. Columnas vacías: solo el título con el 0, sin el texto. ✎ y × miden 36 px en el teléfono o sin mouse; en escritorio aparecen al pasar el mouse o con el foco. La cabecera del detalle dice el código del hito en todas las pantallas (el nombre está en el chip Hito y en el tooltip). Con M12 (todo hecho) la tarjeta queda más abajo, a 562 px: las tres columnas vacías van antes. El test de §14 compara una columna con tarjetas; el botón y el espacio entre columnas siguen iguales al artifact.",
   "order": 4,
   "refs": [],
-  "status": "todo",
+  "status": "done",
   "test": "A 390×844 la primera tarjeta empieza antes de los 450 px, sin scroll horizontal de la página; ✎ y × miden 36 px o más.",
   "title": "Teléfono: menos filas antes de las tareas",
-  "updated_at": "2026-10-09T05:12:56.384Z"
+  "updated_at": "2026-10-10T19:48:20.737Z"
 }

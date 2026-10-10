@@ -441,6 +441,7 @@
   function renderMiles() {
     const nav = document.getElementById('miles');
     const wasOpen = !!nav.querySelector('details[open]');
+    const scrolled = nav.scrollLeft; // en el teléfono la fila se desplaza de costado (13.4)
     nav.replaceChildren();
     const all = S.tasks.length, allDone = S.tasks.filter((t) => t.status === 'done').length;
     nav.append(h('button', { class: 'chip', type: 'button', 'aria-pressed': S.filter === 'all' ? 'true' : 'false', onclick: () => setFilter('all') },
@@ -459,6 +460,10 @@
     if (done.length) nav.insertBefore(h('details', { class: 'fdrop ms-done', open: wasOpen },
       h('summary', { id: 'ms-done' }, 'Terminados', h('span', { class: 'n' }, done.length)),
       h('div', { class: 'fdrop-body' }, done)), nav.children[1] || null);
+    nav.scrollLeft = scrolled;
+    // La primera vez, el hito elegido (recordado) queda a la vista aunque esté al final de la fila.
+    const chosen = !scrolled && nav.scrollWidth > nav.clientWidth && nav.querySelector(':scope > .chip[aria-pressed="true"]');
+    if (chosen) nav.scrollLeft = chosen.offsetLeft - nav.offsetLeft - 16;
     const sel = document.getElementById('new-ms');
     const cur = sel.value;
     sel.replaceChildren(...S.milestones.map((m) => h('option', { value: m.id }, m.code + ' · ' + m.title)));
@@ -733,7 +738,7 @@
     const edits = box.dataset.task === t.id ? captureEdits(box) : null;
     box.replaceChildren(
       resizeHandle(),
-      h('div', { class: 'head' }, t.code || '', m ? h('span', null, '· ' + m.code + ' ' + m.title) : null,
+      h('div', { class: 'head' }, t.code || '', m ? h('span', { title: m.title }, '· ' + m.code) : null,
         h('button', { class: 'btn ghost close', type: 'button', 'aria-label': 'Cerrar detalle', onclick: closeTask }, 'Cerrar')),
       h('label', { for: 'd-title', class: 'sr' }, 'Título'),
       h('input', { class: 'title', id: 'd-title', value: t.title || '', 'data-orig': t.title || '', onchange: (e) => { const v = e.target.value.trim(); if (v && v !== t.title) updateTask(t.id, { title: v }); } }),

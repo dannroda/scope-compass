@@ -1355,7 +1355,7 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Notas:** Cerrar M12: tests, spec y guía al día. Hecho: los tests de UI de la biblioteca y del diff ya estaban de la 12.5 y la 12.6 (ui-docs.test.js). Spec §20 Biblioteca de documentos con sus criterios, la tabla de rutas y los comandos; §10.4 apunta a §20 y §5.5 suma los eventos git y docs_git. D33: la app declara documentos y lee git, pero no escribe documentos ni commitea; alias de patrón por ruta bajo la carpeta base. AGENTS.md (plantilla, compass/ y addon, idénticos) con doc add/rm/search/status/diff y la regla de alias; README (estado con M12), web/README y hub/README (los archivos de documentos y git).
 
-## M13 — UI más compacta  (3/7)
+## M13 — UI más compacta  (4/7)
 
 Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compactos, según la revisión de diseño del 2026-10-09 (https://claude.ai/artifact/D6vMr2tWMv9dRCX8MUv5qg).
 
@@ -1387,7 +1387,7 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 **Notas:** Hoy la primera tarjeta empieza a ~580 px en escritorio. Resumen del hito en una línea (título, barra, contador y "Hecho cuando ▸" que despliega la lista, recordado por proyecto). Hitos terminados agrupados en "Terminados (n) ▾". "Orden" a la derecha de la fila del buscador; los 9 filtros detrás de un botón "Filtros (n)" que abre un panel. Sacar el "tareas" del encabezado. Hecho: con M12 elegido a 1440×900 la primera tarjeta queda a 301 px (antes 622). Lo que más ganó, además de lo pedido: las pestañas Tablero/Listas/Documentos y el "← Inicio" van en la fila del título, con la línea del encabezado debajo. El resumen despliega el objetivo y "Hecho cuando" ("Objetivo" si el hito no tiene la lista); abierto o cerrado se recuerda por proyecto, no por hito. "Terminados (n)" va después de Todos y lista código, título y avance; el hito elegido queda en la fila aunque esté terminado. "Filtros (n)" cuenta los filtros del panel (no el texto, que está a la vista); el contador de ocultas y Limpiar filtros quedan en la fila. El panel no se recuerda abierto. Los tests que elegían M1 (terminado en el fixture) pasan por "Terminados"; el de §14 ya no compara el padding ni la grilla del resumen.
 
-### 13.3 Detalle: propiedades en chips y pasos arriba · Pendiente
+### 13.3 Detalle: propiedades en chips y pasos arriba · Hecho
 
 - [x] Fila de chips de propiedades con edición en el lugar
 - [x] Título sin borde en reposo
@@ -1400,15 +1400,15 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 ### 13.4 Teléfono: menos filas antes de las tareas · Pendiente
 
-- [ ] Hitos en una fila con scroll horizontal
-- [ ] Columnas vacías de una línea
-- [ ] Acciones de los pasos de 36 px en el teléfono, visibles al pasar el mouse en escritorio
-- [ ] Cabecera del detalle: código del hito, sin el nombre
-- [ ] Tests de UI a 390 px
+- [x] Hitos en una fila con scroll horizontal
+- [x] Columnas vacías de una línea
+- [x] Acciones de los pasos de 36 px en el teléfono, visibles al pasar el mouse en escritorio
+- [x] Cabecera del detalle: código del hito, sin el nombre
+- [x] Tests de UI a 390 px
 
 **Prueba:** A 390×844 la primera tarjeta empieza antes de los 450 px, sin scroll horizontal de la página; ✎ y × miden 36 px o más.
 
-**Notas:** A 390×844 la primera tarjeta aparece a ~1220 px. Hitos en una fila con scroll horizontal; columnas vacías de una línea; acciones de los pasos (✎ ×) de 36 px o más; la cabecera del detalle con solo el código del hito.
+**Notas:** A 390×844 la primera tarjeta aparece a ~1220 px. Hitos en una fila con scroll horizontal; columnas vacías de una línea; acciones de los pasos (✎ ×) de 36 px o más; la cabecera del detalle con solo el código del hito. Hecho: con M13 a 390×844 la primera tarjeta queda a 399 px (373 sin el aviso de git, que ocupa una fila). Además de lo pedido: encabezado en dos filas (título; vistas con Nueva tarea a la derecha), la fila del buscador con Tablero/Lista, buscador y Filtros (el Orden baja a la segunda), y el título del hito en una línea con puntos suspensivos. La fila de hitos conserva el desplazamiento al redibujar y, la primera vez, deja a la vista el hito elegido; el desplegable de Terminados va fijo a lo ancho para que el scroll de la fila no lo recorte. Columnas vacías: solo el título con el 0, sin el texto. ✎ y × miden 36 px en el teléfono o sin mouse; en escritorio aparecen al pasar el mouse o con el foco. La cabecera del detalle dice el código del hito en todas las pantallas (el nombre está en el chip Hito y en el tooltip). Con M12 (todo hecho) la tarjeta queda más abajo, a 562 px: las tres columnas vacías van antes. El test de §14 compara una columna con tarjetas; el botón y el espacio entre columnas siguen iguales al artifact.
 
 ### 13.5 Lista: fechas relativas y columnas vacías · Pendiente
 

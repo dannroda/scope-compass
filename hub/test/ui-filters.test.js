@@ -255,6 +255,31 @@ test('parte de arriba compacta (13.2): primera tarjeta antes de 320 px, hitos te
   await page.context().close();
 });
 
+test('teléfono (13.4): primera tarjeta antes de 450 px, hitos en una fila, columnas vacías de una línea, acciones de los pasos de 36 px', async () => {
+  const page = await open({ viewport: { width: 390, height: 844 }, panel: false });
+  const top = await page.locator('#board .card').first().evaluate((e) => e.getBoundingClientRect().top);
+  assert.ok(top < 450, `primera tarjeta a ${top} px`);
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'sin scroll horizontal de la página');
+  const tops = await page.locator('#miles > *').evaluateAll((els) => [...new Set(els.map((e) => e.offsetTop))]);
+  assert.equal(tops.length, 1, 'los hitos en una sola fila');
+  assert.ok(await page.locator('#miles').evaluate((e) => e.scrollWidth > e.clientWidth), 'la fila se desplaza de costado');
+  assert.ok(await page.locator('.col[aria-label="Revisión"]').evaluate((e) => e.offsetHeight) < 60, 'columna vacía de una línea');
+  await page.click('.card[data-id="m1-04"]');
+  const sizes = await page.locator('#detail .checklist .rm').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return Math.min(r.width, r.height); }));
+  assert.ok(sizes.length && sizes.every((x) => x >= 36), `✎ y ×: ${sizes}`);
+  const head = await page.textContent('#detail .head');
+  assert.match(head, /^1\.4· M1Cerrar$/, 'el código del hito, sin su nombre');
+  await page.context().close();
+  // En escritorio, ✎ y × aparecen al pasar el mouse.
+  const desk = await open({ panel: false });
+  await desk.click('.card[data-id="m1-04"]');
+  const opacity = () => desk.locator('#detail .checklist .rm').first().evaluate((e) => getComputedStyle(e).opacity);
+  assert.equal(await opacity(), '0');
+  await desk.hover('#detail .checklist li');
+  assert.equal(await opacity(), '1');
+  await desk.context().close();
+});
+
 // Elige una opción de un desplegable de una sola opción (fecha, bloqueo): se cierra solo.
 async function pick(page, key, value) {
   await page.click(`#f-${key}`);
