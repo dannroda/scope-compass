@@ -480,3 +480,13 @@ test('dock: etiquetas, prioridad y responsable en la lista y el detalle; el botÃ
   await setTask('m1-05', { priority: 'low' });
   expectOk(await godot('props', dir, 'm1-04', 'm1-05', 'm1-07'), 'props');
 });
+
+test('dock: los archivos de la tarea se listan en el detalle y un clic los abre en el editor', { skip }, async () => {
+  const { mkdir } = await import('node:fs/promises');
+  await mkdir(join(dir, 'src'));
+  await mkdir(join(dir, 'docs'));
+  await writeFile(join(dir, 'src', 'player.gd'), 'extends Node\n');
+  await writeFile(join(dir, 'docs', 'notas.md'), '# Notas\n');
+  await setTask('m1-04', { status: 'todo', files: ['src/player.gd', 'docs/notas.md', 'src/borrado.gd'] });
+  expectOk(await godot('task_files', dir, 'm1-04', 'm1-05'), 'task_files');
+});

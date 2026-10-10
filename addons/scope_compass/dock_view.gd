@@ -83,6 +83,7 @@ var steps_box: VBoxContainer
 var refs_box: VBoxContainer
 ## Vínculos con otras tareas (solo lectura: se editan en la web o con `scompass link`).
 var links_box: VBoxContainer
+var files_box: VBoxContainer
 ## Referencias desplegadas ("ruta#id") y bloques de las secciones pedidas al hub (6.7).
 var _refs_open := {}
 ## Pasos con el detalle desplegado ("tarea:índice").
@@ -90,6 +91,8 @@ var _steps_open := {}
 var _blocks := {}
 ## Resaltado para los CodeEdit de los snippets. El plugin pasa el GDScriptSyntaxHighlighter del editor; fuera
 ## del editor (tests) queda un CodeHighlighter básico.
+## Abre un archivo del repo en el editor (lo pone el plugin, 15.3). false si Godot no lo ve: el dock va a la web.
+var open_file: Callable = func(_path: String) -> bool: return false
 var make_highlighter: Callable = func(lang: String): return basic_highlighter(lang)
 var notice: Label
 var footer_dot: ColorRect
@@ -721,6 +724,8 @@ func _build() -> void:
 	detail.add_child(links_box)
 	refs_box = VBoxContainer.new()
 	detail.add_child(refs_box)
+	files_box = VBoxContainer.new()
+	detail.add_child(files_box)
 
 	notice = Label.new()
 	notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -985,6 +990,7 @@ func _render_detail() -> void:
 		steps_box.add_child(row)
 	_render_links(t)
 	_render_refs(t)
+	_render_files(t)
 
 
 # --- Vínculos entre tareas -----------------------------------------------------------------------
@@ -1026,6 +1032,46 @@ func _render_links(t: Dictionary) -> void:
 				b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 				b.pressed.connect(_go_to_task.bind(id))
 			links_box.add_child(b)
+
+
+## Archivos del repo que toca la tarea (15.3): un clic lo abre en el editor. En rojo, el que ya no está en el disco.
+func _render_files(t: Dictionary) -> void:
+	for c in files_box.get_children():
+		files_box.remove_child(c)
+		c.queue_free()
+	var files = t.get("files", [])
+	if not (files is Array) or files.is_empty():
+		return
+	var label := Label.new()
+	label.text = "Archivos"
+	label.add_theme_color_override("font_color", Color("#a69d8c"))
+	files_box.add_child(label)
+	for f in files:
+		var b := Button.new()
+		b.flat = true
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		b.custom_minimum_size.x = WRAP_MIN_WIDTH
+		b.text = str(f)
+		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		if FileAccess.file_exists(project_root.path_join(str(f))):
+			b.tooltip_text = "Abrir en el editor"
+		else:
+			b.tooltip_text = "No está en el disco: se movió o se borró"
+			b.add_theme_color_override("font_color", BLOCKED_COLOR)
+		b.pressed.connect(open_task_file.bind(str(f)))
+		files_box.add_child(b)
+
+
+## Un archivo de la tarea: en el editor si Godot lo ve; si no (markdown, compass/, lo que tiene .gdignore), en la
+## pestaña Archivos de la web.
+func open_task_file(path: String) -> void:
+	if open_file.call(path):
+		return
+	if online:
+		OS.shell_open(web_url("#files/" + path.uri_encode()))
+	else:
+		show_notice("Godot no abre %s. Con el hub iniciado, se abre en la pestaña Archivos del navegador." % path)
 
 
 ## Abre otra tarea en el detalle (cambia de hito si hace falta).

@@ -28,6 +28,20 @@ func _enter_tree() -> void:
 		if lang == "gdscript" and ClassDB.can_instantiate("GDScriptSyntaxHighlighter"):
 			return ClassDB.instantiate("GDScriptSyntaxHighlighter")
 		return DockView.basic_highlighter(lang)
+	# Como un doble clic en el FileSystem: el script en el editor de scripts, la escena en su pestaña, otro recurso en
+	# el inspector. Lo que Godot no abre como recurso (markdown y JSON, o lo que no ve) queda para la web.
+	_view.open_file = func(path: String) -> bool:
+		var res := "res://" + path
+		var type := EditorInterface.get_resource_filesystem().get_file_type(res)
+		if type in ["", "TextFile", "JSON"]:
+			return false
+		if type == "PackedScene":
+			EditorInterface.open_scene_from_path(res)
+		elif ClassDB.is_parent_class(type, "Script"):
+			EditorInterface.edit_script(load(res))
+		else:
+			EditorInterface.edit_resource(load(res))
+		return true
 	_view.get_pref = func(key: String, default): return es.get_project_metadata("scope_compass", key, default)
 	_view.set_pref = func(key: String, value): es.set_project_metadata("scope_compass", key, value)
 

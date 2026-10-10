@@ -1494,7 +1494,7 @@ Ver los archivos del repo y su estado de git desde la web, sin salir del tablero
 
 **Notas:** Visto con el Inicio abierto: el dock abría el tablero en 127.0.0.1:4711/p/<proyecto>. Causa: con el dock sin hub, el sondeo de cada 3 s encontraba el Inicio (puerto 4700, base /p/<proyecto>) y, antes de que abriera el WebSocket, reload() volvía client.port al de la config sin tocar la base; la carga, las escrituras y lo que abre en el navegador iban a ese puerto. Pasaba también tras home restart, o con un hub suelto en otro puerto que la config. reload() ya no toca el puerto: lo elige detect(), que vuelve a la config si no encuentra hub. web_url() arma lo que abre el navegador (tablero, documentos, archivos). Hecho: arreglado el puerto; la fila muestra · Alta (solo la alta, como la tarjeta web) · @responsable · #etiquetas y el detalle Prioridad x · @responsable · #etiquetas; botón de Archivos al lado de Abrir el tablero, visible si views no está o incluye files. Tests poll_registry y props en dock.test.js; spec §19 y §22.
 
-## M15 — Tareas y archivos del repo  (2/5)
+## M15 — Tareas y archivos del repo  (3/5)
 
 Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una a la otra desde la web y desde el editor de Godot.
 
@@ -1524,13 +1524,15 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 
 **Notas:** Hecho: en el detalle, la sección Archivos (entre Referencias y Vínculos): cada archivo lleva a #files/<ruta> con su marca de git; uno que git ya no lista se marca '⚠ … ya no está en el repo'; × lo quita (sin archivos, el campo se borra). + Agregar abre un buscador por ruta (todas las palabras, sin los que ya tiene, hasta 8) sobre la lista del repo, que se lee al abrirlo. En la pestaña Archivos, la ficha suma 'Citado por · n tareas' y cada tarea lleva al tablero con el detalle abierto. Las tareas que citan un archivo se calculan en la web (ya tiene todas): la API no cambia.
 
-### 15.3 Dock: abrir los archivos de la tarea en el editor · En curso
+### 15.3 Dock: abrir los archivos de la tarea en el editor · Hecho
 
-- [ ] Los archivos de la tarea en el detalle del dock
-- [ ] Clic: el script en el editor de scripts, la escena abierta, otro recurso en el inspector; lo que Godot no ve (markdown, compass/) en la pestaña Archivos
-- [ ] Tests
+- [x] Los archivos de la tarea en el detalle del dock
+- [x] Clic: el script en el editor de scripts, la escena abierta, otro recurso en el inspector; lo que Godot no ve (markdown, compass/) en la pestaña Archivos
+- [x] Tests
 
-### 15.4 Dock: tareas del script y la escena abiertos · Pendiente
+**Notas:** Hecho: el detalle del dock lista los archivos de la tarea (en rojo el que no está en el disco). Un clic llama a open_file, que pone el plugin: como un doble clic en el FileSystem, el script va al editor de scripts (edit_script), la escena se abre (open_scene_from_path) y otro recurso va al inspector (edit_resource). Lo que Godot no abre como recurso (TextFile como .md, JSON, o lo que no ve: compass/, carpetas con .gdignore) se abre en la pestaña Archivos de la web; sin hub, el dock lo avisa. Verificado en un editor real sin ventana (proyecto de prueba con un plugin): get_file_type da GDScript, PackedScene, TextFile, JSON y '' para lo ignorado, y edit_script y open_scene_from_path dejan abiertos el script y la escena. Test task_files en dock.test.js (open_file simulado).
+
+### 15.4 Dock: tareas del script y la escena abiertos · En curso
 
 - [ ] Con el script o la escena que se edita, el dock muestra las tareas que lo citan (de cualquier hito) y lleva a cada una
 - [ ] Vincular el script o la escena abiertos a la tarea elegida

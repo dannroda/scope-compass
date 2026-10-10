@@ -569,3 +569,26 @@ func test_props(a: Array) -> void:
 	v.board.config.views = ["board", "docs"]
 	v._render()
 	_check(c, not v.files_button.visible, "views sin files y el botón se ve")
+
+
+# Archivos de la tarea (15.3): se listan en el detalle; un clic los abre con open_file (el editor, que pone el plugin)
+# y, si Godot no lo abre y no hay hub, el dock avisa. El que no está en el disco va en rojo.
+func test_task_files(a: Array) -> void:
+	var c := "task_files"
+	var v := await _view(a[0])
+	var opened := []
+	v.open_file = func(p: String) -> bool:
+		opened.append(p)
+		return p.ends_with(".gd")
+	v.current_milestone = "m01"
+	_select(v, a[1])
+	var buttons := v.files_box.get_children().filter(func(n): return n is Button)
+	var names := buttons.map(func(b): return b.text)
+	if not _check(c, names == ["src/player.gd", "docs/notas.md", "src/borrado.gd"], "archivos: %s" % [names]): return
+	if not _check(c, not buttons[0].has_theme_color_override("font_color") and buttons[2].has_theme_color_override("font_color"), "el que no está va en rojo"): return
+	buttons[0].pressed.emit()
+	buttons[1].pressed.emit()
+	if not _check(c, opened == ["src/player.gd", "docs/notas.md"], "abrió %s" % [opened]): return
+	if not _check(c, v.notice.visible and v.notice.text.contains("docs/notas.md"), "sin hub, avisa: " + v.notice.text): return
+	_select(v, a[2])
+	_check(c, v.files_box.get_child_count() == 0, "una tarea sin archivos no muestra la sección")
