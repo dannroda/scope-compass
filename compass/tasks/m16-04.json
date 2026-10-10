@@ -1,0 +1,21 @@
+{
+  "checklist": [],
+  "code": "16.4",
+  "created_at": "2026-10-10T23:37:51.162Z",
+  "milestone": "m16",
+  "notes": "Pedido del usuario (2026-10-10): un desplegable con el índice en la barra de las referencias, para navegar más fácil. Hecho: un select nativo (en el teléfono abre el selector del sistema) a la izquierda de la barra de 16.2, con las secciones sangradas por nivel y la actual elegida; elegir una cambia el hash como los enlaces del índice. Las tareas van al lado en su propio contenedor que se desliza, así el desplegable queda fijo. La barra ahora está siempre que el documento tenga secciones: sin tareas dice Sin tareas. Visto con la spec de este repo a 390 y 602 px.",
+  "order": 4,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "telefono"
+    }
+  ],
+  "status": "done",
+  "tags": [
+    "ui"
+  ],
+  "test": "A 390×844 táctil, en #docs/gdd/ventanas-ataque el desplegable de la barra lista las cuatro secciones con la actual elegida; elegir camara cambia el hash y dice Sin tareas; elegir juego la deja arriba.",
+  "title": "Índice del documento en la barra de abajo",
+  "updated_at": "2026-10-10T23:37:51.702Z"
+}

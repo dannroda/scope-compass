@@ -1342,9 +1342,15 @@
         // Diseño sin planificar: las secciones que ninguna tarea cita.
         !sec && unplanned.length ? h('details', { class: 'unplanned' }, h('summary', { class: 'label' }, 'Secciones sin tareas · ' + unplanned.length + ' de ' + d.sections.length),
           h('ul', null, unplanned.map((s) => h('li', null, h('a', { href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(s.id) }, rich(s.title)))))) : null)),
-      // En el teléfono la ficha queda al final: las tareas de la sección que se lee van fijas abajo (16.2).
-      sec && counts.get(sec.id) && !searching && !showDiff ? h('nav', { class: 'sec-bar', 'aria-label': 'Tareas de la sección' },
-        h('span', { class: 'label' }, counts.get(sec.id) === 1 ? '1 tarea' : counts.get(sec.id) + ' tareas'), ...tasksFor(d, sec.id).map(backlinkTask)) : null);
+      // En el teléfono el índice y la ficha quedan lejos del texto: fijos abajo, el índice para saltar de sección (16.4)
+      // y las tareas de la sección que se lee (16.2), que se deslizan al lado.
+      d.sections.length && !searching && !showDiff ? h('nav', { class: 'sec-bar', 'aria-label': 'Índice y tareas de la sección' },
+        h('select', { 'aria-label': 'Ir a una sección', onchange: (e) => { location.hash = '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(e.target.value); } },
+          sec ? null : h('option', { value: '', selected: true, disabled: true }, 'Índice'),
+          d.sections.map((s) => h('option', { value: s.id, selected: s.id === sec?.id }, '\u00a0\u00a0'.repeat(s.level - 1) + rich(s.title, true).textContent))),
+        h('div', { class: 'sec-tasks' }, !sec ? null : counts.get(sec.id)
+          ? [h('span', { class: 'label' }, counts.get(sec.id) === 1 ? '1 tarea' : counts.get(sec.id) + ' tareas'), ...tasksFor(d, sec.id).map(backlinkTask)]
+          : h('span', { class: 'muted small' }, 'Sin tareas'))) : null);
     if (!searching && !showDiff) observeHeadings(article); else docObserver?.disconnect();
   }
   // Al bajar por el documento, el índice y los backlinks siguen a la sección visible.

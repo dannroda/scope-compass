@@ -312,8 +312,10 @@ a.link-task:hover code { text-decoration: underline; }
    al final (hasta 1180 px). */
 .sec-bar { display: none; }
 @media (max-width: 760px), (max-width: 1180px) and (hover: none) {
-  .sec-bar { display: flex; align-items: center; gap: 8px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; overflow-x: auto; scrollbar-width: none;
+  .sec-bar { display: flex; align-items: center; gap: 8px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
     padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -6px 18px rgba(0, 0, 0, .12); }
+  .sec-bar select { flex: 0 1 auto; min-width: 0; max-width: 45%; min-height: 38px; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 6px 8px; }
+  .sec-tasks { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; }
   .sec-bar .label { flex: none; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 700; }
   .sec-bar .bl-task { flex: none; max-width: 75vw; }
   .sec-bar .bl-task .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

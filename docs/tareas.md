@@ -1566,13 +1566,13 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 
 **Notas:** Hecho: spec §23 (el dato, CLI, web, dock) con §23.1 y cómo se probó la parte del editor; D35 (files aparte de refs, rutas y no uid://, solo lo que git lista, tareas de un archivo calculadas en el cliente). §11 y §11.1 marcan hechos el módulo de referencias a res://, las tareas del script abierto y abrir desde la tarea. README (M15 en el estado), web/README e instalar.md (cómo se vinculan y se abren). Suite completa: 345 pasan, 0 fallan.
 
-## M16 — Uso en el teléfono  (3/3)
+## M16 — Uso en el teléfono  (4/4)
 
 Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren por la red de casa (D36).
 
 **Hecho cuando:**
 - En el teléfono, el tablero se desliza de costado, una columna por pantalla, en vez de apilar las columnas.
-- En el teléfono, Documentos muestra fijas abajo las tareas de la sección que se está leyendo.
+- En el teléfono, Documentos muestra fijos abajo el índice, para saltar de sección, y las tareas de la sección que se está leyendo.
 - Las notas y los demás campos de texto del detalle crecen con el texto, sin arrastrar la esquina.
 
 ### 16.1 Tablero deslizable en el teléfono · Hecho
@@ -1611,5 +1611,15 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 **Prueba:** A 390×844 táctil, las notas vacías miden 72 px y con siete líneas crecen más de 60 px, sin scroll adentro; el test falla sin field-sizing.
 
 **Notas:** Pedido del usuario (2026-10-10): la esquina para agrandar el campo de notas es muy chica en el teléfono. Hecho: field-sizing: content en .detail textarea (notas, Cómo probarlo y el detalle de un paso, que está dentro del detalle), con el mínimo de antes; resize: vertical queda para los navegadores sin field-sizing. Sin JS: el Chromium de Playwright (153) y Chrome en Android lo soportan.
+
+**Referencias:** `docs/spec.md#telefono`
+
+### 16.4 Índice del documento en la barra de abajo · Hecho
+
+**Etiquetas:** `ui`
+
+**Prueba:** A 390×844 táctil, en #docs/gdd/ventanas-ataque el desplegable de la barra lista las cuatro secciones con la actual elegida; elegir camara cambia el hash y dice Sin tareas; elegir juego la deja arriba.
+
+**Notas:** Pedido del usuario (2026-10-10): un desplegable con el índice en la barra de las referencias, para navegar más fácil. Hecho: un select nativo (en el teléfono abre el selector del sistema) a la izquierda de la barra de 16.2, con las secciones sangradas por nivel y la actual elegida; elegir una cambia el hash como los enlaces del índice. Las tareas van al lado en su propio contenedor que se desliza, así el desplegable queda fijo. La barra ahora está siempre que el documento tenga secciones: sin tareas dice Sin tareas. Visto con la spec de este repo a 390 y 602 px.
 
 **Referencias:** `docs/spec.md#telefono`

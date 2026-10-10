@@ -163,22 +163,28 @@ test('§10.6: la vista Documentos muestra los backlinks correctos por sección',
   await page.close();
 });
 
-test('16.2: en el teléfono, las tareas de la sección van fijas abajo; en escritorio, en la ficha', async () => {
+test('16.2 y 16.4: en el teléfono, el índice y las tareas de la sección van fijos abajo; en escritorio, no', async () => {
   const desk = await open('#docs/gdd/ventanas-ataque');
   await desk.waitForSelector('.backlinks .bl-task');
   assert.equal(await desk.isHidden('.sec-bar'), true, 'en escritorio no');
   await desk.close();
   const page = await open('#docs/gdd/ventanas-ataque', { width: 390, height: 844 });
   await page.waitForSelector('.sec-bar .bl-task');
-  const bar = await page.locator('.sec-bar').evaluate((e) => ({ pos: getComputedStyle(e).position, bottom: Math.round(e.getBoundingClientRect().bottom), text: e.textContent }));
+  const bar = await page.locator('.sec-bar').evaluate((e) => ({ pos: getComputedStyle(e).position, bottom: Math.round(e.getBoundingClientRect().bottom), text: e.querySelector('.sec-tasks').textContent }));
   assert.equal(bar.pos, 'fixed');
   assert.equal(bar.bottom, 844, 'pegada abajo');
   assert.match(bar.text, /^2 tareas.*1\.3.*1\.4/);
-  // Una sección sin tareas no tiene barra.
-  await page.click('.toc a[href="#docs/gdd/camara"]');
-  await page.waitForFunction(() => !document.querySelector('.sec-bar'));
+  // El índice en la barra (16.4): todas las secciones, la actual elegida, y elegir otra salta a ella.
+  assert.deepEqual(await page.$$eval('.sec-bar select option', (os) => os.map((o) => o.value)), ['juego', 'combate', 'ventanas-ataque', 'camara']);
+  assert.equal(await page.inputValue('.sec-bar select'), 'ventanas-ataque');
+  await page.selectOption('.sec-bar select', 'camara');
+  await page.waitForFunction(() => location.hash === '#docs/gdd/camara' && document.querySelector('.sec-tasks')?.textContent === 'Sin tareas');
+  // Saltar hacia arriba (la última sección de un documento corto no puede quedar arriba).
+  await page.selectOption('.sec-bar select', 'juego');
+  await page.waitForFunction(() => location.hash === '#docs/gdd/juego');
+  assert.ok(await page.locator('#sec-juego').evaluate((e) => e.getBoundingClientRect().top < 200), 'saltó a la sección');
   // Desde la barra se va a la tarea.
-  await page.click('.toc a[href="#docs/gdd/ventanas-ataque"]');
+  await page.selectOption('.sec-bar select', 'ventanas-ataque');
   await page.click('.sec-bar .bl-task >> nth=0');
   await page.waitForSelector('#detail:not([hidden]) #d-title');
   assert.equal(await page.locator('.sec-bar').count(), 0);
