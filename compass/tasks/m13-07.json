@@ -1,0 +1,34 @@
+{
+  "checklist": [
+    {
+      "detail": "hub/src/cli.js:489 arma `${r.doc}#${r.section}` sin mirar si hay sección; una ref sin #id (ref add <tarea> gdd.md) sale como gdd.md#undefined. Usar el mismo criterio que export-md.js:50 (solo doc si no hay section).",
+      "done": false,
+      "text": "Arreglar el formato en scompass show"
+    },
+    {
+      "detail": "Que el detalle de tarea en la UI y en el dock de Godot muestren bien una ref al documento entero.",
+      "done": false,
+      "text": "Revisar la web y el dock"
+    },
+    {
+      "detail": "show de una tarea con ref sin sección imprime solo el alias.",
+      "done": false,
+      "text": "Test"
+    }
+  ],
+  "code": "13.7",
+  "created_at": "2026-10-10T17:02:24.764Z",
+  "milestone": "m13",
+  "notes": "Visto en Project Epiphany (m11-20) el 2026-10-10.",
+  "order": 7,
+  "priority": "low",
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "bug",
+    "cli"
+  ],
+  "test": "scompass ref add <tarea> gdd.md y scompass show <tarea>: dice «Referencias: gdd.md», no «gdd.md#undefined»; lo mismo en la web.",
+  "title": "Bug: show muestra «doc#undefined» en referencias al documento entero",
+  "updated_at": "2026-10-10T17:02:25.697Z"
+}
