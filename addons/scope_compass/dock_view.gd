@@ -66,6 +66,10 @@ var reload_button: Button
 var browser_button: Button
 var files_button: Button
 var new_row: HBoxContainer
+## Tareas sin terminar que citan el script o la escena que se editan (15.4).
+var editing_box: VBoxContainer
+## Lo que se edita en Godot, con la ruta desde la raíz del proyecto ("" si nada): lo avisa el plugin.
+var editing := { "script": "", "scene": "" }
 var new_title: LineEdit
 var tree: Tree
 ## Lista de tareas y detalle, con divisor arrastrable; el bloque de tareas se puede plegar.
@@ -230,6 +234,8 @@ func _send_update(id: String, patch) -> void:
 	if t == null or not online:
 		return
 	var body: Dictionary = patch.call(t) if patch is Callable else patch
+	if body.is_empty():
+		return
 	var r := await client.request("PATCH", "/api/tasks/" + id.uri_encode(), body, ["If-Match: \"%s\"" % t.get("etag", "")])
 	if r.code == 200:
 		board.apply("tasks", id, r.json)
@@ -658,6 +664,10 @@ func _build() -> void:
 	add.pressed.connect(func(): var t := new_title.text; new_title.clear(); create_task(t))
 	new_row.add_child(add)
 
+	editing_box = VBoxContainer.new()
+	editing_box.visible = false
+	add_child(editing_box)
+
 	split = VSplitContainer.new()
 	split.size_flags_vertical = SIZE_EXPAND_FILL
 	split.dragged.connect(func(offset: int): set_pref.call("split", offset))
@@ -814,6 +824,7 @@ func _render() -> void:
 		if m.id == current_milestone:
 			milestone_select.select(milestone_select.item_count - 1)
 
+	_render_editing()
 	_render_tree()
 	_render_detail()
 
@@ -1034,13 +1045,56 @@ func _render_links(t: Dictionary) -> void:
 			links_box.add_child(b)
 
 
+## El plugin avisa qué script o escena se edita (kind "script" o "scene"; res_path "" si ninguno). Un script
+## incorporado a una escena ("res://x.tscn::GDScript_…") no es un archivo propio y no cuenta.
+func set_editing(kind: String, res_path: String) -> void:
+	editing[kind] = res_path.trim_prefix("res://") if res_path.begins_with("res://") and not res_path.contains("::") else ""
+	_render_editing()
+	_render_detail()
+
+
+static func _files_of(t) -> Array:
+	var f = t.get("files", []) if t is Dictionary else []
+	return f if f is Array else []
+
+
+## Arriba de la lista: las tareas sin terminar que citan el script o la escena abiertos, de cualquier hito.
+func _render_editing() -> void:
+	for c in editing_box.get_children():
+		editing_box.remove_child(c)
+		c.queue_free()
+	for kind in ["script", "scene"]:
+		var path: String = editing[kind]
+		if path == "":
+			continue
+		for t in board.tasks:
+			if t.get("status") == "done" or not _files_of(t).has(path):
+				continue
+			var b := Button.new()
+			b.flat = true
+			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			b.custom_minimum_size.x = WRAP_MIN_WIDTH
+			b.text = "%s · %s" % [path.get_file(), board.task_name(t.id)]
+			b.tooltip_text = "Cita %s que estás editando. Ir a la tarea" % ("el script" if kind == "script" else "la escena")
+			b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			b.pressed.connect(_go_to_task.bind(t.id))
+			editing_box.add_child(b)
+	editing_box.visible = editing_box.get_child_count() > 0
+
+
 ## Archivos del repo que toca la tarea (15.3): un clic lo abre en el editor. En rojo, el que ya no está en el disco.
+## Con hub, el script o la escena que se editan y la tarea no cita se pueden vincular (15.4).
 func _render_files(t: Dictionary) -> void:
 	for c in files_box.get_children():
 		files_box.remove_child(c)
 		c.queue_free()
-	var files = t.get("files", [])
-	if not (files is Array) or files.is_empty():
+	var files := _files_of(t)
+	var linkable := []
+	for kind in ["script", "scene"]:
+		if online and editing[kind] != "" and not files.has(editing[kind]):
+			linkable.append(editing[kind])
+	if files.is_empty() and linkable.is_empty():
 		return
 	var label := Label.new()
 	label.text = "Archivos"
@@ -1061,6 +1115,15 @@ func _render_files(t: Dictionary) -> void:
 			b.add_theme_color_override("font_color", BLOCKED_COLOR)
 		b.pressed.connect(open_task_file.bind(str(f)))
 		files_box.add_child(b)
+	for p in linkable:
+		var add := Button.new()
+		add.flat = true
+		add.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		add.text = "+ Vincular " + str(p).get_file()
+		add.tooltip_text = "Agregar a la tarea %s, que estás editando" % p
+		var id: String = t.id
+		add.pressed.connect(func(): update_task(id, func(cur): return {} if _files_of(cur).has(p) else { "files": _files_of(cur) + [p] }))
+		files_box.add_child(add)
 
 
 ## Un archivo de la tarea: en el editor si Godot lo ve; si no (markdown, compass/, lo que tiene .gdignore), en la

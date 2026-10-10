@@ -490,3 +490,13 @@ test('dock: los archivos de la tarea se listan en el detalle y un clic los abre 
   await setTask('m1-04', { status: 'todo', files: ['src/player.gd', 'docs/notas.md', 'src/borrado.gd'] });
   expectOk(await godot('task_files', dir, 'm1-04', 'm1-05'), 'task_files');
 });
+
+test('con hub: el dock muestra las tareas del script abierto y vincula el abierto a la tarea elegida', { skip }, async () => {
+  await setTask('m1-04', { status: 'todo', files: ['src/player.gd'] });
+  await setTask('m1-06', { status: 'done', files: ['src/player.gd'] }); // terminada: no aparece
+  const hub = await startHub();
+  const r = await godotLive(['editing', dir, 'm1-04', 'm1-05']);
+  await hub.app.close();
+  expectOk(r, 'editing');
+  assert.deepEqual((await task('m1-05')).files, ['src/player.gd']);
+});

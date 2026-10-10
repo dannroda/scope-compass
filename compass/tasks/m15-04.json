@@ -1,26 +1,26 @@
 {
   "checklist": [
     {
-      "done": false,
+      "done": true,
       "text": "Con el script o la escena que se edita, el dock muestra las tareas que lo citan (de cualquier hito) y lleva a cada una"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Vincular el script o la escena abiertos a la tarea elegida"
     },
     {
-      "done": false,
+      "done": true,
       "text": "Tests"
     }
   ],
   "code": "15.4",
   "created_at": "2026-10-10T20:50:03.315Z",
   "milestone": "m15",
-  "notes": "",
+  "notes": "Hecho: el plugin avisa al dock qué script (editor_script_changed del ScriptEditor) y qué escena (scene_changed) se editan; un script incorporado a una escena (res://x.tscn::GDScript_…) no cuenta. Arriba de la lista, las tareas sin terminar que citan el script o la escena abiertos, de cualquier hito (archivo · tarea); un clic lleva a la tarea y cambia de hito si hace falta. En el detalle, con hub, '+ Vincular player.gd' agrega el script o la escena abiertos que la tarea no cita. Verificado en un editor real sin ventana (proyecto de prueba con el addon y un plugin que abre el script y la escena): la caja muestra la tarea con cada uno. Test editing en dock.test.js.",
   "order": 4,
   "refs": [],
-  "status": "doing",
+  "status": "done",
   "test": "",
   "title": "Dock: tareas del script y la escena abiertos",
-  "updated_at": "2026-10-10T20:59:54.119Z"
+  "updated_at": "2026-10-10T21:02:55.105Z"
 }

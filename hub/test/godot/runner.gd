@@ -592,3 +592,27 @@ func test_task_files(a: Array) -> void:
 	if not _check(c, v.notice.visible and v.notice.text.contains("docs/notas.md"), "sin hub, avisa: " + v.notice.text): return
 	_select(v, a[2])
 	_check(c, v.files_box.get_child_count() == 0, "una tarea sin archivos no muestra la sección")
+
+
+# El script y la escena que se editan (15.4): arriba, las tareas sin terminar que los citan, de cualquier hito; un
+# clic lleva a la tarea. En el detalle, "+ Vincular" agrega el abierto a la tarea elegida (con hub).
+func test_editing(a: Array) -> void:
+	var c := "editing"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	v.current_milestone = "m02"
+	v.set_editing("script", "res://src/player.gd")
+	var names: Array = v.editing_box.get_children().map(func(b): return b.text)
+	if not _check(c, v.editing_box.visible and names == ["player.gd · " + v.board.task_name(a[1])], "arriba: %s" % [names]): return
+	v.set_editing("scene", "res://nivel.tscn::GDScript_x")
+	if not _check(c, v.editing.scene == "", "un script incorporado no es un archivo: " + v.editing.scene): return
+	v.editing_box.get_child(0).pressed.emit()
+	if not _check(c, v.selected_task == a[1] and v.current_milestone == "m01", "no fue a la tarea: %s en %s" % [v.selected_task, v.current_milestone]): return
+	if not _check(c, not v.files_box.get_children().any(func(b): return b is Button and b.text.begins_with("+ Vincular")), "ofrece vincular lo que ya cita"): return
+	_select(v, a[2])
+	var add = v.files_box.get_children().filter(func(b): return b is Button and b.text == "+ Vincular player.gd")
+	if not _check(c, add.size() == 1, "falta + Vincular player.gd"): return
+	add[0].pressed.emit()
+	if not _check(c, await _until(func(): return v.board.task(a[2]).get("files", []) == ["src/player.gd"]), "no se vinculó"): return
+	v.set_editing("script", "")
+	_check(c, not v.editing_box.visible, "sin script abierto, la caja se va")

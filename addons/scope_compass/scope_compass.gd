@@ -52,9 +52,25 @@ func _enter_tree() -> void:
 	_dock.add_child(_view)
 	add_dock(_dock)
 	_view.setup(ProjectSettings.globalize_path("res://").trim_suffix("/"))
+	# Las tareas del script y la escena que se editan (15.4).
+	EditorInterface.get_script_editor().editor_script_changed.connect(_on_script_changed)
+	scene_changed.connect(_on_scene_changed)
+	_on_script_changed(EditorInterface.get_script_editor().get_current_script())
+	_on_scene_changed(EditorInterface.get_edited_scene_root())
+
+
+func _on_script_changed(script: Script) -> void:
+	if _view:
+		_view.set_editing("script", script.resource_path if script else "")
+
+
+func _on_scene_changed(root: Node) -> void:
+	if _view:
+		_view.set_editing("scene", root.scene_file_path if root else "")
 
 
 func _exit_tree() -> void:
+	EditorInterface.get_script_editor().editor_script_changed.disconnect(_on_script_changed)
 	if _view:
 		_view.stop_hub() # solo si lo abrió el dock y no está en modo "mantener"
 	if _dock:
