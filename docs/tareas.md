@@ -2313,6 +2313,9 @@ Pedido del usuario (2026-10-11): colorear el ícono y el favicon con el mismo am
 
 Pedido del usuario (2026-10-11): después de ver los mockups con los marcos de Project Epiphany (Kenney, CC0, recoloreados), sumarlos a la web con un botón de ajustes para activarlos y desactivarlos.
 
+- [ ] Marcos también en Listas, Documentos, Archivos y el modo lista
+  La primera versión solo cubría el tablero y el Inicio (lo notó el usuario). Paneles, índices, fichas, filas, campos, el selector Tablero/Lista y los bloques de código; las reglas quedaron agrupadas por marco.
+
 **Prueba:** ui.test.js (19.16): Ajustes prende los bordes, la clase fantasy pone border-image de frames/ en columnas y tarjetas, la imagen se sirve como image/png, Esc cierra y devuelve el foco al engranaje, con el tema claro del sistema el fondo sigue oscuro, otra pestaña arranca con el modo, sigue al recargar y apagarlo se refleja en la otra pestaña. server.test.js y home-serve.test.js: /frames/*.png en el hub, en el Inicio y por /p/<clave>/; .gdignore y ../ dan 404.
 
 **Notas:** Hecho: web/settings.js (en el <head> del tablero y del Inicio, sin defer) con el botón de engranaje y el diálogo Ajustes; scompass.fantasy en localStorage, evento storage para las otras pestañas. web/frames/ con 9 marcos de Project Epiphany y su License.txt (Kenney, CC0) más un .gdignore para que Godot no los importe. app.css: :root.fantasy usa la paleta oscura y las reglas .fantasy ponen los marcos con border-image a 1:1 y píxel nítido, sin atajos border (borran el border-image). El hub y el Inicio sirven /frames/*.png y /settings.js. AGENTS.md (las 3 copias), web/README.md (también el favicon, que ya era dorado) y spec §27. De paso, la paridad del export con Python ignora files (Epiphany ya cita archivos en sus tareas).

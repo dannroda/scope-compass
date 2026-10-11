@@ -689,11 +689,18 @@ test('bordes de fantasía (19.16): se prenden desde Ajustes, siguen al recargar 
   assert.equal(await on(page), true);
   assert.match(await frame(page, '.col'), /frames\/card\.png/);
   assert.match(await frame(page, '.card'), /frames\/button\.png/);
+  assert.match(await frame(page, '.mode-switch'), /frames\/slot\.png/);
   // La imagen existe: el navegador la cargó (no quedó un 404 detrás del border-image).
   assert.equal(await page.evaluate(async () => (await fetch('frames/menu_frame.png')).headers.get('content-type')), 'image/png');
   await page.keyboard.press('Escape');
   assert.equal(await page.isVisible('dialog.settings'), false);
   assert.equal(await page.evaluate(() => document.activeElement.id), 'settings-btn');
+  // También en las otras vistas, no solo en el tablero.
+  await page.click('#tab-lists');
+  await page.waitForSelector('.list-new input');
+  assert.match(await frame(page, '.list-new input'), /frames\/slot\.png/);
+  await page.click('#tab-board');
+  await page.waitForSelector('.card');
   // Con el tema claro del sistema, el modo usa igual la paleta oscura.
   await page.emulateMedia({ colorScheme: 'light' });
   assert.equal(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(16, 19, 24)');

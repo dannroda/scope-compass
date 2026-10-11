@@ -567,41 +567,52 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
    de Project Epiphany (Kenney, CC0, en frames/) a tamaño 1:1 y con píxel nítido: a otra escala las líneas de un píxel
    se pierden. El modo usa siempre la paleta oscura, porque los marcos traen su fondo oscuro. border-image no tiene
    esquinas redondeadas ni usa el color del borde; las medidas son el corte de cada imagen. */
-.fantasy :is(.btn, .chip, .card, .col, section.summary, .detail, .newtask, dialog.pick, .notice, .warnings, .seg, .newtask input[type="text"], .newtask select, .detail select, .detail textarea, .addcl input, .step-edit input, .step-edit textarea, .hoy-list, .proj, .add, .add .tpl, .add input[type="text"], .pchip, .fdrop > summary, .fdrop-body) {
-  border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated;
-}
-.fantasy :is(.btn, .card, .add .tpl) { border-image: url(frames/button.png) 16 fill / 16px stretch; }
-.fantasy :is(.btn:hover, .btn.primary, .card:hover, .card[aria-current="true"], .chip[aria-pressed="true"], .seg button[aria-pressed="true"], .add .tpl:has(input:checked)) {
-  border-image: url(frames/button_focus.png) 16 fill / 16px stretch; background: transparent; box-shadow: none; image-rendering: pixelated;
+/* Un grupo por marco; cada regla repite el reinicio porque :is() toma la especificidad de su selector más fuerte. */
+/* Bronce: botones, tarjetas y filas que se tocan. */
+.fantasy :is(.btn, .card, .add .tpl, .bl-task, .ref, .link-row) { border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/button.png) 16 fill / 16px stretch; }
+/* Dorado: lo elegido, el botón principal y el hover. */
+.fantasy :is(.btn:hover, .btn.primary, .card:hover, .card[aria-current="true"], .chip[aria-pressed="true"], .seg button[aria-pressed="true"], .mode-switch button[aria-pressed="true"], .add .tpl:has(input:checked), .bl-task:hover, .list-link[aria-current="page"], .tree-doc[aria-current="page"], .toc a[aria-current="true"]) {
+  border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/button_focus.png) 16 fill / 16px stretch;
 }
 .fantasy :is(.btn.primary, .chip[aria-pressed="true"], .chip[aria-pressed="true"] .n) { color: var(--accent); }
 .fantasy .btn.danger { color: var(--danger); }
-.fantasy :is(.chip, .pchip, .fdrop > summary) { border-image: url(frames/chip.png) 12 fill / 12px stretch; padding-inline: 14px; }
-.fantasy .fdrop-body { border-image: url(frames/card.png) 24 fill / 24px stretch; padding: 16px; }
+/* Chip: hitos, pastillas del detalle, desplegables de filtros y marcas. */
+.fantasy :is(.chip, .pchip, .fdrop > summary, .pill) { border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/chip.png) 12 fill / 12px stretch; padding-inline: 14px; }
 /* El color del estado va en el borde izquierdo de la tarjeta (en línea): acá lo dice la columna. Nada de atajos
    border: también borran el border-image. */
 .fantasy .card { border-left-width: 2px !important; border-left-color: transparent !important; padding: 12px 14px; }
 .fantasy .card.drop-before { box-shadow: 0 -3px 0 0 var(--accent); }
-.fantasy :is(.col, .newtask, .hoy-list, .add) { border-image: url(frames/card.png) 24 fill / 24px stretch; }
+/* Pizarra: columnas y los paneles de contenido de cada vista. */
+.fantasy :is(.col, .newtask, .hoy-list, .add, .fdrop-body, .doc-article, .list-panel, .doc-diff, .doc-results, .table-wrap, .doc-add, .f-more, .file-image) {
+  border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/card.png) 24 fill / 24px stretch;
+}
 .fantasy .col { padding: 16px 14px 18px; }
-.fantasy :is(.newtask, .add) { padding: 18px 20px; }
-.fantasy .hoy-list { padding: 12px 10px; }
-.fantasy :is(section.summary, .proj) { border-image: url(frames/item_get.png) 32 fill / 32px stretch; padding: 18px 28px; }
-.fantasy :is(.detail, dialog.pick) { border-image: url(frames/menu_frame.png) 32 fill / 32px stretch; }
+.fantasy :is(.newtask, .add, .doc-add, .f-more, .file-image) { padding: 18px 20px; }
+.fantasy :is(.hoy-list, .table-wrap) { padding: 12px 10px; }
+.fantasy .fdrop-body { padding: 16px; }
+.fantasy .doc-article { padding: 14px 34px 30px; }
+.fantasy :is(.list-panel, .doc-results) { padding: 20px 26px 24px; }
+.fantasy .doc-diff { padding: 20px 14px; }
+/* Dorado con esquinas: el resumen y las fichas (proyecto en el Inicio, documento o archivo). */
+.fantasy :is(section.summary, .proj, .doc-card) { border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/item_get.png) 32 fill / 32px stretch; padding: 18px 28px; }
+/* Dorado doble: el detalle y los diálogos. */
+.fantasy :is(.detail, dialog.pick) { border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/menu_frame.png) 32 fill / 32px stretch; }
 .fantasy .detail { padding: calc(30px + env(safe-area-inset-top, 0px)) 32px calc(32px + env(safe-area-inset-bottom, 0px)); }
 .fantasy dialog.pick { padding: 30px 32px; }
-.fantasy :is(.notice, .warnings) { border-image: url(frames/stone.png) 32 fill / 32px stretch; padding: 22px 28px; }
-.fantasy :is(.seg, .newtask input[type="text"], .newtask select, .detail select, .detail textarea, .addcl input, .step-edit input, .step-edit textarea, .add input[type="text"]) {
-  border-image: url(frames/slot.png) 16 fill / 16px stretch; padding-inline: 14px;
-}
-.fantasy :is(.newtask input[type="text"], .detail select, .newtask select, .detail textarea, .addcl input, .step-edit input, .step-edit textarea, .add input[type="text"]):focus {
-  border-image: url(frames/slot_focus.png) 16 fill / 16px stretch; outline: none;
-}
-.fantasy .seg { padding: 6px; }
-.fantasy .seg button { border-width: 2px; border-style: solid; border-color: transparent; }
+/* Piedra: avisos, índices laterales y bloques de código. */
+.fantasy :is(.notice, .warnings, .toc, .doc-tree, .doc-body pre) { border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/stone.png) 32 fill / 32px stretch; }
+.fantasy :is(.notice, .warnings) { padding: 22px 28px; }
+.fantasy :is(.toc, .doc-tree) { padding: 20px 16px; }
+.fantasy .doc-body pre { padding: 18px 22px; }
+/* Ranura: campos, selectores y los grupos de botones de a uno. Los de id van aparte: subirían todo el grupo. */
+.fantasy :is(.seg, .mode-switch, .newtask input[type="text"], .newtask select, .detail select, .detail textarea, .addcl input, .step-edit input, .step-edit textarea, .add input[type="text"], .doc-add input, .item-add input, .item-add select, .ref-search input, .docs-bar select, .list-new input, .sec-bar select) { border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/slot.png) 16 fill / 16px stretch; padding-inline: 14px; }
+.fantasy :is(#doc-q, #f-q, #file-q, #project-switch) { border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/slot.png) 16 fill / 16px stretch; padding-inline: 14px; }
+.fantasy :is(.newtask input[type="text"], .newtask select, .detail select, .detail textarea, .addcl input, .step-edit input, .step-edit textarea, .add input[type="text"], .doc-add input, .item-add input, .item-add select, .ref-search input, .docs-bar select, .list-new input, .sec-bar select):focus, .fantasy :is(#doc-q, #f-q, #file-q, #project-switch):focus { border-image: url(frames/slot_focus.png) 16 fill / 16px stretch; outline: none; }
+.fantasy :is(.seg, .mode-switch) { padding: 6px; }
+.fantasy :is(.seg, .mode-switch) button { border-width: 2px; border-style: solid; border-color: transparent; }
 .fantasy .detail input.title:hover, .fantasy .detail input.title:focus { background: var(--surface-2); }
 /* El select o el campo dentro de una pastilla del detalle va sin marco propio: el marco es la pastilla. */
-.fantasy .detail .pchip :is(select, input) { border-image: none; } /* después de la regla de los campos: la misma especificidad */
+.fantasy .detail .pchip :is(select, input) { border-image: none; padding-inline: 4px; } /* después de la regla de los campos: la misma especificidad */
 /* El botón de Ajustes (tablero e Inicio) y su diálogo. */
 .settings-btn { margin-left: auto; display: inline-flex; align-items: center; justify-content: center; min-width: 40px; padding: 8px; }
 .settings-btn svg { width: 18px; height: 18px; }
