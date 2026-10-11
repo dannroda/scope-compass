@@ -20,6 +20,7 @@
   "code": "12.4",
   "created_at": "2026-10-08T04:55:39.572Z",
   "description": "Buscar en todos los documentos declarados, sin índice externo: recorrer las líneas ya cargadas. Cada resultado dice documento, sección y un fragmento. Sin tildes ni mayúsculas, como los filtros de M11.",
+  "done_at": "2026-10-10T19:03:52.385Z",
   "milestone": "m12",
   "notes": "Hecho: searchDocs devuelve { results, more } (corta en 200); una línea coincide si tiene todas las palabras; la sección es la más chica que la contiene (null antes del primer título); los comentarios <!-- id --> no cuentan; el fragmento recorta las líneas largas alrededor de la primera palabra. /api/docs/search es una ruta fija: gana sobre /api/docs/:alias (un documento con alias search no se puede pedir por ahí).",
   "order": 4,

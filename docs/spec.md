@@ -172,6 +172,7 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `notes` | string | Lo que va saliendo al trabajarla: decisiones, hallazgos, lo que el siguiente necesita saber (D37) |
 | `refs` | `{ doc: string, section: string }[]` | Opcional. Referencias a secciones de documentos (§10). v1 las guarda y las muestra como texto; v2 las resuelve. |
 | `links` | `{ type: "blocks" \| "related", task: string }[]` | Opcional. Vínculos con otras tareas (D22): `blocks` = esta tarea bloquea a `task`; `related` = relacionadas. El inverso ("bloqueada por") no se guarda, se calcula. |
+| `done_at` | ISO 8601 | Opcional. Cuándo pasó a Hecho: el store lo pone al pasarla a `done` y lo quita si sale (§26) |
 | `created_at` / `updated_at` | ISO 8601 | `updated_at` es opcional en ediciones a mano; la app lo completa en su próxima escritura |
 
 **Ids:** los hitos usan `m00`…`m99`. Las tareas importadas conservan su id (`m0-01`). Las tareas nuevas usan el mismo formato con el siguiente número de su hito (`m0-12`; D27); si el hito tiene otro tipo de id, uno corto aleatorio (8 caracteres base36). Un id no cambia aunque la tarea pase a otro hito.
@@ -1003,3 +1004,14 @@ Hasta acá la tarea no tenía dónde decir qué hay que hacer: el pedido iba en 
 - [x] Las tareas de este repo que tenían el pedido en las notas lo tienen en la descripción.
 
 Tests: `cli.test.js` y `docs.test.js` (17.1), `ui.test.js` y `dock.test.js` (`props`) (17.2).
+
+## 26. Fechas, capturas e historial (M18)
+<!-- id: fechas-capturas-historial -->
+
+- **`done_at` (18.1):** cuándo pasó la tarea a Hecho. Lo pone el store al escribir, así vale igual para la CLI, la API, la web y el dock:
+  - al pasar a `done`, la hora de la escritura (o la que traiga el documento, para importar);
+  - mientras sigue hecha, se conserva aunque se edite, y un `put` sin el campo no lo pierde;
+  - al salir de `done`, se quita; si vuelve, la fecha es la nueva.
+  - Una tarea hecha de antes del campo no lo recibe al editarla: no se inventa. En este repo se completaron desde git: el `updated_at` de la tarea en el commit que la dejó hecha (exacto si la app la pasó a Hecho; aproximado si se creó y terminó en el mismo commit).
+  - Se ve en `show` (*Hecho el 2026-10-10*), en el export (**Terminada:**), en el pie del detalle, en la columna y el orden *Terminada* de la lista, y en el Inicio: *n tareas terminadas en los últimos 7 días*.
+

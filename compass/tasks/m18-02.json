@@ -1,0 +1,17 @@
+{
+  "checklist": [],
+  "code": "18.2",
+  "created_at": "2026-10-11T06:17:28.965Z",
+  "description": "Pedido del usuario (2026-10-11): los hitos tienen goal y done_when pero no fecha. Un due opcional en el hito, con la misma regla de vencido que las tareas; la web, el dock y el Inicio avisan cuando un hito con tareas pendientes pasó su fecha.",
+  "milestone": "m18",
+  "notes": "",
+  "order": 2,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "cli"
+  ],
+  "test": "",
+  "title": "Fecha objetivo del hito",
+  "updated_at": "2026-10-11T06:17:28.965Z"
+}

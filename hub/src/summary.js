@@ -15,7 +15,7 @@ function currentMilestone(milestones, tasks) {
   return { id: m.id, code: m.code, title: m.title, done: ts.filter((t) => t.status === 'done').length, total: ts.length };
 }
 
-/** { milestone, counts, doing, next, lists } para la tarjeta del proyecto. */
+/** { milestone, counts, doing, next, lists, done_week } para la tarjeta del proyecto. done_week: terminadas en los últimos 7 días. */
 export function summarize(all, now = new Date()) {
   const tasks = listTasks(all);
   const milestone = currentMilestone(all.milestones, tasks);
@@ -28,7 +28,9 @@ export function summarize(all, now = new Date()) {
     const st = open.map((x) => dueState(x.due, now));
     return { id: l.id, title: l.title, left: open.length, total: l.items.length, today: st.filter((s) => s === 'today').length, overdue: st.filter((s) => s === 'overdue').length };
   });
-  return { milestone, counts, doing, next, lists };
+  const week = now.getTime() - 7 * 864e5;
+  const done_week = tasks.filter((t) => t.status === 'done' && t.done_at && Date.parse(t.done_at) >= week).length;
+  return { milestone, counts, doing, next, lists, done_week };
 }
 
 /**

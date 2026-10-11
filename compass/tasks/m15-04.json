@@ -15,6 +15,7 @@
   ],
   "code": "15.4",
   "created_at": "2026-10-10T20:50:03.315Z",
+  "done_at": "2026-10-10T21:02:55.105Z",
   "milestone": "m15",
   "notes": "Hecho: el plugin avisa al dock qué script (editor_script_changed del ScriptEditor) y qué escena (scene_changed) se editan; un script incorporado a una escena (res://x.tscn::GDScript_…) no cuenta. Arriba de la lista, las tareas sin terminar que citan el script o la escena abiertos, de cualquier hito (archivo · tarea); un clic lleva a la tarea y cambia de hito si hace falta. En el detalle, con hub, '+ Vincular player.gd' agrega el script o la escena abiertos que la tarea no cita. Verificado en un editor real sin ventana (proyecto de prueba con el addon y un plugin que abre el script y la escena): la caja muestra la tarea con cada uno. Test editing en dock.test.js.",
   "order": 4,

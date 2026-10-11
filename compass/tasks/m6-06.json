@@ -11,6 +11,7 @@
   ],
   "code": "6.6",
   "created_at": "2026-09-30T01:23:40.532Z",
+  "done_at": "2026-09-30T02:19:09.718Z",
   "milestone": "m06",
   "notes": "`rich()` convierte `[[alias#id]]` (fuera de `código`) en enlace con el título actual de la sección, o lo marca roto. En las tarjetas (botones) va como texto. Debajo de Notas y \"Cómo probarlo\" (textareas) se listan sus enlaces.",
   "order": 6,

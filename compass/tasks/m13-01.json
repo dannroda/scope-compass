@@ -16,6 +16,7 @@
   ],
   "code": "13.1",
   "created_at": "2026-10-09T05:12:50.478Z",
+  "done_at": "2026-10-10T18:50:30.007Z",
   "milestone": "m13",
   "notes": "JetBrains Mono trae ligaduras: en la vista Documentos `<!-- id -->` se ve como flechas y `!=` como ≠. El \"Hecho cuando\" de M12 nombra `[[alias]]` sin backticks y desde la 12.1 se muestra como enlace roto.",
   "order": 1,

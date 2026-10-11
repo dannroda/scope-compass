@@ -16,6 +16,7 @@
   ],
   "code": "8.5",
   "created_at": "2026-10-04T22:16:39.729Z",
+  "done_at": "2026-10-04T23:07:01.034Z",
   "milestone": "m08",
   "notes": "`nextDue` en `hub/src/dates.js`; `checkItem` en `hub/src/lists.js` (la van a usar la web y el Inicio, no solo la CLI). Schema: `repeat` con `dependentRequired` → `due`; `interval` todavía no se acepta. Destildar uno que se repite es un error. La parte visible en la web va con 8.4.",
   "order": 5,

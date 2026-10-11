@@ -3,6 +3,7 @@
   "code": "5.10",
   "created_at": "2026-09-30T04:34:54.789Z",
   "description": "Pedido del usuario, para cargar código nuevo sin cerrar el editor.",
+  "done_at": "2026-09-30T04:34:55.273Z",
   "milestone": "m05",
   "notes": "`POST /api/restart`: el hub cierra, libera el puerto y se relanza con los mismos argumentos (y el puerto que tenía de verdad), heredando entrada y salida: si lo lanzó el dock sigue atado a Godot por la misma tubería. `/api/health` informa el PID. Dock: botón \"Reiniciar hub\" en el pie; bandeja: \"Reiniciar hub\" en el menú; CLI: `scompass restart`. Detalles: la tubería \"pipe\" de Node es un par de sockets y el test necesitó un pipe real (cat); OS.is_process_running de Godot no ve al hub reiniciado (es nieto), se usa kill -0. Los tests que leen Epiphany ya no dependen de su contenido exacto.",
   "order": 10,

@@ -30,6 +30,9 @@ export function dueState(due, now = new Date()) {
 
 export const showDue = (due) => due.replace('T', ' ');
 
+// El día local (YYYY-MM-DD) de un instante ISO, como done_at (18.1): la hora UTC puede ser de otro día.
+export const localDay = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+
 export const EVERY = { day: 'cada día', week: 'cada semana', month: 'cada mes', year: 'cada año' };
 
 const pad = (n) => String(n).padStart(2, '0');

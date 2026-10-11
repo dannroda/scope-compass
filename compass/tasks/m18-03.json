@@ -1,0 +1,17 @@
+{
+  "checklist": [],
+  "code": "18.3",
+  "created_at": "2026-10-11T06:17:29.227Z",
+  "description": "Pedido del usuario (2026-10-11): un tamaño opcional por tarea (S, M o L) para ver cuánto entra en un hito: filtro en la lista y la suma por hito en el resumen.",
+  "milestone": "m18",
+  "notes": "",
+  "order": 3,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "cli"
+  ],
+  "test": "",
+  "title": "Estimación S/M/L",
+  "updated_at": "2026-10-11T06:17:29.227Z"
+}

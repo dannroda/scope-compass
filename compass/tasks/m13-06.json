@@ -11,6 +11,7 @@
   ],
   "code": "13.6",
   "created_at": "2026-10-09T05:12:57.814Z",
+  "done_at": "2026-10-10T19:51:37.731Z",
   "milestone": "m13",
   "notes": "Hecho: spec §21 UI más compacta (M13) con lo que cambió en el encabezado, los hitos, el buscador y los filtros, el resumen, el detalle, los pasos, el teléfono, la lista y las ligaduras, y sus criterios; §19 apunta a §21 para la barra de filtros. web/README con una línea de lo compacto y el README de la raíz con M13 en el estado. AGENTS.md no cambia: M13 no toca la CLI ni los datos.",
   "order": 6,

@@ -160,6 +160,11 @@
     "updated_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "done_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Cuándo pasó a Hecho. Lo pone la app al pasarla a done y lo quita si sale de done."
     }
   }
 }

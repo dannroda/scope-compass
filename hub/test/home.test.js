@@ -71,7 +71,13 @@ test('summarize: hito actual, en curso, lo que sigue y listas', async () => {
   assert.ok(s.next.length <= 3);
   assert.deepEqual(s.lists, [{ id: 'compras', title: 'Compras', left: 2, total: 2, today: 1, overdue: 0 }]);
   const empty = summarize({ milestones: new Map(), tasks: new Map(), lists: new Map() }, TODAY);
-  assert.deepEqual(empty, { milestone: null, counts: { todo: 0, doing: 0, review: 0, done: 0 }, doing: [], next: [], lists: [] });
+  assert.deepEqual(empty, { milestone: null, counts: { todo: 0, doing: 0, review: 0, done: 0 }, doing: [], next: [], lists: [], done_week: 0 });
+  // Terminadas en los últimos 7 días (18.1): por done_at; sin el campo no cuentan.
+  const day = (n) => new Date(TODAY.getTime() - n * 864e5).toISOString();
+  const week = summarize({ milestones: new Map(), lists: new Map(), tasks: new Map([
+    ['a', { milestone: 'm00', title: 'a', status: 'done', done_at: day(1) }], ['b', { milestone: 'm00', title: 'b', status: 'done', done_at: day(8) }],
+    ['c', { milestone: 'm00', title: 'c', status: 'done' }], ['d', { milestone: 'm00', title: 'd', status: 'doing' }]]) }, TODAY);
+  assert.equal(week.done_week, 1);
 });
 
 test('todayOf: vencido antes que hoy, y las tareas en curso al final', () => {

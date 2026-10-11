@@ -15,6 +15,7 @@
   ],
   "code": "5.1",
   "created_at": "2026-09-29T23:49:26.783Z",
+  "done_at": "2026-09-29T23:52:58.055Z",
   "milestone": "m05",
   "notes": "`scope_compass.gd` monta `dock_view.gd` (un VBoxContainer) dentro de un `EditorDock`. Probado en el editor sin ventana sobre este repo: se monta y se desmonta sin errores.",
   "order": 1,

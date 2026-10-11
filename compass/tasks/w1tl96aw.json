@@ -11,6 +11,7 @@
   ],
   "code": "8.13",
   "created_at": "2026-10-04T23:03:16.748Z",
+  "done_at": "2026-10-05T00:34:08.801Z",
   "milestone": "m08",
   "notes": "Web: `dueField` en el detalle (fecha, hora, Quitar) y `dueMark` en la tarjeta. Dock: `Board.due_state` y `show_due` (misma regla que `hub/src/dates.js`), la fecha en la columna derecha de la lista y una línea en el detalle; el dock no la edita.",
   "order": 13,

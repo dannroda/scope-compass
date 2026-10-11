@@ -20,6 +20,7 @@
   "code": "12.6",
   "created_at": "2026-10-08T04:55:42.791Z",
   "description": "Marca en el árbol para documentos con cambios sin commitear. En la ficha: último commit, historial y el diff contra HEAD con líneas agregadas y quitadas. Marcar las secciones tocadas por el diff para ver qué tareas pueden quedar afectadas.",
+  "done_at": "2026-10-10T19:16:07.371Z",
   "milestone": "m12",
   "notes": "Hecho: el árbol marca M (modificado), N (nuevo) o B (borrado) y se actualiza con docs_git, sin recargar. Con cambios, la web pide el diff aunque no se mire: el índice marca ± en las secciones tocadas (también las que las contienen) y la ficha lista las tareas que pueden quedar afectadas. Ver los cambios reemplaza el documento por el diff, con el título de la sección donde empieza cada bloque. Historial plegable en la ficha. Arreglado en el hub: después de un doc_changed manda docs_git siempre, aunque no vea un cambio; si se editaba y commiteaba antes de que mirara (400 ms), la web quedaba con la marca de modificado.",
   "order": 6,

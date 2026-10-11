@@ -76,6 +76,14 @@ test('add → move → check → show, escribiendo en compass/', async () => {
   const s = await cli(['show', id]);
   assert.match(s.out, /^1\.8 Probar la CLI {2}\[/);
   assert.match(s.out, / {3}2\. \[ \] dos/);
+
+  // done_at (18.1): move a Hecho lo pone; show y el export dicen el día.
+  assert.equal((await cli(['move', id, 'done'])).code, 0);
+  assert.equal((await task(id)).done_at, NOW);
+  assert.match((await cli(['show', id])).out, /Estado: Hecho el 2026-10-01 · /);
+  assert.match(await readFile(join(dir, 'docs', 'tareas.md'), 'utf8'), /### 1\.8 Probar la CLI · Hecho\n\n\*\*Terminada:\*\* 2026-10-01\n/);
+  assert.equal((await cli(['move', id, 'todo'])).code, 0);
+  assert.equal('done_at' in (await task(id)), false);
 });
 
 test('--etag viejo: conflicto con el documento actual en --json y nada escrito', async () => {

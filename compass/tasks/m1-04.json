@@ -23,6 +23,7 @@
   ],
   "code": "1.4",
   "created_at": "2026-09-29T20:00:00Z",
+  "done_at": "2026-09-30T01:00:00.000Z",
   "milestone": "m01",
   "notes": "`hub/src/cli.js` + `hub/bin/scompass.js` (`npm link` en `hub/`). Extras sobre el spec: `milestone list|show`, `--etag` en escrituras, `--file -` (stdin), búsqueda de `compass/` hacia arriba. `check` numera desde 1. `serve`, `export` e `import` responden \"todavía no está disponible\".",
   "order": 4,

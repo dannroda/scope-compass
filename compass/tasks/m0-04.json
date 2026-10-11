@@ -19,6 +19,7 @@
   ],
   "code": "0.4",
   "created_at": "2026-09-29T20:00:00Z",
+  "done_at": "2026-09-29T22:30:00.000Z",
   "milestone": "m00",
   "notes": "Decisiones D10–D13 en `docs/decisiones.md`: MIT, Node >=22, hitos solo por CLI en v1, export markdown automático (`auto_export_md`, activado por defecto).",
   "order": 4,

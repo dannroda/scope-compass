@@ -127,6 +127,7 @@
         h('div', { class: 'bar', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': m.total, 'aria-valuenow': m.done, 'aria-label': 'Avance de ' + m.code },
           h('i', { style: 'width:' + (m.total ? Math.round(100 * m.done / m.total) : 0) + '%' }))));
     }
+    if (s?.done_week) body.push(h('p', { class: 'muted week', style: 'margin:0' }, s.done_week === 1 ? '1 tarea terminada en los últimos 7 días' : s.done_week + ' tareas terminadas en los últimos 7 días'));
     const tasks = [...(s?.doing ?? []).map((t) => ['en curso', t, 'doing']), ...(s?.next ?? []).map((t) => ['sigue', t, ''])].slice(0, 4);
     if (tasks.length) body.push(h('ul', null, tasks.map(([k, t, cls]) => h('li', null, h('span', { class: 'k ' + cls }, k), h('span', { class: 'v' }, t.code ? t.code + ' ' : '', rich(t.title))))));
     if (s?.lists?.length) {

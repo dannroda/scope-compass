@@ -15,6 +15,7 @@
   ],
   "code": "10.9",
   "created_at": "2026-10-06T04:23:30.196Z",
+  "done_at": "2026-10-06T05:46:01.815Z",
   "milestone": "m10",
   "notes": "Hecho: docs/instalar.md con Windows (Node y Git con winget, npm install -g desde PowerShell o cmd, scompass.cmd si PowerShell no deja correr scripts, dónde quedan los datos, sincronizar por git, nombres de proyecto). build.mjs corre en Windows: npm.cmd por la consola (sin comillas en el nombre: si no, el shim busca sus archivos en la carpeta actual) y el zip del addon con el tar.exe de Windows; el paquete sale sin scripts (postinstall solo sirve en el repo y npm reciente lo frena con un aviso). Probado en la VM: build, npm install -g del .tgz, scompass en PowerShell y cmd, home --tray instalado, y el dock encuentra el scompass global con where. Agregado: compass/.gitattributes (* text eol=lf), que init crea y update pone al día como el schema; en la VM, un proyecto de Linux clonado con core.autocrlf=true sale todo en CRLF sin él, y en LF con él. Encontrado con el scompass global: el dock corría `scompass update --check` con OS.execute y en Windows Node tarda ~0,5 s; el cuadro siguiente vencía en el acto los pedidos de 0,5 s al hub y el dock arrancaba sin hub. Ahora _scompass corre en otro hilo. Menor: Invoke-WebRequest -Method Post sin cuerpo manda un Content-Type de formulario y Fastify responde 415 en /api/shutdown (Node, curl y el dock no lo hacen).",
   "order": 9,

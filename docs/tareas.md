@@ -14,6 +14,8 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 ### 0.1 Estructura base del repo · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Carpetas `docs/`, `schema/`, `hub/`, `web/`, `addons/scope_compass/`, `tools/`, `compass/`
 - [x] `README.md` en la raíz y en cada carpeta sin código
 - [x] `.gitignore`, `.gitattributes`, `.editorconfig`
@@ -28,6 +30,8 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 ### 0.2 Spec y decisiones · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Spec ordenado: nombre Scope Compass, rutas de referencias, `compass/` visible, estructura del repo
 - [x] Ids de sección estampados en `docs/spec.md`
 - [x] `docs/decisiones.md` con D1–D9
@@ -37,6 +41,8 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 **Referencias:** `docs/spec.md#objetivo`
 
 ### 0.3 Schemas · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] `schema/milestone.schema.json` y `schema/task.schema.json`
 - [x] Copia en `compass/schema/`
@@ -51,6 +57,8 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 
 ### 0.4 Decisiones abiertas · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Licencia del repo: MIT (`LICENSE`, `hub/package.json`)
 - [x] Versión mínima de Node: 22 (`engines`)
 - [x] Hitos: solo CLI en v1; la UI los muestra
@@ -61,6 +69,8 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 **Referencias:** `docs/spec.md#decisiones-abiertas`
 
 ### 0.5 Abrir el repo en Godot · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Abre en Godot 4.8 sin errores
 - [x] El addon `scope_compass` se activa
@@ -74,6 +84,8 @@ Repo inicializado con el spec ordenado, las decisiones registradas, los schemas,
 **Referencias:** `docs/spec.md#godot`
 
 ### 0.6 Tablero y documentación propios · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Tablero en artifact con los hitos M0–M7
 - [x] Copia en `compass/` en formato canónico
@@ -93,6 +105,8 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 ### 1.1 Formato canónico y escritura atómica · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Serializador canónico: claves ordenadas, 2 espacios, UTF-8, salto de línea final
 - [x] Escritura atómica: archivo temporal + rename
 - [x] Tests de ida y vuelta (leer → escribir → mismo contenido)
@@ -104,6 +118,8 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 **Referencias:** `docs/spec.md#sin-app`, `docs/spec.md#concurrencia`
 
 ### 1.2 Validación · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Cargar los schemas de `schema/`
 - [x] Elegir validador de JSON Schema: ajv (D14)
@@ -117,6 +133,8 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 **Referencias:** `docs/spec.md#validacion`, `docs/spec.md#git-merges`
 
 ### 1.3 Store json-files + ETag · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Interfaz `Store` (list, get, put, patch, delete)
 - [x] Implementación `json-files` sobre `compass/`
@@ -132,6 +150,8 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 ### 1.4 CLI básica · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] `init`: crea `compass/` con schemas, README, `.gdignore` y `config.json`
 - [x] `list` y `show` con `--json`
 - [x] `add`, `move`, `check`
@@ -146,6 +166,8 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 ### 1.5 Export markdown · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Port de `tools/artifact_to_md.py`
 - [x] `scompass export md [--out]`
 - [x] Título y URL del tablero desde `config.json`
@@ -159,6 +181,8 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 
 ### 1.6 Import desde el artifact · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Port de `tools/artifact_to_tablero.py`
 - [x] Descarta `version`; `created_at` = `updated_at` si existe
 - [x] Reporte de conteos
@@ -170,6 +194,8 @@ Leer y escribir `compass/` con validación, formato canónico y ETag, desde la C
 **Referencias:** `docs/spec.md#migracion`
 
 ### 1.7 Tests de M1 · Hecho
+
+**Terminada:** 2026-09-30
 
 - [x] Criterios de §14 que no necesitan servidor
 - [x] Mover una tarjeta cambia exactamente un archivo y una línea (más `updated_at`)
@@ -192,6 +218,8 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 ### 2.1 Servidor Fastify y `scompass serve` · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Dependencias `fastify` y `@fastify/websocket` (D17)
 - [x] Escucha solo en `127.0.0.1`, puerto de `config.json` o `--port`
 - [x] `scompass serve [--port] [--open]`; sin `compass/` sugiere `scompass init`
@@ -207,6 +235,8 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 ### 2.2 API REST · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] `GET/PUT/DELETE /api/milestones[/:id]`; `DELETE` rechaza con `409` si tiene tareas
 - [x] `GET /api/tasks?milestone=&status=`, `POST`, `PATCH`, `DELETE`
 - [x] Cabecera `ETag` en cada documento; `If-Match` en escrituras
@@ -221,6 +251,8 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 ### 2.3 Watcher de cambios externos · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] `fs.watch` recursivo sobre `compass/` con debounce
 - [x] Ignora los temporales de `writeAtomic`
 - [x] Distingue escrituras propias de externas (sin eventos duplicados)
@@ -234,6 +266,8 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 ### 2.4 WebSocket · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] `/ws` con `hello` al conectar
 - [x] `upsert`, `delete` y `warning` para escrituras de la API y cambios externos
 - [x] Mensajes del cliente: `update` → `ack` o `error` (con `conflict` y el documento)
@@ -245,6 +279,8 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 **Referencias:** `docs/spec.md#websocket`
 
 ### 2.5 La CLI usa el hub si está corriendo · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Detectar el hub en el puerto de la config (`/api/health` del mismo proyecto)
 - [x] Escrituras por la API cuando está; si no, directo al disco
@@ -258,6 +294,8 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 ### 2.6 Export markdown desde el hub · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Regenerar `export_md` después de cada escritura de la API (D13)
 - [x] Debounce para ráfagas de cambios
 - [x] También tras cambios externos detectados por el watcher
@@ -270,6 +308,8 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 
 ### 2.7 Tests de M2 · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Criterios de §14 que necesitan servidor (sin UI)
 - [x] Escritura concurrente con ETag viejo → `409`
 - [x] JSON inválido con el hub corriendo → aviso, el servidor sigue
@@ -281,6 +321,8 @@ Servidor Fastify en `127.0.0.1` con la API de §5.2, el protocolo WebSocket de �
 **Referencias:** `docs/spec.md#criterios-v1`
 
 ### 2.8 Detalles de la CLI: `--etag none`, editar campos, `order` al crear · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] `--etag none` mapea a `ifMatch: null` (que no exista)
 - [x] `set <id> --title/--notes/--test/--code/--milestone/--status` sin `--file`: patch de esos campos
@@ -304,6 +346,8 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 ### 3.1 Estructura de `web/` servida por el hub · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Separar `docs/reference/tablero-artifact.html` en `web/index.html`, `app.css` y `app.js` sin build step
 - [x] El hub sirve `web/` en `/` (handler propio, sin dependencia nueva)
 - [x] `GET /api/config` con el nombre del proyecto para el título
@@ -317,6 +361,8 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 ### 3.2 Cliente de la API y carga inicial · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Reemplazar `claude.use("db")` por un cliente de `/api`
 - [x] Carga inicial de hitos y tareas
 - [x] Crear, mover, editar y borrar tareas por la API
@@ -328,6 +374,8 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 **Referencias:** `docs/spec.md#frontend`, `docs/spec.md#api-rest`
 
 ### 3.3 WebSocket con reconexión · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Aplicar `upsert` y `delete` sobre el estado
 - [x] Reconexión con espera creciente; al reconectar, recarga completa
@@ -341,6 +389,8 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 ### 3.4 Escrituras con etag y 409 · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Cada escritura manda el etag que la UI tiene en memoria
 - [x] Ante `409`: tomar el documento actual y avisar "otra pestaña cambió esta tarea"
 
@@ -351,6 +401,8 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 **Referencias:** `docs/spec.md#concurrencia`, `docs/spec.md#frontend`
 
 ### 3.5 Avisos de archivos inválidos · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Mostrar los `warnings` de la carga y los eventos `warning`
 - [x] El aviso desaparece cuando el archivo se corrige
@@ -363,6 +415,8 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 
 ### 3.6 Fuentes locales · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Cinzel, Alegreya Sans y JetBrains Mono en `web/fonts/` (OFL, con sus licencias)
 - [x] Sin requests a Google Fonts ni a ningún otro host
 
@@ -373,6 +427,8 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 **Referencias:** `docs/spec.md#frontend`
 
 ### 3.7 Mejoras chicas del port · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] No perder lo escrito en el detalle (Notas, Cómo probarlo y "Agregar paso") cuando se vuelve a dibujar, sea por un evento de otra pestaña o por la respuesta de una escritura propia
 - [x] Reordenar tarjetas dentro de una columna al arrastrar (`order`)
@@ -385,6 +441,8 @@ La UI del artifact servida por el hub: cliente de la API, WebSocket con reconexi
 **Referencias:** `docs/spec.md#frontend`
 
 ### 3.8 Tests de M3 (Playwright) · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Playwright como devDependency (D18)
 - [x] Criterios de §14 con UI: paridad, dos pestañas, 409, JSON inválido, sin internet
@@ -406,6 +464,8 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 - Una semana de uso diario sin volver al artifact.
 
 ### 4.1 Migrar Epiphany a `compass/` · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Último export del artifact e import con `--dry-run`: 11 hitos y 10 tareas sin cambios
 - [x] Quitar `board_url`; copiar `config.schema.json` a su `compass/schema/`
@@ -431,6 +491,8 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 
 ### 4.3 Ids legibles al crear tareas · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] Generar el id a partir del hito: m<N>-<NN> con el siguiente libre
 - [x] Usarlo desde la CLI, la API (web) y el dock
 - [x] Mantener el aleatorio solo si hay choque
@@ -443,6 +505,8 @@ Project Epiphany deja el artifact y usa `compass/` + `scompass` a diario.
 **Relacionadas:** 4.2 Una semana de uso diario sin volver al artifact
 
 ### 4.4 Aviso de cambios sin commitear en compass/ · Hecho
+
+**Terminada:** 2026-10-04
 
 - [x] El hub detecta archivos de compass/ con cambios (git status)
 - [x] Mostrar el aviso en la web y en el dock, con la cantidad de archivos
@@ -465,6 +529,8 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 ### 5.1 Estructura del addon con `EditorDock` · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Dock con `EditorDock` + `add_dock` (API de 4.8, D19)
 - [x] Vista del dock como `Control` aparte, testeable sin el editor
 - [x] Se agrega y se quita limpio al activar y desactivar el plugin
@@ -476,6 +542,8 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 **Referencias:** `docs/spec.md#godot`
 
 ### 5.2 Modo sin hub: leer `compass/` · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Leer hitos y tareas con `FileAccess`/`JSON`, mismo orden que la CLI; los inválidos se avisan
 - [x] Selector de hito (por defecto el primero sin terminar; se recuerda por proyecto)
@@ -491,6 +559,8 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 ### 5.3 Cliente del hub · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Detectar el hub por `/api/health` del mismo proyecto
 - [x] Carga por HTTP y cambios por `WebSocketPeer` con reconexión
 - [x] Pasar de solo lectura a edición (y al revés) según haya hub
@@ -502,6 +572,8 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 **Referencias:** `docs/spec.md#godot`, `docs/spec.md#websocket`
 
 ### 5.4 Editar desde el dock · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Cambiar el estado y tildar pasos
 - [x] Etag y 409 (en fila por tarea, como la UI web)
@@ -515,6 +587,8 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 ### 5.5 Iniciar el hub desde el dock · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] "Iniciar hub" con `OS.create_process` (ruta a `scompass` configurable)
 - [x] Cerrarlo al salir del editor solo si lo abrió el dock
 
@@ -525,6 +599,8 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 **Referencias:** `docs/spec.md#godot`
 
 ### 5.6 Tests de M5 · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Godot sin ventana lanzado desde `npm test` (se saltea si no hay `godot`)
 - [x] Dock ↔ UI web en los dos sentidos; modo sin hub
@@ -537,6 +613,8 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 ### 5.7 Instalar el addon en Epiphany · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Symlink `project-epiphany/addons/scope_compass` → este addon
 - [x] Activarlo y usarlo con el tablero de Epiphany
 
@@ -547,6 +625,8 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 **Referencias:** `docs/spec.md#godot`
 
 ### 5.8 El hub lanzado por el dock muere con el editor · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] `scompass serve --exit-on-stdin-close`: se cierra cuando se corta su entrada
 - [x] El dock lo lanza con `OS.execute_with_pipe` (la salida sigue yendo al log)
@@ -559,6 +639,8 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 **Referencias:** `docs/spec.md#godot`
 
 ### 5.9 Opción de mantener el hub, con ícono en la bandeja · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] `scompass serve --tray`: ícono en la bandeja de Plasma (StatusNotifierItem por D-Bus, D20)
 - [x] Tooltip con proyecto y dirección; clic abre el tablero; menú "Abrir tablero" y "Detener hub"
@@ -573,17 +655,23 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 ### 5.10 Reiniciar el hub (dock, bandeja, CLI y API) · Hecho
 
+**Terminada:** 2026-09-30
+
 Pedido del usuario, para cargar código nuevo sin cerrar el editor.
 
 **Notas:** `POST /api/restart`: el hub cierra, libera el puerto y se relanza con los mismos argumentos (y el puerto que tenía de verdad), heredando entrada y salida: si lo lanzó el dock sigue atado a Godot por la misma tubería. `/api/health` informa el PID. Dock: botón "Reiniciar hub" en el pie; bandeja: "Reiniciar hub" en el menú; CLI: `scompass restart`. Detalles: la tubería "pipe" de Node es un par de sockets y el test necesitó un pipe real (cat); OS.is_process_running de Godot no ve al hub reiniciado (es nieto), se usa kill -0. Los tests que leen Epiphany ya no dependen de su contenido exacto.
 
 ### 5.11 Dock: el texto del paso despliega su detalle, divisor lista/detalle, bloque de tareas plegable · Hecho
 
+**Terminada:** 2026-09-30
+
 Pedido del usuario. El cuadradito tilda y el texto (o ▸) despliega el detalle: tildar al tocar el texto era contraintuitivo.
 
 **Notas:** VSplitContainer entre la lista de tareas y el detalle, con el divisor recordado por proyecto; "▾ Tareas · n" pliega la lista y el detalle usa todo el alto (también recordado). De paso: el selector de hito fijaba el ancho mínimo del dock al del hito más largo (`fit_to_longest_item = false`) y los botones del aviso bajan de renglón.
 
 ### 5.12 Bandeja: "Actualizar compass/" cuando el schema o AGENTS.md quedaron viejos · Hecho
+
+**Terminada:** 2026-10-04
 
 Pedido al usar Epiphany.
 
@@ -607,6 +695,8 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 ### 6.1 Parser de documentos e índice de secciones · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Índice `{id, title, level, start, end}`; una sección llega hasta el próximo título de nivel igual o superior
 - [x] Id explícito (`<!-- id: … -->`) o slug del título, marcado como frágil
 - [x] Documentos de `config.json › docs` (alias y ruta o patrón)
@@ -620,6 +710,8 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 ### 6.2 Chequeo y edición de referencias · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] `scompass refs check`: lista las rotas y sale con código ≠ 0
 - [x] `scompass ref add <tarea> <alias>#<id>` (y quitar)
 - [x] `scompass doc stamp-ids <alias>`: estampa ids en las secciones que no tienen
@@ -631,6 +723,8 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 **Referencias:** `docs/spec.md#ids-seccion`, `docs/spec.md#referencias`
 
 ### 6.3 API de documentos y render · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] `GET /api/docs`, `/api/docs/:alias`, `/api/docs/:alias/sections/:id` (con backlinks), `/api/refs/broken`
 - [x] Markdown renderizado con GDScript resaltado, librerías empaquetadas (D21)
@@ -644,6 +738,8 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 ### 6.4 UI web: referencias en el detalle · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Sección "Referencias" con cada sección renderizada y plegable, y "Abrir en el documento"
 - [x] Buscador de secciones para agregar referencias; quitar
 - [x] Indicador en la tarjeta y aviso si alguna está rota
@@ -655,6 +751,8 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 **Referencias:** `docs/spec.md#documentos-ui`, `docs/spec.md#referencias`
 
 ### 6.5 UI web: vista Documentos · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Pestaña "Documentos" al lado de los hitos
 - [x] Índice lateral y contenido renderizado
@@ -668,6 +766,8 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 ### 6.6 Enlaces en línea `[[alias#id]]` · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] En notas, "Cómo probarlo" y pasos: enlace con el título actual de la sección
 - [x] Rotos: marcados como tales
 
@@ -678,6 +778,8 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 **Referencias:** `docs/spec.md#referencias`
 
 ### 6.7 Dock: referencias en BBCode · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] `GET /api/docs/:alias/sections/:id?format=bbcode`
 - [x] El detalle del dock lista las referencias y muestra la sección en un `RichTextLabel`
@@ -690,6 +792,8 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 ### 6.8 Migración de notas "§N.N" · Hecho
 
+**Terminada:** 2026-09-29
+
 - [x] Detectar "`gdd.md` §N.N" en notas, pruebas y pasos
 - [x] Proponer la referencia equivalente (sin aplicarla sola)
 
@@ -700,6 +804,8 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 **Referencias:** `docs/spec.md#migracion-notas`
 
 ### 6.9 Tests de M6 · Hecho
+
+**Terminada:** 2026-09-29
 
 - [x] Criterios de §10.6
 - [x] Con los documentos reales de Epiphany y de este repo
@@ -712,17 +818,23 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 ### 6.10 Snippets del dock en CodeEdit con el resaltado del editor · Hecho
 
+**Terminada:** 2026-09-29
+
 Pedido del usuario: los snippets en el dock se ven mejor en un CodeEdit.
 
 **Notas:** `?format=blocks` (texto en BBCode, código crudo); el dock usa `GDScriptSyntaxHighlighter` del editor (verificado en el editor: resaltado y fuente `EditorFonts/source`); fuera del editor, un CodeHighlighter básico.
 
 ### 6.11 UI web: "Cerrar" del buscador de referencias y panel de detalle redimensionable · Hecho
 
+**Terminada:** 2026-09-29
+
 Reportado por el usuario. "Cerrar" no cerraba: el buscador abierto sin texto guarda "" y el toggle lo tomaba como cerrado.
 
 **Notas:** Panel: borde izquierdo arrastrable (y flechas, Shift = paso grande), entre 360 px y 90 % de la ventana, recordado en el navegador; doble clic vuelve a 460 px.
 
 ### 6.12 Pasos con texto corto y detalle desplegable · Hecho
+
+**Terminada:** 2026-09-30
 
 Pedido del usuario: los pasos eran ambiguos cortos o demasiado largos para el dock.
 
@@ -788,6 +900,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 ### 8.1 Registro persistente de proyectos · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] `~/.config/scope-compass/projects.json` (`$XDG_CONFIG_HOME`), escritura atómica
 - [x] `scompass serve` anota o actualiza su proyecto
 - [x] `scompass home add|rm|list`: importar sin levantar el hub
@@ -804,6 +918,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 ### 8.2 Fecha límite (`due`) en tareas · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] Schema: `due` opcional, `YYYY-MM-DD` o con `THH:MM`
 - [x] CLI: `add|set --due` y la fecha en `list` y `show`
 - [x] Export md: `**Vence:**` debajo del título
@@ -817,6 +933,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 **Bloquea a:** 8.13 Fechas límite en la web y el dock
 
 ### 8.3 Listas: schema, Store y CLI · Hecho
+
+**Terminada:** 2026-10-04
 
 - [x] `schema/list.schema.json` y `compass/lists/<id>.json`
 - [x] Store: cargar, validar y escribir listas con etag
@@ -832,6 +950,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 **Bloquea a:** 8.4 Listas: API, WebSocket y vista en la web; 8.5 Repetición simple en ítems de lista; 8.7 Plantillas en `scompass init`
 
 ### 8.4 Listas: API, WebSocket y vista en la web · Hecho
+
+**Terminada:** 2026-10-04
 
 - [x] `/api/lists` y mensajes con `kind: "list"`
 - [x] Pestaña Listas: barra lateral, lista simple y agrupada por fecha
@@ -850,6 +970,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 ### 8.5 Repetición simple en ítems de lista · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] `repeat: { every: day|week|month|year }`, requiere `due`
 - [x] Tildar avanza `due` desde la fecha límite
   Fin de mes: 31/01 mensual pasa a 28/02 (o 29/02).
@@ -865,6 +987,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 ### 8.6 `views` en `config.json` · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] Schema de config: `views` con `board`, `lists`, `docs`
 - [x] Sin `views`: las tres, tablero primero (`viewsOf` en `hub/src/views.js`)
 
@@ -877,6 +1001,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 **Bloquea a:** 8.7 Plantillas en `scompass init`
 
 ### 8.7 Plantillas en `scompass init` · Hecho
+
+**Terminada:** 2026-10-04
 
 - [x] `hub/templates/proyectos/juego|personal|vacio.json`: config y datos iniciales
 - [x] `scompass init --template <nombre>`
@@ -893,6 +1019,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 **Bloqueada por:** 8.3 Listas: schema, Store y CLI; 8.6 `views` en `config.json`
 
 ### 8.8 `scompass home`: proceso y API · Hecho
+
+**Terminada:** 2026-10-04
 
 - [x] Un solo `home` por usuario (`kind: "home"` en el registro de hubs)
 - [x] Leer cada proyecto de disco con el Store; cruzar con los hubs vivos
@@ -912,6 +1040,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 ### 8.9 Prender y apagar hubs desde el Inicio · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] Prender: `scompass serve --dir` como hijo del Inicio
 - [x] Apagar: `SIGTERM` al pid del registro
 - [x] Avisar antes de apagar un hub del dock
@@ -925,6 +1055,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 **Bloqueada por:** 8.8 `scompass home`: proceso y API
 
 ### 8.10 UI del Inicio · Hecho
+
+**Terminada:** 2026-10-04
 
 - [x] Franja Hoy: vencidos, hoy y en curso de todos los proyectos
 - [x] Tarjetas: estado del hub, hito actual, lo próximo, sin commitear
@@ -941,6 +1073,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 ### 8.11 Bandeja agrupada en el Inicio · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] El Inicio con `--tray` pone el único ícono
 - [x] Los hubs con `--tray` lo esconden si hay un `home` vivo y lo vuelven a poner si muere
 - [x] Menú: un submenú por hub (Abrir, Reiniciar, Detener), Abrir Inicio, Agregar proyecto
@@ -956,6 +1090,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 ### 8.12 Tests de M8 y guía para agentes · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] Tests de los criterios de §16.8
 - [x] `AGENTS.md` (plantilla, addon y `compass/`) con listas, fechas y `home`
 - [x] README y `compass/README.md`: editar listas a mano
@@ -967,6 +1103,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 **Referencias:** `docs/spec.md#criterios-v3`
 
 ### 8.13 Fechas límite en la web y el dock · Hecho
+
+**Terminada:** 2026-10-04
 
 - [x] Web: elegir y ver la fecha en el detalle; vencidas y de hoy marcadas en la tarjeta
 - [x] Dock: mostrar la fecha y marcar las vencidas
@@ -981,6 +1119,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 ### 8.14 Dock: "Crear compass/" con plantilla · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] Elegir juego, personal o vacío antes de crear (por defecto juego, porque es un proyecto de Godot)
 - [x] Pasar `--template` a `scompass init`
 
@@ -992,6 +1132,8 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 ### 8.15 Tablero: enlace "← Inicio" si el Inicio está corriendo · Hecho
 
+**Terminada:** 2026-10-04
+
 Pedido al usar el Inicio.
 
 - [x] `GET /api/home` en el hub (el Inicio del registro, o null)
@@ -1001,11 +1143,15 @@ Pedido al usar el Inicio.
 
 ### 8.16 Bandeja del Inicio: el estado de los hubs prendidos desde la web no se actualizaba · Hecho
 
+**Terminada:** 2026-10-04
+
 **Prueba:** Test en bus privado: hub prendido por la API del Inicio → LayoutUpdated, AboutToShow dice que cambió y el menú muestra el puerto.
 
 **Notas:** Plasma pregunta AboutToShow antes de abrir el menú; si un refresh() ya había visto el cambio, respondía "no cambió" y Plasma mostraba su copia vieja. Ahora compara con la última revisión que el escritorio pidió (GetLayout), y refresh() manda también ItemsPropertiesUpdated.
 
 ### 8.17 Crear proyecto desde el Inicio: ~/.local/share/scope-compass/<nombre>, o elegir otra carpeta · Hecho
+
+**Terminada:** 2026-10-04
 
 **Prueba:** "Vida dos" queda en …/scope-compass/Vida dos con .git; con el selector, en <elegida>/Mi juego (ui-home y home tests).
 
@@ -1022,6 +1168,8 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 
 ### 9.1 Servidor del hub montable bajo una ruta · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] La app de un hub expone lo que necesita su WebSocket (`app.hub`) y `attachSocket` se puede usar desde otra app
 - [x] El hub suelto sigue igual: mismos tests
 
@@ -1030,6 +1178,8 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 **Referencias:** `docs/spec.md#v4`
 
 ### 9.2 El Inicio sirve los proyectos en /p/<clave>/ · Hecho
+
+**Terminada:** 2026-10-04
 
 - [x] Clave por proyecto (nombre de la carpeta, sin repetir)
 - [x] Activar al primer pedido: store, watcher, export y WebSocket
@@ -1043,6 +1193,8 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 
 ### 9.3 Registro: quién sirve cada proyecto · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] El Inicio anota los proyectos que sirve con su base
 - [x] hubsOf y detectHub entienden la base
 
@@ -1051,6 +1203,8 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 **Referencias:** `docs/spec.md#v4`
 
 ### 9.4 CLI: usar la base del registro · Hecho
+
+**Terminada:** 2026-10-04
 
 - [x] El store HTTP con la base
 - [x] scompass hubs y home list muestran quién sirve cada proyecto
@@ -1061,6 +1215,8 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 
 ### 9.5 Dock: usar la base, e "Iniciar hub" delega en el Inicio · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] Cliente HTTP y WebSocket con la base
 - [x] Con el Inicio corriendo, "Iniciar hub" activa el proyecto en el Inicio
 
@@ -1069,6 +1225,8 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 **Referencias:** `docs/spec.md#v4`
 
 ### 9.6 Tablero web dentro del Inicio · Hecho
+
+**Terminada:** 2026-10-04
 
 - [x] Llamadas relativas a su ruta
 - [x] Barra superior compartida: volver al Inicio y cambiar de proyecto
@@ -1080,6 +1238,8 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 
 ### 9.7 Tarjetas, Hoy y bandeja apuntan a /p/… · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] Abrir tablero dentro del Inicio
 - [x] La bandeja: un submenú por proyecto sin prender ni apagar (salvo hubs sueltos)
 
@@ -1088,6 +1248,8 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 **Referencias:** `docs/spec.md#v4`
 
 ### 9.8 Reiniciar el Inicio · Hecho
+
+**Terminada:** 2026-10-04
 
 - [x] POST /api/restart del Inicio: vuelve en el mismo puerto
 - [x] scompass home restart
@@ -1099,6 +1261,8 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 
 ### 9.9 Actualizar compass/ desde el Inicio, sin hub · Hecho
 
+**Terminada:** 2026-10-04
+
 - [x] POST /api/projects/update (schema y AGENTS.md)
 - [x] Botón en la tarjeta cuando está desactualizado, y en la bandeja
 
@@ -1107,6 +1271,8 @@ Con el Inicio corriendo, el Inicio sirve todos los proyectos en /p/<clave>/ con 
 **Referencias:** `docs/spec.md#v4`
 
 ### 9.10 Tests de M9, spec y guía · Hecho
+
+**Terminada:** 2026-10-04
 
 - [x] Tests de los criterios de §17.1
 - [x] AGENTS.md, README e instalar.md
@@ -1124,6 +1290,8 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 
 ### 10.1 npm test corre en Windows · Hecho
 
+**Terminada:** 2026-10-06
+
 Primera corrida en la VM (2026-10-06): 280 tests, 188 pasan, 54 fallan, 37 saltados. 41 fallas eran de Playwright sin navegador y 29 saltos, de que Node no lanza `godot.cmd` (resuelto en la VM con `godot.exe`).
 
 - [x] El script `test` de package.json sin sintaxis de sh (un `node` que arma las variables)
@@ -1138,6 +1306,8 @@ Primera corrida en la VM (2026-10-06): 280 tests, 188 pasan, 54 fallan, 37 salta
 
 ### 10.2 Rutas relativas al proyecto siempre con / · Hecho
 
+**Terminada:** 2026-10-06
+
 Las rutas dentro del proyecto son identificadores, como en git: siempre con `/`. Las absolutas, con el separador del sistema.
 
 - [x] Documentos: path y alias con / (docs.js, config docs)
@@ -1149,6 +1319,8 @@ Las rutas dentro del proyecto son identificadores, como en git: siempre con `/`.
 **Referencias:** `docs/spec.md#windows`
 
 ### 10.3 Carpetas de config, datos y registro en Windows · Hecho
+
+**Terminada:** 2026-10-06
 
 D23, D28 y el registro de hubs usaban solo XDG.
 
@@ -1162,6 +1334,8 @@ D23, D28 y el registro de hubs usaban solo XDG.
 
 ### 10.4 Cerrar hubs e Inicio sin señales · Hecho
 
+**Terminada:** 2026-10-06
+
 En Windows Node no tiene SIGTERM: `kill` termina el proceso en seco, sin cerrar el servidor ni darse de baja.
 
 - [x] Cierre pedido por API/stdin en el Inicio (stop, apagar al cerrar); el del dock, en 10.8
@@ -1174,6 +1348,8 @@ En Windows Node no tiene SIGTERM: `kill` termina el proceso en seco, sin cerrar 
 
 ### 10.5 Escritura atómica: reintentar el rename en Windows · Hecho
 
+**Terminada:** 2026-10-06
+
 En Windows, `rename` sobre un archivo que otro proceso tiene abierto sin compartir (antivirus, indexador, un editor) falla con EPERM/EBUSY/EACCES.
 
 - [x] Reintento con espera corta en writeAtomic
@@ -1185,6 +1361,8 @@ En Windows, `rename` sobre un archivo que otro proceso tiene abierto sin compart
 
 ### 10.6 Navegador y selector de carpetas en Windows · Hecho
 
+**Terminada:** 2026-10-06
+
 - [x] Abrir el navegador por plataforma (serve --open, home --open, bandeja)
 - [x] Selector de carpetas con PowerShell
 - [x] Selector falso de los tests que corra en Windows
@@ -1194,6 +1372,8 @@ En Windows, `rename` sobre un archivo que otro proceso tiene abierto sin compart
 **Referencias:** `docs/spec.md#windows`
 
 ### 10.7 Bandeja en Windows con NotifyIcon · Hecho
+
+**Terminada:** 2026-10-06
 
 D31.
 
@@ -1208,6 +1388,8 @@ D31.
 
 ### 10.8 Dock en Windows · Hecho
 
+**Terminada:** 2026-10-06
+
 - [x] Encontrar y lanzar el hub sin sh
 - [x] Vivo/cerrar con las APIs de Godot (cierre ordenado como en 10.4)
 - [x] registry_dir igual que el hub
@@ -1218,6 +1400,8 @@ D31.
 **Referencias:** `docs/spec.md#windows`
 
 ### 10.9 Instalar en Windows · Hecho
+
+**Terminada:** 2026-10-06
 
 - [x] Pasos de Windows en la guía de instalación
 - [x] build.mjs corre en Windows
@@ -1257,12 +1441,16 @@ Ver y encontrar tareas en un tablero grande: vista de lista y filtros en la UI w
 
 ### 11.1 Etiquetas, prioridad y responsable en el schema · Hecho
 
+**Terminada:** 2026-10-08
+
 - [x] tags: lista de textos cortos; priority: high|medium|low; assignee: texto libre (persona o agente)
 - [x] schema/task.schema.json y la copia de compass/schema (scompass update)
 - [x] Validación en el store y la API, con tests
 - [x] Decisión nueva en docs/decisiones.md y el modelo en la spec
 
 ### 11.2 CLI: editar los campos nuevos y filtrar scompass list · Hecho
+
+**Terminada:** 2026-10-08
 
 - [x] add y set con --tags a,b --priority high --assignee nombre ("" quita)
 - [x] show y list muestran etiquetas, prioridad y responsable
@@ -1271,10 +1459,14 @@ Ver y encontrar tareas en un tablero grande: vista de lista y filtros en la UI w
 
 ### 11.3 Export a markdown con los campos nuevos · Hecho
 
+**Terminada:** 2026-10-08
+
 - [x] docs/tareas.md muestra etiquetas, prioridad y responsable de cada tarea
 - [x] Test del export
 
 ### 11.4 Web: barra de filtros del tablero · Hecho
+
+**Terminada:** 2026-10-08
 
 - [x] Texto (título y código, sin tildes ni mayúsculas), estado, fecha límite, bloqueadas o no, con pasos pendientes, con referencias
 - [x] Etiquetas, prioridad y responsable, con los valores que existen en el tablero
@@ -1283,6 +1475,8 @@ Ver y encontrar tareas en un tablero grande: vista de lista y filtros en la UI w
 
 ### 11.5 Web: vista de lista · Hecho
 
+**Terminada:** 2026-10-08
+
 - [x] Pestaña Tablero | Lista dentro de la vista del tablero; la elección se recuerda
 - [x] Columnas: código, título, hito, estado, pasos x/y, fecha límite, bloqueo, prioridad, responsable, etiquetas
 - [x] Ordenable por columna (orden natural del código por defecto); clic en la fila abre el mismo detalle
@@ -1290,10 +1484,14 @@ Ver y encontrar tareas en un tablero grande: vista de lista y filtros en la UI w
 
 ### 11.6 Web: editar etiquetas, prioridad y responsable en el detalle · Hecho
 
+**Terminada:** 2026-10-08
+
 - [x] Prioridad y responsable en el detalle; etiquetas con sugerencias de las que ya existen
 - [x] Marcas en la tarjeta del tablero (prioridad, etiquetas)
 
 ### 11.7 Tests de M11, spec y guía · Hecho
+
+**Terminada:** 2026-10-08
 
 - [x] Tests de UI de la lista y los filtros
 - [x] AGENTS.md (plantilla, copia del addon y compass/), README y spec al día
@@ -1312,6 +1510,8 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 ### 12.1 Refs a un documento entero · Hecho
 
+**Terminada:** 2026-10-08
+
 Hoy refs exige doc y section. Se hace section opcional: una ref sin sección apunta al documento entero. En texto, `[[alias]]` sin #. Afecta resolveRef/checkRefs/suggestRefs, export md, ref add|rm y backlinks (docs-api).
 
 - [x] Schema: section opcional en refs (schema/, compass/schema/ y fixture de tests)
@@ -1323,6 +1523,8 @@ Hoy refs exige doc y section. Se hace section opcional: una ref sin sección apu
 **Prueba:** scompass ref add <tarea> gdd; refs check no lo marca roto; `[[gdd]]` en notas resuelve; borrar el archivo lo marca missing_doc.
 
 ### 12.8 Ordenar las tarjetas del tablero · Hecho
+
+**Terminada:** 2026-10-08
 
 Selector de orden en la barra del tablero: orden manual (el de hoy, order), código, actualizada, creada, fecha límite, prioridad y título, ascendente o descendente. Se ordena dentro de cada columna. Reusa COLUMNS/sortedForList de la vista de lista y el mismo S.sort, así tablero y lista comparten el orden; la lista suma las columnas Actualizada y Creada. Con un orden que no es el manual, arrastrar entre columnas sigue cambiando el estado pero no reordena (aviso en el tooltip). Se recuerda por proyecto como el filtro. Solo web: no toca datos.
 
@@ -1337,6 +1539,8 @@ Selector de orden en la barra del tablero: orden manual (el de hoy, order), cód
 **Notas:** Hecho: AGENTS.md no cambia (es solo web, sin CLI ni datos).
 
 ### 12.2 Agregar y quitar documentos sin editar config.json · Hecho
+
+**Terminada:** 2026-10-10
 
 scompass doc add <alias> <ruta|glob> y doc rm <alias>; API POST/DELETE /api/docs que escribe config.json (atómico). La plantilla juego declara docs/**/*.md además de gdd.md; el glob excluye el export_md (docs/tareas.md) para no listarse a sí mismo.
 
@@ -1353,6 +1557,8 @@ scompass doc add <alias> <ruta|glob> y doc rm <alias>; API POST/DELETE /api/docs
 
 ### 12.3 Estado de git de los documentos · Hecho
 
+**Terminada:** 2026-10-10
+
 Ampliar git.js: por documento, estado (sin cambios, modificado, nuevo sin seguir, borrado), último commit (hash corto, fecha, autor, asunto) y diff contra HEAD. Historial con git log --follow. Sin repo: los campos quedan vacíos, nada falla. Solo lectura: la app nunca commitea (spec §4.5).
 
 - [x] git.js: docStatus (porcelain por ruta) y lastCommit (git log -1)
@@ -1368,6 +1574,8 @@ Ampliar git.js: por documento, estado (sin cambios, modificado, nuevo sin seguir
 
 ### 12.4 Búsqueda de texto en los documentos · Hecho
 
+**Terminada:** 2026-10-10
+
 Buscar en todos los documentos declarados, sin índice externo: recorrer las líneas ya cargadas. Cada resultado dice documento, sección y un fragmento. Sin tildes ni mayúsculas, como los filtros de M11.
 
 - [x] docs.js: searchDocs(docs, q) → [{ alias, section, line, snippet }]
@@ -1380,6 +1588,8 @@ Buscar en todos los documentos declarados, sin índice externo: recorrer las lí
 **Notas:** Hecho: searchDocs devuelve { results, more } (corta en 200); una línea coincide si tiene todas las palabras; la sección es la más chica que la contiene (null antes del primer título); los comentarios <!-- id --> no cuentan; el fragmento recorta las líneas largas alrededor de la primera palabra. /api/docs/search es una ruta fija: gana sobre /api/docs/:alias (un documento con alias search no se puede pedir por ahí).
 
 ### 12.5 Biblioteca en la web · Hecho
+
+**Terminada:** 2026-10-10
 
 La vista Docs pasa de un selector a un explorador: árbol por carpetas a la izquierda, búsqueda arriba y, por documento, ficha con secciones, tareas que lo referencian (a nivel documento y por sección) y estado de git. Resaltar documentos o secciones sin tareas (diseño sin planificar). Agregar y quitar documentos desde la UI.
 
@@ -1395,6 +1605,8 @@ La vista Docs pasa de un selector a un explorador: árbol por carpetas a la izqu
 
 ### 12.6 Cambios y diff de documentos en la web · Hecho
 
+**Terminada:** 2026-10-10
+
 Marca en el árbol para documentos con cambios sin commitear. En la ficha: último commit, historial y el diff contra HEAD con líneas agregadas y quitadas. Marcar las secciones tocadas por el diff para ver qué tareas pueden quedar afectadas.
 
 - [x] Marca de modificado/nuevo en el árbol, en vivo por ws
@@ -1407,6 +1619,8 @@ Marca en el árbol para documentos con cambios sin commitear. En la ficha: últi
 **Notas:** Hecho: el árbol marca M (modificado), N (nuevo) o B (borrado) y se actualiza con docs_git, sin recargar. Con cambios, la web pide el diff aunque no se mire: el índice marca ± en las secciones tocadas (también las que las contienen) y la ficha lista las tareas que pueden quedar afectadas. Ver los cambios reemplaza el documento por el diff, con el título de la sección donde empieza cada bloque. Historial plegable en la ficha. Arreglado en el hub: después de un doc_changed manda docs_git siempre, aunque no vea un cambio; si se editaba y commiteaba antes de que mirara (400 ms), la web quedaba con la marca de modificado.
 
 ### 12.7 Tests de M12, spec y guía · Hecho
+
+**Terminada:** 2026-10-10
 
 Cerrar M12: tests, spec y guía al día.
 
@@ -1427,6 +1641,8 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 ### 13.1 Bugs: ligaduras en el código y `[[alias]]` en M12 · Hecho
 
+**Terminada:** 2026-10-10
+
 - [x] font-variant-ligatures: none en code y pre (web y Inicio)
 - [x] Backticks alrededor de `[[alias]]` en compass/milestones/m12.json
 - [x] Test de UI: code y pre sin ligaduras
@@ -1437,6 +1653,8 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 **Notas:** JetBrains Mono trae ligaduras: en la vista Documentos `<!-- id -->` se ve como flechas y `!=` como ≠. El "Hecho cuando" de M12 nombra `[[alias]]` sin backticks y desde la 12.1 se muestra como enlace roto.
 
 ### 13.2 Tablero: parte de arriba compacta · Hecho
+
+**Terminada:** 2026-10-10
 
 Hoy la primera tarjeta empieza a ~580 px en escritorio. Resumen del hito en una línea (título, barra, contador y "Hecho cuando ▸" que despliega la lista, recordado por proyecto). Hitos terminados agrupados en "Terminados (n) ▾". "Orden" a la derecha de la fila del buscador; los 9 filtros detrás de un botón "Filtros (n)" que abre un panel. Sacar el "tareas" del encabezado.
 
@@ -1452,6 +1670,8 @@ Hoy la primera tarjeta empieza a ~580 px en escritorio. Resumen del hito en una 
 
 ### 13.3 Detalle: propiedades en chips y pasos arriba · Hecho
 
+**Terminada:** 2026-10-10
+
 Hito, fecha, prioridad, responsable y etiquetas ocupan ~450 px antes de los pasos. Pasan a una fila de chips que se editan al hacer clic (vacíos en tono apagado). El título sin borde en reposo, con borde al enfocarlo.
 
 - [x] Fila de chips de propiedades con edición en el lugar
@@ -1464,6 +1684,8 @@ Hito, fecha, prioridad, responsable y etiquetas ocupan ~450 px antes de los paso
 **Notas:** Hecho: los chips son los mismos controles nativos (select, date, input con datalist) con aspecto de chip y field-sizing: content, así que un clic ya edita en el lugar y no hay estados de edición nuevos; cada uno lleva su nombre chico adelante (Hito, Vence, Prioridad, Responsable, Etiquetas). Vacíos: borde punteado y texto apagado; vencida en rojo, hoy en ámbar, prioridad alta en rojo. La hora aparece cuando hay fecha, y × quita la fecha. Orden: título, chips, estado, pasos, notas, referencias, vínculos y Cómo probarlo. Con 5 pasos, a 1440×900 los pasos empiezan a 339 px (antes 519). El título ya tenía borde transparente: se veía con borde porque abrir la tarea lo enfocaba; ahora el foco va al panel (tabindex -1), y de paso 1–4 cambian el estado apenas se abre.
 
 ### 13.4 Teléfono: menos filas antes de las tareas · Hecho
+
+**Terminada:** 2026-10-10
 
 A 390×844 la primera tarjeta aparece a ~1220 px. Hitos en una fila con scroll horizontal; columnas vacías de una línea; acciones de los pasos (✎ ×) de 36 px o más; la cabecera del detalle con solo el código del hito.
 
@@ -1479,6 +1701,8 @@ A 390×844 la primera tarjeta aparece a ~1220 px. Hitos en una fila con scroll h
 
 ### 13.5 Lista: fechas relativas y columnas vacías · Hecho
 
+**Terminada:** 2026-10-10
+
 Actualizada y Creada dicen todas "8 oct". Fecha relativa para lo reciente ("hace 3 h", "ayer") con la completa en el tooltip. Esconder las columnas sin ningún valor en lo que se está viendo (la de orden activo siempre visible).
 
 - [x] Fechas relativas en Actualizada y Creada
@@ -1491,6 +1715,8 @@ Actualizada y Creada dicen todas "8 oct". Fecha relativa para lo reciente ("hace
 
 ### 13.6 Spec y guía de M13 · Hecho
 
+**Terminada:** 2026-10-10
+
 - [x] Spec: sección de M13 con lo que cambió en la UI
 - [x] README de web/ al día
 
@@ -1498,7 +1724,7 @@ Actualizada y Creada dicen todas "8 oct". Fecha relativa para lo reciente ("hace
 
 ### 13.7 Bug: show muestra «doc#undefined» en referencias al documento entero · Hecho
 
-**Prioridad:** baja · **Etiquetas:** `bug`, `cli`
+**Terminada:** 2026-10-10 · **Prioridad:** baja · **Etiquetas:** `bug`, `cli`
 
 Visto en Project Epiphany (m11-20) el 2026-10-10.
 
@@ -1525,6 +1751,8 @@ Ver los archivos del repo y su estado de git desde la web, sin salir del tablero
 
 ### 14.1 API de archivos del repo y su estado de git · Hecho
 
+**Terminada:** 2026-10-10
+
 Todo de lectura, como el estado de git de los documentos (12.3): reusa git.js (docsStatus, docLog, docDiff).
 
 - [x] GET /api/files: archivos que git no ignora, su estado, la rama y los últimos commits
@@ -1538,6 +1766,8 @@ Todo de lectura, como el estado de git de los documentos (12.3): reusa git.js (d
 
 ### 14.2 Pestaña Archivos en la web · Hecho
 
+**Terminada:** 2026-10-10
+
 - [x] Pestaña Archivos al lado de Documentos (config.views acepta files)
 - [x] Árbol por carpetas con la marca de git, filtro por nombre y Solo con cambios
 - [x] Archivo: contenido, estado, Ver los cambios e historial
@@ -1550,6 +1780,8 @@ Todo de lectura, como el estado de git de los documentos (12.3): reusa git.js (d
 
 ### 14.3 Spec, decisión y guía de M14 · Hecho
 
+**Terminada:** 2026-10-10
+
 Spec §22 (Archivos del repo: qué archivos, la pestaña, cuándo se actualiza, solo local, rutas de /api/files) con §22.1; D34 (de lectura, solo lo que git no ignora, Host 127.0.0.1/localhost, sin vigilar el repo entero). §16.6 suma files a views y a la plantilla juego; §21 dice que Nueva tarea flota en el teléfono; §10.4 apunta a §22. README (M14 en el estado y una coma que faltaba), web/README y hub/README al día.
 
 - [x] Spec §22 y decisión
@@ -1558,6 +1790,8 @@ Spec §22 (Archivos del repo: qué archivos, la pestaña, cuándo se actualiza, 
 **Notas:** Hecho: M14 documentado; suite 338/1 (la bandeja §16.8, inestable con la suite completa, pasa 3/3 sola).
 
 ### 14.4 Dock al día: prioridad, responsable y etiquetas, botón de Archivos y el puerto con el Inicio · Hecho
+
+**Terminada:** 2026-10-10
 
 Visto con el Inicio abierto: el dock abría el tablero en 127.0.0.1:4711/p/<proyecto>. Causa: con el dock sin hub, el sondeo de cada 3 s encontraba el Inicio (puerto 4700, base /p/<proyecto>) y, antes de que abriera el WebSocket, reload() volvía client.port al de la config sin tocar la base; la carga, las escrituras y lo que abre en el navegador iban a ese puerto. Pasaba también tras home restart, o con un hub suelto en otro puerto que la config. reload() ya no toca el puerto: lo elige detect(), que vuelve a la config si no encuentra hub. web_url() arma lo que abre el navegador (tablero, documentos, archivos).
 
@@ -1581,6 +1815,8 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 
 ### 15.1 Tareas con archivos del repo: dato, CLI y chequeo · Hecho
 
+**Terminada:** 2026-10-10
+
 - [x] Campo files en el schema de la tarea (las tres copias)
   Rutas desde la raíz del proyecto (la carpeta de compass/), como las lista la pestaña Archivos; sin repetir.
 - [x] scompass file add|rm <tarea> <ruta>
@@ -1593,6 +1829,8 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 
 ### 15.2 Archivos de la tarea en la web · Hecho
 
+**Terminada:** 2026-10-10
+
 - [x] Sección Archivos en el detalle: cada uno lleva a la pestaña Archivos, se quita con ×, y se agregan con un buscador de los archivos del repo
 - [x] En la pestaña Archivos, la ficha muestra las tareas que citan el archivo
 - [x] Tests de UI
@@ -1600,6 +1838,8 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 **Notas:** Hecho: en el detalle, la sección Archivos (entre Referencias y Vínculos): cada archivo lleva a #files/<ruta> con su marca de git; uno que git ya no lista se marca '⚠ … ya no está en el repo'; × lo quita (sin archivos, el campo se borra). + Agregar abre un buscador por ruta (todas las palabras, sin los que ya tiene, hasta 8) sobre la lista del repo, que se lee al abrirlo. En la pestaña Archivos, la ficha suma 'Citado por · n tareas' y cada tarea lleva al tablero con el detalle abierto. Las tareas que citan un archivo se calculan en la web (ya tiene todas): la API no cambia.
 
 ### 15.3 Dock: abrir los archivos de la tarea en el editor · Hecho
+
+**Terminada:** 2026-10-10
 
 - [x] Los archivos de la tarea en el detalle del dock
 - [x] Clic: el script en el editor de scripts, la escena abierta, otro recurso en el inspector; lo que Godot no ve (markdown, compass/) en la pestaña Archivos
@@ -1609,6 +1849,8 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 
 ### 15.4 Dock: tareas del script y la escena abiertos · Hecho
 
+**Terminada:** 2026-10-10
+
 - [x] Con el script o la escena que se edita, el dock muestra las tareas que lo citan (de cualquier hito) y lleva a cada una
 - [x] Vincular el script o la escena abiertos a la tarea elegida
 - [x] Tests
@@ -1616,6 +1858,8 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 **Notas:** Hecho: el plugin avisa al dock qué script (editor_script_changed del ScriptEditor) y qué escena (scene_changed) se editan; un script incorporado a una escena (res://x.tscn::GDScript_…) no cuenta. Arriba de la lista, las tareas sin terminar que citan el script o la escena abiertos, de cualquier hito (archivo · tarea); un clic lleva a la tarea y cambia de hito si hace falta. En el detalle, con hub, '+ Vincular player.gd' agrega el script o la escena abiertos que la tarea no cita. Verificado en un editor real sin ventana (proyecto de prueba con el addon y un plugin que abre el script y la escena): la caja muestra la tarea con cada uno. Test editing en dock.test.js.
 
 ### 15.5 Spec, decisión y guía de M15 · Hecho
+
+**Terminada:** 2026-10-10
 
 - [x] Spec §23 con criterios y decisión D35
 - [x] README, web/README y la spec del dock (§11.1) al día
@@ -1636,7 +1880,7 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 
 ### 16.1 Tablero deslizable en el teléfono · Hecho
 
-**Etiquetas:** `ui`
+**Terminada:** 2026-10-10 · **Etiquetas:** `ui`
 
 Pedido del usuario al abrirlo en el teléfono (2026-10-10): apiladas, las columnas quedaban interminables.
 
@@ -1654,7 +1898,7 @@ Pedido del usuario al abrirlo en el teléfono (2026-10-10): apiladas, las column
 
 ### 16.2 Tareas de la sección, fijas abajo en Documentos · Hecho
 
-**Etiquetas:** `ui`
+**Terminada:** 2026-10-10 · **Etiquetas:** `ui`
 
 Pedido del usuario al usarlo en el teléfono (2026-10-10): en Documentos, las tareas de la sección quedaban al final, después de todo el documento.
 
@@ -1669,7 +1913,7 @@ Pedido del usuario al usarlo en el teléfono (2026-10-10): en Documentos, las ta
 
 ### 16.3 Campos de texto del detalle que crecen solos · Hecho
 
-**Etiquetas:** `ui`
+**Terminada:** 2026-10-10 · **Etiquetas:** `ui`
 
 Pedido del usuario (2026-10-10): la esquina para agrandar el campo de notas es muy chica en el teléfono.
 
@@ -1681,7 +1925,7 @@ Pedido del usuario (2026-10-10): la esquina para agrandar el campo de notas es m
 
 ### 16.4 Índice del documento en la barra de abajo · Hecho
 
-**Etiquetas:** `ui`
+**Terminada:** 2026-10-10 · **Etiquetas:** `ui`
 
 Pedido del usuario (2026-10-10): un desplegable con el índice en la barra de las referencias, para navegar más fácil.
 
@@ -1693,7 +1937,7 @@ Pedido del usuario (2026-10-10): un desplegable con el índice en la barra de la
 
 ### 16.5 Un clic afuera cierra el detalle de la tarea · Hecho
 
-**Etiquetas:** `ui`
+**Terminada:** 2026-10-10 · **Etiquetas:** `ui`
 
 Pedido del usuario (2026-10-10): al abrir una tarea, un clic afuera del panel debería cerrarlo.
 
@@ -1705,7 +1949,7 @@ Pedido del usuario (2026-10-10): al abrir una tarea, un clic afuera del panel de
 
 ### 16.6 Detalle de la tarea a pantalla completa en el teléfono · Hecho
 
-**Etiquetas:** `ui`
+**Terminada:** 2026-10-10 · **Etiquetas:** `ui`
 
 Pedido del usuario (2026-10-10): en el teléfono la tarea debería ocupar toda la pantalla, según el tamaño.
 
@@ -1717,7 +1961,7 @@ Pedido del usuario (2026-10-10): en el teléfono la tarea debería ocupar toda l
 
 ### 16.7 Ruta propia para la tarea abierta (atrás la cierra) · Hecho
 
-**Etiquetas:** `ui`
+**Terminada:** 2026-10-10 · **Etiquetas:** `ui`
 
 Pedido del usuario (2026-10-10): con una tarea abierta, atrás llevaba a Documentos (la página anterior) en vez de cerrar la tarea.
 
@@ -1738,7 +1982,7 @@ Que cada tarea diga qué hay que hacer y por qué en un campo propio, separado d
 
 ### 17.1 Campo description: esquema, CLI, export y referencias · Hecho
 
-**Etiquetas:** `cli`
+**Terminada:** 2026-10-11 · **Etiquetas:** `cli`
 
 Pedido del usuario (2026-10-11): las tareas no tenían dónde decir qué hay que hacer: el pedido iba en las notas, mezclado con lo hecho. Un campo opcional description con el qué y el porqué, y notes para lo que va saliendo al trabajarla (D37). Primero el backend: esquema, CLI, export, enlaces en línea y la guía para agentes.
 
@@ -1753,7 +1997,7 @@ Pedido del usuario (2026-10-11): las tareas no tenían dónde decir qué hay que
 
 ### 17.2 Descripción en el detalle de la web y del dock · Hecho
 
-**Etiquetas:** `ui`
+**Terminada:** 2026-10-11 · **Etiquetas:** `ui`
 
 Pedido del usuario (2026-10-11): mostrar y editar la descripción arriba en el detalle de la web, debajo del título y antes de los pasos, para que la tarea arranque por lo que hay que hacer. En el dock de Godot, mostrarla de solo lectura en el mismo lugar.
 
@@ -1768,6 +2012,8 @@ Pedido del usuario (2026-10-11): mostrar y editar la descripción arriba en el d
 
 ### 17.3 Migrar las notas: el pedido pasa a la descripción · Hecho
 
+**Terminada:** 2026-10-11
+
 Pedido del usuario (2026-10-11): las tareas existentes tienen el pedido al principio de las notas ("Pedido del usuario … Hecho: …"). Pasar esa parte a la descripción y dejar en las notas lo que se hizo; las que no siguen el patrón quedan como están.
 
 **Prueba:** scompass refs check resuelve todo y tools/validate.py da OK. En 16.3 la descripción es el pedido y las notas arrancan en «Hecho:»; 12.1 tiene todo en la descripción; 1.7 sigue sin descripción.
@@ -1775,3 +2021,52 @@ Pedido del usuario (2026-10-11): las tareas existentes tienen el pedido al princ
 **Notas:** Hecho: 39 tareas. 29 con texto antes de «Hecho:» (M10, M12–M16, 7.1): ese texto pasó a la descripción. 6 cortadas a mano en la primera oración (los «Pedido del usuario» sin «Hecho:», «Reportado por el usuario» de 6.11 y «Pedido al usar Epiphany» de 5.12). 4 eran solo un plan y pasaron enteras (12.1, 10.10, 7.2, 8.15). 4.2 («Depende del usuario.») y las de M1–M9, que son registro de lo hecho, quedaron sin descripción. Con la CLI, así que updated_at de esas tareas pasó a hoy. Project Epiphany no se tocó.
 
 **Referencias:** `docs/spec.md#descripcion`
+
+## M18 — Fechas, capturas e historial  (1/6)
+
+Saber cuándo se terminó cada tarea y si un hito se atrasa, y que la tarea muestre más que texto: capturas, su historial en git y plantillas para bugs.
+
+**Hecho cuando:**
+- Cada tarea hecha dice cuándo se terminó (done_at), y el Inicio cuenta las terminadas en los últimos 7 días.
+
+### 18.1 done_at: fecha en que la tarea pasó a Hecho · Hecho
+
+**Terminada:** 2026-10-11 · **Etiquetas:** `cli`
+
+Pedido del usuario (2026-10-11): updated_at cambia con cualquier edición (la migración de 17.3 lo pisó en 39 tareas), así que no se sabe cuándo se terminó algo. Un campo done_at que se pone al pasar a Hecho y se quita al salir de Hecho, desde la CLI, la API, la web y el dock. Base para «terminadas esta semana» en el Inicio y el ritmo por hito.
+
+**Prueba:** Pasar a Hecho (CLI, web, dock o API) pone done_at; editarla hecha no lo mueve; sacarla de Hecho lo quita. show dice «Hecho el …», el export «Terminada:», el pie del detalle «Terminada …», la lista tiene la columna y el orden Terminada, y el Inicio «n tareas terminadas en los últimos 7 días». Tests: store, cli, home, ui y m2-criteria.
+
+**Notas:** Hecho: done_at en write() del store (un solo lugar para todos los clientes): al pasar a done, la hora de la escritura o la que traiga el documento; hecha, se conserva aunque un put no lo traiga; fuera de done, se quita. Una hecha de antes del campo no lo recibe al editarla. 133 tareas de este repo completadas con un script desde git (el updated_at en el commit que la dejó hecha), escrito sin la CLI para no tocar updated_at. localDay en dates.js para mostrar el día local. summarize suma done_week. AGENTS.md: los tres sellos los pone la CLI. Spec §4.2 y §26.
+
+**Referencias:** `docs/spec.md#fechas-capturas-historial`
+
+### 18.2 Fecha objetivo del hito · Pendiente
+
+**Etiquetas:** `cli`
+
+Pedido del usuario (2026-10-11): los hitos tienen goal y done_when pero no fecha. Un due opcional en el hito, con la misma regla de vencido que las tareas; la web, el dock y el Inicio avisan cuando un hito con tareas pendientes pasó su fecha.
+
+### 18.3 Estimación S/M/L · Pendiente
+
+**Etiquetas:** `cli`
+
+Pedido del usuario (2026-10-11): un tamaño opcional por tarea (S, M o L) para ver cuánto entra en un hito: filtro en la lista y la suma por hito en el resumen.
+
+### 18.4 Capturas en la tarea · Pendiente
+
+**Etiquetas:** `ui`
+
+Pedido del usuario (2026-10-11): en un juego una imagen del bug o del efecto dice más que un párrafo. Rutas a imágenes del repo (como files) que el detalle muestra en miniatura y se abren grandes; sin servicio externo, versionadas con git.
+
+### 18.5 Historial de la tarea desde git · Pendiente
+
+**Etiquetas:** `ui`
+
+Pedido del usuario (2026-10-11): quién cambió qué y cuándo ya está en git. Un Historial en el detalle con los commits que tocaron el JSON de la tarea y qué campos cambió cada uno, reusando lo de git.js para los documentos.
+
+### 18.6 Plantilla de descripción según la etiqueta · Pendiente
+
+**Etiquetas:** `ui`
+
+Pedido del usuario (2026-10-11): un bug pide pasos para reproducirlo, qué se esperaba y qué pasó. Al etiquetar #bug una tarea sin descripción, la descripción arranca con esos encabezados; las plantillas por etiqueta van en config.json.

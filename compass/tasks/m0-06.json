@@ -15,6 +15,7 @@
   ],
   "code": "0.6",
   "created_at": "2026-09-29T20:00:00Z",
+  "done_at": "2026-09-29T20:00:00.000Z",
   "milestone": "m00",
   "notes": "Mientras no exista la app, el tablero vive en el artifact y `compass/` es su copia en git.",
   "order": 6,

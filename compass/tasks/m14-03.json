@@ -12,6 +12,7 @@
   "code": "14.3",
   "created_at": "2026-10-10T19:56:26.454Z",
   "description": "Spec §22 (Archivos del repo: qué archivos, la pestaña, cuándo se actualiza, solo local, rutas de /api/files) con §22.1; D34 (de lectura, solo lo que git no ignora, Host 127.0.0.1/localhost, sin vigilar el repo entero). §16.6 suma files a views y a la plantilla juego; §21 dice que Nueva tarea flota en el teléfono; §10.4 apunta a §22. README (M14 en el estado y una coma que faltaba), web/README y hub/README al día.",
+  "done_at": "2026-10-10T20:11:52.404Z",
   "milestone": "m14",
   "notes": "Hecho: M14 documentado; suite 338/1 (la bandeja §16.8, inestable con la suite completa, pasa 3/3 sola).",
   "order": 3,

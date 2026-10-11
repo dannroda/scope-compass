@@ -19,6 +19,7 @@
   ],
   "code": "8.11",
   "created_at": "2026-10-04T22:16:48.324Z",
+  "done_at": "2026-10-05T00:15:38.158Z",
   "milestone": "m08",
   "notes": "`startTray` acepta submenús, separadores e ítems dinámicos (la lista de proyectos se arma al abrir el menú). El Inicio se anota con `tray: true` recién con el ícono puesto. Agregar proyecto… abre el Inicio (la UI de importar es 8.10).",
   "order": 11,

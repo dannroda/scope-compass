@@ -331,7 +331,7 @@
     // Los valores elegidos siguen en la lista aunque ninguna tarea los tenga ya (se pueden destildar).
     const values = (all, chosen) => [...new Set([...all, ...chosen.filter((x) => x !== 'none')])].map((x) => [x, x]);
     // Orden de las tarjetas (y de la lista): mismo aspecto que los filtros de una opción, más el sentido al lado.
-    const sortKeys = ['', 'code', 'title', 'updated', 'created', 'due', 'priority'];
+    const sortKeys = ['', 'code', 'title', 'updated', 'created', 'done', 'due', 'priority'];
     if (S.sort && !sortKeys.includes(S.sort.key)) sortKeys.push(S.sort.key); // uno elegido en la lista (Estado, Pasos…)
     const sortDrop = h('details', { class: 'fdrop sort' + (S.sort ? ' on' : ''), 'data-key': 'sort', open: open.includes('sort') },
       h('summary', { id: 'f-sort', 'aria-label': 'Orden: ' + (S.sort ? sortLabel(S.sort.key) : 'Manual') }, 'Orden: ' + (S.sort ? sortLabel(S.sort.key) : 'Manual')),
@@ -380,7 +380,8 @@
     { key: 'assignee', label: 'Responsable', val: (t) => t.assignee || null, opt: true },
     { key: 'tags', label: 'Etiquetas', val: (t) => tagsOf(t).join(', ') || null, opt: true },
     { key: 'updated', label: 'Actualizada', val: (t) => t.updated_at || null, opt: true, newestFirst: true },
-    { key: 'created', label: 'Creada', val: (t) => t.created_at || null, opt: true, newestFirst: true }
+    { key: 'created', label: 'Creada', val: (t) => t.created_at || null, opt: true, newestFirst: true },
+    { key: 'done', label: 'Terminada', val: (t) => t.done_at || null, opt: true, newestFirst: true }
   ];
   // Fecha de edición o creación en la lista: relativa si es de la última semana ("hace un momento", "hace 3 h",
   // "ayer"); si no, corta ("8 oct", con el año si no es el actual). La completa, en el tooltip (13.5).
@@ -448,7 +449,8 @@
         assignee: h('td', { class: 'opt' }, t.assignee || ''),
         tags: h('td', { class: 'opt' }, tagsOf(t).map((x) => h('span', { class: 'tag' }, x))),
         updated: h('td', { class: 'opt when' }, stamp(t.updated_at)),
-        created: h('td', { class: 'opt when' }, stamp(t.created_at))
+        created: h('td', { class: 'opt when' }, stamp(t.created_at)),
+        done: h('td', { class: 'opt when' }, stamp(t.done_at))
       };
       return h('tr', { 'data-id': t.id, 'aria-current': S.openId === t.id ? 'true' : null, onclick: (e) => { if (!e.target.closest('button')) openTask(t.id); } },
         cols.map((c) => cells[c.key]));
@@ -795,7 +797,8 @@
         h('textarea', { id: 'd-test', 'data-orig': t.test || '', onchange: (e) => updateTask(t.id, { test: e.target.value }) }, t.test || ''),
         linksOf(t.test)),
       h('div', { class: 'footer-actions' },
-        h('span', null, t.updated_at ? 'Actualizada ' + new Date(t.updated_at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : ''),
+        h('span', null, [t.done_at && 'Terminada ' + new Date(t.done_at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }),
+          t.updated_at && 'Actualizada ' + new Date(t.updated_at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })].filter(Boolean).join(' · ')),
         S.confirmDelete
           ? h('span', { class: 'confirm' }, '¿Borrar la tarea?',
               h('button', { class: 'btn danger', type: 'button', onclick: () => { const id = t.id; closeTask(); const etag = t.etag; write(async () => { try { await api.remove(id, etag); } catch (e) { e.id = id; throw e; } applyTask(id, null); }, 'Tarea borrada'); } }, 'Sí, borrar'),

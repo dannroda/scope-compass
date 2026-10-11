@@ -15,6 +15,7 @@
   ],
   "code": "2.5",
   "created_at": "2026-09-29T20:28:48.529Z",
+  "done_at": "2026-09-29T21:22:46.167Z",
   "milestone": "m02",
   "notes": "`hub/src/store/http.js`: store sobre la API con la misma interfaz que json-files; la CLI elige uno u otro. Solo usa el hub si `/api/health` es del mismo proyecto. `--direct` fuerza el disco. Test: misma secuencia con y sin hub, salida idéntica. Cerrada por la CLI a través del hub.",
   "order": 5,

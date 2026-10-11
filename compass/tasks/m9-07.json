@@ -11,6 +11,7 @@
   ],
   "code": "9.7",
   "created_at": "2026-10-05T01:29:55.078Z",
+  "done_at": "2026-10-05T01:51:05.222Z",
   "milestone": "m09",
   "notes": "Tarjetas: \"Abrir tablero\" → /p/<clave>/, etiqueta \"abierto\" o \"hub suelto :puerto\"; ya no hay Prender. Hoy enlaza al tablero. Bandeja: un submenú por proyecto (Abrir tablero, Actualizar compass/, y Detener hub suelto si hay uno).",
   "order": 7,

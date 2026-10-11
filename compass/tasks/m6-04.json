@@ -15,6 +15,7 @@
   ],
   "code": "6.4",
   "created_at": "2026-09-30T01:23:40.114Z",
+  "done_at": "2026-09-30T01:53:15.287Z",
   "milestone": "m06",
   "notes": "Sección \"Referencias\" en el detalle: cada una plegable (la primera abierta), sección renderizada (sin repetir el título), \"Abrir en el documento\", quitar. Buscador por título o id para agregar. Rotas: aviso con \"Buscar la sección nueva\". Tarjetas: § n, en rojo si hay rotas.",
   "order": 4,

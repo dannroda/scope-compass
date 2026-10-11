@@ -19,6 +19,7 @@
   ],
   "code": "2.3",
   "created_at": "2026-09-29T20:28:48.309Z",
+  "done_at": "2026-09-29T21:11:02.378Z",
   "milestone": "m02",
   "notes": "`hub/src/watcher.js` + bus `app.events` en el servidor (`watch: true` en `serve`). Etag conocido por documento: sin duplicados por escrituras propias ni por reformateos. Tests con disco real, estables en 10 corridas seguidas.",
   "order": 3,

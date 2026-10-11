@@ -15,6 +15,7 @@
   ],
   "code": "3.7",
   "created_at": "2026-09-29T22:25:13.396Z",
+  "done_at": "2026-09-29T23:21:12.313Z",
   "milestone": "m03",
   "notes": "Cada campo del detalle guarda en `data-orig` el valor dibujado; lo cambiado y no guardado, el foco y la selección se restauran al redibujar. Reordenar: soltar sobre una tarjeta del mismo hito la deja antes (order intermedio) y toma el estado de esa columna. Atajos N, 1–4 y Esc, nunca mientras se escribe. Los tests de \"no perder lo escrito\" fallan con el app.js anterior.",
   "order": 7,

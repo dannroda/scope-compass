@@ -28,7 +28,8 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
   - `notes`: lo que va saliendo al trabajarla: decisiones, hallazgos, lo que el siguiente necesita saber. El pedido va en `description`, no acá;
   - `refs`: documentos del proyecto que la tarea cita, enteros (`{ doc }`) o una sección (`{ doc, section }`);
   - `files`: archivos del repo que la tarea toca (scripts, escenas, recursos), con la ruta desde la raíz del proyecto (`["player/player.gd"]`);
-  - `links`: vínculos con otras tareas (ver "Vínculos entre tareas").
+  - `links`: vínculos con otras tareas (ver "Vínculos entre tareas");
+  - `created_at`, `updated_at` y `done_at` (cuándo pasó a Hecho): los pone la CLI; no hace falta escribirlos.
 - En los textos, `` `así` `` se muestra como código.
 
 ## Leer

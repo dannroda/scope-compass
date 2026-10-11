@@ -1,0 +1,17 @@
+{
+  "checklist": [],
+  "code": "18.4",
+  "created_at": "2026-10-11T06:17:29.479Z",
+  "description": "Pedido del usuario (2026-10-11): en un juego una imagen del bug o del efecto dice más que un párrafo. Rutas a imágenes del repo (como files) que el detalle muestra en miniatura y se abren grandes; sin servicio externo, versionadas con git.",
+  "milestone": "m18",
+  "notes": "",
+  "order": 4,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "ui"
+  ],
+  "test": "",
+  "title": "Capturas en la tarea",
+  "updated_at": "2026-10-11T06:17:29.479Z"
+}

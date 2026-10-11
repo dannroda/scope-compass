@@ -3,6 +3,7 @@
   "code": "17.3",
   "created_at": "2026-10-11T03:29:51.637Z",
   "description": "Pedido del usuario (2026-10-11): las tareas existentes tienen el pedido al principio de las notas (\"Pedido del usuario … Hecho: …\"). Pasar esa parte a la descripción y dejar en las notas lo que se hizo; las que no siguen el patrón quedan como están.",
+  "done_at": "2026-10-11T03:51:24.731Z",
   "milestone": "m17",
   "notes": "Hecho: 39 tareas. 29 con texto antes de «Hecho:» (M10, M12–M16, 7.1): ese texto pasó a la descripción. 6 cortadas a mano en la primera oración (los «Pedido del usuario» sin «Hecho:», «Reportado por el usuario» de 6.11 y «Pedido al usar Epiphany» de 5.12). 4 eran solo un plan y pasaron enteras (12.1, 10.10, 7.2, 8.15). 4.2 («Depende del usuario.») y las de M1–M9, que son registro de lo hecho, quedaron sin descripción. Con la CLI, así que updated_at de esas tareas pasó a hoy. Project Epiphany no se tocó.",
   "order": 3,

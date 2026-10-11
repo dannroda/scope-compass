@@ -15,6 +15,7 @@
   ],
   "code": "2.7",
   "created_at": "2026-09-29T20:28:48.774Z",
+  "done_at": "2026-09-29T21:52:42.796Z",
   "milestone": "m02",
   "notes": "`hub/test/m2-criteria.test.js`: JSON inválido con hub (avisa y sigue respondiendo), CLI con hub incluido `export md`, edición con la app apagada vista al levantarla, conflicto sin sobrescribir por API/CLI/WebSocket, y escrituras concurrentes contra el hub real. Criterios de §14 con UI quedan para M3. Límite conocido: dos `add` simultáneos pueden repetir `order` (se leen antes de escribir); no pierde datos.",
   "order": 7,

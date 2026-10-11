@@ -3,6 +3,7 @@
   "code": "16.5",
   "created_at": "2026-10-10T23:51:43.399Z",
   "description": "Pedido del usuario (2026-10-10): al abrir una tarea, un clic afuera del panel debería cerrarlo.",
+  "done_at": "2026-10-10T23:51:43.919Z",
   "milestone": "m16",
   "notes": "Hecho: dos escuchas en document, sin fondo nuevo (con el panel abierto se sigue pudiendo arrastrar y abrir otras tarjetas). pointerdown anota la tarea abierta si empieza fuera de #detail; click cierra si sigue abierta la misma. Así un clic que abre otra tarea (tarjeta, fila de la lista) cambia de tarea, una selección que sale del panel no cierra, y un botón del detalle que se redibuja (queda fuera del documento al llegar el click) tampoco. Las otras vistas ya cierran la tarea al entrar, así que sus enlaces a tareas no chocan.",
   "order": 5,

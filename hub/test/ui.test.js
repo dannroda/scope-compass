@@ -272,6 +272,22 @@ test('descripción en el detalle, antes de los pasos: se guarda, la CLI la actua
   await page.context().close();
 });
 
+test('done_at (18.1): pasar a Hecho desde el detalle lo anota en el pie y en la columna Terminada de la lista', async () => {
+  const page = await open();
+  await page.click('.card[data-id="m1-07"]');
+  await page.click('.seg button:has-text("Pendiente")');
+  await page.waitForFunction(() => !/Terminada/.test(document.querySelector('#detail .footer-actions')?.textContent));
+  await page.click('.seg button:has-text("Hecho")');
+  await page.waitForFunction(() => /Terminada .* · Actualizada/.test(document.querySelector('#detail .footer-actions')?.textContent));
+  assert.ok((await task('m1-07')).done_at);
+  await page.locator('.detail .close').click();
+  await page.click('#mode-list');
+  assert.ok((await page.locator('#tasklist th').allTextContents()).includes('Terminada'));
+  await page.click('button[data-sort="done"]');
+  assert.equal(await page.locator('#tasklist tbody tr').first().getAttribute('data-id'), 'm1-07', 'la más reciente arriba');
+  await page.context().close();
+});
+
 test('un clic afuera del detalle lo cierra; otra tarjeta cambia de tarea; adentro o arrastrando una selección, no (16.5)', async () => {
   const page = await open();
   const openId = () => page.evaluate(() => (document.getElementById('detail').hidden ? null : document.querySelector('#detail #d-title')?.value));

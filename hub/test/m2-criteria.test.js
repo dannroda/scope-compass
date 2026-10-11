@@ -78,7 +78,8 @@ test('§14: con la app apagada, una edición a mano se ve al levantarla, sin pé
   await fetch(base + '/api/tasks/m1-07', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: '{"status":"done"}' });
   const after = JSON.parse(await readFile(taskFile('m1-07'), 'utf8'));
   assert.equal(await readFile(taskFile('m1-07'), 'utf8'), canonical(after));
-  assert.deepEqual({ ...after, updated_at: undefined, status: 'review' }, { ...hand, updated_at: undefined });
+  assert.ok(after.done_at, 'pasar a Hecho pone done_at (18.1)');
+  assert.deepEqual({ ...after, updated_at: undefined, done_at: undefined, status: 'review' }, { ...hand, updated_at: undefined, done_at: undefined });
 });
 
 test('§14: un archivo con conflicto no se sobrescribe por ninguna vía del hub', async () => {

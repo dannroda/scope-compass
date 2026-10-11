@@ -11,6 +11,7 @@
   ],
   "code": "3.4",
   "created_at": "2026-09-29T22:25:12.887Z",
+  "done_at": "2026-09-29T22:58:07.896Z",
   "milestone": "m03",
   "notes": "Cada escritura manda `If-Match`. Ante `409` la UI toma el documento actual y avisa. Escrituras de una tarea en fila, con el cambio calculado al enviarlo: tildar varios pasos seguidos no da 409 ni pisa. Test con una pestaña que no recibe eventos (`routeWebSocket`) para forzar el 409.",
   "order": 4,

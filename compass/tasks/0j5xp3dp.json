@@ -3,6 +3,7 @@
   "code": "6.10",
   "created_at": "2026-09-30T02:43:13.328Z",
   "description": "Pedido del usuario: los snippets en el dock se ven mejor en un CodeEdit.",
+  "done_at": "2026-09-30T02:43:13.799Z",
   "milestone": "m06",
   "notes": "`?format=blocks` (texto en BBCode, código crudo); el dock usa `GDScriptSyntaxHighlighter` del editor (verificado en el editor: resaltado y fuente `EditorFonts/source`); fuera del editor, un CodeHighlighter básico.",
   "order": 10,

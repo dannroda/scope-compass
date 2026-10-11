@@ -15,6 +15,7 @@
   ],
   "code": "6.5",
   "created_at": "2026-09-30T01:23:40.332Z",
+  "done_at": "2026-09-30T01:53:15.524Z",
   "milestone": "m06",
   "notes": "Pestañas Tablero | Documentos con el hash (`#docs/gdd/ventanas-ataque`). Índice con punto verde y contador de tareas por sección (gris = sin planificar), documento renderizado, \"Referenciada por\" que sigue a la sección visible, contador de refs rotas y el botón para copiar `[[alias#id]]`. Backlinks calculados en el navegador. Al entrar a Documentos se cierra el detalle de la tarea (lo tapaba).",
   "order": 5,

@@ -15,6 +15,7 @@
   ],
   "code": "15.2",
   "created_at": "2026-10-10T20:50:02.599Z",
+  "done_at": "2026-10-10T20:56:43.759Z",
   "milestone": "m15",
   "notes": "Hecho: en el detalle, la sección Archivos (entre Referencias y Vínculos): cada archivo lleva a #files/<ruta> con su marca de git; uno que git ya no lista se marca '⚠ … ya no está en el repo'; × lo quita (sin archivos, el campo se borra). + Agregar abre un buscador por ruta (todas las palabras, sin los que ya tiene, hasta 8) sobre la lista del repo, que se lee al abrirlo. En la pestaña Archivos, la ficha suma 'Citado por · n tareas' y cada tarea lleva al tablero con el detalle abierto. Las tareas que citan un archivo se calculan en la web (ya tiene todas): la API no cambia.",
   "order": 2,

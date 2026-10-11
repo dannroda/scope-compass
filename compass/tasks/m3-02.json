@@ -15,6 +15,7 @@
   ],
   "code": "3.2",
   "created_at": "2026-09-29T22:25:12.538Z",
+  "done_at": "2026-09-29T22:45:45.130Z",
   "milestone": "m03",
   "notes": "Cliente de `/api` en `app.js`; cada escritura aplica el documento que devuelve la API. Prueba de humo con Playwright sobre una copia: crear, mover, tildar, arrastrar y borrar cambian los JSON. Todavía sin etag (3.4) ni WebSocket (3.3).",
   "order": 2,

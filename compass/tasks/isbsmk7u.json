@@ -11,6 +11,7 @@
   ],
   "code": "8.14",
   "created_at": "2026-10-04T23:50:38.558Z",
+  "done_at": "2026-10-05T00:48:20.239Z",
   "milestone": "m08",
   "notes": "Un OptionButton al lado de \"Crear compass/\" (Juego, Personal, Vacío), visible solo sin compass/. Tests: plantilla juego por defecto (hito M0, listas y docs/gdd.md) y vacío sin datos.",
   "order": 14,

@@ -11,6 +11,7 @@
   ],
   "code": "5.6",
   "created_at": "2026-09-29T23:49:27.717Z",
+  "done_at": "2026-09-30T00:10:24.067Z",
   "milestone": "m05",
   "notes": "`hub/test/dock.test.js`: 12 casos con Godot sin ventana (sin hub, con hub en los dos sentidos, 409, pasos seguidos, nueva tarea, reconexión, iniciar y cerrar el hub). Estables en 3 corridas.",
   "order": 6,

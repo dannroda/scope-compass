@@ -15,6 +15,7 @@
   ],
   "code": "3.3",
   "created_at": "2026-09-29T22:25:12.717Z",
+  "done_at": "2026-09-29T22:58:07.694Z",
   "milestone": "m03",
   "notes": "WebSocket en `app.js`: carga completa en cada `hello` (también al reconectar) y se repite si llegan eventos durante la carga. Reconexión de 0,5 s a 10 s con aviso en la cabecera. Tests de navegador en `hub/test/ui.test.js`: dos pestañas en menos de 1 s, cambios de la CLI y a mano, hub caído y vuelta.",
   "order": 3,

@@ -24,6 +24,7 @@
   ],
   "code": "8.4",
   "created_at": "2026-10-04T22:16:38.191Z",
+  "done_at": "2026-10-05T00:30:46.020Z",
   "milestone": "m08",
   "notes": "Endpoints nuevos en `hub/src/api.js` (crear, tildar, pasar a tarea) para no duplicar reglas en la web. La vista re-arma todo en cada evento y restaura lo que se estaba escribiendo y el foco. Tests en `hub/test/ui-lists.test.js`.",
   "order": 4,

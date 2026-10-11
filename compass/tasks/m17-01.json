@@ -12,6 +12,7 @@
   "code": "17.1",
   "created_at": "2026-10-11T03:29:51.079Z",
   "description": "Pedido del usuario (2026-10-11): las tareas no tenían dónde decir qué hay que hacer: el pedido iba en las notas, mezclado con lo hecho. Un campo opcional description con el qué y el porqué, y notes para lo que va saliendo al trabajarla (D37). Primero el backend: esquema, CLI, export, enlaces en línea y la guía para agentes.",
+  "done_at": "2026-10-11T03:47:40.142Z",
   "milestone": "m17",
   "notes": "Hecho: description en el esquema (las tres copias), add/set/show en la CLI, el export (párrafo debajo de la línea de etiquetas, antes de los pasos), checkRefs, suggestRefs y las tareas de cada sección. add no la escribe vacía. La paridad con artifact_to_md.py se mide sin la descripción, como con etiquetas. AGENTS.md: la diferencia entre description y notes, y add con --description. Spec §4.2, §6, §10.2 y §25; D37.",
   "order": 1,

@@ -19,6 +19,7 @@
   ],
   "code": "10.8",
   "created_at": "2026-10-06T04:23:28.527Z",
+  "done_at": "2026-10-06T05:27:50.590Z",
   "milestone": "m10",
   "notes": "Hecho, solo la rama de Windows (Linux sigue con sh): scompass_command busca con `where` y del shim de `npm link` toma node_modules/scope-compass/bin/scompass.js; start_hub lanza node directo con `serve --log` (nueva opción: el hub agrega su salida al archivo, también un error que lo tire), con tubería (--exit-on-stdin-close) o con create_process en modo mantener; `pid_alive` usa tasklist (OS.is_process_running solo conoce los hijos y tras un reinicio el hub es nieto) y el último recurso es OS.kill; registry_dir en %TEMP% como Node; _same_path normaliza \\ y mayúsculas. Tests: el runner usa pid_alive; dock.test saca el \\r de las líneas de Godot en Windows (por eso \"Node no avisó\") y el log de modo mantener se mira por plataforma. dock.test 29/29 en la VM con Godot 4.8-dev7; suite completa en la VM sin fallas. Falta probar `where` con un `npm link` de verdad: 10.9.",
   "order": 8,

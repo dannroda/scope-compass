@@ -23,6 +23,7 @@
   ],
   "code": "5.2",
   "created_at": "2026-09-29T23:49:26.974Z",
+  "done_at": "2026-09-29T23:52:58.266Z",
   "milestone": "m05",
   "notes": "`compass_reader.gd` (lectura y validación mínima, mismos avisos que el hub), `board.gd` (orden de la CLI; hito por defecto: el primero sin terminar) y `dock_view.gd`. Sin hub relee cada 5 s. Tests de Godot sin ventana desde `npm test` (`hub/test/dock.test.js`). `web/fonts/.gdignore`: Godot importaba las fuentes.",
   "order": 2,

@@ -3,6 +3,7 @@
   "code": "16.7",
   "created_at": "2026-10-11T00:05:29.052Z",
   "description": "Pedido del usuario (2026-10-10): con una tarea abierta, atrás llevaba a Documentos (la página anterior) en vez de cerrar la tarea.",
+  "done_at": "2026-10-11T00:05:29.560Z",
   "milestone": "m16",
   "notes": "Hecho: openTask apila #task/<id> con pushState y guarda en history.state desde qué hash se abrió (taskFrom); con otra tarea abierta, replaceState. readHash lee la ruta (y sin ella no hay tarea abierta). closeTask: si se abrió desde el tablero, history.back(); si no (otra vista o enlace directo), reemplaza la ruta por la del tablero, así no quedan dos entradas iguales. goToTask ya no pone un hash vacío antes (eran dos entradas). Una ruta a una tarea que no existe se descarta al cargar y al cambiar el hash (dropMissingTask). El test del ancho del detalle ahora encuentra la tarea abierta al recargar.",
   "order": 7,

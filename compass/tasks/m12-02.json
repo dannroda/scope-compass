@@ -28,6 +28,7 @@
   "code": "12.2",
   "created_at": "2026-10-08T04:55:35.931Z",
   "description": "scompass doc add <alias> <ruta|glob> y doc rm <alias>; API POST/DELETE /api/docs que escribe config.json (atómico). La plantilla juego declara docs/**/*.md además de gdd.md; el glob excluye el export_md (docs/tareas.md) para no listarse a sí mismo.",
+  "done_at": "2026-10-10T19:00:40.359Z",
   "milestone": "m12",
   "notes": "Hecho: un patrón tampoco toma los archivos declarados aparte (el GDD no sale dos veces) ni carpetas ocultas o node_modules, y el alias de sus archivos es <alias>/<ruta desde la carpeta fija> (docs/arte/paleta), no solo el nombre: dos README en carpetas distintas chocaban (D33, a registrar en la 12.7). Sin etag en config.json: el cambio se aplica sobre la config leída en el momento y un alias o ruta repetidos dan conflicto. El hub rearma el watcher de documentos y avisa doc_changed con el alias. La ruta de la CLI es relativa a la carpeta actual, como --file.",
   "order": 2,

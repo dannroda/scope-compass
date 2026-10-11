@@ -19,6 +19,7 @@
   ],
   "code": "6.1",
   "created_at": "2026-09-30T01:23:39.496Z",
+  "done_at": "2026-09-30T01:25:35.685Z",
   "milestone": "m06",
   "notes": "`hub/src/docs.js`: índice de secciones (ignora bloques de código; ids explícitos o slug frágil; ids explícitos repetidos avisan), documentos por ruta o patrón, y refs resueltas por ruta (`gdd.md`) o alias (`gdd`). `scompass doc list` y `doc show alias#id [--raw|--json]`. Todas las refs de este repo resuelven contra `spec.md`.",
   "order": 1,

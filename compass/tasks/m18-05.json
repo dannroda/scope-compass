@@ -1,0 +1,17 @@
+{
+  "checklist": [],
+  "code": "18.5",
+  "created_at": "2026-10-11T06:17:29.733Z",
+  "description": "Pedido del usuario (2026-10-11): quién cambió qué y cuándo ya está en git. Un Historial en el detalle con los commits que tocaron el JSON de la tarea y qué campos cambió cada uno, reusando lo de git.js para los documentos.",
+  "milestone": "m18",
+  "notes": "",
+  "order": 5,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "ui"
+  ],
+  "test": "",
+  "title": "Historial de la tarea desde git",
+  "updated_at": "2026-10-11T06:17:29.733Z"
+}

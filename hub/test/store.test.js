@@ -170,3 +170,22 @@ test('randomId: 8 caracteres base36', () => {
   assert.equal(ids.size, 1000);
   for (const id of ids) assert.match(id, /^[0-9a-z]{8}$/);
 });
+
+test('done_at (18.1): se pone al pasar a Hecho, se conserva mientras sigue hecha y se quita al salir', async () => {
+  let t = 0;
+  const at = (n) => `2026-10-0${n}T12:00:00.000Z`;
+  const s = createJsonFilesStore(compass, { validators: V, now: () => at(++t) });
+  const id = 'm0-05';
+  // Una hecha de antes del campo (todas las del fixture): editarla no inventa la fecha.
+  assert.equal('done_at' in (await s.patch('tasks', id, { notes: 'x' })).doc, false);
+  assert.equal('done_at' in (await s.patch('tasks', id, { status: 'todo' })).doc, false);
+  assert.equal((await s.patch('tasks', id, { status: 'done' })).doc.done_at, at(3));
+  assert.equal((await s.patch('tasks', id, { title: 'Otra' })).doc.done_at, at(3), 'editar una hecha no la mueve');
+  const { done_at: _, ...without } = (await s.get('tasks', id)).doc;
+  assert.equal((await s.put('tasks', id, without)).doc.done_at, at(3), 'un put sin el campo no lo pierde');
+  assert.equal('done_at' in (await s.patch('tasks', id, { status: 'review' })).doc, false);
+  assert.equal((await s.patch('tasks', id, { status: 'done' })).doc.done_at, at(7), 'vuelve a Hecho: fecha nueva');
+  assert.equal((await s.create('tasks', { milestone: 'm00', title: 'Ya hecha', status: 'done' })).doc.done_at, at(8));
+  const old = await s.create('tasks', { milestone: 'm00', title: 'Importada', status: 'done', done_at: '2026-01-01T00:00:00.000Z' });
+  assert.equal(old.doc.done_at, '2026-01-01T00:00:00.000Z', 'la que trae el documento se respeta');
+});

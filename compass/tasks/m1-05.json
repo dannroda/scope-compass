@@ -19,6 +19,7 @@
   ],
   "code": "1.5",
   "created_at": "2026-09-29T20:00:00Z",
+  "done_at": "2026-09-30T01:45:00.000Z",
   "milestone": "m01",
   "notes": "`hub/src/export-md.js`. Test contra `tools/artifact_to_md.py` con los datos de los dos proyectos: salida idéntica. Con `board_url` en la config el encabezado cita el artifact como fuente de verdad; sin él, dice que la fuente es `compass/` (se quita al migrar).",
   "order": 5,

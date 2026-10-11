@@ -15,6 +15,7 @@
   ],
   "code": "5.8",
   "created_at": "2026-09-30T00:51:36.346Z",
+  "done_at": "2026-09-30T00:53:19.910Z",
   "milestone": "m05",
   "notes": "`scompass serve --exit-on-stdin-close` y el dock lo lanza con `OS.execute_with_pipe` (la salida sigue yendo a `.godot/scope_compass_hub.log`). Al cerrar el dock se corta la tubería; si en 3 s sigue vivo, SIGTERM. Test: Godot lanza el hub y Node lo mata con `kill -9`; con la versión anterior el hub quedaba vivo, ahora se va en menos de 3 s. También probado con el editor real cerrándose normalmente.",
   "order": 8,

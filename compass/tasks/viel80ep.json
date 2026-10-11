@@ -16,6 +16,7 @@
   "code": "5.12",
   "created_at": "2026-10-04T22:58:06.309Z",
   "description": "Pedido al usar Epiphany.",
+  "done_at": "2026-10-04T22:58:08.105Z",
   "milestone": "m05",
   "notes": "`startTray` ahora acepta `label` y `visible` como funciones y expone `refresh()` (emite LayoutUpdated). Los ids del menú son la posición + 1: Abrir 1, Actualizar 2, Reiniciar 3, Detener 4.",
   "order": 12,

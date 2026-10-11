@@ -2,6 +2,7 @@
   "checklist": [],
   "code": "8.17",
   "created_at": "2026-10-05T01:17:11.657Z",
+  "done_at": "2026-10-05T01:17:12.353Z",
   "milestone": "m08",
   "notes": "D28. `projectsDataDir`: `$SCOMPASS_DATA` o `$XDG_DATA_HOME/scope-compass`. El nombre es la carpeta, tal cual; si existe, 409. \"Elegir otra carpeta…\" usa `POST /api/pick-folder` (kdialog o zenity; `SCOMPASS_PICKER` en tests); sin selector, campo de texto.",
   "order": 17,

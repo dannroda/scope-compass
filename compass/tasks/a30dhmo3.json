@@ -19,6 +19,7 @@
   ],
   "code": "8.10",
   "created_at": "2026-10-04T22:16:46.816Z",
+  "done_at": "2026-10-05T00:23:37.720Z",
   "milestone": "m08",
   "notes": "`web/home.*`. Para crear proyectos hizo falta `/api/templates` y `/api/projects/init` (las plantillas pasaron a `hub/src/templates.js`). Un proyecto se marca Godot si tiene `project.godot`, y Personal si abre en Listas. Los cambios hechos sin hub (CLI directa, a mano) se ven al recargar o con el próximo evento: el Inicio no mira los archivos.",
   "order": 10,

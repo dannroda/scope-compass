@@ -82,6 +82,13 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
       doc = { ...doc, updated_at: now() };
       doc.created_at = current?.doc.created_at ?? doc.created_at ?? doc.updated_at;
     }
+    // done_at (18.1): al pasar a Hecho, ahora (o el que traiga el documento); fuera de Hecho, no está. Una tarea que
+    // ya estaba hecha conserva el suyo, y una hecha de antes del campo sigue sin él: no se inventa la fecha.
+    if (collection === 'tasks') {
+      if (doc.status !== 'done') delete doc.done_at;
+      else if (current?.doc.status !== 'done') doc.done_at ??= doc.updated_at;
+      else if (!doc.done_at && current.doc.done_at) doc.done_at = current.doc.done_at;
+    }
     const res = parseDoc(JSON.stringify(doc), COLLECTIONS[collection], validators);
     if (!res.ok) throw new StoreError('invalid_argument', res.message, { details: res.details });
     try {

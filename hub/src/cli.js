@@ -27,7 +27,7 @@ import { repoFile } from './files-api.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
-import { dueState, EVERY, isValidDue, showDue } from './dates.js';
+import { dueState, EVERY, isValidDue, localDay, showDue } from './dates.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
 import { DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, splitList } from './filters.js';
 
@@ -498,7 +498,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (o.json) return done({ id: t.id, etag: t.etag, ...t.doc });
       const d = t.doc;
       print(`${d.code ? d.code + ' ' : ''}${d.title}  [${t.id}]`);
-      print(`Estado: ${STATUS[d.status]} · Hito: ${d.milestone}${d.due ? ' · ' + dueNote(d.due, d.status === 'done').replace(/^v/, 'V') : ''}${d.updated_at ? ' · Actualizada: ' + d.updated_at : ''}`);
+      print(`Estado: ${STATUS[d.status]}${d.done_at ? ' el ' + localDay(d.done_at) : ''} · Hito: ${d.milestone}${d.due ? ' · ' + dueNote(d.due, d.status === 'done').replace(/^v/, 'V') : ''}${d.updated_at ? ' · Actualizada: ' + d.updated_at : ''}`);
       if (extras(d).length) print(extras(d).join(' · ').replace(/^p/, 'P'));
       if (d.description) print(d.description);
       (d.checklist ?? []).forEach((c, i) => {

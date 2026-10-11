@@ -15,6 +15,7 @@
   ],
   "code": "3.8",
   "created_at": "2026-09-29T22:25:13.569Z",
+  "done_at": "2026-09-29T23:32:22.968Z",
   "milestone": "m03",
   "notes": "`hub/test/ui.test.js` (Playwright en `node:test`, D18): 15 tests. Paridad con el HTML del artifact en claro/oscuro y 1400/900/390 px (detecta un cambio de un dígito en un token). Cliente WebSocket mínimo mientras la UI arrastra. Sin la app: los JSON validan con `compass/schema/` y el markdown tiene lo hecho. Encontró el cuelgue al cerrar el hub con la UI abierta (arreglado en 3.5/3.6).",
   "order": 8,

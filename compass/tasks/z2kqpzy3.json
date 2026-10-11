@@ -15,6 +15,7 @@
   ],
   "code": "8.9",
   "created_at": "2026-10-04T22:16:45.532Z",
+  "done_at": "2026-10-05T00:10:43.004Z",
   "milestone": "m08",
   "notes": "Los hijos van sin `--tray`: la bandeja agrupada del Inicio (8.11) los va a mostrar. El dock no cambió: el registro detecta que su hub está atado (`--exit-on-stdin-close`) y que su padre no es el Inicio.",
   "order": 9,

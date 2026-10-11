@@ -15,6 +15,7 @@
   ],
   "code": "9.6",
   "created_at": "2026-10-05T01:29:53.856Z",
+  "done_at": "2026-10-05T01:51:04.970Z",
   "milestone": "m09",
   "notes": "app.js: BASE = la carpeta de la página (\"/\" o \"/p/<clave>/\"); IN_HOME muestra la barra con \"← Inicio\" y el selector (lista de /api/projects del Inicio). View Transitions en app.css y home.css. Chromium headless avisa \"Transition was aborted… opt-in disabled\" al cambiar de proyecto con el selector: la navegación anda; revisar en un navegador real.",
   "order": 6,
