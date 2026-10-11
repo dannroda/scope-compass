@@ -4,7 +4,8 @@
     "Cada tarea hecha dice cuándo se terminó (done_at), y el Inicio cuenta las terminadas en los últimos 7 días.",
     "Un hito puede tener fecha objetivo; pasada con tareas sin terminar, la CLI, la web, el dock y el Inicio lo marcan atrasado.",
     "Una tarea se puede estimar (S, M o L); la lista la filtra y ordena, y el resumen del hito dice cuánto falta por tamaño.",
-    "Una tarea tiene capturas: en la web se pegan, se sueltan o se suben (en el teléfono, con la cámara), se ven en miniatura y en un visor; la CLI y el dock también las manejan."
+    "Una tarea tiene capturas: en la web se pegan, se sueltan o se suben (en el teléfono, con la cámara), se ven en miniatura y en un visor; la CLI y el dock también las manejan.",
+    "El detalle de la tarea y scompass history muestran qué cambió en cada commit, sacado de git."
   ],
   "goal": "Saber cuándo se terminó cada tarea y si un hito se atrasa, y que la tarea muestre más que texto: capturas, su historial en git y plantillas para bugs.",
   "order": 18,

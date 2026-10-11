@@ -5,6 +5,7 @@ import { StoreError } from './store/json-files.js';
 import { flat, listLists, listMilestones, listTasks, STATUSES } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
 import { dropImage, MAX_IMAGE, saveImage } from './images.js';
+import { taskHistory } from './history.js';
 
 const quote = (etag) => `"${etag}"`;
 const unquote = (v) => v.trim().replace(/^W\//, '').replace(/^"(.*)"$/, '$1');
@@ -69,6 +70,12 @@ export function registerApi(app, { store, projectDir, publish }) {
   // Merge de primer nivel: los arrays se reemplazan enteros y null borra el campo.
   app.patch('/api/tasks/:id', async (req, reply) =>
     send(reply, wrote('tasks', await store.patch('tasks', req.params.id, body(req), preconditions(req)))));
+
+  // Historial desde git (18.5): los commits que tocaron la tarea y qué cambió en cada uno.
+  app.get('/api/tasks/:id/history', async (req) => {
+    await store.get('tasks', req.params.id);
+    return taskHistory(projectDir, req.params.id);
+  });
 
   // Capturas (18.4, D38): { data: base64 } se guarda en compass/images/ y se suma a images de la tarea. If-Match opcional.
   app.post('/api/tasks/:id/images', { bodyLimit: Math.ceil(MAX_IMAGE * 4 / 3) + 4096 }, async (req, reply) => {

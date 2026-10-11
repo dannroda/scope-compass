@@ -2022,7 +2022,7 @@ Pedido del usuario (2026-10-11): las tareas existentes tienen el pedido al princ
 
 **Referencias:** `docs/spec.md#descripcion`
 
-## M18 — Fechas, capturas e historial  (4/6)
+## M18 — Fechas, capturas e historial  (5/6)
 
 Saber cuándo se terminó cada tarea y si un hito se atrasa, y que la tarea muestre más que texto: capturas, su historial en git y plantillas para bugs.
 
@@ -2031,6 +2031,7 @@ Saber cuándo se terminó cada tarea y si un hito se atrasa, y que la tarea mues
 - Un hito puede tener fecha objetivo; pasada con tareas sin terminar, la CLI, la web, el dock y el Inicio lo marcan atrasado.
 - Una tarea se puede estimar (S, M o L); la lista la filtra y ordena, y el resumen del hito dice cuánto falta por tamaño.
 - Una tarea tiene capturas: en la web se pegan, se sueltan o se suben (en el teléfono, con la cámara), se ven en miniatura y en un visor; la CLI y el dock también las manejan.
+- El detalle de la tarea y scompass history muestran qué cambió en cada commit, sacado de git.
 
 ### 18.1 done_at: fecha en que la tarea pasó a Hecho · Hecho
 
@@ -2080,11 +2081,17 @@ Pedido del usuario (2026-10-11): en un juego una imagen del bug o del efecto dic
 
 **Referencias:** `docs/spec.md#fechas-capturas-historial`
 
-### 18.5 Historial de la tarea desde git · Pendiente
+### 18.5 Historial de la tarea desde git · Hecho
 
-**Etiquetas:** `ui`
+**Terminada:** 2026-10-11 · **Etiquetas:** `ui`
 
 Pedido del usuario (2026-10-11): quién cambió qué y cuándo ya está en git. Un Historial en el detalle con los commits que tocaron el JSON de la tarea y qué campos cambió cada uno, reusando lo de git.js para los documentos.
+
+**Prueba:** Con un repo: scompass history m1-07 lista lo sin commitear arriba y cada commit con su fecha, autor y un renglón por campo («Estado: Hecho → En curso», «Tamaño: — → M»); la creación dice «Creada»; sin repo, avisa. En la web, Historial está plegado y al abrirlo lista lo mismo; cambiar el estado suma «Sin commitear». Tests: history y ui.
+
+**Notas:** Hecho: hub/src/history.js. Los JSON de cada commit y de su padre salen de un solo git cat-file --batch (unos 15 ms con 30 commits). taskChanges arma los renglones en castellano para la CLI y la web por igual: pasos por texto (agregados, quitados, tildados), listas por elemento y textos largos solo como agregados, quitados o editados. Se saltean order y los sellos de fecha, y los commits que solo tocaron eso. GET /api/tasks/:id/history y scompass history. En la web se pide al abrir el historial y otra vez cuando cambia el etag.
+
+**Referencias:** `docs/spec.md#fechas-capturas-historial`
 
 ### 18.6 Plantilla de descripción según la etiqueta · Pendiente
 

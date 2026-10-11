@@ -49,6 +49,7 @@ scompass list --blocked                      # o --unblocked; también --pending
 scompass list --json                         # { "tasks": [ { "id", "etag", "title", "status", "checklist", … } ] }
 scompass show m5-02                          # una tarea, con los pasos numerados desde 1
 scompass show m5-02 --json
+scompass history m5-02                       # qué cambió en la tarea en cada commit (desde git)
 ```
 
 ## Escribir

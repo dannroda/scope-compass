@@ -355,6 +355,24 @@ test('capturas (18.4): + Captura y pegar las suben, la miniatura abre el visor, 
   await page.context().close();
 });
 
+test('historial (18.5): plegado al final del detalle; al abrirlo lista los commits y lo sin commitear, y se pone al día', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const git = (...a) => execFileSync('git', ['-C', dir, '-c', 'user.name=Ana', '-c', 'user.email=a@a', ...a], { stdio: 'ignore' });
+  git('init', '-q');
+  git('add', '.');
+  git('commit', '-qm', 'Inicial');
+  const page = await open();
+  await page.click('.card[data-id="m1-07"]');
+  assert.equal(await page.locator('#detail .history').count(), 0, 'plegado');
+  await page.click('#d-history');
+  await page.waitForSelector('#detail .history > li');
+  assert.deepEqual(await page.locator('#detail .history > li ul').allTextContents(), ['Creada']);
+  await page.click('.seg button:has-text("Revisión")');
+  await page.waitForSelector('#detail .history > li.pending');
+  assert.match(await page.textContent('#detail .history > li.pending'), /Sin commitear.*Estado: Hecho → Revisión/);
+  await page.context().close();
+});
+
 test('un clic afuera del detalle lo cierra; otra tarjeta cambia de tarea; adentro o arrastrando una selección, no (16.5)', async () => {
   const page = await open();
   const openId = () => page.evaluate(() => (document.getElementById('detail').hidden ? null : document.querySelector('#detail #d-title')?.value));

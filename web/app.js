@@ -69,6 +69,7 @@
     create: (doc) => call('POST', '/api/tasks', doc),
     update: (id, patch, etag) => call('PATCH', '/api/tasks/' + encodeURIComponent(id), patch, etag),
     remove: (id, etag) => call('DELETE', '/api/tasks/' + encodeURIComponent(id), undefined, etag),
+    history: (id) => call('GET', '/api/tasks/' + encodeURIComponent(id) + '/history'),
     imageAdd: (id, data, etag) => call('POST', '/api/tasks/' + encodeURIComponent(id) + '/images', { data }, etag),
     imageRemove: (id, path, etag) => call('DELETE', '/api/tasks/' + encodeURIComponent(id) + '/images?path=' + encodeURIComponent(path), undefined, etag),
     docs: () => call('GET', '/api/docs'),
@@ -562,6 +563,31 @@
     }
   }
 
+  // Historial desde git (18.5), plegado: se pide al abrirlo y se vuelve a pedir cuando la tarea cambia (otro etag).
+  const historyCache = new Map(); // id → { etag, data } | { etag, loading } | { etag, error }
+  function renderHistory(t) {
+    const open = S.historyOpen === t.id;
+    const c = historyCache.get(t.id);
+    if (open && (!c || c.etag !== t.etag)) {
+      historyCache.set(t.id, { etag: t.etag, loading: true });
+      api.history(t.id).then((data) => historyCache.set(t.id, { etag: t.etag, data }), (e) => historyCache.set(t.id, { etag: t.etag, error: e.message || e.code }))
+        .finally(() => { if (S.openId === t.id) renderDetail(); });
+    }
+    const cur = historyCache.get(t.id);
+    const when = (iso) => new Date(iso).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+    const body = !open ? null : !cur || cur.loading ? h('p', { class: 'muted small' }, 'Cargando…')
+      : cur.error ? h('p', { class: 'muted small' }, 'No se pudo leer el historial (' + cur.error + ').')
+        : !cur.data.repo ? h('p', { class: 'muted small' }, 'Sin historial: el proyecto no está en un repo de git.')
+          : !cur.data.entries.length ? h('p', { class: 'muted small' }, 'Todavía no hay commits de esta tarea.')
+            : h('ol', { class: 'history' }, cur.data.entries.map((e) => h('li', { class: e.hash ? null : 'pending' },
+              h('div', { class: 'h-head' }, h('b', null, e.hash ? when(e.date) : 'Sin commitear'), e.hash ? h('code', { title: e.subject }, e.hash) : null, e.author ? h('span', { class: 'muted' }, e.author) : null),
+              h('ul', null, (e.created ? ['Creada'] : e.deleted ? ['Borrada'] : e.changes).map((x) => h('li', null, x))))));
+    return h('div', { class: 'refs history-box' },
+      h('div', { class: 'refs-head' }, h('span', { class: 'label' }, 'Historial'),
+        h('button', { class: 'btn ghost small', type: 'button', id: 'd-history', 'aria-expanded': open ? 'true' : 'false',
+          onclick: () => { S.historyOpen = open ? null : t.id; renderDetail(); } }, open ? 'Ocultar' : 'Ver')), body);
+  }
+
   // Capturas (18.4): miniaturas debajo de la descripción; un clic las abre grandes. Se agregan con + Captura (en el
   // teléfono abre la cámara o la galería), pegando una imagen con el detalle abierto o soltándola sobre el detalle.
   const imageUrl = (path) => BASE + 'api/files/raw?path=' + encodeURIComponent(path);
@@ -889,6 +915,7 @@
         h('label', { class: 'label', for: 'd-test' }, 'Cómo probarlo'),
         h('textarea', { id: 'd-test', 'data-orig': t.test || '', onchange: (e) => updateTask(t.id, { test: e.target.value }) }, t.test || ''),
         linksOf(t.test)),
+      renderHistory(t),
       h('div', { class: 'footer-actions' },
         h('span', null, [t.done_at && 'Terminada ' + new Date(t.done_at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }),
           t.updated_at && 'Actualizada ' + new Date(t.updated_at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })].filter(Boolean).join(' · ')),

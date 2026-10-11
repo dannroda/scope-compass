@@ -25,6 +25,7 @@ import { createHomeServer } from './home.js';
 import { boardStatus, docDiff, docLog, docsStatus, repoFiles } from './git.js';
 import { repoFile } from './files-api.js';
 import { dropImage, IMAGE_EXT, importImage, insideProject, isImagePath } from './images.js';
+import { taskHistory } from './history.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
@@ -66,6 +67,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
                                             --priority high,medium,low,none, --size s,m,l,none,
                                             --assignee nombre|none
   show <id>                                 una tarea, con los pasos numerados
+  history <id>                              qué cambió en la tarea en cada commit (y lo que hay sin commitear)
   add "<título>" --milestone m00 [--code 0.11] [--status todo] [--due 2026-10-10]
       [--tags arte,audio] [--priority high|medium|low] [--size s|m|l] [--assignee nombre] [--description "…"]
   move <id> <todo|doing|review|done>
@@ -817,6 +819,21 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       const w = await store.patch('tasks', taskId, { files: next.length ? next : null }, { ifMatch: o.etag ?? cur.etag });
       return written({ id: w.id, etag: w.etag, ...w.doc }, `${taskId}: ${sub === 'add' ? 'agregado' : 'quitado'} ${path}`);
+    },
+
+    // Historial de la tarea desde git (18.5).
+    async history() {
+      const id = need(rest[0], 'el id');
+      await store.get('tasks', id);
+      const h = await taskHistory(project, id);
+      if (o.json) return done(h);
+      if (!h.repo) { print('Sin historial: el proyecto no está en un repo de git.'); return 0; }
+      for (const e of h.entries) {
+        print(`${e.hash ?? 'sin commitear'}  ${e.date ? e.date.slice(0, 16).replace('T', ' ') : ''}${e.author ? '  ' + e.author : ''}${e.hash ? '  ' + e.subject.slice(0, 72) + (e.subject.length > 72 ? '…' : '') : ''}`);
+        for (const c of e.created ? ['Creada'] : e.deleted ? ['Borrada'] : e.changes) print(`    ${c}`);
+      }
+      if (!h.entries.length) print('La tarea todavía no tiene commits.');
+      return 0;
     },
 
     // Capturas (18.4): una imagen del repo se cita tal cual; una de fuera del proyecto se copia a compass/images/.

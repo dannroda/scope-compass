@@ -3,15 +3,21 @@
   "code": "18.5",
   "created_at": "2026-10-11T06:17:29.733Z",
   "description": "Pedido del usuario (2026-10-11): quién cambió qué y cuándo ya está en git. Un Historial en el detalle con los commits que tocaron el JSON de la tarea y qué campos cambió cada uno, reusando lo de git.js para los documentos.",
+  "done_at": "2026-10-11T06:36:50.091Z",
   "milestone": "m18",
-  "notes": "",
+  "notes": "Hecho: hub/src/history.js. Los JSON de cada commit y de su padre salen de un solo git cat-file --batch (unos 15 ms con 30 commits). taskChanges arma los renglones en castellano para la CLI y la web por igual: pasos por texto (agregados, quitados, tildados), listas por elemento y textos largos solo como agregados, quitados o editados. Se saltean order y los sellos de fecha, y los commits que solo tocaron eso. GET /api/tasks/:id/history y scompass history. En la web se pide al abrir el historial y otra vez cuando cambia el etag.",
   "order": 5,
-  "refs": [],
-  "status": "todo",
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "fechas-capturas-historial"
+    }
+  ],
+  "status": "done",
   "tags": [
     "ui"
   ],
-  "test": "",
+  "test": "Con un repo: scompass history m1-07 lista lo sin commitear arriba y cada commit con su fecha, autor y un renglón por campo («Estado: Hecho → En curso», «Tamaño: — → M»); la creación dice «Creada»; sin repo, avisa. En la web, Historial está plegado y al abrirlo lista lo mismo; cambiar el estado suma «Sin commitear». Tests: history y ui.",
   "title": "Historial de la tarea desde git",
-  "updated_at": "2026-10-11T06:17:29.733Z"
+  "updated_at": "2026-10-11T06:36:50.091Z"
 }

@@ -1031,5 +1031,9 @@ Tests: `cli.test.js` y `docs.test.js` (17.1), `ui.test.js` y `dock.test.js` (`pr
   - **CLI:** `image add <tarea> <ruta>` (del repo, con `res://` o `./`, o de afuera: se copia) e `image rm`. `refs check` marca `missing_file` la que ya no está; el export, **Capturas:**.
   - **API:** `POST /api/tasks/:id/images` con `{ data }` (base64, con o sin el prefijo `data:`) y `DELETE /api/tasks/:id/images?path=…`; las dos aceptan `If-Match`. Se sirven con `/api/files/raw`, así que hace falta un repo de git, como en Archivos.
   - **Web:** miniaturas debajo de la descripción y *+ Captura* (en el teléfono abre la cámara o la galería). Con una tarea abierta, pegar una imagen o soltarla sobre el detalle también la agrega. Un clic abre el visor: ← y → recorren, Esc lo cierra sin cerrar la tarea, *Quitar* la saca.
-  - **Dock:** miniaturas en el detalle; un clic la abre con el visor del sistema. La que no está en el disco se ve como *⚠ nombre*.
+  - **Dock:** miniaturas en el detalle; un clic la abre con el visor del sistema. La que no está en el disco se ve como *⚠ nombre*.- **Historial (18.5):** lo que cambió en la tarea en cada commit, sacado de git; la app no guarda otro registro.
+  - Por commit: fecha, autor, hash y un renglón por campo que cambió (*Estado: Pendiente → En curso*, *Pasos: +«x», tildado «y»*, *Etiquetas: +arte −audio*, *Notas: editadas*). No cuentan `order` ni los sellos de fecha; un commit que solo cambió eso no aparece. Arriba, lo que hay sin commitear contra HEAD.
+  - Todas las versiones del JSON se leen con un solo `git cat-file --batch`; hasta 30 commits.
+  - CLI: `scompass history <id>` (`--json`). API: `GET /api/tasks/:id/history` → `{ repo, entries: [{ hash, date, author, subject, created?, deleted?, changes }] }`; sin repo, `{ repo: false, entries: [] }`.
+  - Web: *Historial* plegado al final del detalle; se pide al abrirlo y otra vez cuando la tarea cambia.
 
