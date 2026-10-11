@@ -1,6 +1,12 @@
 {
   "code": "M19",
-  "done_when": [],
+  "done_when": [
+    "Los cambios hechos fuera del hub (a mano, git, sed -i) siguen llegando a la web y al dock aunque el archivo se reemplace con un rename.",
+    "Nada de lo que dice config.json o la API lee ni escribe fuera del proyecto: export_md, documentos, capturas y enlaces simbólicos.",
+    "La CLI y el hub no fallan en los casos que encontró la auditoría: historial en una subcarpeta, set --file con show --json, registro y claves del Inicio, capturas sin git, export con textos de varias líneas.",
+    "El dock se reconecta al moverlo, no se traba con capturas, entra en 300 px, no muestra cambios que no se guardaron y no se rompe con JSON raros.",
+    "La web crea las tareas donde corresponde, confirma antes de quitar una captura, no usa prompt() y se lee bien (espacios, números, enlaces, teléfono)."
+  ],
   "goal": "Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.",
   "order": 19,
   "title": "Auditoría"

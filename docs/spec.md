@@ -1107,3 +1107,16 @@ Lo que encontró la auditoría completa después de M18 (seguridad, backend, web
   - En la lista del teléfono, la marca de vencida no dice *Vencida ·* (el rojo y el tooltip ya lo dicen) y no se parte en dos renglones; el estado muestra una etiqueta corta (*Pend.*, *Curso*, *Rev.*, *Hecho*) además del color.
   - El detalle de una tarea sin código empieza con el hito (*M1*), no con *· M1*; el vacío de Listas dice *Creá una con «+ Nueva lista»*; la búsqueda de Documentos resalta solo al empezar una palabra; la marca del encabezado dice *cambios del tablero sin commitear* (Archivos cuenta todo el repo).
   - En tablet táctil, la barra de abajo de Documentos no repite el índice lateral; el selector de la barra corta con …; los avisos empiezan con mayúscula; el alias inválido de *+ Documento* avisa en castellano; la ruta de un proyecto en el Inicio va en un renglón, cortada con …
+
+### 27.1 Criterios de aceptación de M19
+<!-- id: criterios-auditoria -->
+
+- [x] Los cambios hechos fuera del hub (a mano, git, sed -i) siguen llegando a la web y al dock aunque el archivo se reemplace con un rename.
+- [x] Nada de lo que dice config.json o la API lee ni escribe fuera del proyecto: export_md, documentos, capturas y enlaces simbólicos.
+- [x] La CLI y el hub no fallan en los casos que encontró la auditoría: historial en una subcarpeta, set --file con show --json, registro y claves del Inicio, capturas sin git, export con textos de varias líneas.
+- [x] El dock se reconecta al moverlo, no se traba con capturas, entra en 300 px, no muestra cambios que no se guardaron y no se rompe con JSON raros.
+- [x] La web crea las tareas donde corresponde, confirma antes de quitar una captura, no usa prompt() y se lee bien (espacios, números, enlaces, teléfono).
+
+Tests: `watcher.test.js` (19.1), `paths.test.js` (19.2), `history.test.js` (19.3), `cli.test.js` (19.4, 19.6), `api.test.js` (19.4, 19.8), `registry.test.js` y `home-serve.test.js` (19.5), `export-md.test.js` (19.7), `filters.test.js` y `home.test.js` (19.8), `dock.test.js` (19.9–19.11), `ui.test.js` y `ui-lists.test.js` (19.12, 19.13).
+
+Quedaron fuera, a propósito: una CSP para la UI (uso local de un solo usuario; pediría revisar los estilos en línea), índices para tableros de miles de tareas en el dock (con 145 tareas el render tarda ~2 ms) y probar en la VM de Windows el `scompass.cmd` configurado (19.11).
