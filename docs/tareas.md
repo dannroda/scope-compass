@@ -2022,7 +2022,7 @@ Pedido del usuario (2026-10-11): las tareas existentes tienen el pedido al princ
 
 **Referencias:** `docs/spec.md#descripcion`
 
-## M18 — Fechas, capturas e historial  (5/6)
+## M18 — Fechas, capturas e historial  (6/6)
 
 Saber cuándo se terminó cada tarea y si un hito se atrasa, y que la tarea muestre más que texto: capturas, su historial en git y plantillas para bugs.
 
@@ -2032,6 +2032,7 @@ Saber cuándo se terminó cada tarea y si un hito se atrasa, y que la tarea mues
 - Una tarea se puede estimar (S, M o L); la lista la filtra y ordena, y el resumen del hito dice cuánto falta por tamaño.
 - Una tarea tiene capturas: en la web se pegan, se sueltan o se suben (en el teléfono, con la cámara), se ven en miniatura y en un visor; la CLI y el dock también las manejan.
 - El detalle de la tarea y scompass history muestran qué cambió en cada commit, sacado de git.
+- Etiquetar una tarea sin descripción con una etiqueta que tiene plantilla (como bug) arranca la descripción con esa plantilla.
 
 ### 18.1 done_at: fecha en que la tarea pasó a Hecho · Hecho
 
@@ -2093,8 +2094,14 @@ Pedido del usuario (2026-10-11): quién cambió qué y cuándo ya está en git. 
 
 **Referencias:** `docs/spec.md#fechas-capturas-historial`
 
-### 18.6 Plantilla de descripción según la etiqueta · Pendiente
+### 18.6 Plantilla de descripción según la etiqueta · Hecho
 
-**Etiquetas:** `ui`
+**Terminada:** 2026-10-11 · **Etiquetas:** `ui`
 
 Pedido del usuario (2026-10-11): un bug pide pasos para reproducirlo, qué se esperaba y qué pasó. Al etiquetar #bug una tarea sin descripción, la descripción arranca con esos encabezados; las plantillas por etiqueta van en config.json.
+
+**Prueba:** Con description_templates.bug en config.json: add --tags bug (sin --description) y set --tags bug ponen la plantilla; con descripción, no la tocan. En la web, agregar la etiqueta bug en el detalle llena la descripción. La plantilla juego trae la de bug, y este repo también. Tests: cli y ui.
+
+**Notas:** Hecho: description_templates en config.schema ({ etiqueta: texto }). descriptionTemplate en filters.js (la primera etiqueta nueva con plantilla, solo si no hay descripción); la web repite la regla al agregar etiquetas en el detalle, como con los filtros. Se edita en config.json, sin comando: es una config de una vez por proyecto.
+
+**Referencias:** `docs/spec.md#fechas-capturas-historial`

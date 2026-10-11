@@ -286,6 +286,21 @@ test('capturas (18.4): image add copia una de afuera a compass/images/, cita una
   }
 });
 
+test('plantilla de descripción por etiqueta (18.6): add y set --tags la ponen solo si no hay descripción', async () => {
+  const cfg = join(dir, 'compass', 'config.json');
+  await writeFile(cfg, JSON.stringify({ ...JSON.parse(await readFile(cfg, 'utf8')), description_templates: { bug: 'Cómo reproducirlo:' } }));
+  const a = (await cli(['add', 'Se cuelga', '--milestone', 'm01', '--tags', 'ui,bug', '--json'])).json();
+  assert.equal(a.description, 'Cómo reproducirlo:');
+  const b = (await cli(['add', 'Con texto', '--milestone', 'm01', '--tags', 'bug', '--description', 'Ya dice qué', '--json'])).json();
+  assert.equal(b.description, 'Ya dice qué', 'una descripción dada manda');
+  assert.equal((await cli(['set', 'm1-07', '--tags', 'bug'])).code, 0);
+  assert.equal((await task('m1-07')).description, 'Cómo reproducirlo:');
+  assert.equal((await cli(['set', 'm1-07', '--description', 'Otra cosa'])).code, 0);
+  assert.equal((await cli(['set', 'm1-07', '--tags', 'arte'])).code, 0);
+  assert.equal((await cli(['set', 'm1-07', '--tags', 'bug'])).code, 0);
+  assert.equal((await task('m1-07')).description, 'Otra cosa', 'con descripción, no la pisa');
+});
+
 test('serve --exit-on-stdin-close: se cierra cuando se corta la entrada; sin la opción, no', async () => {
   const { spawn } = await import('node:child_process');
   const bin = join(REPO, 'hub', 'bin', 'scompass.js');

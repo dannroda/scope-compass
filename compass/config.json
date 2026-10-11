@@ -1,4 +1,7 @@
 {
+  "description_templates": {
+    "bug": "Cómo reproducirlo:\n1. \n\nQué se esperaba:\n\nQué pasó:"
+  },
   "docs": [
     {
       "alias": "spec",

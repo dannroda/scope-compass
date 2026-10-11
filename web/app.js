@@ -7,7 +7,7 @@
     { id: 'review', label: 'Revisión', color: 'var(--s-review)' },
     { id: 'done', label: 'Hecho', color: 'var(--s-done)' }
   ];
-  const S = { project: '', milestones: [], tasks: [], warnings: [], filter: pref('filter') || 'all', openId: null, confirmDelete: false, loaded: false, offline: false, connected: false,
+  const S = { descTemplates: {}, project: '', milestones: [], tasks: [], warnings: [], filter: pref('filter') || 'all', openId: null, confirmDelete: false, loaded: false, offline: false, connected: false,
     // Documentos (M6): índice de /api/docs, vista actual por el hash, referencias desplegadas, HTML en caché.
     docs: [], view: 'board', doc: '', sec: '', refsOpen: new Set(), refSearch: null,
     // Biblioteca (M12): entradas de config.json › docs, búsqueda de texto, carpetas plegadas, alta y baja.
@@ -687,7 +687,14 @@
     const addTags = (raw) => {
       const add = String(raw).split(',').map((x) => x.trim()).filter((x) => x && x.length <= 40);
       if (!add.length) return;
-      updateTask(t.id, (cur) => { const next = [...new Set([...tagsOf(cur), ...add])]; return next.length === tagsOf(cur).length ? null : { tags: next }; });
+      updateTask(t.id, (cur) => {
+        const next = [...new Set([...tagsOf(cur), ...add])];
+        if (next.length === tagsOf(cur).length) return null;
+        // Plantilla de descripción de la etiqueta (18.6), si la tarea no tiene descripción: la misma regla que filters.js.
+        const tpl = S.descTemplates;
+        const tag = cur.description?.trim() ? null : next.find((x) => !tagsOf(cur).includes(x) && typeof tpl[x] === 'string' && tpl[x].trim());
+        return tag ? { tags: next, description: tpl[tag] } : { tags: next };
+      });
     };
     const takeTag = (el) => { const v = el.value; el.value = ''; el.dataset.orig = ''; addTags(v); };
     return [
@@ -2073,6 +2080,7 @@
         S.views = Array.isArray(config.views) && config.views.length ? config.views : ['board', 'lists', 'docs', 'files'];
         S.docs = d.docs;
         S.docEntries = config.docs ?? [];
+        S.descTemplates = config.description_templates ?? {};
         sectionCache.clear();
         docCache.clear();
         S.project = config.project || '';

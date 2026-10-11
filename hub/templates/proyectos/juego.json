@@ -2,7 +2,8 @@
   "description": "Proyecto de juego: tablero por hitos, listas de ideas y assets, y los documentos de docs/, con el GDD",
   "config": {
     "views": ["board", "lists", "docs", "files"],
-    "docs": [{ "alias": "gdd", "path": "docs/gdd.md" }, { "alias": "docs", "path": "docs/**/*.md" }]
+    "docs": [{ "alias": "gdd", "path": "docs/gdd.md" }, { "alias": "docs", "path": "docs/**/*.md" }],
+    "description_templates": { "bug": "Cómo reproducirlo:\n1. \n\nQué se esperaba:\n\nQué pasó:" }
   },
   "milestones": {
     "m00": { "code": "M0", "order": 0, "title": "Prototipo", "goal": "Lo mínimo jugable para probar la idea.", "done_when": [] }

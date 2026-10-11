@@ -373,6 +373,18 @@ test('historial (18.5): plegado al final del detalle; al abrirlo lista los commi
   await page.context().close();
 });
 
+test('plantilla de descripción (18.6): etiquetar #bug una tarea sin descripción la arranca con la plantilla', async () => {
+  const cfg = join(compass, 'config.json');
+  await writeFile(cfg, canonical({ ...JSON.parse(await readFile(cfg, 'utf8')), description_templates: { bug: 'Cómo reproducirlo:\n1. ' } }));
+  const page = await open();
+  await page.click('.card[data-id="m1-07"]');
+  await page.fill('#d-tag', 'bug');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.getElementById('d-description')?.value.startsWith('Cómo reproducirlo:'));
+  assert.equal((await task('m1-07')).description, 'Cómo reproducirlo:\n1. ');
+  await page.context().close();
+});
+
 test('un clic afuera del detalle lo cierra; otra tarjeta cambia de tarea; adentro o arrastrando una selección, no (16.5)', async () => {
   const page = await open();
   const openId = () => page.evaluate(() => (document.getElementById('detail').hidden ? null : document.querySelector('#detail #d-title')?.value));

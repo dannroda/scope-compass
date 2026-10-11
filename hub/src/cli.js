@@ -31,7 +31,7 @@ import { listLists, listMilestones, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
 import { dueState, EVERY, isValidDue, localDay, milestoneDueState, showDue } from './dates.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
-import { DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, SIZES, splitList } from './filters.js';
+import { descriptionTemplate, DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, SIZES, splitList } from './filters.js';
 
 const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
 const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
@@ -914,6 +914,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const title = need(rest[0], 'el título');
       const milestone = need(o.milestone, '--milestone');
       await store.get('milestones', milestone);
+      // Con una etiqueta que tiene plantilla y sin --description, la descripción arranca con la plantilla (18.6).
+      const template = o.tags && !o.description?.trim() ? descriptionTemplate([], tagList(o.tags), '', (await store.loadAll()).config) : null;
       const r = await store.create('tasks', {
         milestone, title, code: o.code ?? '', status: o.status ?? 'todo', checklist: [], test: '', notes: '', refs: [],
         ...(o.due ? { due: due(o.due) } : {}),
@@ -921,7 +923,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         ...(o.priority ? { priority: priority(o.priority) } : {}),
         ...(o.size ? { size: size(o.size) } : {}),
         ...(o.assignee ? { assignee: o.assignee.trim() } : {}),
-        ...(o.description?.trim() ? { description: o.description } : {})
+        ...(o.description?.trim() ? { description: o.description } : template ? { description: template } : {})
       });
       return written({ id: r.id, etag: r.etag, ...r.doc }, `Creada ${r.id}: ${title}`);
     },
@@ -992,6 +994,11 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (fields.size !== undefined) fields.size = size(fields.size);
       if (fields.assignee !== undefined) fields.assignee = fields.assignee.trim() || null;
       if (fields.description !== undefined) fields.description = fields.description.trim() ? fields.description : null;
+      if (fields.tags && fields.description === undefined) {
+        const cur = await store.get('tasks', id);
+        const template = descriptionTemplate(cur.doc.tags, fields.tags, cur.doc.description, (await store.loadAll()).config);
+        if (template) fields.description = template;
+      }
       const r = o.file !== undefined
         ? await store.put('tasks', id, await readJsonFile(o.file), ifMatch)
         : await store.patch('tasks', id, fields, ifMatch);

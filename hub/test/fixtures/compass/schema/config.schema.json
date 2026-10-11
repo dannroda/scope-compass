@@ -72,6 +72,19 @@
           "files"
         ]
       }
+    },
+    "description_templates": {
+      "type": "object",
+      "description": "Plantillas de descripción por etiqueta: al ponerle esa etiqueta a una tarea sin descripción, la descripción arranca con este texto (p. ej. bug: pasos para reproducirlo, qué se esperaba y qué pasó).",
+      "propertyNames": {
+        "minLength": 1,
+        "maxLength": 40,
+        "pattern": "^[^,\\s]([^,]*[^,\\s])?$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
     }
   }
 }

@@ -56,5 +56,16 @@ export function filterTasks(tasks, f = {}, { all = tasks, now = new Date() } = {
   });
 }
 
+/**
+ * Plantilla de descripción por etiqueta (18.6): al sumarle a una tarea sin descripción una etiqueta con plantilla en
+ * config.description_templates, la descripción arranca con ese texto. La primera etiqueta nueva que tenga una, o null.
+ */
+export function descriptionTemplate(before = [], after = [], description, config) {
+  if (description?.trim()) return null;
+  const t = config?.description_templates ?? {};
+  const tag = (after ?? []).find((x) => !(before ?? []).includes(x) && typeof t[x] === 'string' && t[x].trim());
+  return tag ? t[tag] : null;
+}
+
 /** "a, b,,c" → ["a", "b", "c"]: listas separadas por comas en las opciones de la CLI. */
 export const splitList = (s) => String(s ?? '').split(',').map((x) => x.trim()).filter(Boolean);

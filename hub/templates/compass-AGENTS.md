@@ -24,7 +24,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
   - `priority`: prioridad opcional, `high`, `medium` o `low`;
   - `size`: estimación opcional, `s`, `m` o `l` (chica, mediana, grande);
   - `assignee`: responsable opcional, texto libre (una persona o un agente);
-  - `tags`: etiquetas opcionales, textos cortos sin comas (`["arte", "audio"]`);
+  - `tags`: etiquetas opcionales, textos cortos sin comas (`["arte", "audio"]`). Si `compass/config.json` › `description_templates` tiene una plantilla para la etiqueta (por ejemplo `bug`), etiquetar una tarea sin descripción la arranca con ese texto: completalo;
   - `test`: cómo se comprueba que la tarea está terminada;
   - `notes`: lo que va saliendo al trabajarla: decisiones, hallazgos, lo que el siguiente necesita saber. El pedido va en `description`, no acá;
   - `refs`: documentos del proyecto que la tarea cita, enteros (`{ doc }`) o una sección (`{ doc, section }`);
