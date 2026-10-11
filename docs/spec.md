@@ -1084,3 +1084,10 @@ Lo que encontró la auditoría completa después de M18 (seguridad, backend, web
   - Las miniaturas se decodifican una vez por archivo (se recuerdan por fecha y tamaño), y armar la lista ya no vuelve a armar el detalle (la selección de la fila emitía `item_selected`). Con dos capturas 4K, cada render tardaba ~0,9 s.
   - Un GIF (Godot no lo carga) o una imagen rota es un botón *▣ nombre* que igual la abre, sin errores en la consola.
   - Sin hub, el poll de 3 s relee `compass/` solo si cambió algún archivo (nombre, fecha y tamaño de los JSON y de los documentos); si no, solo recuenta lo sin commitear.
+- **Dock: errores y clics dobles (19.10):**
+  - Sin hub, una tarea con `links`, `checklist`, `refs`, `images`, `files` o `tags` de otra forma (un JSON editado a mano) va a los avisos, como en el hub, en vez de romper el render de toda la lista.
+  - Lo que no es JSON (otro programa en el puerto, un registro a medio escribir) se descarta sin imprimir un error en la consola cada 3 s.
+  - Un guardado que falla vuelve a mostrar el estado real (antes la casilla o el selector quedaban con lo que no se guardó); crear una tarea que falla deja el título y dice por qué.
+  - Un segundo *Iniciar hub* mientras arranca el primero no hace nada (el botón se deshabilita), y dos `scompass` seguidos (doble clic en *Actualizar*) esperan uno al otro.
+  - Si se borra el hito abierto, el dock pasa al que toca por defecto; ir a una tarea de otro hito recuerda ese hito.
+  - *Reiniciar hub* no se ofrece cuando el proyecto lo sirve el Inicio (ahí siempre fallaba).

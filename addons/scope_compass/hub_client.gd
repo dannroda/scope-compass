@@ -27,6 +27,13 @@ var last_error := ""
 var hub_version := ""
 
 
+## JSON de algo que no controla el dock (otro programa en el puerto, un registro a medio escribir): null si no es
+## JSON, sin el error que JSON.parse_string imprime en la consola del editor cada vez (19.10).
+static func parse_json(text: String):
+	var j := JSON.new()
+	return j.data if j.parse(text) == OK else null
+
+
 func base_url() -> String:
 	return "http://%s:%d%s" % [HOST, port, base]
 
@@ -62,7 +69,7 @@ func _probe() -> bool:
 	if r.code == 0:
 		last_error = "no responde"
 	elif not (r.json is Dictionary and r.json.get("name") == "scope-compass"):
-		last_error = "responde otro programa (HTTP %d)" % r.code
+		last_error = "responde otro programa, HTTP %d" % r.code
 	elif not _same_path(str(r.json.get("project", "")), project_root):
 		last_error = "es el hub de otro proyecto: %s" % r.json.get("project", "")
 	else:
@@ -114,7 +121,7 @@ func _registry() -> Array:
 	for f in DirAccess.get_files_at(dir):
 		if not f.ends_with(".json"):
 			continue
-		var h = JSON.parse_string(FileAccess.get_file_as_string(dir.path_join(f)))
+		var h = parse_json(FileAccess.get_file_as_string(dir.path_join(f)))
 		if h is Dictionary:
 			out.append(h)
 	return out
@@ -147,7 +154,7 @@ func _process(_delta: float) -> void:
 				online = true
 				went_online.emit()
 			while _ws.get_available_packet_count() > 0:
-				var msg = JSON.parse_string(_ws.get_packet().get_string_from_utf8())
+				var msg = parse_json(_ws.get_packet().get_string_from_utf8())
 				if msg is Dictionary and not (ignore_events and msg.get("type") != "hello"):
 					event_received.emit(msg)
 		WebSocketPeer.STATE_CLOSED:
@@ -195,7 +202,7 @@ func request_url(method: String, url: String, body = null, headers: Array = [], 
 	var res: Array = await http.request_completed
 	http.queue_free()
 	var text := (res[3] as PackedByteArray).get_string_from_utf8()
-	return { "code": res[1] if res[0] == HTTPRequest.RESULT_SUCCESS else 0, "json": JSON.parse_string(text) if text != "" else null }
+	return { "code": res[1] if res[0] == HTTPRequest.RESULT_SUCCESS else 0, "json": parse_json(text) if text != "" else null }
 
 
 ## Carga completa: { config, milestones, tasks, warnings } con la forma de compass_reader.read().

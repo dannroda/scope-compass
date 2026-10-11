@@ -38,6 +38,8 @@ var _uncommitted := -1
 var _loading := false
 var _reload_again := false
 var _queues := {}
+## Iniciar hub en curso (19.10): un segundo clic no lanza otro proceso que pise la tubería del primero.
+var _starting := false
 ## Miniaturas ya decodificadas (19.9): ruta absoluta → { "stamp": modificado y tamaño, "tex": ImageTexture o null si no
 ## se pudo cargar }. Sin esto, cada render leía y achicaba las capturas del disco.
 var _thumbs := {}
@@ -210,6 +212,9 @@ func _on_event(msg: Dictionary) -> void:
 			if board.apply(msg.collection, msg.id, null):
 				if msg.id == selected_task:
 					selected_task = ""
+				# Se borró el hito abierto: el que toca por defecto, como al abrir (19.10).
+				if msg.collection == "milestones" and msg.id == current_milestone:
+					current_milestone = board.default_milestone()
 				_render()
 		"doc_changed":
 			# El documento cambió: se olvida el BBCode de sus secciones y se recarga el índice.
@@ -254,7 +259,7 @@ func _send_update(id: String, patch) -> void:
 	if r.code == 200:
 		board.apply("tasks", id, r.json)
 		_render()
-	elif r.code == 409 and r.json is Dictionary and r.json.error.get("current") is Dictionary:
+	elif r.code == 409 and r.json is Dictionary and r.json.get("error") is Dictionary and r.json.error.get("current") is Dictionary:
 		# Alguien la cambió antes: se toma la versión actual y se avisa (spec §5.3).
 		var cur: Dictionary = r.json.error.current
 		var doc: Dictionary = cur.doc.duplicate()
@@ -264,8 +269,16 @@ func _send_update(id: String, patch) -> void:
 		_render()
 		show_notice("Otra pestaña o la CLI cambió esta tarea; se actualizó. Revisá y volvé a aplicar tu cambio.")
 	else:
-		var msg: String = r.json.error.message if r.json is Dictionary and r.json.has("error") else "sin respuesta del hub"
-		show_notice("No se pudo guardar: " + msg)
+		show_notice("No se pudo guardar: " + _error_of(r))
+		# La casilla o el selector quedaron con lo que no se guardó: se vuelve a mostrar lo que hay (19.10).
+		_render_detail()
+
+
+## El mensaje de error de una respuesta del hub, o por qué no hubo respuesta.
+static func _error_of(r: Dictionary) -> String:
+	if r.json is Dictionary and r.json.get("error") is Dictionary and r.json.error.get("message") is String:
+		return r.json.error.message
+	return "sin respuesta del hub" if r.code == 0 else "HTTP %d" % r.code
 
 
 func create_task(title: String) -> void:
@@ -277,9 +290,12 @@ func create_task(title: String) -> void:
 	if r.code == 201:
 		board.apply("tasks", r.json.id, r.json)
 		selected_task = r.json.id
+		# El título se borra recién ahora: si falla, queda para corregirlo o reintentar (19.10).
+		if new_title.text.strip_edges() == title:
+			new_title.clear()
 		_render()
 	else:
-		show_notice("No se pudo crear la tarea.")
+		show_notice("No se pudo crear la tarea: " + _error_of(r))
 
 
 ## La UI web del hub conectado (un hub suelto o el Inicio, con su base), con un #hash opcional.
@@ -339,6 +355,12 @@ func _scompass(args: Array) -> Array:
 		return [code, str(out[0]).strip_edges() if out.size() else ""]
 	if not is_inside_tree():
 		return run.call()
+	# Uno a la vez (19.10): dos seguidos (doble clic en Actualizar, o un clic durante el check del arranque)
+	# compartían _thread, y el primero devolvía -1 ("no encontré scompass") sin esperar a su hilo.
+	while _thread != null and is_inside_tree():
+		await get_tree().process_frame
+	if not is_inside_tree():
+		return [-1, ""]
 	var th := Thread.new()
 	_thread = th
 	th.start(run)
@@ -356,7 +378,7 @@ func check_compass() -> void:
 	outdated = []
 	if has_compass():
 		var r: Array = await _scompass(["update", "--check", "--json"])
-		var data = JSON.parse_string(r[1]) if r[0] == 1 else null
+		var data = HubClient.parse_json(r[1]) if r[0] == 1 else null
 		if data is Dictionary and data.get("outdated") is Array:
 			outdated = data.outdated
 	_render_update()
@@ -417,13 +439,24 @@ func scompass_command() -> Array:
 func start_hub() -> bool:
 	if online:
 		return true
+	if _starting:
+		return false
+	_starting = true
+	start_button.disabled = true
+	var ok := await _start_hub()
+	_starting = false
+	start_button.disabled = false
+	return ok
+
+
+func _start_hub() -> bool:
 	var home := client.home_port()
 	if home > 0:
 		var r := await client.request_url("POST", "http://%s:%d/api/projects/activate" % [client.HOST, home], { "path": project_root })
 		if r.code == 200 and await client.detect():
 			show_notice("Conectado al Inicio, que sirve este proyecto.")
 			return true
-		show_notice("El Inicio no pudo servir el proyecto (%s); se levanta un hub propio." % (r.json.get("error", {}).get("message", "HTTP %d" % r.code) if r.json is Dictionary else "sin respuesta"))
+		show_notice("El Inicio no pudo servir el proyecto (%s); se levanta un hub propio." % _error_of(r))
 	var cmd := scompass_command()
 	if cmd.is_empty():
 		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path.")
@@ -671,11 +704,11 @@ func _build() -> void:
 	new_title = LineEdit.new()
 	new_title.placeholder_text = "Nueva tarea en este hito"
 	new_title.size_flags_horizontal = SIZE_EXPAND_FILL
-	new_title.text_submitted.connect(func(t): new_title.clear(); create_task(t))
+	new_title.text_submitted.connect(func(t): create_task(t))
 	new_row.add_child(new_title)
 	var add := Button.new()
 	add.text = "Agregar"
-	add.pressed.connect(func(): var t := new_title.text; new_title.clear(); create_task(t))
+	add.pressed.connect(func(): create_task(new_title.text))
 	new_row.add_child(add)
 
 	editing_box = VBoxContainer.new()
@@ -868,7 +901,8 @@ func _render() -> void:
 
 	footer_dot.color = Color("#6fbf94") if online else Color("#e0655a")
 	footer_label.text = ("127.0.0.1:%d" % client.port) if online else "Sin hub · solo lectura"
-	restart_button.visible = online
+	# Un proyecto que sirve el Inicio no se reinicia solo (su hub no tiene /api/restart): se reinicia el Inicio (19.10).
+	restart_button.visible = online and client.base == ""
 	# Hub y addon de versiones distintas: uno de los dos quedó viejo (o el hub no se reinició tras actualizar).
 	var mine := addon_version()
 	version_label.visible = online and client.hub_version != "" and mine != "" and client.hub_version != mine
@@ -1282,6 +1316,7 @@ func _go_to_task(id: String) -> void:
 	if t == null:
 		return
 	current_milestone = t.milestone
+	set_pref.call("milestone", current_milestone)
 	selected_task = id
 	_render()
 

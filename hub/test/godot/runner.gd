@@ -666,3 +666,39 @@ func test_thumbs(a: Array) -> void:
 	f = null
 	v._poll.timeout.emit()
 	_check(c, await _until(func(): return loads[0] > 0, 3.0), "no releyó después de un cambio")
+
+
+# 19.10: sin hub, una tarea con links/checklist/refs de otra forma va a los avisos y no rompe el render.
+func test_bad_shapes(a: Array) -> void:
+	var c := "bad_shapes"
+	var v := await _view(a[0])
+	v.current_milestone = "m01"
+	v._render()
+	var paths := v.board.warnings.map(func(w): return w.path)
+	if not _check(c, paths.has("compass/tasks/m1-04.json") and paths.has("compass/tasks/m1-05.json") and paths.has("compass/tasks/m1-06.json"), "avisos: %s" % [paths]): return
+	_check(c, v.listed().size() > 0, "la lista quedó vacía")
+
+
+# 19.10: un guardado que falla vuelve a mostrar lo que hay; crear una tarea que falla deja el título; doble
+# clic en Iniciar hub no lanza dos; Reiniciar hub no se ofrece en un proyecto del Inicio.
+func test_failed_writes(a: Array) -> void:
+	var c := "failed_writes"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	_select(v, a[1])
+	var before: String = v.board.task(a[1]).status
+	# El hub deja de responder: el PATCH falla sin respuesta.
+	v.client.port = 1
+	_pick_status(v, "done")
+	if not _check(c, await _until(func(): return v._queues.is_empty()), "la fila no terminó"): return
+	if not _check(c, v.status_select.get_item_metadata(v.status_select.selected) == before, "el selector quedó en lo que no se guardó"): return
+	if not _check(c, v.notice.text.begins_with("No se pudo guardar"), "aviso: " + v.notice.text): return
+	v.new_title.text = "Que no se pierda"
+	await v.create_task(v.new_title.text)
+	if not _check(c, v.new_title.text == "Que no se pierda", "se borró el título de una tarea que no se creó"): return
+	v.client.base = "/p/algo"
+	v._render()
+	if not _check(c, not v.restart_button.visible, "Reiniciar hub visible en un proyecto del Inicio"): return
+	v.online = false
+	v._starting = true
+	_check(c, (await v.start_hub()) == false and v._starting, "un segundo Iniciar hub no esperó al primero")

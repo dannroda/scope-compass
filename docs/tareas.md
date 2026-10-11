@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (9/13)
+## M19 — Auditoría  (10/13)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2228,11 +2228,17 @@ Auditoría (2026-10-11): mover el dock o hacerlo flotante lo deja «conectado» 
 
 **Referencias:** `docs/spec.md#auditoria`
 
-### 19.10 Dock: errores, guardados fallidos y clics dobles · Pendiente
+### 19.10 Dock: errores, guardados fallidos y clics dobles · Hecho
 
-**Etiquetas:** `bug`, `dock`
+**Terminada:** 2026-10-11 · **Etiquetas:** `bug`, `dock`
 
 Auditoría (2026-10-11): sin hub, un JSON con links/checklist/refs de forma rara rompe el render; otro programa en el puerto llena la consola de errores de JSON; un guardado fallido deja la UI mostrando el cambio; doble clic en Iniciar hub termina sin hub y dos scompass a la vez pierden el hilo; crear una tarea borra el título aunque falle; borrar el hito abierto deja el selector vacío; Reiniciar hub falla en un proyecto del Inicio.
+
+**Prueba:** dock.test.js (19.10): bad_shapes: tres tareas con links, checklist y refs mal formados van a los avisos y la lista sigue, sin SCRIPT ERROR. failed_writes: con el hub inalcanzable, el selector vuelve al estado real y avisa; crear deja el título; con base /p/… no se ve Reiniciar hub; un segundo start_hub durante el primero devuelve false. Fallan sin el cambio; la suite del dock pasa entera (38).
+
+**Notas:** Hecho: _check del reader valida la forma de las listas y sus elementos. HubClient.parse_json con JSON.new() para respuestas, registro, WebSocket y check_compass. _error_of para los mensajes del hub. _render_detail en la rama de error de _send_update. create_task borra el título solo si se creó. _starting y botón deshabilitado en start_hub; _scompass espera a un hilo en curso. delete del hito abierto → default_milestone; _go_to_task guarda la preferencia. restart_button oculto con client.base. El error de otro programa en el puerto sin paréntesis anidados.
+
+**Referencias:** `docs/spec.md#auditoria`
 
 ### 19.11 Dock: ancho mínimo y abrir la tarea en la web · Pendiente
 

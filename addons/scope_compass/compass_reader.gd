@@ -84,6 +84,24 @@ static func _check(doc: Dictionary, kind: String) -> String:
 				return "status inválido"
 			if doc.has("checklist") and typeof(doc.checklist) != TYPE_ARRAY:
 				return "checklist no es una lista"
+			# Sin hub nadie valida el schema: una lista con otra forma (un JSON editado a mano) rompía el render (19.10).
+			for k in ["checklist", "links", "refs", "images", "files", "tags"]:
+				var v = doc.get(k, [])
+				if typeof(v) != TYPE_ARRAY:
+					return k + " no es una lista"
+				var want := TYPE_STRING if k in ["images", "files", "tags"] else TYPE_DICTIONARY
+				for x in v:
+					if typeof(x) != want:
+						return "%s tiene un elemento con otra forma" % k
+			for c in doc.get("checklist", []):
+				if typeof(c.get("text")) != TYPE_STRING:
+					return "un paso sin texto"
+			for l in doc.get("links", []):
+				if typeof(l.get("task")) != TYPE_STRING:
+					return "un vínculo sin tarea"
+			for r in doc.get("refs", []):
+				if typeof(r.get("doc")) != TYPE_STRING:
+					return "una referencia sin documento"
 	return ""
 
 

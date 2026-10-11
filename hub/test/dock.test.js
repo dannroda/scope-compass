@@ -506,6 +506,22 @@ test('19.9: con hub: mover el dock (sacarlo del árbol y volverlo a poner) lo re
   expectOk(r, 'reparent');
 });
 
+test('19.10: dock sin hub: links, pasos o referencias de otra forma van a los avisos sin romper el render', { skip }, async () => {
+  await setTask('m1-04', { links: ['m0-01'] });
+  await setTask('m1-05', { checklist: ['texto'] });
+  await setTask('m1-06', { refs: ['spec'] });
+  const r = await godot('bad_shapes', dir);
+  expectOk(r, 'bad_shapes');
+  assert.doesNotMatch(r.out, /SCRIPT ERROR/);
+});
+
+test('19.10: con hub: un guardado o una creación que fallan no mienten, y Reiniciar hub no se ofrece en el Inicio', { skip }, async () => {
+  const hub = await startHub();
+  const r = await godotLive(['failed_writes', dir, 'm1-04']);
+  await hub.app.close();
+  expectOk(r, 'failed_writes');
+});
+
 test('dock: los archivos de la tarea se listan en el detalle y un clic los abre en el editor', { skip }, async () => {
   const { mkdir } = await import('node:fs/promises');
   await mkdir(join(dir, 'src'));
