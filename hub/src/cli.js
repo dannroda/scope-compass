@@ -29,7 +29,7 @@ import { taskHistory } from './history.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
-import { dueState, EVERY, isValidDue, localDay, milestoneDueState, showDue } from './dates.js';
+import { dueState, EVERY, isValidDue, localDay, localStamp, milestoneDueState, showDue } from './dates.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
 import { descriptionTemplate, DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, SIZES, splitList } from './filters.js';
 
@@ -829,7 +829,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (o.json) return done(h);
       if (!h.repo) { print('Sin historial: el proyecto no está en un repo de git.'); return 0; }
       for (const e of h.entries) {
-        print(`${e.hash ?? 'sin commitear'}  ${e.date ? e.date.slice(0, 16).replace('T', ' ') : ''}${e.author ? '  ' + e.author : ''}${e.hash ? '  ' + e.subject.slice(0, 72) + (e.subject.length > 72 ? '…' : '') : ''}`);
+        print(`${e.hash ?? 'sin commitear'}  ${e.date ? localStamp(e.date) : ''}${e.author ? '  ' + e.author : ''}${e.hash ? '  ' + e.subject.slice(0, 72) + (e.subject.length > 72 ? '…' : '') : ''}`);
         for (const c of e.created ? ['Creada'] : e.deleted ? ['Borrada'] : e.changes) print(`    ${c}`);
       }
       if (!h.entries.length) print('La tarea todavía no tiene commits.');

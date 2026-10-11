@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (2/13)
+## M19 — Auditoría  (3/13)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2144,11 +2144,17 @@ Auditoría (2026-10-11): export_md en config.json puede apuntar a cualquier ruta
 
 **Referencias:** `docs/spec.md#auditoria`
 
-### 19.3 Historial en un repo con el proyecto en una subcarpeta · Pendiente
+### 19.3 Historial en un repo con el proyecto en una subcarpeta · Hecho
 
-**Etiquetas:** `bug`, `cli`
+**Terminada:** 2026-10-11 · **Etiquetas:** `bug`, `cli`
 
 Auditoría (2026-10-11): si el proyecto no está en la raíz del repo, git cat-file con <hash>:compass/tasks/… no encuentra nada y el historial queda vacío. Además scompass history mezcla la hora UTC de lo sin commitear con la hora local de los commits.
+
+**Prueba:** history.test.js (19.3): un repo con el proyecto en juegos/uno: el historial lista «Estado: Hecho → En curso» y la CLI da la hora local del commit. Falla sin el cambio en history.js.
+
+**Notas:** Hecho: cat-file con <hash>:./<ruta> (relativo al -C del proyecto). localStamp en dates.js para la hora local de la CLI. La web ya mostraba hora local.
+
+**Referencias:** `docs/spec.md#auditoria`
 
 ### 19.4 set --file acepta la salida de show --json · Pendiente
 

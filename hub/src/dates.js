@@ -42,6 +42,8 @@ export function milestoneDueState(m, tasks, now = new Date()) {
 
 // El día local (YYYY-MM-DD) de un instante ISO, como done_at (18.1): la hora UTC puede ser de otro día.
 export const localDay = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+/** "2026-10-11 14:05" en hora local, de cualquier fecha ISO (UTC o con zona). */
+export const localStamp = (iso) => { const d = new Date(iso); return `${localDay(iso)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 
 export const EVERY = { day: 'cada día', week: 'cada semana', month: 'cada mes', year: 'cada año' };
 

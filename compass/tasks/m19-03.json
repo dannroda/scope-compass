@@ -3,16 +3,22 @@
   "code": "19.3",
   "created_at": "2026-10-11T06:54:26.450Z",
   "description": "Auditoría (2026-10-11): si el proyecto no está en la raíz del repo, git cat-file con <hash>:compass/tasks/… no encuentra nada y el historial queda vacío. Además scompass history mezcla la hora UTC de lo sin commitear con la hora local de los commits.",
+  "done_at": "2026-10-11T06:59:48.735Z",
   "milestone": "m19",
-  "notes": "",
+  "notes": "Hecho: cat-file con <hash>:./<ruta> (relativo al -C del proyecto). localStamp en dates.js para la hora local de la CLI. La web ya mostraba hora local.",
   "order": 3,
-  "refs": [],
-  "status": "todo",
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "auditoria"
+    }
+  ],
+  "status": "done",
   "tags": [
     "bug",
     "cli"
   ],
-  "test": "",
+  "test": "history.test.js (19.3): un repo con el proyecto en juegos/uno: el historial lista «Estado: Hecho → En curso» y la CLI da la hora local del commit. Falla sin el cambio en history.js.",
   "title": "Historial en un repo con el proyecto en una subcarpeta",
-  "updated_at": "2026-10-11T06:54:26.450Z"
+  "updated_at": "2026-10-11T06:59:48.735Z"
 }

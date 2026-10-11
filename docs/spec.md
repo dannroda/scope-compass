@@ -1067,3 +1067,4 @@ Lo que encontró la auditoría completa después de M18 (seguridad, backend, web
   - `POST /api/docs` rechaza lo que git ignora (un `.env`) y lo que no es `.md`; un patrón no toma un archivo enlazado afuera, y un documento declarado a mano que lleva afuera queda como `missing_doc` (*fuera del proyecto*).
   - `compass/images` como enlace simbólico afuera no recibe capturas, y quitar una no borra nada de afuera.
   - `repoFile` no deja pasar una ruta con el nombre de una clave heredada (`constructor`).
+- **Historial en una subcarpeta (19.3):** si el proyecto no está en la raíz del repo, `git cat-file` con `<hash>:compass/tasks/…` no encontraba nada y el historial quedaba vacío; ahora pide `<hash>:./compass/tasks/…`, relativo a la carpeta del proyecto. `scompass history` muestra todas las horas en hora local (lo sin commitear venía en UTC).

@@ -100,7 +100,8 @@ export async function taskHistory(projectDir, id, { limit = 30 } = {}) {
     const [full, hash, date, author, subject] = l.split('\x1f');
     return { full, hash, date, author, subject };
   });
-  const blobs = await catFiles(projectDir, commits.flatMap((c) => [`${c.full}:${path}`, `${c.full}~1:${path}`]));
+  // "<rev>:./<ruta>" es relativo a la carpeta del proyecto, aunque esté dentro de un repo más grande (19.3).
+  const blobs = await catFiles(projectDir, commits.flatMap((c) => [`${c.full}:./${path}`, `${c.full}~1:./${path}`]));
   // Un commit que no cambió nada visible (solo order o los sellos de fecha) no se lista.
   const entries = commits.map(({ full, ...c }, i) => {
     const [now, before] = [parse(blobs[2 * i]), parse(blobs[2 * i + 1])];

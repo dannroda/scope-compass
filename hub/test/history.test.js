@@ -51,3 +51,27 @@ test('taskHistory y scompass history: commits del más nuevo al más viejo, lo s
     await rm(dir, { recursive: true, force: true, maxRetries: 10 });
   }
 });
+
+test('19.3: con el proyecto en una subcarpeta del repo, el historial ve los cambios; la CLI da la hora local', async () => {
+  const repo = await mkdtemp(join(tmpdir(), 'scompass-hist-'));
+  const dir = join(repo, 'juegos', 'uno');
+  const git = (...a) => execFileSync('git', ['-C', repo, '-c', 'user.name=Ana', '-c', 'user.email=a@a', ...a], { stdio: 'ignore' });
+  let out = '';
+  const cli = (...argv) => run(['--direct', ...argv], { cwd: dir, out: { write: (s) => { out += s; } }, err: { write() {} } });
+  try {
+    await cp(FIXTURE, join(dir, 'compass'), { recursive: true });
+    git('init', '-q');
+    git('add', '.');
+    git('commit', '-qm', 'Inicial', '--date', '2026-03-01T12:00:00Z');
+    assert.equal(await cli('move', 'm1-07', 'doing'), 0);
+    git('commit', '-qam', 'Empiezo 1.7');
+    const h = await taskHistory(dir, 'm1-07');
+    assert.deepEqual(h.entries.map((e) => [e.subject, e.changes]), [['Empiezo 1.7', ['Estado: Hecho → En curso']], ['Inicial', []]]);
+    out = '';
+    await cli('history', 'm1-07');
+    const d = new Date('2026-03-01T12:00:00Z'), p = (n) => String(n).padStart(2, '0');
+    assert.ok(out.includes(`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`), out);
+  } finally {
+    await rm(repo, { recursive: true, force: true, maxRetries: 10 });
+  }
+});
