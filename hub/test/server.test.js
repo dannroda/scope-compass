@@ -130,7 +130,9 @@ test('sirve la UI de web/ y nada fuera de ella', async () => {
   assert.match((await app.inject('/app.js')).headers['content-type'], /javascript/);
   assert.match((await app.inject('/app.css')).headers['content-type'], /text\/css/);
   assert.match((await app.inject('/favicon.svg')).headers['content-type'], /image\/svg\+xml/);
-  for (const url of ['/fonts/..%2F..%2Fpackage.json', '/fonts/.hidden.woff2', '/fonts/nada.woff2', '/README.md', '/api/nada']) {
+  // Los marcos de los bordes de fantasía (19.16); la licencia y el .gdignore de la carpeta no se sirven.
+  assert.equal((await app.inject('/frames/menu_frame.png')).headers['content-type'], 'image/png');
+  for (const url of ['/fonts/..%2F..%2Fpackage.json', '/fonts/.hidden.woff2', '/fonts/nada.woff2', '/README.md', '/api/nada', '/frames/.gdignore', '/frames/..%2Fapp.js']) {
     const r = await app.inject(url);
     assert.equal(r.statusCode, 404, url);
     assert.equal(r.json().error.code, 'not_found', url);

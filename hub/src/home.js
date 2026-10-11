@@ -362,18 +362,19 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   app.decorate('poll', poll);
 
   // La página del Inicio (web/home.*), con los estilos y las fuentes del tablero. Rutas fijas, como en el hub.
-  const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
+  const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png' };
   const serveWeb = async (reply, rel) => {
     const missing = new StoreError('not_found', `no existe /${rel}`);
     const ext = rel.slice(rel.lastIndexOf('.'));
-    if (!TYPES[ext] || !/^(fonts\/)?[\w.-]+$/.test(rel) || rel.split('/').pop().startsWith('.')) throw missing;
+    if (!TYPES[ext] || !/^((fonts|frames)\/)?[\w.-]+$/.test(rel) || rel.split('/').pop().startsWith('.')) throw missing;
     const body = await readFile(join(webDir, rel)).catch(() => null);
     if (!body) throw missing;
     return reply.type(TYPES[ext]).header('cache-control', 'no-cache').send(body);
   };
   app.get('/', (req, reply) => serveWeb(reply, 'home.html'));
-  for (const f of ['home.js', 'home.css', 'app.css', 'favicon.svg']) app.get('/' + f, (req, reply) => serveWeb(reply, f));
+  for (const f of ['home.js', 'home.css', 'app.css', 'favicon.svg', 'settings.js']) app.get('/' + f, (req, reply) => serveWeb(reply, f));
   app.get('/fonts/:file', (req, reply) => serveWeb(reply, 'fonts/' + req.params.file));
+  app.get('/frames/:file', (req, reply) => serveWeb(reply, 'frames/' + req.params.file));
 
   app.register(async (scope) => {
     scope.get('/ws', { websocket: true }, (socket) => {

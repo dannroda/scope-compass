@@ -25,7 +25,7 @@
     color-scheme: dark;
   }
 }
-:root[data-theme="dark"] {
+:root[data-theme="dark"], :root.fantasy {
   --bg: #101318; --surface: #171b22; --surface-2: #1f252e; --line: #2e3642;
   --fg: #ece5d6; --muted: #a69d8c; --accent: #d9a441; --accent-soft: #3a2f1a; --on-accent: #1a1408;
   --s-todo: #9a917f; --s-doing: #7fb0dc; --s-review: #e0a95a; --s-done: #6fbf94; --danger: #e8806e;
@@ -240,7 +240,7 @@ a.link-task:hover code { text-decoration: underline; }
 /* Resaltado de Prism con los tokens del tema */
 :root { --tk-kw: #9b2c4a; --tk-type: #1f6f68; --tk-str: #7a5a00; --tk-num: #3d5aa8; --tk-com: #7a7263; --tk-fn: #2d5f8a; --tk-ann: #9a5b12; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --tk-kw: #ff7085; --tk-type: #8effda; --tk-str: #ffeda1; --tk-num: #a1ffe0; --tk-com: #8a929c; --tk-fn: #57b3ff; --tk-ann: #ffb373; } }
-:root[data-theme="dark"] { --tk-kw: #ff7085; --tk-type: #8effda; --tk-str: #ffeda1; --tk-num: #a1ffe0; --tk-com: #8a929c; --tk-fn: #57b3ff; --tk-ann: #ffb373; }
+:root[data-theme="dark"], :root.fantasy { --tk-kw: #ff7085; --tk-type: #8effda; --tk-str: #ffeda1; --tk-num: #a1ffe0; --tk-com: #8a929c; --tk-fn: #57b3ff; --tk-ann: #ffb373; }
 .token.keyword, .token.boolean { color: var(--tk-kw); }
 .token.class-name, .token.builtin { color: var(--tk-type); }
 .token.string, .token.char { color: var(--tk-str); }
@@ -562,3 +562,49 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
 .files-summary ul.changes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .files-summary ol.commits { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
 @media (max-width: 760px) { .files-grid { grid-template-columns: minmax(0, 1fr); } .files-side { position: static; max-height: 45vh; } }
+
+/* Bordes de fantasía (19.16): opcionales, desde Ajustes (se guarda en el navegador, scompass.fantasy). Marcos 9-slice
+   de Project Epiphany (Kenney, CC0, en frames/) a tamaño 1:1 y con píxel nítido: a otra escala las líneas de un píxel
+   se pierden. El modo usa siempre la paleta oscura, porque los marcos traen su fondo oscuro. border-image no tiene
+   esquinas redondeadas ni usa el color del borde; las medidas son el corte de cada imagen. */
+.fantasy :is(.btn, .chip, .card, .col, section.summary, .detail, .newtask, dialog.pick, .notice, .warnings, .seg, .newtask input[type="text"], .newtask select, .detail select, .detail textarea, .addcl input, .step-edit input, .step-edit textarea, .hoy-list, .proj, .add, .add .tpl, .add input[type="text"], .pchip, .fdrop > summary, .fdrop-body) {
+  border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated;
+}
+.fantasy :is(.btn, .card, .add .tpl) { border-image: url(frames/button.png) 16 fill / 16px stretch; }
+.fantasy :is(.btn:hover, .btn.primary, .card:hover, .card[aria-current="true"], .chip[aria-pressed="true"], .seg button[aria-pressed="true"], .add .tpl:has(input:checked)) {
+  border-image: url(frames/button_focus.png) 16 fill / 16px stretch; background: transparent; box-shadow: none; image-rendering: pixelated;
+}
+.fantasy :is(.btn.primary, .chip[aria-pressed="true"], .chip[aria-pressed="true"] .n) { color: var(--accent); }
+.fantasy .btn.danger { color: var(--danger); }
+.fantasy :is(.chip, .pchip, .fdrop > summary) { border-image: url(frames/chip.png) 12 fill / 12px stretch; padding-inline: 14px; }
+.fantasy .fdrop-body { border-image: url(frames/card.png) 24 fill / 24px stretch; padding: 16px; }
+/* El color del estado va en el borde izquierdo de la tarjeta (en línea): acá lo dice la columna. Nada de atajos
+   border: también borran el border-image. */
+.fantasy .card { border-left-width: 2px !important; border-left-color: transparent !important; padding: 12px 14px; }
+.fantasy .card.drop-before { box-shadow: 0 -3px 0 0 var(--accent); }
+.fantasy :is(.col, .newtask, .hoy-list, .add) { border-image: url(frames/card.png) 24 fill / 24px stretch; }
+.fantasy .col { padding: 16px 14px 18px; }
+.fantasy :is(.newtask, .add) { padding: 18px 20px; }
+.fantasy .hoy-list { padding: 12px 10px; }
+.fantasy :is(section.summary, .proj) { border-image: url(frames/item_get.png) 32 fill / 32px stretch; padding: 18px 28px; }
+.fantasy :is(.detail, dialog.pick) { border-image: url(frames/menu_frame.png) 32 fill / 32px stretch; }
+.fantasy .detail { padding: calc(30px + env(safe-area-inset-top, 0px)) 32px calc(32px + env(safe-area-inset-bottom, 0px)); }
+.fantasy dialog.pick { padding: 30px 32px; }
+.fantasy :is(.notice, .warnings) { border-image: url(frames/stone.png) 32 fill / 32px stretch; padding: 22px 28px; }
+.fantasy :is(.seg, .newtask input[type="text"], .newtask select, .detail select, .detail textarea, .addcl input, .step-edit input, .step-edit textarea, .add input[type="text"]) {
+  border-image: url(frames/slot.png) 16 fill / 16px stretch; padding-inline: 14px;
+}
+.fantasy :is(.newtask input[type="text"], .detail select, .newtask select, .detail textarea, .addcl input, .step-edit input, .step-edit textarea, .add input[type="text"]):focus {
+  border-image: url(frames/slot_focus.png) 16 fill / 16px stretch; outline: none;
+}
+.fantasy .seg { padding: 6px; }
+.fantasy .seg button { border-width: 2px; border-style: solid; border-color: transparent; }
+.fantasy .detail input.title:hover, .fantasy .detail input.title:focus { background: var(--surface-2); }
+/* El select o el campo dentro de una pastilla del detalle va sin marco propio: el marco es la pastilla. */
+.fantasy .detail .pchip :is(select, input) { border-image: none; } /* después de la regla de los campos: la misma especificidad */
+/* El botón de Ajustes (tablero e Inicio) y su diálogo. */
+.settings-btn { margin-left: auto; display: inline-flex; align-items: center; justify-content: center; min-width: 40px; padding: 8px; }
+.settings-btn svg { width: 18px; height: 18px; }
+dialog.settings label.opt { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; cursor: pointer; }
+dialog.settings label.opt input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+dialog.settings h2 { margin: 0 0 6px; font-family: var(--font-display); font-size: 18px; letter-spacing: .04em; }

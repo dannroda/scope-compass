@@ -26,7 +26,7 @@ export const HOST = '127.0.0.1';
 export const WEB_DIR = resourceDir('web');
 
 // Archivos de la UI (spec §7). Rutas fijas, sin comodín: un /api/... inexistente sigue siendo un 404 JSON.
-const WEB_TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8', '.svg': 'image/svg+xml' };
+const WEB_TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
 
 // Sin token, solo pedidos dirigidos a localhost o a una IP (14.1; la IP de la red con --lan, D36): una página de otro
 // sitio que hace que su nombre apunte acá (DNS rebinding) no puede leer el tablero ni los archivos del repo. Y nada
@@ -202,7 +202,7 @@ export function createServer({ projectDir, store, validators, watch = false, exp
     return config;
   });
 
-  // dir: '' o 'fonts'. name: un solo segmento, sin rutas relativas: no se puede salir de web/.
+  // dir: '', 'fonts' o 'frames' (los marcos de los bordes de fantasía, 19.16). name: un solo segmento, sin rutas relativas: no se puede salir de web/.
   const serveWeb = async (reply, dir, name) => {
     const ext = name.slice(name.lastIndexOf('.'));
     const missing = new StoreError('not_found', `no existe /${dir ? dir + '/' : ''}${name}`);
@@ -215,7 +215,9 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   app.get('/app.css', (req, reply) => serveWeb(reply, '', 'app.css'));
   app.get('/app.js', (req, reply) => serveWeb(reply, '', 'app.js'));
   app.get('/favicon.svg', (req, reply) => serveWeb(reply, '', 'favicon.svg'));
+  app.get('/settings.js', (req, reply) => serveWeb(reply, '', 'settings.js'));
   app.get('/fonts/:file', (req, reply) => serveWeb(reply, 'fonts', req.params.file));
+  app.get('/frames/:file', (req, reply) => serveWeb(reply, 'frames', req.params.file));
 
   return app;
 }

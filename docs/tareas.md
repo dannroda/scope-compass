@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (15/15)
+## M19 — Auditoría  (16/16)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2304,5 +2304,17 @@ Pedido del usuario (2026-10-11): colorear el ícono y el favicon con el mismo am
 **Prueba:** El favicon del tablero y del Inicio, y el ícono de la bandeja en Linux (SVG del tema), se ven dorados (#d9a441), como el dibujo de respaldo de la bandeja y el .ico de Windows.
 
 **Notas:** Hecho: fill #d9a441 en web/favicon.svg (sin la variante gris por esquema de color) y en hub/assets/icons/hicolor/scalable/apps/scope-compass.svg. El README de los íconos lo anota.
+
+**Referencias:** `docs/spec.md#auditoria`
+
+### 19.16 Bordes de fantasía opcionales en la web · Hecho
+
+**Terminada:** 2026-10-11
+
+Pedido del usuario (2026-10-11): después de ver los mockups con los marcos de Project Epiphany (Kenney, CC0, recoloreados), sumarlos a la web con un botón de ajustes para activarlos y desactivarlos.
+
+**Prueba:** ui.test.js (19.16): Ajustes prende los bordes, la clase fantasy pone border-image de frames/ en columnas y tarjetas, la imagen se sirve como image/png, Esc cierra y devuelve el foco al engranaje, con el tema claro del sistema el fondo sigue oscuro, otra pestaña arranca con el modo, sigue al recargar y apagarlo se refleja en la otra pestaña. server.test.js y home-serve.test.js: /frames/*.png en el hub, en el Inicio y por /p/<clave>/; .gdignore y ../ dan 404.
+
+**Notas:** Hecho: web/settings.js (en el <head> del tablero y del Inicio, sin defer) con el botón de engranaje y el diálogo Ajustes; scompass.fantasy en localStorage, evento storage para las otras pestañas. web/frames/ con 9 marcos de Project Epiphany y su License.txt (Kenney, CC0) más un .gdignore para que Godot no los importe. app.css: :root.fantasy usa la paleta oscura y las reglas .fantasy ponen los marcos con border-image a 1:1 y píxel nítido, sin atajos border (borran el border-image). El hub y el Inicio sirven /frames/*.png y /settings.js. AGENTS.md (las 3 copias), web/README.md (también el favicon, que ya era dorado) y spec §27. De paso, la paridad del export con Python ignora files (Epiphany ya cita archivos en sus tareas).
 
 **Referencias:** `docs/spec.md#auditoria`

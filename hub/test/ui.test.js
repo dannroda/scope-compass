@@ -678,6 +678,39 @@ test('"← Inicio": aparece solo si el Inicio está corriendo, y apunta a él', 
   }
 });
 
+test('bordes de fantasía (19.16): se prenden desde Ajustes, siguen al recargar y en otra pestaña, y se apagan', async () => {
+  const page = await open();
+  const on = (p) => p.evaluate(() => document.documentElement.classList.contains('fantasy'));
+  const frame = (p, sel) => p.locator(sel).first().evaluate((el) => getComputedStyle(el).borderImageSource);
+  assert.equal(await on(page), false);
+  assert.equal(await frame(page, '.col'), 'none');
+  await page.click('#settings-btn');
+  await page.check('#set-fantasy');
+  assert.equal(await on(page), true);
+  assert.match(await frame(page, '.col'), /frames\/card\.png/);
+  assert.match(await frame(page, '.card'), /frames\/button\.png/);
+  // La imagen existe: el navegador la cargó (no quedó un 404 detrás del border-image).
+  assert.equal(await page.evaluate(async () => (await fetch('frames/menu_frame.png')).headers.get('content-type')), 'image/png');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.isVisible('dialog.settings'), false);
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'settings-btn');
+  // Con el tema claro del sistema, el modo usa igual la paleta oscura.
+  await page.emulateMedia({ colorScheme: 'light' });
+  assert.equal(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(16, 19, 24)');
+  const other = await page.context().newPage();
+  await other.goto(url);
+  await other.waitForSelector('.card');
+  assert.equal(await on(other), true, 'otra pestaña arranca con el modo');
+  await page.reload();
+  await page.waitForSelector('.card');
+  assert.equal(await on(page), true, 'sigue al recargar');
+  await page.click('#settings-btn');
+  assert.equal(await page.isChecked('#set-fantasy'), true);
+  await page.uncheck('#set-fantasy');
+  assert.equal(await on(page), false);
+  await other.waitForFunction(() => !document.documentElement.classList.contains('fantasy'));
+});
+
 // Elige un hito por su código; los terminados están dentro de "Terminados" (13.2).
 async function milestone(page, code) {
   if (!(await page.isVisible(`#miles > .chip:has-text("${code}")`))) await page.click('#ms-done');

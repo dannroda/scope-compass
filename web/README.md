@@ -1,12 +1,13 @@
 # web
 
-UI del tablero, sin framework ni build step: `index.html`, `app.css`, `app.js` y `fonts/`. La sirve el hub (`scompass serve`) en `/`.
+UI del tablero, sin framework ni build step: `index.html`, `app.css`, `app.js`, `settings.js`, `fonts/` y `frames/`. La sirve el hub (`scompass serve`) en `/`.
 
 Es el port de `../docs/reference/tablero-artifact.html` (spec §7). El CSS y el render son los del artifact; la capa `claude.use("db")` se reemplazó por un cliente de la API del hub (`/api`).
 
 - En vivo por WebSocket, con reconexión; escrituras con etag y recuperación ante `409`.
 - Avisa de los archivos de `compass/` que el hub no pudo leer.
-- `favicon.svg`: el ícono de la bandeja (`node/compass.svg` de @icons, MIT; ver `hub/assets/icons/`), oscuro en pestañas claras y claro en las oscuras.
+- `favicon.svg`: el ícono de la bandeja (`node/compass.svg` de @icons, MIT; ver `hub/assets/icons/`), en el dorado de la interfaz.
+- `settings.js` y `frames/`: el botón de Ajustes (tablero e Inicio) y los bordes de fantasía, que se prenden ahí y quedan guardados en el navegador. Los marcos son de Project Epiphany: *Fantasy UI Borders* de Kenney (CC0, `frames/License.txt`), recoloreados; van en 9-slice a tamaño 1:1 y con píxel nítido.
 - `fonts/`: Cinzel, Alegreya Sans y JetBrains Mono (subconjunto latino de `@fontsource` 5.3.0, licencias OFL al lado). No hace ninguna petición fuera del hub.
 - Cada tarea abierta tiene su ruta (`#task/<id>`): atrás la cierra y vuelve a la vista de antes, y el enlace la abre (spec §24).
 - Lo que escribís en el detalle no se pierde cuando se redibuja. Soltar una tarjeta sobre otra del mismo hito la deja antes. Atajos: `N` nueva tarea, `1`–`4` estado de la tarea abierta, `Esc` cierra.
