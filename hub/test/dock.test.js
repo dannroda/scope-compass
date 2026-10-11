@@ -490,6 +490,22 @@ test('dock: etiquetas, prioridad y responsable en la lista y el detalle, la desc
   expectOk(await godot('props', dir, 'm1-04', 'm1-05', 'm1-07'), 'props');
 });
 
+test('19.9: dock: las capturas se decodifican una vez, un GIF es un botón con el nombre y sin hub el poll no relee si nada cambió', { skip }, async () => {
+  await setTask('m1-04', { status: 'todo', images: ['shot.png', 'anim.gif'] });
+  await writeFile(join(dir, 'shot.png'), Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64'));
+  await writeFile(join(dir, 'anim.gif'), Buffer.from('R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=', 'base64'));
+  const r = await godot('thumbs', dir, 'm1-04');
+  expectOk(r, 'thumbs');
+  assert.doesNotMatch(r.out, /SCRIPT ERROR|ERROR: /);
+});
+
+test('19.9: con hub: mover el dock (sacarlo del árbol y volverlo a poner) lo reconecta', { skip }, async () => {
+  const hub = await startHub();
+  const r = await godotLive(['reparent', dir]);
+  await hub.app.close();
+  expectOk(r, 'reparent');
+});
+
 test('dock: los archivos de la tarea se listan en el detalle y un clic los abre en el editor', { skip }, async () => {
   const { mkdir } = await import('node:fs/promises');
   await mkdir(join(dir, 'src'));

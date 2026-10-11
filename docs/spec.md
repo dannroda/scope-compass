@@ -1079,3 +1079,8 @@ Lo que encontró la auditoría completa después de M18 (seguridad, backend, web
   - `file` e `image add|rm` pasan `\` a `/`: en Windows la terminal completa las rutas con `\`.
   - Un proyecto nuevo del Inicio con un nombre que empieza con `-` se crea con ese nombre (`--project=<nombre>`), y si `scompass init` falla no queda la carpeta a medio armar.
   - El proxy del Inicio pasa `X-Content-Type-Options` y `Content-Security-Policy` del hub del proyecto (las de `/api/files/raw`).
+- **Dock: reconexión y capturas (19.9):**
+  - Mover el dock de lugar o hacerlo flotante lo saca del árbol y lo vuelve a poner; `_exit_tree` cierra el WebSocket, así que al volver (`_enter_tree`) pasa a *sin hub* y el poll lo reconecta. Antes quedaba "conectado" sin recibir cambios.
+  - Las miniaturas se decodifican una vez por archivo (se recuerdan por fecha y tamaño), y armar la lista ya no vuelve a armar el detalle (la selección de la fila emitía `item_selected`). Con dos capturas 4K, cada render tardaba ~0,9 s.
+  - Un GIF (Godot no lo carga) o una imagen rota es un botón *▣ nombre* que igual la abre, sin errores en la consola.
+  - Sin hub, el poll de 3 s relee `compass/` solo si cambió algún archivo (nombre, fecha y tamaño de los JSON y de los documentos); si no, solo recuenta lo sin commitear.

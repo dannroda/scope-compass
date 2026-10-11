@@ -3,16 +3,22 @@
   "code": "19.9",
   "created_at": "2026-10-11T06:54:28.165Z",
   "description": "Auditoría (2026-10-11): mover el dock o hacerlo flotante lo deja «conectado» sin WebSocket para siempre; cada render decodifica las capturas desde disco dos veces (0,9 s con dos PNG 4K; sin hub, cada 3 s); un GIF o una imagen rota queda como miniatura invisible.",
+  "done_at": "2026-10-11T07:09:45.637Z",
   "milestone": "m19",
-  "notes": "",
+  "notes": "Hecho: _enter_tree vuelve a sin hub si el cliente quedó cerrado. _render_tree con set_block_signals alrededor del armado. _thumb() con caché por ruta, fecha y tamaño; mira la firma GIF8 antes de Image.load. _stamp_compass + _stamp_docs: la firma de compass/ se toma antes de leer y la de los documentos después, con la config nueva.",
   "order": 9,
-  "refs": [],
-  "status": "todo",
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "auditoria"
+    }
+  ],
+  "status": "done",
   "tags": [
     "bug",
     "dock"
   ],
-  "test": "",
+  "test": "dock.test.js (19.9): thumbs: la miniatura es la misma textura después de otro render, el GIF es un botón «▣ anim.gif» sin ERROR en la salida, el poll sin cambios no emite loaded y después de editar la tarea sí. reparent: sacar y volver a poner la vista la deja sin hub y se reconecta en menos de 8 s. Los dos fallan sin el cambio.",
   "title": "Dock: reconexión al moverlo y capturas sin trabar el editor",
-  "updated_at": "2026-10-11T06:54:28.165Z"
+  "updated_at": "2026-10-11T07:09:45.637Z"
 }

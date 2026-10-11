@@ -623,3 +623,46 @@ func test_editing(a: Array) -> void:
 	if not _check(c, await _until(func(): return v.board.task(a[2]).get("files", []) == ["src/player.gd"]), "no se vinculó"): return
 	v.set_editing("script", "")
 	_check(c, not v.editing_box.visible, "sin script abierto, la caja se va")
+
+
+# 19.9: mover el dock (el editor lo saca del árbol y lo vuelve a poner) cierra el WebSocket: pasa a sin hub y
+# el poll lo reconecta, en vez de quedar "conectado" sin eventos.
+func test_reparent(a: Array) -> void:
+	var c := "reparent"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	var parent: Node = v.get_parent()
+	parent.remove_child(v)
+	parent.add_child(v)
+	await process_frame
+	if not _check(c, not v.online and v.banner.visible, "sigue marcado en línea sin WebSocket"): return
+	_check(c, await _until(func(): return v.online and v.client.online, 8.0), "no se reconectó")
+
+
+# 19.9: las miniaturas se decodifican una vez; un GIF (Godot no lo carga) es un botón con el nombre; sin hub, el
+# poll no relee compass/ si no cambió nada, y sí si cambió.
+func test_thumbs(a: Array) -> void:
+	var c := "thumbs"
+	var v := await _view(a[0])
+	v.current_milestone = "m01"
+	_select(v, a[1])
+	var shots := v.images_box.get_children()
+	if not _check(c, shots.size() == 2 and shots[0] is TextureButton and shots[0].texture_normal != null, "miniatura: %d" % shots.size()): return
+	if not _check(c, shots[1] is Button and shots[1].text == "▣ anim.gif", "gif: %s" % shots[1]): return
+	var tex = shots[0].texture_normal
+	v._render()
+	if not _check(c, v.images_box.get_child(0).texture_normal == tex, "volvió a decodificar la captura"): return
+	var loads := [0]
+	v.loaded.connect(func(): loads[0] += 1)
+	v._poll.timeout.emit()
+	await _until(func(): return false, 0.5)
+	if not _check(c, loads[0] == 0, "releyó compass/ sin cambios"): return
+	await _until(func(): return false, 1.1) # la fecha de modificación va en segundos
+	var p: String = a[0].path_join("compass/tasks/%s.json" % a[1])
+	var text := FileAccess.get_file_as_string(p)
+	var f := FileAccess.open(p, FileAccess.WRITE)
+	f.store_string(text.replace("\"title\":", "\"title\": ").replace("\"title\":  ", "\"title\": "))
+	f.store_string("\n")
+	f = null
+	v._poll.timeout.emit()
+	_check(c, await _until(func(): return loads[0] > 0, 3.0), "no releyó después de un cambio")

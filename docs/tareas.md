@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (8/13)
+## M19 — Auditoría  (9/13)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2216,11 +2216,17 @@ Auditoría (2026-10-11): una fecha imposible (2026-02-30) cuenta en --due week; 
 
 **Referencias:** `docs/spec.md#auditoria`
 
-### 19.9 Dock: reconexión al moverlo y capturas sin trabar el editor · Pendiente
+### 19.9 Dock: reconexión al moverlo y capturas sin trabar el editor · Hecho
 
-**Etiquetas:** `bug`, `dock`
+**Terminada:** 2026-10-11 · **Etiquetas:** `bug`, `dock`
 
 Auditoría (2026-10-11): mover el dock o hacerlo flotante lo deja «conectado» sin WebSocket para siempre; cada render decodifica las capturas desde disco dos veces (0,9 s con dos PNG 4K; sin hub, cada 3 s); un GIF o una imagen rota queda como miniatura invisible.
+
+**Prueba:** dock.test.js (19.9): thumbs: la miniatura es la misma textura después de otro render, el GIF es un botón «▣ anim.gif» sin ERROR en la salida, el poll sin cambios no emite loaded y después de editar la tarea sí. reparent: sacar y volver a poner la vista la deja sin hub y se reconecta en menos de 8 s. Los dos fallan sin el cambio.
+
+**Notas:** Hecho: _enter_tree vuelve a sin hub si el cliente quedó cerrado. _render_tree con set_block_signals alrededor del armado. _thumb() con caché por ruta, fecha y tamaño; mira la firma GIF8 antes de Image.load. _stamp_compass + _stamp_docs: la firma de compass/ se toma antes de leer y la de los documentos después, con la config nueva.
+
+**Referencias:** `docs/spec.md#auditoria`
 
 ### 19.10 Dock: errores, guardados fallidos y clics dobles · Pendiente
 

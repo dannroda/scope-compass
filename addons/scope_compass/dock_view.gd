@@ -38,6 +38,11 @@ var _uncommitted := -1
 var _loading := false
 var _reload_again := false
 var _queues := {}
+## Miniaturas ya decodificadas (19.9): ruta absoluta → { "stamp": modificado y tamaño, "tex": ImageTexture o null si no
+## se pudo cargar }. Sin esto, cada render leía y achicaba las capturas del disco.
+var _thumbs := {}
+## Firma de compass/ en la última lectura sin hub (19.9): si no cambió, el poll no relee ni re-renderiza.
+var _compass_stamp := ""
 var hub_pid := -1
 ## Tubería con el hub que lanzó el dock: mientras exista, el hub vive; si Godot muere, el sistema la cierra.
 var _hub_pipe := {}
@@ -144,9 +149,14 @@ func reload() -> void:
 		var data = null
 		if online:
 			data = await client.load_all()
+		var pre := ""
 		if data == null:
+			pre = _stamp_compass()
 			data = Reader.read(project_root)
 		board.load_from(data)
+		# Lo de compass/ se firma antes de leer (un cambio durante la lectura se ve en el próximo poll); los
+		# documentos, con la config recién leída.
+		_compass_stamp = pre + _stamp_docs() if pre != "" else ""
 		if not _reload_again:
 			break
 	_loading = false
@@ -786,12 +796,28 @@ func _build() -> void:
 		if not online and project_root != "":
 			await _try_hub()
 			if not online:
-				await reload())
+				# Solo si algo cambió en compass/ (una edición a mano, un git pull); si no, el conteo de git.
+				if _stamp() != _compass_stamp:
+					await reload()
+				else:
+					var n := _count_uncommitted()
+					if n != _uncommitted:
+						_uncommitted = n
+						_render())
 	add_child(_poll)
 
 
 func _ready() -> void:
 	_poll.start()
+
+
+## Al mover el dock de lugar o hacerlo flotante, el editor lo saca del árbol y lo vuelve a poner: _exit_tree cerró
+## el WebSocket, así que se vuelve a "sin hub" y el poll lo reconecta (19.9). Antes quedaba "conectado" sin eventos.
+func _enter_tree() -> void:
+	if online and not client.online:
+		online = false
+		state_changed.emit(false)
+		_render()
 
 
 func _exit_tree() -> void:
@@ -857,6 +883,13 @@ func _render() -> void:
 
 func _render_tree() -> void:
 	_apply_split()
+	# Seleccionar la fila de la tarea abierta emitía item_selected, que volvía a armar el detalle (19.9).
+	tree.set_block_signals(true)
+	_build_tree()
+	tree.set_block_signals(false)
+
+
+func _build_tree() -> void:
 	tree.clear()
 	var root := tree.create_item()
 	var ts := board.tasks_of(current_milestone)
@@ -1087,19 +1120,76 @@ func _render_images(t: Dictionary) -> void:
 			gone.add_theme_color_override("font_color", OVERDUE_COLOR)
 			images_box.add_child(gone)
 			continue
-		var b := TextureButton.new()
+		var tex = _thumb(abs_path)
+		var b: BaseButton
+		if tex == null:
+			# Godot no carga GIF, y una imagen rota tampoco: un botón con el nombre, que igual la abre.
+			b = Button.new()
+			b.text = "▣ " + str(p).get_file()
+			b.flat = true
+		else:
+			var tb := TextureButton.new()
+			tb.ignore_texture_size = true
+			tb.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+			tb.custom_minimum_size = Vector2(96, 72)
+			tb.texture_normal = tex
+			b = tb
 		b.tooltip_text = str(p) + "\nAbrir con el visor del sistema"
-		b.ignore_texture_size = true
-		b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		b.custom_minimum_size = Vector2(96, 72)
 		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		var img := Image.load_from_file(abs_path)
-		if img != null:
-			if img.get_width() > 192:
-				img.resize(192, maxi(1, int(192.0 * img.get_height() / img.get_width())))
-			b.texture_normal = ImageTexture.create_from_image(img)
 		b.pressed.connect(func(): OS.shell_open(abs_path))
 		images_box.add_child(b)
+
+
+## La miniatura de una captura (192 px de ancho como mucho), decodificada una sola vez mientras el archivo no cambie.
+## null si Godot no la puede cargar (un GIF, una imagen rota); eso también se recuerda, para no reintentar.
+func _thumb(abs_path: String):
+	var stamp := "%d:%d" % [FileAccess.get_modified_time(abs_path), FileAccess.get_size(abs_path)]
+	var hit = _thumbs.get(abs_path)
+	if hit is Dictionary and hit.stamp == stamp:
+		return hit.tex
+	var tex = null
+	# Image.load_from_file imprime un error con un GIF: se mira la firma antes.
+	var f := FileAccess.open(abs_path, FileAccess.READ)
+	var head := f.get_buffer(4) if f else PackedByteArray()
+	f = null
+	if head.size() == 4 and head.get_string_from_ascii() != "GIF8":
+		var img := Image.new()
+		if img.load(abs_path) == OK and not img.is_empty():
+			if img.get_width() > 192:
+				img.resize(192, maxi(1, int(192.0 * img.get_height() / img.get_width())))
+			tex = ImageTexture.create_from_image(img)
+	_thumbs[abs_path] = { "stamp": stamp, "tex": tex }
+	return tex
+
+
+## Firma de compass/ y de los documentos: nombre, fecha y tamaño de cada archivo. Barata comparada con leerlos.
+func _stamp() -> String:
+	return _stamp_compass() + _stamp_docs()
+
+
+func _stamp_compass() -> String:
+	var compass := project_root.path_join("compass")
+	var parts := PackedStringArray()
+	for sub in ["", "milestones", "tasks", "lists"]:
+		var dir := compass.path_join(sub) if sub != "" else compass
+		if not DirAccess.dir_exists_absolute(dir):
+			continue
+		for f in DirAccess.get_files_at(dir):
+			if f.ends_with(".json") or f.ends_with(".md"):
+				var path := dir.path_join(f)
+				parts.append("%s/%s:%d:%d" % [sub, f, FileAccess.get_modified_time(path), FileAccess.get_size(path)])
+	return "|".join(parts) + "|"
+
+
+## Los documentos (config.json › docs) también se leen sin hub: un cambio ahí también cuenta.
+func _stamp_docs() -> String:
+	var parts := PackedStringArray()
+	if board.config is Dictionary:
+		for d in board.config.get("docs", []):
+			if d is Dictionary and not str(d.get("path", "")).contains("*"):
+				var path := project_root.path_join(str(d.path))
+				parts.append("%s:%d" % [d.path, FileAccess.get_modified_time(path)])
+	return "|".join(parts)
 
 
 static func _files_of(t) -> Array:
