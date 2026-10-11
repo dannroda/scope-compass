@@ -991,8 +991,13 @@ Hasta acá la tarea no tenía dónde decir qué hay que hacer: el pedido iba en 
 - **CLI:** `add` y `set` aceptan `--description`; en `set`, `""` la quita. `show` la imprime debajo del título, antes de los pasos.
 - **Export markdown:** va como párrafo debajo del título (y de vence, prioridad, responsable y etiquetas), antes de los pasos.
 - **Enlaces:** `[[alias#id]]` en la descripción cuenta como en las notas: `refs check`, `refs suggest` y las tareas de cada sección la miran.
+- **Web (17.2):** en el detalle, *Descripción* va debajo del estado y antes de los pasos, así la tarea arranca por lo que hay que hacer. Crece con el texto, como las notas, y muestra sus enlaces. Borrada entera, el campo se quita.
+- **Dock (17.2):** la descripción en el mismo lugar, de solo lectura, como la fecha y las propiedades.
 
 ### 25.1 Criterios de aceptación de M17
 <!-- id: criterios-descripcion -->
 
 - [x] Una tarea tiene una descripción opcional (campo `description`), separada de las notas, que la CLI escribe y el export muestra antes de los pasos.
+- [x] El detalle de la tarea muestra la descripción antes de los pasos: en la web se edita; en el dock se lee.
+
+Tests: `cli.test.js` y `docs.test.js` (17.1), `ui.test.js` y `dock.test.js` (`props`) (17.2).

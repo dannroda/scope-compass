@@ -633,7 +633,7 @@
 
   // Campos editables del detalle. Cada uno guarda en data-orig el valor con el que se dibujó:
   // si el usuario lo cambió y todavía no lo guardó, el valor escrito se conserva al redibujar.
-  const EDITABLE = ['d-title', 'd-assignee', 'd-tag', 'd-addcl', 'd-refq', 'd-linkq', 'd-step-text', 'd-step-detail', 'd-test', 'd-notes'];
+  const EDITABLE = ['d-title', 'd-assignee', 'd-tag', 'd-addcl', 'd-refq', 'd-linkq', 'd-step-text', 'd-step-detail', 'd-description', 'd-test', 'd-notes'];
   function captureEdits(box) {
     const active = box.contains(document.activeElement) ? document.activeElement : null;
     const dirty = {};
@@ -770,6 +770,12 @@
         metaFields(t)),
       h('div', { class: 'seg', role: 'group', 'aria-label': 'Estado' }, STATUSES.map((s) =>
         h('button', { type: 'button', 'aria-pressed': (t.status || 'todo') === s.id ? 'true' : 'false', onclick: () => setStatus(t.id, s.id) }, s.label))),
+      // Qué hay que hacer y por qué (D37), antes de los pasos. Vacía, el campo se quita.
+      h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
+        h('label', { class: 'label', for: 'd-description' }, 'Descripción'),
+        h('textarea', { id: 'd-description', 'data-orig': t.description || '', placeholder: 'Qué hay que hacer y por qué',
+          onchange: (e) => updateTask(t.id, { description: e.target.value.trim() ? e.target.value : null }) }, t.description || ''),
+        linksOf(t.description)),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('span', { class: 'label' }, 'Pasos ' + (p.total ? '(' + p.done + '/' + p.total + ')' : '')),
         cl.length ? h('ul', { class: 'checklist' }, cl.map((c, i) => stepItem(t, c, i))) : h('p', { style: 'margin:0;color:var(--muted);font-size:14px' }, 'Sin pasos todavía.'),
@@ -828,7 +834,7 @@
   function tasksFor(d, id) {
     const hits = (key, sid) => (sid || null) === (id || null) && (key === d.alias || key === d.path);
     return S.tasks.filter((t) => refsOf(t).some((r) => hits(r.doc, r.section)) ||
-      [t.notes, t.test, ...checklistOf(t).flatMap((c) => [c.text, c.detail])].some((txt) =>
+      [t.description, t.notes, t.test, ...checklistOf(t).flatMap((c) => [c.text, c.detail])].some((txt) =>
         [...String(txt || '').replace(/`[^`]*`/g, '').matchAll(LINK)].some((m) => hits(m[1], m[2]))))
       .sort(sortTasks);
   }
@@ -1084,7 +1090,7 @@
     const add = (key, id) => { const d = docByKey(key); if (d) { if (!m.has(d.path)) m.set(d.path, new Set()); m.get(d.path).add(id); } };
     for (const t of S.tasks) {
       for (const r of refsOf(t)) add(r.doc, t.id);
-      for (const txt of [t.notes, t.test, ...checklistOf(t).flatMap((c) => [c.text, c.detail])]) {
+      for (const txt of [t.description, t.notes, t.test, ...checklistOf(t).flatMap((c) => [c.text, c.detail])]) {
         for (const x of String(txt || '').replace(/`[^`]*`/g, '').matchAll(LINK)) add(x[1], t.id);
       }
     }

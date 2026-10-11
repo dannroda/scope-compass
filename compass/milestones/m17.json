@@ -1,7 +1,8 @@
 {
   "code": "M17",
   "done_when": [
-    "Una tarea tiene una descripción opcional (campo description), separada de las notas, que la CLI escribe y el export muestra antes de los pasos."
+    "Una tarea tiene una descripción opcional (campo description), separada de las notas, que la CLI escribe y el export muestra antes de los pasos.",
+    "El detalle de la tarea muestra la descripción antes de los pasos: en la web se edita; en el dock se lee."
   ],
   "goal": "Que cada tarea diga qué hay que hacer y por qué en un campo propio, separado de las notas de lo que fue saliendo al trabajarla.",
   "order": 17,

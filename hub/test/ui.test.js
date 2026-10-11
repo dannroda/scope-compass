@@ -254,6 +254,24 @@ test('notas y "cómo probarlo" crecen con el texto, sin arrastrar la esquina (16
   await page.context().close();
 });
 
+test('descripción en el detalle, antes de los pasos: se guarda, la CLI la actualiza y vacía se quita (17.2)', async () => {
+  const page = await open();
+  await page.click('.card[data-id="m1-07"]');
+  assert.equal(await page.inputValue('#d-description'), '');
+  assert.equal(await page.getAttribute('#d-description', 'placeholder'), 'Qué hay que hacer y por qué');
+  await page.fill('#d-description', 'Qué hacer\ny por qué');
+  await page.locator('#d-description').blur();
+  for (let i = 0; i < 100 && !(await task('m1-07')).description; i++) await new Promise((r) => setTimeout(r, 30));
+  assert.equal((await task('m1-07')).description, 'Qué hacer\ny por qué');
+  assert.equal(await cli(['set', 'm1-07', '--description', 'Desde la CLI']), 0);
+  await page.waitForFunction(() => document.getElementById('d-description')?.value === 'Desde la CLI');
+  await page.fill('#d-description', '  ');
+  await page.locator('#d-description').blur();
+  for (let i = 0; i < 100 && 'description' in (await task('m1-07')); i++) await new Promise((r) => setTimeout(r, 30));
+  assert.equal('description' in (await task('m1-07')), false, 'en blanco, el campo se quita');
+  await page.context().close();
+});
+
 test('un clic afuera del detalle lo cierra; otra tarjeta cambia de tarea; adentro o arrastrando una selección, no (16.5)', async () => {
   const page = await open();
   const openId = () => page.evaluate(() => (document.getElementById('detail').hidden ? null : document.querySelector('#detail #d-title')?.value));
@@ -472,9 +490,9 @@ test('detalle (13.3): pasos sin bajar a 1440×900, título sin borde en reposo, 
   await page.selectOption('#d-priority', 'low');
   await page.waitForSelector('#detail .pchip.prio-low');
   assert.equal(await page.locator('#detail .props .pchip.empty').count(), 3);
-  // El orden: estado, pasos y notas antes que referencias y "Cómo probarlo".
-  const order = await page.locator('#detail > *').evaluateAll((els) => els.map((e) => e.matches('.seg') ? 'estado' : e.querySelector('.checklist, .addcl') ? 'pasos' : e.querySelector('#d-notes') ? 'notas' : e.querySelector('#d-test') ? 'prueba' : e.matches('.refs') ? 'refs' : null).filter(Boolean));
-  assert.deepEqual([...new Set(order)], ['estado', 'pasos', 'notas', 'refs', 'prueba']); // vínculos también es .refs
+  // El orden: estado, descripción, pasos y notas antes que referencias y "Cómo probarlo".
+  const order = await page.locator('#detail > *').evaluateAll((els) => els.map((e) => e.matches('.seg') ? 'estado' : e.querySelector('#d-description') ? 'descripción' : e.querySelector('.checklist, .addcl') ? 'pasos' : e.querySelector('#d-notes') ? 'notas' : e.querySelector('#d-test') ? 'prueba' : e.matches('.refs') ? 'refs' : null).filter(Boolean));
+  assert.deepEqual([...new Set(order)], ['estado', 'descripción', 'pasos', 'notas', 'refs', 'prueba']); // vínculos también es .refs
   await page.context().close();
 });
 

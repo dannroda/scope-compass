@@ -1657,12 +1657,13 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 
 **Referencias:** `docs/spec.md#telefono`
 
-## M17 — Descripción de las tareas  (1/3)
+## M17 — Descripción de las tareas  (2/3)
 
 Que cada tarea diga qué hay que hacer y por qué en un campo propio, separado de las notas de lo que fue saliendo al trabajarla.
 
 **Hecho cuando:**
 - Una tarea tiene una descripción opcional (campo description), separada de las notas, que la CLI escribe y el export muestra antes de los pasos.
+- El detalle de la tarea muestra la descripción antes de los pasos: en la web se edita; en el dock se lee.
 
 ### 17.1 Campo description: esquema, CLI, export y referencias · Hecho
 
@@ -1679,11 +1680,20 @@ Pedido del usuario (2026-10-11): las tareas no tenían dónde decir qué hay que
 
 **Referencias:** `docs/spec.md#descripcion`
 
-### 17.2 Descripción en el detalle de la web y del dock · Pendiente
+### 17.2 Descripción en el detalle de la web y del dock · Hecho
 
 **Etiquetas:** `ui`
 
-Mostrar y editar la descripción arriba en el detalle de la web, debajo del título y antes de los pasos, para que la tarea arranque por lo que hay que hacer. En el dock de Godot, mostrarla de solo lectura en el mismo lugar.
+Pedido del usuario (2026-10-11): mostrar y editar la descripción arriba en el detalle de la web, debajo del título y antes de los pasos, para que la tarea arranque por lo que hay que hacer. En el dock de Godot, mostrarla de solo lectura en el mismo lugar.
+
+- [x] Web: Descripción entre el estado y los pasos
+- [x] Dock: descripción de solo lectura
+
+**Prueba:** En el detalle de la web, Descripción va entre el estado y los pasos; escribir y salir la guarda, un cambio de la CLI se ve en vivo y dejarla en blanco quita el campo. En el dock, la descripción de m1-04 se lee debajo del estado y una tarea sin descripción no muestra nada. `ui.test.js` y `dock.test.js` pasan (salvo «← Inicio», que falla porque hay un Inicio real corriendo).
+
+**Notas:** Hecho: web: textarea #d-description debajo del selector de estado (las propiedades y el estado son de una línea, así la descripción queda arriba de todo lo largo), con placeholder, field-sizing como las notas y sus [[enlaces]] debajo; en blanco manda null y el campo se quita. Sobrevive al redibujado (EDITABLE). Las tareas de una sección y de un documento también miran la descripción. Dock: un Label de solo lectura en el mismo lugar, sin las comillas de código, como el título.
+
+**Referencias:** `docs/spec.md#descripcion`
 
 ### 17.3 Migrar las notas: el pedido pasa a la descripción · Pendiente
 

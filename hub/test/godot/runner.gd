@@ -551,13 +551,14 @@ func test_poll_registry(a: Array) -> void:
 
 
 # Etiquetas, prioridad y responsable (M11): en la fila, la prioridad solo si es alta (como la tarjeta de la web);
-# en el detalle, todo. El botón de Archivos se ve si la config no tiene views o si incluye files.
+# en el detalle, todo, y la descripción (17.2). El botón de Archivos se ve si la config no tiene views o si incluye files.
 func test_props(a: Array) -> void:
 	var c := "props"
 	var v := await _view(a[0])
 	v.current_milestone = "m01"
 	_select(v, a[1])
 	if not _check(c, v.detail_props.visible and v.detail_props.text == "Prioridad alta · @ana · #arte #audio", "detalle: " + v.detail_props.text): return
+	if not _check(c, v.detail_description.visible and v.detail_description.text == "Qué hacer y por qué", "descripción: " + v.detail_description.text): return
 	var row: TreeItem = v.tree.get_selected()
 	if not _check(c, row != null and row.get_text(0).ends_with(" · Alta · @ana · #arte #audio"), "fila: " + (row.get_text(0) if row else "sin fila")): return
 	_select(v, a[2])
@@ -565,6 +566,7 @@ func test_props(a: Array) -> void:
 	if not _check(c, v.detail_props.text == "Prioridad baja" and not row.get_text(0).contains("Baja"), "baja: %s / %s" % [v.detail_props.text, row.get_text(0)]): return
 	_select(v, a[3])
 	if not _check(c, not v.detail_props.visible, "sin nada no muestra nada: " + v.detail_props.text): return
+	if not _check(c, not v.detail_description.visible, "sin descripción no muestra nada: " + v.detail_description.text): return
 	if not _check(c, v.files_button.visible, "sin views falta el botón de Archivos"): return
 	v.board.config.views = ["board", "docs"]
 	v._render()

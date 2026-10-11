@@ -480,8 +480,8 @@ test('dock: sin hub al abrir, el sondeo lo encuentra en otro puerto que la confi
   }
 });
 
-test('dock: etiquetas, prioridad y responsable en la lista y el detalle; el botón de Archivos según views', { skip }, async () => {
-  await setTask('m1-04', { status: 'todo', priority: 'high', assignee: 'ana', tags: ['arte', 'audio'] });
+test('dock: etiquetas, prioridad y responsable en la lista y el detalle, y la descripción; el botón de Archivos según views', { skip }, async () => {
+  await setTask('m1-04', { status: 'todo', priority: 'high', assignee: 'ana', tags: ['arte', 'audio'], description: 'Qué hacer y `por qué`' });
   await setTask('m1-05', { priority: 'low' });
   expectOk(await godot('props', dir, 'm1-04', 'm1-05', 'm1-07'), 'props');
 });

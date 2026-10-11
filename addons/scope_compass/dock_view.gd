@@ -82,6 +82,8 @@ var detail_title: Label
 ## Fecha límite de la tarea abierta (solo lectura: se edita en la web o con `scompass set --due`).
 var detail_due: Label
 var detail_props: Label
+## Qué hay que hacer y por qué (D37). Solo lectura: se edita en la web o con `scompass set --description`.
+var detail_description: Label
 var status_select: OptionButton
 var steps_box: VBoxContainer
 var refs_box: VBoxContainer
@@ -728,6 +730,10 @@ func _build() -> void:
 		status_select.set_item_metadata(status_select.item_count - 1, s.id)
 	status_select.item_selected.connect(func(i): if selected_task != "": update_task(selected_task, { "status": status_select.get_item_metadata(i) }))
 	srow.add_child(status_select)
+	detail_description = Label.new()
+	detail_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail_description.custom_minimum_size.x = WRAP_MIN_WIDTH
+	detail.add_child(detail_description)
 	steps_box = VBoxContainer.new()
 	detail.add_child(steps_box)
 	links_box = VBoxContainer.new()
@@ -935,6 +941,9 @@ func _render_detail() -> void:
 		if status_select.get_item_metadata(i) == t.status:
 			status_select.select(i)
 	status_select.disabled = not online
+	var description := str(t.get("description", ""))
+	detail_description.visible = description != ""
+	detail_description.text = description.replace("`", "")
 	for c in steps_box.get_children():
 		steps_box.remove_child(c)
 		c.queue_free()
