@@ -2022,12 +2022,13 @@ Pedido del usuario (2026-10-11): las tareas existentes tienen el pedido al princ
 
 **Referencias:** `docs/spec.md#descripcion`
 
-## M18 — Fechas, capturas e historial  (1/6)
+## M18 — Fechas, capturas e historial  (2/6)
 
 Saber cuándo se terminó cada tarea y si un hito se atrasa, y que la tarea muestre más que texto: capturas, su historial en git y plantillas para bugs.
 
 **Hecho cuando:**
 - Cada tarea hecha dice cuándo se terminó (done_at), y el Inicio cuenta las terminadas en los últimos 7 días.
+- Un hito puede tener fecha objetivo; pasada con tareas sin terminar, la CLI, la web, el dock y el Inicio lo marcan atrasado.
 
 ### 18.1 done_at: fecha en que la tarea pasó a Hecho · Hecho
 
@@ -2041,11 +2042,17 @@ Pedido del usuario (2026-10-11): updated_at cambia con cualquier edición (la mi
 
 **Referencias:** `docs/spec.md#fechas-capturas-historial`
 
-### 18.2 Fecha objetivo del hito · Pendiente
+### 18.2 Fecha objetivo del hito · Hecho
 
-**Etiquetas:** `cli`
+**Terminada:** 2026-10-11 · **Etiquetas:** `cli`
 
 Pedido del usuario (2026-10-11): los hitos tienen goal y done_when pero no fecha. Un due opcional en el hito, con la misma regla de vencido que las tareas; la web, el dock y el Inicio avisan cuando un hito con tareas pendientes pasó su fecha.
+
+**Prueba:** milestone set m01 --due 2020-01-01 con una tarea sin terminar: milestone list/show, los encabezados de list y el export dicen «(atrasado)»; con todas hechas, no. En la web el resumen dice «Atrasado · …» y el chip tiene el borde rojo; en el dock el selector suma «· atrasado»; el Inicio lo marca en la tarjeta. --due "" la quita. Tests: cli, home, ui y dock (props).
+
+**Notas:** Hecho: due en milestone.schema (mismo patrón que las tareas). milestoneDueState en dates.js: «done» si tiene tareas y están todas hechas; si no, dueState (un hito sin tareas cuenta como pendiente). milestone set --due lee el hito y lo reescribe entero con su etag: la API no tiene PATCH de hitos (D12) y la CLI pasa por el hub. La fecha se edita solo con la CLI, como el resto del hito.
+
+**Referencias:** `docs/spec.md#fechas-capturas-historial`
 
 ### 18.3 Estimación S/M/L · Pendiente
 

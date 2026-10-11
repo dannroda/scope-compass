@@ -4,7 +4,7 @@ import { mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { writeAtomic } from './store/atomic.js';
 import { linkView } from './links.js';
-import { EVERY, localDay } from './dates.js';
+import { EVERY, localDay, milestoneDueState } from './dates.js';
 import { PRIORITY_LABEL } from './filters.js';
 
 const ST = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
@@ -32,6 +32,7 @@ export function renderMarkdown({ milestones, tasks, lists = [] }, { title, board
     const mt = ts.filter((t) => t.milestone === mid).sort(byOrderCode);
     const done = mt.filter((t) => t.status === 'done').length;
     L.push(`## ${m.code} — ${m.title}` + (mt.length ? `  (${done}/${mt.length})` : ''), '', m.goal ?? '', '');
+    if (m.due) L.push(`**Fecha objetivo:** ${m.due.replace('T', ' ')}${milestoneDueState({ id: mid, ...m }, ts) === 'overdue' ? ' (atrasado)' : ''}`, '');
     if (m.done_when?.length) L.push('**Hecho cuando:**', ...m.done_when.map((x) => `- ${x}`), '');
     for (const t of mt) {
       const head = [t.code ?? '', t.title].filter(Boolean).join(' ');

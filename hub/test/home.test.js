@@ -78,6 +78,10 @@ test('summarize: hito actual, en curso, lo que sigue y listas', async () => {
     ['a', { milestone: 'm00', title: 'a', status: 'done', done_at: day(1) }], ['b', { milestone: 'm00', title: 'b', status: 'done', done_at: day(8) }],
     ['c', { milestone: 'm00', title: 'c', status: 'done' }], ['d', { milestone: 'm00', title: 'd', status: 'doing' }]]) }, TODAY);
   assert.equal(week.done_week, 1);
+  // Fecha objetivo del hito actual (18.2).
+  const late = summarize({ lists: new Map(), milestones: new Map([['m00', { code: 'M0', order: 0, title: 'Cero', due: '2020-01-01' }]]),
+    tasks: new Map([['a', { milestone: 'm00', title: 'a', status: 'todo' }]]) }, TODAY);
+  assert.deepEqual([late.milestone.due, late.milestone.due_state], ['2020-01-01', 'overdue']);
 });
 
 test('todayOf: vencido antes que hoy, y las tareas en curso al final', () => {

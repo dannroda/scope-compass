@@ -123,7 +123,9 @@
     if (s?.milestone) {
       const m = s.milestone;
       body.push(h('div', { class: 'ms' },
-        h('div', { class: 'row' }, h('span', null, h('b', null, m.code), ' · ', rich(m.title)), h('span', { class: 'n' }, m.done + '/' + m.total)),
+        h('div', { class: 'row' }, h('span', null, h('b', null, m.code), ' · ', rich(m.title)),
+          h('span', null, m.due_state === 'overdue' ? h('span', { class: 'tag overdue', title: 'Fecha objetivo del hito' }, 'atrasado · ' + showDue(m.due)) : m.due_state === 'today' ? h('span', { class: 'tag today' }, 'objetivo hoy') : null,
+            ' ', h('span', { class: 'n' }, m.done + '/' + m.total))),
         h('div', { class: 'bar', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': m.total, 'aria-valuenow': m.done, 'aria-label': 'Avance de ' + m.code },
           h('i', { style: 'width:' + (m.total ? Math.round(100 * m.done / m.total) : 0) + '%' }))));
     }

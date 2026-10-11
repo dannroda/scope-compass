@@ -472,7 +472,8 @@
       const ts = S.tasks.filter((t) => t.milestone === m.id);
       const d = ts.filter((t) => t.status === 'done').length;
       const complete = ts.length > 0 && d === ts.length;
-      const chip = h('button', { class: 'chip' + (complete ? ' complete' : ''), type: 'button', title: m.title, 'aria-pressed': S.filter === m.id ? 'true' : 'false',
+      const late = !complete && dueGroup(m.due) === 'overdue';
+      const chip = h('button', { class: 'chip' + (complete ? ' complete' : '') + (late ? ' late' : ''), type: 'button', title: m.title + (late ? ' · atrasado: la fecha objetivo era ' + showDue(m.due) : ''), 'aria-pressed': S.filter === m.id ? 'true' : 'false',
         onclick: (e) => { const dd = e.currentTarget.closest('details'); if (dd) dd.open = false; setFilter(m.id); } },
         m.code, h('span', { class: 'n' }, ts.length ? d + '/' + ts.length : '—'));
       if (complete && S.filter !== m.id) { chip.append(h('span', { class: 'ms-title' }, m.title)); done.push(chip); } else nav.append(chip);
@@ -516,6 +517,7 @@
     const open = more && pref(SUM_KEY) === '1';
     box.append(h('div', { class: 'sum-line' },
       h('h2', null, m ? m.code + ' · ' + m.title : 'Todos los hitos'),
+      m && m.due ? msDueMark(m, ts) : null,
       h('div', { class: 'progress' }, h('div', { class: 'bar', role: 'img', 'aria-label': pct + '% hecho' }, h('i', { style: 'width:' + pct + '%' })), d + '/' + ts.length + ' tareas',
         hidden ? h('span', { class: 'hidden-n' }, '· ' + (hidden === 1 ? '1 oculta' : hidden + ' ocultas') + ' por los filtros') : null),
       more ? h('button', { type: 'button', class: 'sum-more', id: 'sum-more', 'aria-expanded': open ? 'true' : 'false', 'aria-controls': 'sum-body',
@@ -543,6 +545,15 @@
       for (const t of items) col.append(cardFor(t, s));
       board.append(col);
     }
+  }
+
+  // Fecha objetivo del hito (18.2): atrasado si pasó con tareas sin terminar; hoy, se marca; con todo hecho, apagada.
+  function msDueMark(m, ts) {
+    const complete = ts.length > 0 && ts.every((t) => t.status === 'done');
+    const g = complete ? null : dueGroup(m.due);
+    const cls = g === 'overdue' ? ' bad' : g === 'today' ? ' today' : '';
+    return h('span', { class: 'duemark ms-due' + cls, title: 'Fecha objetivo del hito (scompass milestone set ' + m.id + ' --due …)' },
+      (g === 'overdue' ? 'Atrasado · ' : g === 'today' ? 'Hoy · ' : 'Objetivo ') + showDue(m.due));
   }
 
   // Fecha límite de una tarea (8.13, D26): vencida u hoy se marcan, salvo en las hechas.

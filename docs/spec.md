@@ -152,6 +152,7 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `title` | string | |
 | `goal` | string | Admite `` `código` `` |
 | `done_when` | string[] | Criterios de hecho |
+| `due` | string | Opcional. Fecha objetivo, `YYYY-MM-DD` o `YYYY-MM-DDTHH:MM`; pasada con tareas sin terminar, el hito está atrasado (§26) |
 
 **Task** (`tasks/<id>.json`)
 
@@ -315,6 +316,7 @@ scompass check <id> <n> [--undo]             # n desde 1, como lo muestra `show`
 scompass set <id> --file task.json          # reemplazo completo, para cargas grandes
 scompass set <id> [--title] [--description] [--notes] [--test] [--code] [--milestone] [--status]   # solo esos campos
 scompass milestone list | show <id> | set <id> --file m.json
+scompass milestone set <id> --due 2026-11-01   # fecha objetivo ("" la quita)
 scompass link add <id> <blocks|blocked-by|related> <otra>   # vínculo entre tareas (D22)
 scompass link rm <id> <otra>
 scompass link list [<id>] [--json]          # sale con 1 si hay vínculos a tareas que no existen
@@ -1013,5 +1015,9 @@ Tests: `cli.test.js` y `docs.test.js` (17.1), `ui.test.js` y `dock.test.js` (`pr
   - mientras sigue hecha, se conserva aunque se edite, y un `put` sin el campo no lo pierde;
   - al salir de `done`, se quita; si vuelve, la fecha es la nueva.
   - Una tarea hecha de antes del campo no lo recibe al editarla: no se inventa. En este repo se completaron desde git: el `updated_at` de la tarea en el commit que la dejó hecha (exacto si la app la pasó a Hecho; aproximado si se creó y terminó en el mismo commit).
-  - Se ve en `show` (*Hecho el 2026-10-10*), en el export (**Terminada:**), en el pie del detalle, en la columna y el orden *Terminada* de la lista, y en el Inicio: *n tareas terminadas en los últimos 7 días*.
+  - Se ve en `show` (*Hecho el 2026-10-10*), en el export (**Terminada:**), en el pie del detalle, en la columna y el orden *Terminada* de la lista, y en el Inicio: *n tareas terminadas en los últimos 7 días*.- **Fecha objetivo del hito (18.2):** `due` opcional en el hito, con el formato de las tareas. El hito está *atrasado* si la fecha pasó y le quedan tareas sin terminar; con todas hechas, la fecha queda como dato. Un hito sin tareas cuenta como pendiente.
+  - CLI: `milestone set <id> --due …` (`""` la quita). Por el hub el hito se reescribe entero con su etag, porque la API no tiene PATCH de hitos (D12). `milestone list`, `milestone show` y los encabezados de `list` dicen *fecha objetivo … (atrasado)*; el export, **Fecha objetivo:**.
+  - Web: el resumen del hito dice *Objetivo 01/11*, *Hoy · …* o, en rojo, *Atrasado · …*; el chip de un hito atrasado tiene el borde rojo. Se edita con la CLI, como el resto del hito.
+  - Dock: el selector de hito suma *· atrasado 01/11*.
+  - Inicio: la tarjeta del proyecto marca *atrasado* (u *objetivo hoy*) junto al hito actual.
 

@@ -14,7 +14,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
 
 ## Modelo
 
-- **Hito** (`compass/milestones/<id>.json`): id `m00`, `m01`, …; campos `code` ("M0"), `title`, `order`, `goal`, `done_when`.
+- **Hito** (`compass/milestones/<id>.json`): id `m00`, `m01`, …; campos `code` ("M0"), `title`, `order`, `goal`, `done_when` y `due` (fecha objetivo opcional; atrasado si pasa con tareas sin terminar).
 - **Tarea** (`compass/tasks/<id>.json`): el id es el nombre del archivo. `scompass add` le da el siguiente número de su hito (`m5-12` en `m05`) y lo imprime; las tareas de antes pueden tener ids al azar como `sd3tg577`. No se renombra, aunque la tarea cambie de hito. Campos:
   - `milestone` (id del hito), `title`, `code` (número visible, por ejemplo "5.2"; opcional);
   - `description`: qué hay que hacer y por qué, el enunciado de la tarea, que se escribe al crearla (opcional);
@@ -63,6 +63,7 @@ scompass check m5-02 2                                        # tilda el paso 2
 scompass check m5-02 2 --undo
 scompass set m5-02 --file tarea.json                          # reemplazo completo (--file - lee stdin)
 scompass milestone set m08 --file hito.json                   # crea o reemplaza un hito
+scompass milestone set m08 --due 2026-11-01                   # fecha objetivo del hito ("" la quita)
 ```
 
 - Los pasos se numeran desde 1, como los muestra `scompass show`.

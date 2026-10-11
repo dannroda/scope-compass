@@ -56,6 +56,9 @@ nav.miles { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
 .chip[aria-pressed="true"] .n { color: var(--on-accent); }
 .chip.complete:not([aria-pressed="true"]) { color: var(--s-done); border-color: var(--s-done); }
+.chip.late:not([aria-pressed="true"]) { border-color: var(--danger); }
+.chip.late .n { color: var(--danger); }
+.sum-line .ms-due { align-self: center; white-space: nowrap; }
 
 section.summary { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; display: flex; flex-direction: column; gap: 10px; }
 /* Resumen del hito en una línea; el objetivo y "Hecho cuando" se despliegan (13.2). */

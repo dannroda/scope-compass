@@ -27,7 +27,7 @@ import { repoFile } from './files-api.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
-import { dueState, EVERY, isValidDue, localDay, showDue } from './dates.js';
+import { dueState, EVERY, isValidDue, localDay, milestoneDueState, showDue } from './dates.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
 import { DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, splitList } from './filters.js';
 
@@ -78,6 +78,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
                                             YYYY-MM-DDTHH:MM; "" quita --description, --due, --tags,
                                             --priority o --assignee)
   milestone list | show <id> | set <id> --file m.json
+  milestone set <id> --due 2026-11-01       fecha objetivo del hito ("" la quita); atrasado si pasa con tareas pendientes
   lists                                     listas, con cuántos ítems quedan
   lists show <lista>                        una lista, con los ítems numerados
   lists add "<título>"                      crea una lista (el id sale del título: "Libros para leer" → libros-para-leer)
@@ -195,6 +196,11 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const priority = (v) => { if (v !== '' && !PRIORITIES.includes(v)) throw new UsageError(`prioridad inválida: ${v} (${PRIORITIES.join(', ')})`); return v || null; };
   const tagList = (v) => { const t = [...new Set(splitList(v))]; return t.length ? t : null; };
   const extras = (d) => [d.priority && `prioridad ${PRIORITY_LABEL[d.priority] ?? d.priority}`, d.assignee && `@${d.assignee}`, d.tags?.length && d.tags.map((x) => '#' + x).join(' ')].filter(Boolean);
+  // Fecha objetivo de un hito (18.2): atrasado si pasó con tareas sin terminar.
+  const msDueNote = (m, tasks) => {
+    const s = milestoneDueState(m, tasks);
+    return s ? `fecha objetivo ${showDue(m.due)}${s === 'overdue' ? ' (atrasado)' : s === 'today' ? ' (hoy)' : ''}` : '';
+  };
   const dueNote = (d, done) => { const s = done ? null : dueState(d); return `vence ${showDue(d)}${s === 'overdue' ? ' (vencida)' : s === 'today' ? ' (hoy)' : ''}`; };
 
   const readJsonFile = async (path) => {
@@ -477,7 +483,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         if (t.milestone !== last) {
           last = t.milestone;
           const m = ms.get(last);
-          print(`\n${m ? `${m.code} · ${m.title}` : last}`);
+          print(`\n${m ? `${m.code} · ${m.title}${m.due ? ' · ' + msDueNote({ id: last, ...m }, everything) : ''}` : last}`);
         }
         const cl = t.checklist ?? [];
         const steps = cl.length ? `  ${cl.filter((c) => c.done).length}/${cl.length}` : '';
@@ -1037,18 +1043,30 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         showWarnings(warnings);
         const milestones = listMilestones(items.map((m) => [m.id, m.doc]));
         if (o.json) return done({ milestones, warnings });
-        for (const m of milestones) print(`  ${m.id.padEnd(5)} ${m.code.padEnd(4)} ${m.title}`);
+        const tasks = listTasks(await store.loadAll());
+        for (const m of milestones) print(`  ${m.id.padEnd(5)} ${m.code.padEnd(4)} ${m.title}${m.due ? '  · ' + msDueNote(m, tasks) : ''}`);
         return 0;
       }
       if (sub === 'show') {
         const m = await store.get('milestones', need(id, 'el id'));
         if (o.json) return done({ id: m.id, etag: m.etag, ...m.doc });
         print(`${m.doc.code} · ${m.doc.title}  [${m.id}]`);
+        if (m.doc.due) print(msDueNote({ id: m.id, ...m.doc }, listTasks(await store.loadAll())).replace(/^f/, 'F'));
         if (m.doc.goal) print(m.doc.goal);
         for (const w of m.doc.done_when ?? []) print(`  - ${w}`);
         return 0;
       }
       if (sub === 'set') {
+        // --due cambia solo la fecha objetivo ("" la quita); --file reemplaza el hito entero.
+        if (o.due !== undefined && o.file === undefined) {
+          // Por el hub los hitos solo se reemplazan enteros (D12): se lee y se reescribe con su etag.
+          const cur = await store.get('milestones', need(id, 'el id'));
+          const { due: _old, ...rest } = cur.doc;
+          const d = due(o.due);
+          const r = await store.put('milestones', id, d ? { ...rest, due: d } : rest, { ifMatch: o.etag ?? cur.etag });
+          return written({ id: r.id, etag: r.etag, ...r.doc }, r.doc.due ? `${r.id}: fecha objetivo ${showDue(r.doc.due)}` : `${r.id}: sin fecha objetivo`);
+        }
+        if (o.due !== undefined) throw new UsageError('--file reemplaza el hito entero: no se combina con --due');
         const r = await store.put('milestones', need(id, 'el id'), await readJsonFile(need(o.file, '--file')), ifMatch);
         return written({ id: r.id, etag: r.etag, ...r.doc }, `Guardado ${r.id}`);
       }

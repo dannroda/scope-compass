@@ -224,6 +224,24 @@ test('description (17.1): add y set la escriben, "" la quita; show y el export l
   assert.equal('description' in (await task(id)), false);
 });
 
+test('fecha objetivo del hito (18.2): milestone set --due, atrasado si pasa con tareas sin terminar', async () => {
+  assert.equal((await cli(['milestone', 'set', 'm01', '--due', '2020-01-01'])).code, 0);
+  const file = JSON.parse(await readFile(join(dir, 'compass', 'milestones', 'm01.json'), 'utf8'));
+  assert.equal(file.due, '2020-01-01');
+  assert.ok(file.title && file.done_when, 'el resto del hito queda igual');
+  // Todas hechas (el fixture): la fecha pasó, pero no está atrasado.
+  assert.doesNotMatch((await cli(['milestone', 'list'])).out, /atrasado/);
+  assert.equal((await cli(['move', 'm1-07', 'doing'])).code, 0);
+  assert.match((await cli(['milestone', 'list'])).out, /m01 +M1 +.* · fecha objetivo 2020-01-01 \(atrasado\)/);
+  assert.match((await cli(['milestone', 'show', 'm01'])).out, /\nFecha objetivo 2020-01-01 \(atrasado\)\n/);
+  assert.match((await cli(['list', '--milestone', 'm01'])).out, /M1 · .* · fecha objetivo 2020-01-01 \(atrasado\)/);
+  assert.match(await readFile(join(dir, 'docs', 'tareas.md'), 'utf8'), /\*\*Fecha objetivo:\*\* 2020-01-01 \(atrasado\)/);
+  assert.equal((await cli(['milestone', 'set', 'm01', '--due', '31/12'])).code, 1, 'fecha inválida');
+  assert.equal((await cli(['milestone', 'set', 'm01', '--due', '2020-01-01', '--file', 'x.json'])).code, 2);
+  assert.equal((await cli(['milestone', 'set', 'm01', '--due', ''])).code, 0);
+  assert.equal('due' in JSON.parse(await readFile(join(dir, 'compass', 'milestones', 'm01.json'), 'utf8')), false);
+});
+
 test('serve --exit-on-stdin-close: se cierra cuando se corta la entrada; sin la opción, no', async () => {
   const { spawn } = await import('node:child_process');
   const bin = join(REPO, 'hub', 'bin', 'scompass.js');

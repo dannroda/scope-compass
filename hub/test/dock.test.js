@@ -480,9 +480,12 @@ test('dock: sin hub al abrir, el sondeo lo encuentra en otro puerto que la confi
   }
 });
 
-test('dock: etiquetas, prioridad y responsable en la lista y el detalle, y la descripción; el botón de Archivos según views', { skip }, async () => {
+test('dock: etiquetas, prioridad y responsable en la lista y el detalle, la descripción y el hito atrasado; el botón de Archivos según views', { skip }, async () => {
   await setTask('m1-04', { status: 'todo', priority: 'high', assignee: 'ana', tags: ['arte', 'audio'], description: 'Qué hacer y `por qué`' });
   await setTask('m1-05', { priority: 'low' });
+  // Fecha objetivo del hito (18.2): m01 tiene m1-04 sin terminar, así que está atrasado.
+  const mp = join(dir, 'compass', 'milestones', 'm01.json');
+  await writeFile(mp, canonical({ ...JSON.parse(await readFile(mp, 'utf8')), due: '2020-01-01' }));
   expectOk(await godot('props', dir, 'm1-04', 'm1-05', 'm1-07'), 'props');
 });
 

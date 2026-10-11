@@ -30,6 +30,16 @@ export function dueState(due, now = new Date()) {
 
 export const showDue = (due) => due.replace('T', ' ');
 
+/**
+ * Estado de la fecha objetivo de un hito (18.2): 'done' si tiene tareas y están todas hechas; si no, el de dueState
+ * ('overdue' = atrasado). null sin fecha. tasks: las tareas del proyecto (planas, con milestone y status).
+ */
+export function milestoneDueState(m, tasks, now = new Date()) {
+  if (!m.due) return null;
+  const mine = tasks.filter((t) => t.milestone === m.id);
+  return mine.length && mine.every((t) => t.status === 'done') ? 'done' : dueState(m.due, now);
+}
+
 // El día local (YYYY-MM-DD) de un instante ISO, como done_at (18.1): la hora UTC puede ser de otro día.
 export const localDay = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 

@@ -288,6 +288,20 @@ test('done_at (18.1): pasar a Hecho desde el detalle lo anota en el pie y en la 
   await page.context().close();
 });
 
+test('fecha objetivo del hito (18.2): el chip se marca atrasado y el resumen dice la fecha', async () => {
+  assert.equal(await cli(['milestone', 'set', 'm01', '--due', '2020-01-01']), 0);
+  const page = await open();
+  await page.click('.ms-done summary').catch(() => {});
+  await page.click('.chip:has-text("M1")');
+  await page.waitForSelector('.sum-line .ms-due');
+  assert.match(await page.textContent('.sum-line .ms-due'), /^Objetivo /, 'todo hecho: sin atraso');
+  assert.equal(await cli(['move', 'm1-07', 'doing']), 0);
+  await page.waitForSelector('.sum-line .ms-due.bad');
+  assert.match(await page.textContent('.sum-line .ms-due'), /^Atrasado · /);
+  assert.equal(await page.locator('#miles .chip.late').count(), 1);
+  await page.context().close();
+});
+
 test('un clic afuera del detalle lo cierra; otra tarjeta cambia de tarea; adentro o arrastrando una selección, no (16.5)', async () => {
   const page = await open();
   const openId = () => page.evaluate(() => (document.getElementById('detail').hidden ? null : document.querySelector('#detail #d-title')?.value));

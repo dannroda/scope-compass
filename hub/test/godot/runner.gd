@@ -559,6 +559,8 @@ func test_props(a: Array) -> void:
 	_select(v, a[1])
 	if not _check(c, v.detail_props.visible and v.detail_props.text == "Prioridad alta · @ana · #arte #audio", "detalle: " + v.detail_props.text): return
 	if not _check(c, v.detail_description.visible and v.detail_description.text == "Qué hacer y por qué", "descripción: " + v.detail_description.text): return
+	var ms_text := v.milestone_select.get_item_text(v.milestone_select.selected)
+	if not _check(c, ms_text.contains(" · atrasado "), "hito atrasado (18.2): " + ms_text): return
 	var row: TreeItem = v.tree.get_selected()
 	if not _check(c, row != null and row.get_text(0).ends_with(" · Alta · @ana · #arte #audio"), "fila: " + (row.get_text(0) if row else "sin fila")): return
 	_select(v, a[2])
