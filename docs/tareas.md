@@ -1566,7 +1566,7 @@ Vincular tareas con scripts, escenas y demás archivos del repo, y llegar de una
 
 **Notas:** Hecho: spec §23 (el dato, CLI, web, dock) con §23.1 y cómo se probó la parte del editor; D35 (files aparte de refs, rutas y no uid://, solo lo que git lista, tareas de un archivo calculadas en el cliente). §11 y §11.1 marcan hechos el módulo de referencias a res://, las tareas del script abierto y abrir desde la tarea. README (M15 en el estado), web/README e instalar.md (cómo se vinculan y se abren). Suite completa: 345 pasan, 0 fallan.
 
-## M16 — Uso en el teléfono  (6/6)
+## M16 — Uso en el teléfono  (7/7)
 
 Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren por la red de casa (D36).
 
@@ -1576,6 +1576,7 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 - Las notas y los demás campos de texto del detalle crecen con el texto, sin arrastrar la esquina.
 - Un clic afuera del detalle de la tarea lo cierra.
 - En el teléfono el detalle de la tarea ocupa toda la pantalla; desde 761 px es un panel al costado.
+- Atrás cierra la tarea abierta y vuelve a la vista de antes; cada tarea tiene su enlace (#task/<id>).
 
 ### 16.1 Tablero deslizable en el teléfono · Hecho
 
@@ -1645,3 +1646,11 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 **Notas:** Pedido del usuario (2026-10-10): en el teléfono la tarea debería ocupar toda la pantalla, según el tamaño. Hecho: hasta 760 px el detalle va a todo el ancho y sin el borde para cambiar su ancho (antes, solo bajo 460 px, así que en su teléfono de unos 600 quedaba una franja); desde 761 es el panel de siempre (el ancho elegido, 460 por defecto), con al menos 300 px de tablero al lado. 760 es el corte que ya usan Documentos, Listas y Archivos. De paso: overscroll-behavior: contain, así el scroll del detalle no arrastra la página de atrás.
 
 **Referencias:** `docs/spec.md#telefono`
+
+### 16.7 Ruta propia para la tarea abierta (atrás la cierra) · Hecho
+
+**Etiquetas:** `ui`
+
+**Prueba:** Abrir m1-07 deja #task/m1-07 y atrás la cierra con el tablero a la vista; adelante la reabre; Cerrar no suma entradas al historial; cambiar a otra tarea reemplaza la entrada; el enlace directo la abre y uno a una tarea inexistente se descarta; desde Documentos, atrás vuelve a #docs/gdd/ventanas-ataque. Los tests fallan sin el cambio.
+
+**Notas:** Pedido del usuario (2026-10-10): con una tarea abierta, atrás llevaba a Documentos (la página anterior) en vez de cerrar la tarea. Hecho: openTask apila #task/<id> con pushState y guarda en history.state desde qué hash se abrió (taskFrom); con otra tarea abierta, replaceState. readHash lee la ruta (y sin ella no hay tarea abierta). closeTask: si se abrió desde el tablero, history.back(); si no (otra vista o enlace directo), reemplaza la ruta por la del tablero, así no quedan dos entradas iguales. goToTask ya no pone un hash vacío antes (eran dos entradas). Una ruta a una tarea que no existe se descarta al cargar y al cambiar el hash (dropMissingTask). El test del ancho del detalle ahora encuentra la tarea abierta al recargar.

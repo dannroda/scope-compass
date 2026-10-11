@@ -966,6 +966,8 @@ Con `--lan` (D36) el tablero se abre en el teléfono. Lo que se ajustó al usarl
 
 - **Detalle de la tarea:** hasta 760 px ocupa toda la pantalla, porque al lado quedarían menos de 300 px de tablero; más ancho, es el panel de siempre al costado (16.6). Un clic afuera del panel lo cierra (16.5); a pantalla completa se cierra con *Cerrar* o Esc. Si ese clic abre otra tarea (una tarjeta, una fila de la lista), cambia de tarea en vez de cerrar. Cuenta dónde empieza el clic: arrastrar una selección desde las notas hasta afuera no lo cierra.
 
+- **Atrás cierra la tarea (16.7, también en escritorio):** la tarea abierta tiene su ruta, `#task/<id>`. Atrás la cierra y vuelve a la vista desde la que se abrió: el tablero, o Documentos en su sección. Cambiar de tarea con una abierta reemplaza la entrada, así atrás no recorre todas. *Cerrar* deja el tablero sin sumar una entrada igual. Al recargar sigue abierta, y el enlace sirve para abrir una tarea directo. Uno a una tarea que no existe se descarta.
+
 ### 24.1 Criterios de aceptación de M16
 <!-- id: criterios-telefono -->
 
@@ -974,5 +976,6 @@ Con `--lan` (D36) el tablero se abre en el teléfono. Lo que se ajustó al usarl
 - [x] Las notas y los demás campos de texto del detalle crecen con el texto, sin arrastrar la esquina.
 - [x] Un clic afuera del detalle de la tarea lo cierra.
 - [x] En el teléfono el detalle de la tarea ocupa toda la pantalla; desde 761 px es un panel al costado.
+- [x] Atrás cierra la tarea abierta y vuelve a la vista de antes; cada tarea tiene su enlace (`#task/<id>`).
 
-Tests: `ui-filters.test.js` (13.4, a 390×844; 16.1, táctil a 602 px y con mouse a 900), `ui-docs.test.js` (16.2 y 16.4, a 390 y táctil a 900) y `ui.test.js` (16.3, 16.5 y 16.6).
+Tests: `ui-filters.test.js` (13.4, a 390×844; 16.1, táctil a 602 px y con mouse a 900), `ui-docs.test.js` (16.2 y 16.4, a 390 y táctil a 900) y `ui.test.js` (16.3, 16.5, 16.6 y 16.7; la vuelta a Documentos, en `ui-docs.test.js`).

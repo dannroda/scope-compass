@@ -8,6 +8,7 @@ Es el port de `../docs/reference/tablero-artifact.html` (spec §7). El CSS y el 
 - Avisa de los archivos de `compass/` que el hub no pudo leer.
 - `favicon.svg`: el ícono de la bandeja (`node/compass.svg` de @icons, MIT; ver `hub/assets/icons/`), oscuro en pestañas claras y claro en las oscuras.
 - `fonts/`: Cinzel, Alegreya Sans y JetBrains Mono (subconjunto latino de `@fontsource` 5.3.0, licencias OFL al lado). No hace ninguna petición fuera del hub.
+- Cada tarea abierta tiene su ruta (`#task/<id>`): atrás la cierra y vuelve a la vista de antes, y el enlace la abre (spec §24).
 - Lo que escribís en el detalle no se pierde cuando se redibuja. Soltar una tarjeta sobre otra del mismo hito la deja antes. Atajos: `N` nueva tarea, `1`–`4` estado de la tarea abierta, `Esc` cierra.
 - Tablero o lista (una fila por tarea, ordenable por columna), con filtros por texto, estado, fecha, bloqueo, pasos, referencias, etiquetas, prioridad y responsable (spec §19). Los filtros y la vista se recuerdan por proyecto en el navegador. Atajo: `/` va al buscador.
 - Compacta (spec §21): las vistas en la fila del título, los hitos terminados en *Terminados (n)*, los filtros detrás de *Filtros (n)*, el resumen del hito en una línea y, en el detalle, las propiedades en una fila de chips con los pasos arriba. En la lista, fechas relativas y sin columnas vacías. En el teléfono, los hitos en una fila que se desplaza y las columnas también: una por pantalla, deslizando de costado (M16).

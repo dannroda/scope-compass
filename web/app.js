@@ -185,7 +185,7 @@
     else if (i >= 0) list[i] = doc;
     else list.push(doc);
     if (collection === 'milestones') list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    if (S.openId && !S.tasks.some((t) => t.id === S.openId)) S.openId = null;
+    dropMissingTask();
     if (S.filter !== 'all' && !S.milestones.some((m) => m.id === S.filter)) S.filter = 'all';
     render();
   }
@@ -1048,6 +1048,7 @@
   }
 
   // Vista Documentos: índice, documento y tareas que referencian la sección actual.
+  const TASK_HASH = /^#task\/([^/]+)$/;
   function readHash() {
     const wasFiles = S.view === 'files';
     const f = /^#files(?:\/(.+))?$/.exec(location.hash);
@@ -1058,9 +1059,11 @@
     }
     const l = /^#lists(?:\/([^/]+))?$/.exec(location.hash);
     if (l) { S.view = 'lists'; S.openId = null; S.confirmDelete = false; if (l[1]) S.list = decodeURIComponent(l[1]); return; }
+    const t = TASK_HASH.exec(location.hash);
+    if (t) { S.view = 'board'; S.openId = decodeURIComponent(t[1]); return; }
     const m = /^#docs(?:\/([^/]+)(?:\/([^/]+))?)?$/.exec(location.hash);
     S.view = m ? 'docs' : 'board';
-    if (m) { S.openId = null; S.confirmDelete = false; } // el detalle de una tarea es del tablero
+    S.openId = null; S.confirmDelete = false; // la tarea abierta tiene su ruta (#task/<id>, 16.7)
     if (m) { S.doc = m[1] ? decodeURIComponent(m[1]) : (S.doc || ''); S.sec = m[2] ? decodeURIComponent(m[2]) : ''; }
   }
   function docHtml(alias) {
@@ -1384,8 +1387,6 @@
     const t = S.tasks.find((x) => x.id === id);
     if (!t) return;
     if (S.filter !== 'all' && S.filter !== t.milestone) setFilter(t.milestone);
-    location.hash = '';
-    S.view = 'board';
     openTask(id);
   }
   function docChanged(alias) {
@@ -1817,8 +1818,30 @@
   }
 
   function setFilter(id) { S.filter = id; pref('filter', id); render(); }
-  function openTask(id) { S.openId = id; S.confirmDelete = false; S.linkSearch = null; S.fileSearch = null; render(); document.getElementById('detail').focus({ preventScroll: true }); }
-  function closeTask() { S.openId = null; S.confirmDelete = false; render(); }
+  // Cada tarea abierta tiene su ruta, #task/<id> (16.7): atrás la cierra y vuelve a la vista desde la que se abrió (el
+  // tablero, o Documentos en su sección). Cambiar de tarea con una abierta reemplaza la entrada: atrás no las recorre.
+  // La entrada guarda desde dónde se abrió (taskFrom), así Cerrar no deja dos entradas iguales del tablero.
+  function openTask(id) {
+    const hash = '#task/' + encodeURIComponent(id);
+    if (TASK_HASH.test(location.hash)) history.replaceState(history.state, '', hash);
+    else history.pushState({ taskFrom: location.hash }, '', hash);
+    S.view = 'board'; S.openId = id; S.confirmDelete = false; S.linkSearch = null; S.fileSearch = null; render(); document.getElementById('detail').focus({ preventScroll: true });
+  }
+  // Cerrar deja el tablero: si se abrió desde ahí, volviendo atrás; si no (otra vista, o un enlace directo), cambiando la
+  // ruta por la del tablero, y atrás sigue llevando a la vista de antes.
+  function closeTask() {
+    S.openId = null; S.confirmDelete = false;
+    if (TASK_HASH.test(location.hash)) {
+      if (history.state?.taskFrom === '') history.back(); else history.replaceState(null, '', location.pathname + location.search);
+    }
+    render();
+  }
+  // La tarea abierta ya no existe (borrada en otro lado, o un enlace viejo): se cierra y su ruta se va.
+  function dropMissingTask() {
+    if (!S.openId || S.tasks.some((t) => t.id === S.openId)) return;
+    S.openId = null;
+    if (TASK_HASH.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+  }
   // Un clic afuera del detalle lo cierra, salvo que ese clic abra otra tarea (una tarjeta, una fila, un enlace). Cuenta
   // dónde empezó: arrastrar una selección desde las notas hasta afuera no lo cierra, y un botón del detalle que se
   // redibuja (y queda fuera del documento) tampoco.
@@ -1922,7 +1945,7 @@
     document.getElementById('project').textContent = S.project || 'Scope Compass';
     document.title = S.project && S.project !== 'Scope Compass' ? S.project + ' · Scope Compass' : 'Scope Compass';
     if (S.filter !== 'all' && !S.milestones.some((x) => x.id === S.filter)) S.filter = 'all';
-    if (S.openId && !S.tasks.some((x) => x.id === S.openId)) S.openId = null;
+    dropMissingTask();
     // config.views (§16.6): sin hash, se abre la primera; una pestaña que el proyecto no tiene no se muestra.
     if (!S.viewsApplied && !S.offline) {
       S.viewsApplied = true;
@@ -2016,7 +2039,7 @@
   }
 
   readHash();
-  window.addEventListener('hashchange', () => { readHash(); render(); scrollToSection(); });
+  window.addEventListener('hashchange', () => { readHash(); if (S.loaded) dropMissingTask(); render(); scrollToSection(); });
   render();
   connect();
   // Si el WebSocket no conecta, igual se intenta la carga (muestra el aviso de hub caído).

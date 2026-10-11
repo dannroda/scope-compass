@@ -160,6 +160,12 @@ test('§10.6: la vista Documentos muestra los backlinks correctos por sección',
   await page.click('.backlinks .bl-task >> nth=0');
   await page.waitForSelector('#detail:not([hidden]) #d-title');
   assert.equal(await page.isHidden('#docs'), true);
+  // Atrás cierra la tarea y vuelve a Documentos, en la misma sección (16.7).
+  assert.match(new URL(page.url()).hash, /^#task\//);
+  await page.goBack();
+  await page.waitForSelector('#docs:not([hidden]) .backlinks .bl-task');
+  assert.equal(new URL(page.url()).hash, '#docs/gdd/ventanas-ataque');
+  assert.equal(await page.isHidden('#detail'), true);
   await page.close();
 });
 
@@ -358,9 +364,9 @@ test('el panel de detalle se agranda arrastrando su borde, con el teclado, y se 
   await page.keyboard.press('Shift+ArrowLeft');
   assert.equal(await width(), 456);
   // Se recuerda al recargar; doble clic vuelve al ancho original.
+  // Al recargar la tarea sigue abierta: está en su ruta (16.7).
   await page.reload();
-  await page.waitForSelector('.card');
-  await page.click('.card[data-id="m1-03"]');
+  await page.waitForSelector('#detail:not([hidden]) #d-title');
   assert.equal(await width(), 456);
   await page.dblclick('#detail .resize');
   assert.equal(await width(), 460);

@@ -296,6 +296,45 @@ test('el detalle ocupa toda la pantalla hasta 760 px; más ancho, es un panel al
   }
 });
 
+test('la tarea abierta tiene su ruta: atrás la cierra, el enlace la abre, cambiar de tarea no apila (16.7)', async () => {
+  const page = await open();
+  const shown = () => page.evaluate(() => (document.getElementById('detail').hidden ? null : document.getElementById('detail').dataset.task));
+  // Desde el tablero: #task/<id>; atrás la cierra y queda el tablero.
+  await page.click('.card[data-id="m1-07"]');
+  assert.equal(new URL(page.url()).hash, '#task/m1-07');
+  await page.goBack();
+  await page.waitForFunction(() => document.getElementById('detail').hidden);
+  assert.equal(new URL(page.url()).hash, '');
+  assert.equal(await page.isVisible('#board'), true);
+  // Adelante la vuelve a abrir; Cerrar vuelve al tablero sin dejar otra entrada igual.
+  await page.goForward();
+  await page.waitForFunction(() => document.getElementById('detail').dataset.task === 'm1-07' && !document.getElementById('detail').hidden);
+  const before = await page.evaluate(() => history.length);
+  await page.click('#detail .close');
+  await page.waitForFunction(() => document.getElementById('detail').hidden && !location.hash);
+  assert.equal(await page.evaluate(() => history.length), before, 'Cerrar no suma entradas');
+  // Cambiar de tarea con una abierta reemplaza la entrada: atrás va al tablero, no a la anterior.
+  assert.equal(await cli(['move', 'm1-06', 'todo']), 0);
+  await page.waitForSelector('.col[aria-label="Pendiente"] .card[data-id="m1-06"]');
+  await page.click('.card[data-id="m1-07"]');
+  await page.click('.card[data-id="m1-06"]');
+  assert.equal(new URL(page.url()).hash, '#task/m1-06');
+  await page.goBack();
+  await page.waitForFunction(() => document.getElementById('detail').hidden);
+  assert.equal(new URL(page.url()).hash, '');
+  assert.equal(await cli(['move', 'm1-06', 'done']), 0);
+  // El enlace directo abre la tarea; uno a una tarea que no existe, no, y se va de la barra de direcciones.
+  await page.goto(url + '#task/m1-07');
+  await page.waitForFunction(() => document.getElementById('detail').dataset.task === 'm1-07' && !document.getElementById('detail').hidden);
+  await page.click('#detail .close');
+  await page.waitForFunction(() => document.getElementById('detail').hidden && !location.hash);
+  await page.goto(url + '#task/nada');
+  await page.waitForSelector('.card');
+  await page.waitForFunction(() => !location.hash);
+  assert.equal(await shown(), null);
+  await page.context().close();
+});
+
 // --- Criterios de §14 con UI (3.8) ---
 
 const REFERENCE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'docs', 'reference', 'tablero-artifact.html');
