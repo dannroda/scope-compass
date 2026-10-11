@@ -1,0 +1,18 @@
+{
+  "checklist": [],
+  "code": "19.9",
+  "created_at": "2026-10-11T06:54:28.165Z",
+  "description": "Auditoría (2026-10-11): mover el dock o hacerlo flotante lo deja «conectado» sin WebSocket para siempre; cada render decodifica las capturas desde disco dos veces (0,9 s con dos PNG 4K; sin hub, cada 3 s); un GIF o una imagen rota queda como miniatura invisible.",
+  "milestone": "m19",
+  "notes": "",
+  "order": 9,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "bug",
+    "dock"
+  ],
+  "test": "",
+  "title": "Dock: reconexión al moverlo y capturas sin trabar el editor",
+  "updated_at": "2026-10-11T06:54:28.165Z"
+}

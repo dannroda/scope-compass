@@ -1,0 +1,18 @@
+{
+  "checklist": [],
+  "code": "19.2",
+  "created_at": "2026-10-11T06:54:26.171Z",
+  "description": "Auditoría (2026-10-11): export_md en config.json puede apuntar a cualquier ruta (por ejemplo ~/.bashrc); POST /api/docs lee fuera del proyecto con llaves de glob, .., rutas absolutas, enlaces simbólicos o archivos ignorados por git (.env); compass/images como enlace simbólico deja escribir y borrar afuera; repoFile deja pasar claves del prototipo (status['constructor']).",
+  "milestone": "m19",
+  "notes": "",
+  "order": 2,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "bug",
+    "hub"
+  ],
+  "test": "",
+  "title": "Nada se lee ni se escribe fuera del proyecto",
+  "updated_at": "2026-10-11T06:54:26.171Z"
+}

@@ -1,0 +1,18 @@
+{
+  "checklist": [],
+  "code": "19.3",
+  "created_at": "2026-10-11T06:54:26.450Z",
+  "description": "Auditoría (2026-10-11): si el proyecto no está en la raíz del repo, git cat-file con <hash>:compass/tasks/… no encuentra nada y el historial queda vacío. Además scompass history mezcla la hora UTC de lo sin commitear con la hora local de los commits.",
+  "milestone": "m19",
+  "notes": "",
+  "order": 3,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "bug",
+    "cli"
+  ],
+  "test": "",
+  "title": "Historial en un repo con el proyecto en una subcarpeta",
+  "updated_at": "2026-10-11T06:54:26.450Z"
+}

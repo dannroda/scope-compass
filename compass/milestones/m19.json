@@ -1,0 +1,7 @@
+{
+  "code": "M19",
+  "done_when": [],
+  "goal": "Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.",
+  "order": 19,
+  "title": "Auditoría"
+}

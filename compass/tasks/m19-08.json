@@ -1,0 +1,18 @@
+{
+  "checklist": [],
+  "code": "19.8",
+  "created_at": "2026-10-11T06:54:27.831Z",
+  "description": "Auditoría (2026-10-11): una fecha imposible (2026-02-30) cuenta en --due week; scompass restart en un proyecto del Inicio da HTTP 400 sin explicar; borrar una tarea no borra sus capturas guardadas por la app; file/image add y rm no normalizan \\\\ en Windows; un proyecto nuevo con nombre que empieza con - deja una carpeta huérfana; el proxy del Inicio no pasa nosniff.",
+  "milestone": "m19",
+  "notes": "",
+  "order": 8,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "bug",
+    "cli"
+  ],
+  "test": "",
+  "title": "Detalles del backend",
+  "updated_at": "2026-10-11T06:54:27.831Z"
+}

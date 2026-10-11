@@ -1,6 +1,6 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, rename, rm, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -43,6 +43,29 @@ async function waitEvents(n, extraMs = 200) {
 test('al arrancar no emite nada', async () => {
   await sleep(200);
   assert.deepEqual(events, []);
+});
+
+test('19.1: un archivo reemplazado por rename se sigue viendo, también una carpeta vuelta a crear', async () => {
+  const doc = await readDoc('tasks', 'm1-07');
+  // Como writeAtomic, git checkout o sed -i: un temporal que se renombra encima. En Linux, el watch recursivo
+  // dejaba de avisar después del primero.
+  for (const status of ['review', 'todo', 'doing']) {
+    const tmp = join(compass, 'tasks', '.m1-07.tmp');
+    await writeFile(tmp, JSON.stringify({ ...doc, status }));
+    await rename(tmp, file('tasks', 'm1-07'));
+    const n = events.length + 1;
+    await waitEvents(n, 0);
+    assert.equal(events.at(-1)?.doc?.status, status);
+  }
+  // lists/ aparece (o vuelve, al cambiar de rama): una lista nueva adentro se ve igual.
+  await rm(join(compass, 'lists'), { recursive: true, force: true });
+  await sleep(150);
+  await mkdir(join(compass, 'lists'));
+  await sleep(150);
+  events.length = 0;
+  await writeFile(join(compass, 'lists', 'nueva.json'), JSON.stringify({ title: 'Nueva', order: 1, items: [] }));
+  await waitEvents(1);
+  assert.deepEqual(events.map((e) => [e.type, e.collection, e.id]), [['upsert', 'lists', 'nueva']]);
 });
 
 test('una edición a mano se emite como upsert en menos de 1 s', async () => {

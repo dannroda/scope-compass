@@ -1,0 +1,18 @@
+{
+  "checklist": [],
+  "code": "19.11",
+  "created_at": "2026-10-11T06:54:28.730Z",
+  "description": "Auditoría (2026-10-11): el dock pide 466 px (947 con un error largo) porque el aviso no hace autowrap y el pie no recorta; no hay forma de abrir en la web la tarea abierta, y lo que es de solo lectura no lo dice; en Windows, scompass_path apuntando a un .cmd no arranca.",
+  "milestone": "m19",
+  "notes": "",
+  "order": 11,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "ui",
+    "dock"
+  ],
+  "test": "",
+  "title": "Dock: ancho mínimo y abrir la tarea en la web",
+  "updated_at": "2026-10-11T06:54:28.730Z"
+}

@@ -1,0 +1,17 @@
+{
+  "checklist": [],
+  "code": "19.13",
+  "created_at": "2026-10-11T06:54:29.277Z",
+  "description": "Auditoría (2026-10-11): en Alegreya Sans el espacio mide 2-3 px (las palabras se pegan) y los números antiguos hacen que M0 se lea Mo; enlaces con el azul del navegador en el Inicio y en Archivos; en el teléfono el borde de Vencida se parte y el estado de la Lista es solo color; el detalle de una tarea sin código empieza con «· M0»; el vacío de Listas dice «a la izquierda» en el teléfono; la búsqueda de Documentos resalta pedazos de palabras; dos conteos distintos de cambios sin commitear; el índice de Documentos dos veces en tablet; títulos cortados sin puntos suspensivos; toasts en minúscula.",
+  "milestone": "m19",
+  "notes": "",
+  "order": 13,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "ui"
+  ],
+  "test": "",
+  "title": "Web: tipografía y detalles visuales",
+  "updated_at": "2026-10-11T06:54:29.277Z"
+}

@@ -2115,3 +2115,91 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 **Prueba:** Con el tablero en M1, un clic en el vínculo de m1-07 a m0-01 abre m0-01 y el resumen dice M0. El test falla sin el cambio.
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
+
+## M19 — Auditoría  (1/13)
+
+Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
+
+### 19.1 El watcher deja de ver un archivo reemplazado por rename · Hecho
+
+**Terminada:** 2026-10-11 · **Etiquetas:** `bug`, `hub`
+
+Auditoría (2026-10-11): en Linux, el fs.watch recursivo deja de avisar de un archivo después de que se lo reemplaza con un rename (writeAtomic, git checkout, sed -i), así que la web y el dock no se enteran de los cambios hechos fuera del hub (watcher.js, doc-watcher.js).
+
+**Prueba:** Reemplazar tres veces seguidas una tarea con un temporal renombrado encima emite tres upsert; una carpeta lists/ que aparece después del arranque se mira y una lista nueva adentro se emite. El test (watcher.test.js, 19.1) falla sin el cambio.
+
+**Notas:** Hecho: watch-tree.js con un fs.watch no recursivo por carpeta en Linux (salta .git, node_modules, .godot y .import), que suma las carpetas nuevas y suelta las que se van; ready se cumple cuando ya se miran todas, y el watcher lo espera en start(). El watcher de compass/ hace rescan si aparece o se va una carpeta de colección. doc-watcher lo usa para los documentos con patrón (los fijos ya miraban su carpeta sin recursión). Comprobado antes con un script: después del primer rename, el recursivo no avisaba más del archivo.
+
+**Referencias:** `docs/spec.md#auditoria`
+
+### 19.2 Nada se lee ni se escribe fuera del proyecto · Pendiente
+
+**Etiquetas:** `bug`, `hub`
+
+Auditoría (2026-10-11): export_md en config.json puede apuntar a cualquier ruta (por ejemplo ~/.bashrc); POST /api/docs lee fuera del proyecto con llaves de glob, .., rutas absolutas, enlaces simbólicos o archivos ignorados por git (.env); compass/images como enlace simbólico deja escribir y borrar afuera; repoFile deja pasar claves del prototipo (status['constructor']).
+
+### 19.3 Historial en un repo con el proyecto en una subcarpeta · Pendiente
+
+**Etiquetas:** `bug`, `cli`
+
+Auditoría (2026-10-11): si el proyecto no está en la raíz del repo, git cat-file con <hash>:compass/tasks/… no encuentra nada y el historial queda vacío. Además scompass history mezcla la hora UTC de lo sin commitear con la hora local de los commits.
+
+### 19.4 set --file acepta la salida de show --json · Pendiente
+
+**Etiquetas:** `bug`, `cli`
+
+Auditoría (2026-10-11): sin hub, scompass set <id> --file con lo que devuelve show --json falla porque trae id y etag. Además If-Match: * da 409 en vez de aceptar cualquier versión.
+
+### 19.5 Registro de hubs y claves del Inicio estables · Pendiente
+
+**Etiquetas:** `bug`, `hub`
+
+Auditoría (2026-10-11): listHubs puede borrar la entrada de un hub vivo si lee el archivo a medio escribir; las claves /p/<n>/ del Inicio se corren al quitar un proyecto, y el registro queda con la base vieja.
+
+### 19.6 Capturas en un proyecto sin git · Pendiente
+
+**Etiquetas:** `bug`, `hub`
+
+Auditoría (2026-10-11): sin repo de git, las capturas no se sirven (raw pide un repo) y refs check las marca faltantes aunque estén.
+
+### 19.7 El export no se rompe con textos de varias líneas · Pendiente
+
+**Etiquetas:** `bug`, `hub`
+
+Auditoría (2026-10-11): un título, un paso o unas notas con saltos de línea rompen la estructura de docs/tareas.md (listas y encabezados).
+
+### 19.8 Detalles del backend · Pendiente
+
+**Etiquetas:** `bug`, `cli`
+
+Auditoría (2026-10-11): una fecha imposible (2026-02-30) cuenta en --due week; scompass restart en un proyecto del Inicio da HTTP 400 sin explicar; borrar una tarea no borra sus capturas guardadas por la app; file/image add y rm no normalizan \\ en Windows; un proyecto nuevo con nombre que empieza con - deja una carpeta huérfana; el proxy del Inicio no pasa nosniff.
+
+### 19.9 Dock: reconexión al moverlo y capturas sin trabar el editor · Pendiente
+
+**Etiquetas:** `bug`, `dock`
+
+Auditoría (2026-10-11): mover el dock o hacerlo flotante lo deja «conectado» sin WebSocket para siempre; cada render decodifica las capturas desde disco dos veces (0,9 s con dos PNG 4K; sin hub, cada 3 s); un GIF o una imagen rota queda como miniatura invisible.
+
+### 19.10 Dock: errores, guardados fallidos y clics dobles · Pendiente
+
+**Etiquetas:** `bug`, `dock`
+
+Auditoría (2026-10-11): sin hub, un JSON con links/checklist/refs de forma rara rompe el render; otro programa en el puerto llena la consola de errores de JSON; un guardado fallido deja la UI mostrando el cambio; doble clic en Iniciar hub termina sin hub y dos scompass a la vez pierden el hilo; crear una tarea borra el título aunque falle; borrar el hito abierto deja el selector vacío; Reiniciar hub falla en un proyecto del Inicio.
+
+### 19.11 Dock: ancho mínimo y abrir la tarea en la web · Pendiente
+
+**Etiquetas:** `ui`, `dock`
+
+Auditoría (2026-10-11): el dock pide 466 px (947 con un error largo) porque el aviso no hace autowrap y el pie no recorta; no hay forma de abrir en la web la tarea abierta, y lo que es de solo lectura no lo dice; en Windows, scompass_path apuntando a un .cmd no arranca.
+
+### 19.12 Web: nueva tarea, Pasar a tarea y confirmaciones · Pendiente
+
+**Etiquetas:** `bug`, `ui`
+
+Auditoría (2026-10-11): Nueva tarea en Todos la crea en M0 (terminado) y lo reabre; Pasar a tarea pide el hito con un prompt() con los 19 hitos; Quitar en el visor borra sin confirmar; destildar un ítem que se repite deja la casilla mintiendo; el buscador de vínculos no responde a Enter ni a las flechas; el separador del panel arranca con aria-valuenow 0; la nueva tarea no se abre al crearla.
+
+### 19.13 Web: tipografía y detalles visuales · Pendiente
+
+**Etiquetas:** `ui`
+
+Auditoría (2026-10-11): en Alegreya Sans el espacio mide 2-3 px (las palabras se pegan) y los números antiguos hacen que M0 se lea Mo; enlaces con el azul del navegador en el Inicio y en Archivos; en el teléfono el borde de Vencida se parte y el estado de la Lista es solo color; el detalle de una tarea sin código empieza con «· M0»; el vacío de Listas dice «a la izquierda» en el teléfono; la búsqueda de Documentos resalta pedazos de palabras; dos conteos distintos de cambios sin commitear; el índice de Documentos dos veces en tablet; títulos cortados sin puntos suspensivos; toasts en minúscula.

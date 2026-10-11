@@ -1018,24 +1018,30 @@ Tests: `cli.test.js` y `docs.test.js` (17.1), `ui.test.js` y `dock.test.js` (`pr
   - mientras sigue hecha, se conserva aunque se edite, y un `put` sin el campo no lo pierde;
   - al salir de `done`, se quita; si vuelve, la fecha es la nueva.
   - Una tarea hecha de antes del campo no lo recibe al editarla: no se inventa. En este repo se completaron desde git: el `updated_at` de la tarea en el commit que la dejó hecha (exacto si la app la pasó a Hecho; aproximado si se creó y terminó en el mismo commit).
-  - Se ve en `show` (*Hecho el 2026-10-10*), en el export (**Terminada:**), en el pie del detalle, en la columna y el orden *Terminada* de la lista, y en el Inicio: *n tareas terminadas en los últimos 7 días*.- **Fecha objetivo del hito (18.2):** `due` opcional en el hito, con el formato de las tareas. El hito está *atrasado* si la fecha pasó y le quedan tareas sin terminar; con todas hechas, la fecha queda como dato. Un hito sin tareas cuenta como pendiente.
+  - Se ve en `show` (*Hecho el 2026-10-10*), en el export (**Terminada:**), en el pie del detalle, en la columna y el orden *Terminada* de la lista, y en el Inicio: *n tareas terminadas en los últimos 7 días*.
+- **Fecha objetivo del hito (18.2):** `due` opcional en el hito, con el formato de las tareas. El hito está *atrasado* si la fecha pasó y le quedan tareas sin terminar; con todas hechas, la fecha queda como dato. Un hito sin tareas cuenta como pendiente.
   - CLI: `milestone set <id> --due …` (`""` la quita). Por el hub el hito se reescribe entero con su etag, porque la API no tiene PATCH de hitos (D12). `milestone list`, `milestone show` y los encabezados de `list` dicen *fecha objetivo … (atrasado)*; el export, **Fecha objetivo:**.
   - Web: el resumen del hito dice *Objetivo 01/11*, *Hoy · …* o, en rojo, *Atrasado · …*; el chip de un hito atrasado tiene el borde rojo. Se edita con la CLI, como el resto del hito.
   - Dock: el selector de hito suma *· atrasado 01/11*.
-  - Inicio: la tarjeta del proyecto marca *atrasado* (u *objetivo hoy*) junto al hito actual.- **Estimación (18.3):** `size` opcional en la tarea: `s`, `m` o `l` (en pantalla, S, M y L). Es para ver cuánto queda en un hito, no para medir horas.
+  - Inicio: la tarjeta del proyecto marca *atrasado* (u *objetivo hoy*) junto al hito actual.
+- **Estimación (18.3):** `size` opcional en la tarea: `s`, `m` o `l` (en pantalla, S, M y L). Es para ver cuánto queda en un hito, no para medir horas.
   - CLI: `add` y `set --size` (sin distinguir mayúsculas; `""` la quita), `list --size s,m,l,none`; `show` y `list` dicen *tamaño M*; el export, **Tamaño:**.
   - Web: chip *Tamaño* en el detalle, la letra en la tarjeta y en la columna *Tamaño* de la lista (con su orden), y el filtro *Tamaño* (con *Sin estimar*). El resumen del hito dice lo que falta: *Falta 2 S · 1 M · 3 sin estimar*, solo si alguna tarea sin terminar está estimada.
-  - Dock: *Tamaño M* en las propiedades del detalle.- **Capturas (18.4, D38):** `images` en la tarea: rutas desde la raíz del proyecto a imágenes PNG, JPEG, GIF o WebP, sin repetir. Son aparte de `files` (lo que la tarea toca): una captura muestra el bug o el efecto.
+  - Dock: *Tamaño M* en las propiedades del detalle.
+- **Capturas (18.4, D38):** `images` en la tarea: rutas desde la raíz del proyecto a imágenes PNG, JPEG, GIF o WebP, sin repetir. Son aparte de `files` (lo que la tarea toca): una captura muestra el bug o el efecto.
   - **Dónde quedan:** una imagen del repo se cita tal cual. Una pegada, subida o traída de fuera del proyecto se guarda en `compass/images/<tarea>-<AAAAMMDD-HHMMSS>.<ext>`, después de verificar por su contenido que es una imagen (hasta 10 MB). `compass/.gitattributes` las marca binarias (sin eso, `eol=lf` les cambiaría los bytes).
   - **Al quitarla:** sale de la tarea; si está en `compass/images/` y ninguna otra tarea la cita, se borra el archivo, así las pegadas no se acumulan. Una imagen del repo citada a mano nunca se borra.
   - **CLI:** `image add <tarea> <ruta>` (del repo, con `res://` o `./`, o de afuera: se copia) e `image rm`. `refs check` marca `missing_file` la que ya no está; el export, **Capturas:**.
   - **API:** `POST /api/tasks/:id/images` con `{ data }` (base64, con o sin el prefijo `data:`) y `DELETE /api/tasks/:id/images?path=…`; las dos aceptan `If-Match`. Se sirven con `/api/files/raw`, así que hace falta un repo de git, como en Archivos.
   - **Web:** miniaturas debajo de la descripción y *+ Captura* (en el teléfono abre la cámara o la galería). Con una tarea abierta, pegar una imagen o soltarla sobre el detalle también la agrega. Un clic abre el visor: ← y → recorren, Esc lo cierra sin cerrar la tarea, *Quitar* la saca.
-  - **Dock:** miniaturas en el detalle; un clic la abre con el visor del sistema. La que no está en el disco se ve como *⚠ nombre*.- **Historial (18.5):** lo que cambió en la tarea en cada commit, sacado de git; la app no guarda otro registro.
+  - **Dock:** miniaturas en el detalle; un clic la abre con el visor del sistema. La que no está en el disco se ve como *⚠ nombre*.
+- **Historial (18.5):** lo que cambió en la tarea en cada commit, sacado de git; la app no guarda otro registro.
   - Por commit: fecha, autor, hash y un renglón por campo que cambió (*Estado: Pendiente → En curso*, *Pasos: +«x», tildado «y»*, *Etiquetas: +arte −audio*, *Notas: editadas*). No cuentan `order` ni los sellos de fecha; un commit que solo cambió eso no aparece. Arriba, lo que hay sin commitear contra HEAD.
   - Todas las versiones del JSON se leen con un solo `git cat-file --batch`; hasta 30 commits.
   - CLI: `scompass history <id>` (`--json`). API: `GET /api/tasks/:id/history` → `{ repo, entries: [{ hash, date, author, subject, created?, deleted?, changes }] }`; sin repo, `{ repo: false, entries: [] }`.
-  - Web: *Historial* plegado al final del detalle; se pide al abrirlo y otra vez cuando la tarea cambia.- **Plantilla de descripción por etiqueta (18.6):** `config.json` › `description_templates`: `{ "<etiqueta>": "<texto>" }`. Al sumarle a una tarea sin descripción una etiqueta con plantilla, la descripción arranca con ese texto; con descripción, no se toca. Vale para `scompass add --tags` (sin `--description`), `set --tags` y las etiquetas que se agregan en el detalle de la web. La plantilla *juego* trae una para `bug`: *Cómo reproducirlo / Qué se esperaba / Qué pasó*. Se edita en `config.json`.- **Vínculos entre hitos (18.7):** un vínculo del detalle a una tarea de otro hito la abre y lleva el tablero a ese hito, como los enlaces de Documentos.
+  - Web: *Historial* plegado al final del detalle; se pide al abrirlo y otra vez cuando la tarea cambia.
+- **Plantilla de descripción por etiqueta (18.6):** `config.json` › `description_templates`: `{ "<etiqueta>": "<texto>" }`. Al sumarle a una tarea sin descripción una etiqueta con plantilla, la descripción arranca con ese texto; con descripción, no se toca. Vale para `scompass add --tags` (sin `--description`), `set --tags` y las etiquetas que se agregan en el detalle de la web. La plantilla *juego* trae una para `bug`: *Cómo reproducirlo / Qué se esperaba / Qué pasó*. Se edita en `config.json`.
+- **Vínculos entre hitos (18.7):** un vínculo del detalle a una tarea de otro hito la abre y lleva el tablero a ese hito, como los enlaces de Documentos.
 
 ### 26.1 Criterios de aceptación de M18
 <!-- id: criterios-fechas-capturas-historial -->
@@ -1049,3 +1055,10 @@ Tests: `cli.test.js` y `docs.test.js` (17.1), `ui.test.js` y `dock.test.js` (`pr
 
 Tests: `store.test.js` y `home.test.js` (18.1, 18.2), `cli.test.js` (18.1–18.4, 18.6), `api.test.js` (18.4), `history.test.js` (18.5), `ui.test.js` (18.1–18.7) y `dock.test.js` (`props`: 18.2–18.4).
 
+
+## 27. Auditoría (M19)
+<!-- id: auditoria -->
+
+Lo que encontró la auditoría completa después de M18 (seguridad, backend, web y dock), arreglado por partes.
+
+- **Watcher (19.1):** en Linux, `fs.watch` recursivo deja de avisar de un archivo después de que se lo reemplaza con un rename (`writeAtomic`, `git checkout`, `sed -i`, muchos editores), así que los cambios hechos fuera del hub dejaban de llegar a la web y al dock. `watch-tree.js` mira cada carpeta por separado, sin recursión, y suma las que aparecen (una carpeta de colección vuelta a crear al cambiar de rama dispara un rescan). Lo usan el watcher de `compass/` y el de los documentos con patrón. En macOS y Windows sigue el recursivo nativo.

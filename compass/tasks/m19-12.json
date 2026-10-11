@@ -1,0 +1,18 @@
+{
+  "checklist": [],
+  "code": "19.12",
+  "created_at": "2026-10-11T06:54:29.003Z",
+  "description": "Auditoría (2026-10-11): Nueva tarea en Todos la crea en M0 (terminado) y lo reabre; Pasar a tarea pide el hito con un prompt() con los 19 hitos; Quitar en el visor borra sin confirmar; destildar un ítem que se repite deja la casilla mintiendo; el buscador de vínculos no responde a Enter ni a las flechas; el separador del panel arranca con aria-valuenow 0; la nueva tarea no se abre al crearla.",
+  "milestone": "m19",
+  "notes": "",
+  "order": 12,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "bug",
+    "ui"
+  ],
+  "test": "",
+  "title": "Web: nueva tarea, Pasar a tarea y confirmaciones",
+  "updated_at": "2026-10-11T06:54:29.003Z"
+}

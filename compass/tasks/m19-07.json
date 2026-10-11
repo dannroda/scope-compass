@@ -1,0 +1,18 @@
+{
+  "checklist": [],
+  "code": "19.7",
+  "created_at": "2026-10-11T06:54:27.549Z",
+  "description": "Auditoría (2026-10-11): un título, un paso o unas notas con saltos de línea rompen la estructura de docs/tareas.md (listas y encabezados).",
+  "milestone": "m19",
+  "notes": "",
+  "order": 7,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "bug",
+    "hub"
+  ],
+  "test": "",
+  "title": "El export no se rompe con textos de varias líneas",
+  "updated_at": "2026-10-11T06:54:27.549Z"
+}

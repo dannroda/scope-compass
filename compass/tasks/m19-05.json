@@ -1,0 +1,18 @@
+{
+  "checklist": [],
+  "code": "19.5",
+  "created_at": "2026-10-11T06:54:26.992Z",
+  "description": "Auditoría (2026-10-11): listHubs puede borrar la entrada de un hub vivo si lee el archivo a medio escribir; las claves /p/<n>/ del Inicio se corren al quitar un proyecto, y el registro queda con la base vieja.",
+  "milestone": "m19",
+  "notes": "",
+  "order": 5,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "bug",
+    "hub"
+  ],
+  "test": "",
+  "title": "Registro de hubs y claves del Inicio estables",
+  "updated_at": "2026-10-11T06:54:26.992Z"
+}

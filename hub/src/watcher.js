@@ -1,15 +1,15 @@
 // Watcher de compass/ (spec §5.4): cambios hechos fuera del hub (edición a mano, git pull, la CLI sin hub).
 // Mantiene el etag conocido de cada documento y solo emite cuando cambia; las escrituras del hub lo
 // avisan con note() para no emitir dos veces. Los eventos tienen la forma del protocolo WebSocket (§5.5).
-import { watch } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseDoc } from './schema.js';
 import { COLLECTIONS } from './store/load.js';
 import { etagOf } from './store/json-files.js';
 import { flat } from './views.js';
+import { watchTree } from './watch-tree.js';
 
-const DOC = /^(milestones|tasks|lists)[\\/]([a-z0-9][a-z0-9_-]{0,63})\.json$/;
+const DOC = /^(milestones|tasks|lists)\/([a-z0-9][a-z0-9_-]{0,63})\.json$/;
 const INVALID = Symbol('invalid');
 
 export function createWatcher(compassDir, { validators, emit, debounceMs = 50 }) {
@@ -79,12 +79,13 @@ export function createWatcher(compassDir, { validators, emit, debounceMs = 50 })
       const quiet = emit;
       emit = () => {};
       try { await rescan(); } finally { emit = quiet; }
-      fsw = watch(compassDir, { recursive: true }, (event, filename) => {
+      fsw = watchTree(compassDir, (filename) => {
         const m = filename && DOC.exec(filename);
         if (m) schedule(`${m[1]}/${m[2]}`, () => check(m[1], m[2]));
-        else if (!filename) schedule('*', rescan);
-      });
-      fsw.on('error', (e) => emit({ type: 'warning', code: 'io_error', path: 'compass/', message: `watcher: ${e.message}` }));
+        // Sin nombre, o una carpeta de colección que apareció o se fue (git checkout): se mira todo.
+        else if (!filename || filename in COLLECTIONS) schedule('*', rescan);
+      }, { onError: (e) => emit({ type: 'warning', code: 'io_error', path: 'compass/', message: `watcher: ${e.message}` }) });
+      await fsw.ready;
     },
 
     // El hub escribió (etag) o borró (null) este documento: el evento de disco que sigue no se reemite.
