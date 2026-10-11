@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (14/15)
+## M19 — Auditoría  (15/15)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2295,8 +2295,14 @@ Pedido del usuario (2026-10-11): cada tablero que se crea para probar algo queda
 
 **Referencias:** `docs/spec.md#auditoria`
 
-### 19.15 Ícono y favicon con el dorado de la interfaz · Pendiente
+### 19.15 Ícono y favicon con el dorado de la interfaz · Hecho
 
-**Etiquetas:** `ui`
+**Terminada:** 2026-10-11 · **Etiquetas:** `ui`
 
 Pedido del usuario (2026-10-11): colorear el ícono y el favicon con el mismo amarillo que la interfaz.
+
+**Prueba:** El favicon del tablero y del Inicio, y el ícono de la bandeja en Linux (SVG del tema), se ven dorados (#d9a441), como el dibujo de respaldo de la bandeja y el .ico de Windows.
+
+**Notas:** Hecho: fill #d9a441 en web/favicon.svg (sin la variante gris por esquema de color) y en hub/assets/icons/hicolor/scalable/apps/scope-compass.svg. El README de los íconos lo anota.
+
+**Referencias:** `docs/spec.md#auditoria`

@@ -3,15 +3,21 @@
   "code": "19.15",
   "created_at": "2026-10-11T07:48:39.697Z",
   "description": "Pedido del usuario (2026-10-11): colorear el ícono y el favicon con el mismo amarillo que la interfaz.",
+  "done_at": "2026-10-11T07:51:21.591Z",
   "milestone": "m19",
-  "notes": "",
+  "notes": "Hecho: fill #d9a441 en web/favicon.svg (sin la variante gris por esquema de color) y en hub/assets/icons/hicolor/scalable/apps/scope-compass.svg. El README de los íconos lo anota.",
   "order": 15,
-  "refs": [],
-  "status": "todo",
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "auditoria"
+    }
+  ],
+  "status": "done",
   "tags": [
     "ui"
   ],
-  "test": "",
+  "test": "El favicon del tablero y del Inicio, y el ícono de la bandeja en Linux (SVG del tema), se ven dorados (#d9a441), como el dibujo de respaldo de la bandeja y el .ico de Windows.",
   "title": "Ícono y favicon con el dorado de la interfaz",
-  "updated_at": "2026-10-11T07:48:39.697Z"
+  "updated_at": "2026-10-11T07:51:21.591Z"
 }
