@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-10-10
+> Generado: 2026-10-11
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -1654,3 +1654,37 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 **Prueba:** Abrir m1-07 deja #task/m1-07 y atrás la cierra con el tablero a la vista; adelante la reabre; Cerrar no suma entradas al historial; cambiar a otra tarea reemplaza la entrada; el enlace directo la abre y uno a una tarea inexistente se descarta; desde Documentos, atrás vuelve a #docs/gdd/ventanas-ataque. Los tests fallan sin el cambio.
 
 **Notas:** Pedido del usuario (2026-10-10): con una tarea abierta, atrás llevaba a Documentos (la página anterior) en vez de cerrar la tarea. Hecho: openTask apila #task/<id> con pushState y guarda en history.state desde qué hash se abrió (taskFrom); con otra tarea abierta, replaceState. readHash lee la ruta (y sin ella no hay tarea abierta). closeTask: si se abrió desde el tablero, history.back(); si no (otra vista o enlace directo), reemplaza la ruta por la del tablero, así no quedan dos entradas iguales. goToTask ya no pone un hash vacío antes (eran dos entradas). Una ruta a una tarea que no existe se descarta al cargar y al cambiar el hash (dropMissingTask). El test del ancho del detalle ahora encuentra la tarea abierta al recargar.
+
+**Referencias:** `docs/spec.md#telefono`
+
+## M17 — Descripción de las tareas  (1/3)
+
+Que cada tarea diga qué hay que hacer y por qué en un campo propio, separado de las notas de lo que fue saliendo al trabajarla.
+
+**Hecho cuando:**
+- Una tarea tiene una descripción opcional (campo description), separada de las notas, que la CLI escribe y el export muestra antes de los pasos.
+
+### 17.1 Campo description: esquema, CLI, export y referencias · Hecho
+
+**Etiquetas:** `cli`
+
+Pedido del usuario (2026-10-11): las tareas no tenían dónde decir qué hay que hacer: el pedido iba en las notas, mezclado con lo hecho. Un campo opcional description con el qué y el porqué, y notes para lo que va saliendo al trabajarla (D37). Primero el backend: esquema, CLI, export, enlaces en línea y la guía para agentes.
+
+- [x] Esquema, CLI, export y referencias
+- [x] Tests, spec, D37 y AGENTS.md
+
+**Prueba:** add --description la escribe; set --description "" la quita; show la imprime antes de los pasos y el export la pone debajo del título; refs check mira los [[enlaces]] de la descripción. `npm test` en `hub/` pasa (salvo los tres de la bandeja, que fallan igual en HEAD por el sandbox).
+
+**Notas:** Hecho: description en el esquema (las tres copias), add/set/show en la CLI, el export (párrafo debajo de la línea de etiquetas, antes de los pasos), checkRefs, suggestRefs y las tareas de cada sección. add no la escribe vacía. La paridad con artifact_to_md.py se mide sin la descripción, como con etiquetas. AGENTS.md: la diferencia entre description y notes, y add con --description. Spec §4.2, §6, §10.2 y §25; D37.
+
+**Referencias:** `docs/spec.md#descripcion`
+
+### 17.2 Descripción en el detalle de la web y del dock · Pendiente
+
+**Etiquetas:** `ui`
+
+Mostrar y editar la descripción arriba en el detalle de la web, debajo del título y antes de los pasos, para que la tarea arranque por lo que hay que hacer. En el dock de Godot, mostrarla de solo lectura en el mismo lugar.
+
+### 17.3 Migrar las notas: el pedido pasa a la descripción · Pendiente
+
+Las tareas existentes tienen el pedido al principio de las notas ("Pedido del usuario … Hecho: …"). Pasar esa parte a la descripción y dejar en las notas lo que se hizo; las que no siguen el patrón quedan como están.

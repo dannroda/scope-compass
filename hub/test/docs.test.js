@@ -149,10 +149,11 @@ test('checkRefs: rotas, frágiles y enlaces en línea (los de dentro de `código
   docs.push({ alias: 'gdd', path: 'gdd.md', ...parseSections(MD) });
   const problems = checkRefs(docs, [{
     id: 't1', refs: [{ doc: 'gdd.md', section: 'combate' }, { doc: 'gdd.md', section: 'borrada' }, { doc: 'otro.md', section: 'x' }],
-    notes: 'ver [[gdd#sin-id-con-tildes]] y `[[gdd#ejemplo]]`', test: '[[gdd#camara]]', checklist: [{ text: 'paso [[gdd#nada]]', done: false }]
+    description: 'según [[gdd#borrada]]', notes: 'ver [[gdd#sin-id-con-tildes]] y `[[gdd#ejemplo]]`', test: '[[gdd#camara]]',
+    checklist: [{ text: 'paso [[gdd#nada]]', done: false }]
   }]);
   assert.deepEqual(problems.map((p) => [p.ref, p.where, p.problem]), [
-    ['gdd.md#borrada', 'refs', 'missing_section'], ['otro.md#x', 'refs', 'missing_doc'],
+    ['gdd.md#borrada', 'refs', 'missing_section'], ['otro.md#x', 'refs', 'missing_doc'], ['gdd#borrada', 'description', 'missing_section'],
     ['gdd#sin-id-con-tildes', 'notes', 'fragile'], ['gdd#nada', 'paso 1', 'missing_section']
   ]);
 });

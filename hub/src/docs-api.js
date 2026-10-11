@@ -19,7 +19,7 @@ function backlinks(docs, tasks) {
   };
   for (const t of tasks) {
     for (const r of t.refs ?? []) add(r.doc, r.section, t);
-    const texts = [t.notes, t.test, ...(t.checklist ?? []).flatMap((c) => [c.text, c.detail])];
+    const texts = [t.description, t.notes, t.test, ...(t.checklist ?? []).flatMap((c) => [c.text, c.detail])];
     for (const text of texts) for (const m of String(text ?? '').replace(/`[^`]*`/g, '').matchAll(LINK)) add(m[1], m[2], t);
   }
   return map;

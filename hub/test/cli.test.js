@@ -201,6 +201,21 @@ test('set con campos sueltos cambia solo esos campos', async () => {
   assert.equal((await cli(['set', 'nada', '--notes', 'n'])).code, 1);
 });
 
+test('description (17.1): add y set la escriben, "" la quita; show y el export la ponen antes de los pasos', async () => {
+  const a = await cli(['add', 'Con descripción', '--milestone', 'm01', '--description', 'Qué hacer y por qué', '--json']);
+  assert.equal(a.code, 0, a.err);
+  const { id } = a.json();
+  assert.equal((await task(id)).description, 'Qué hacer y por qué');
+  assert.equal((await task((await cli(['add', 'Sin', '--milestone', 'm01', '--description', ' ', '--json'])).json().id)).description, undefined);
+  assert.equal((await cli(['step', 'add', id, 'Un paso'])).code, 0);
+  assert.equal((await cli(['set', id, '--description', 'Línea uno\nLínea dos', '--notes', 'Lo que salió'])).code, 0);
+  assert.match((await cli(['show', id])).out, /\nLínea uno\nLínea dos\n {3}1\. \[ \] Un paso\n[^]*Notas: Lo que salió/);
+  const md = await readFile(join(dir, 'docs', 'tareas.md'), 'utf8');
+  assert.match(md, new RegExp(`### Con descripción · Pendiente\\n\\nLínea uno\\nLínea dos\\n\\n- \\[ \\] Un paso\\n`));
+  assert.equal((await cli(['set', id, '--description', ''])).code, 0);
+  assert.equal('description' in (await task(id)), false);
+});
+
 test('serve --exit-on-stdin-close: se cierra cuando se corta la entrada; sin la opción, no', async () => {
   const { spawn } = await import('node:child_process');
   const bin = join(REPO, 'hub', 'bin', 'scompass.js');

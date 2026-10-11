@@ -163,8 +163,8 @@ export const refText = (doc, section) => (section ? `${doc}#${section}` : doc);
 export const LINK = /\[\[([^\]#\s]+)(?:#([a-z0-9][a-z0-9_-]*))?\]\]/g;
 
 /**
- * Referencias de las tareas que no resuelven: refs estructuradas y enlaces [[alias#id]] o [[alias]] en notas,
- * prueba y pasos. Una referencia al documento entero solo se rompe si el documento no está.
+ * Referencias de las tareas que no resuelven: refs estructuradas y enlaces [[alias#id]] o [[alias]] en la descripción,
+ * notas, prueba y pasos. Una referencia al documento entero solo se rompe si el documento no está.
  * tasks: [{ id, ...doc }]. Devuelve [{ task, ref, where, problem: 'missing_doc'|'missing_section'|'fragile' }].
  * 'fragile' = resuelve, pero contra una sección sin id explícito (se rompe si se renombra el título).
  */
@@ -177,7 +177,7 @@ export function checkRefs(docs, tasks) {
   };
   for (const t of tasks) {
     for (const r of t.refs ?? []) check(t, r.doc, r.section, 'refs');
-    const texts = [['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).flatMap((c, i) => [[`paso ${i + 1}`, c.text], [`paso ${i + 1} (detalle)`, c.detail]])];
+    const texts = [['description', t.description], ['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).flatMap((c, i) => [[`paso ${i + 1}`, c.text], [`paso ${i + 1} (detalle)`, c.detail]])];
     // Lo que está entre `…` es código (un ejemplo), no un enlace.
     for (const [where, text] of texts) for (const m of String(text ?? '').replace(/`[^`]*`/g, '').matchAll(LINK)) check(t, m[1], m[2], where);
   }
@@ -253,14 +253,14 @@ const findDocLoose = (docs, key) => findDoc(docs, key) ?? findDoc(docs, key.repl
   docs.find((d) => d.alias.toLowerCase() === key.toLowerCase().replace(/\.md$/, '') || d.path.toLowerCase() === key.toLowerCase());
 
 /**
- * Propuestas de referencias a partir de citas por número en notas, prueba y pasos (spec §10.5).
+ * Propuestas de referencias a partir de citas por número en la descripción, notas, prueba y pasos (spec §10.5).
  * Una cita "§4.3" apunta a la sección cuyo título empieza con "4.3" (o "4."/"4 " para "§4").
  * Devuelve [{ task, where, cite, ref, title, already }]; nunca aplica nada.
  */
 export function suggestRefs(docs, tasks) {
   const out = [];
   for (const t of tasks) {
-    const texts = [['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).flatMap((c, i) => [[`paso ${i + 1}`, c.text], [`paso ${i + 1} (detalle)`, c.detail]])];
+    const texts = [['description', t.description], ['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).flatMap((c, i) => [[`paso ${i + 1}`, c.text], [`paso ${i + 1} (detalle)`, c.detail]])];
     for (const [where, text] of texts) {
       for (const m of String(text ?? '').matchAll(CITE)) {
         const d = findDocLoose(docs, m[1]);

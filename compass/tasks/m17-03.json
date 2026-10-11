@@ -1,0 +1,14 @@
+{
+  "checklist": [],
+  "code": "17.3",
+  "created_at": "2026-10-11T03:29:51.637Z",
+  "description": "Las tareas existentes tienen el pedido al principio de las notas (\"Pedido del usuario … Hecho: …\"). Pasar esa parte a la descripción y dejar en las notas lo que se hizo; las que no siguen el patrón quedan como están.",
+  "milestone": "m17",
+  "notes": "",
+  "order": 3,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Migrar las notas: el pedido pasa a la descripción",
+  "updated_at": "2026-10-11T03:47:24.440Z"
+}

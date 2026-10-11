@@ -1,0 +1,17 @@
+{
+  "checklist": [],
+  "code": "17.2",
+  "created_at": "2026-10-11T03:29:51.357Z",
+  "description": "Mostrar y editar la descripción arriba en el detalle de la web, debajo del título y antes de los pasos, para que la tarea arranque por lo que hay que hacer. En el dock de Godot, mostrarla de solo lectura en el mismo lugar.",
+  "milestone": "m17",
+  "notes": "",
+  "order": 2,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "ui"
+  ],
+  "test": "",
+  "title": "Descripción en el detalle de la web y del dock",
+  "updated_at": "2026-10-11T03:47:24.168Z"
+}

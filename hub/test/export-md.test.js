@@ -37,9 +37,9 @@ for (const [name, dir] of [['Scope Compass', join(REPO, 'compass')], ['Project E
     const board = all.config.board_url ?? 'https://claude.ai/artifact/x';
     const expected = await python(dir, board, name);
     if (expected === null) return t.skip('sin python3');
-    // El prototipo de Python es anterior a los vínculos (D22), las listas (D25), las fechas (D26) y a etiquetas, prioridad y
-    // responsable (D32): la paridad se mide sin ellos.
-    const noLinks = { ...all, lists: [], tasks: [...all.tasks].map(([id, { links, due, tags, priority, assignee, ...doc }]) => [id, doc]) };
+    // El prototipo de Python es anterior a los vínculos (D22), las listas (D25), las fechas (D26), a etiquetas, prioridad y
+    // responsable (D32) y a la descripción (D37): la paridad se mide sin ellos.
+    const noLinks = { ...all, lists: [], tasks: [...all.tasks].map(([id, { links, due, tags, priority, assignee, description, ...doc }]) => [id, doc]) };
     assert.equal(renderMarkdown(noLinks, { title: name, board, date: dateOf(expected) }), expected);
   });
 }

@@ -41,6 +41,7 @@ export function renderMarkdown({ milestones, tasks, lists = [] }, { title, board
       const meta = [t.priority && `**Prioridad:** ${PRIORITY_LABEL[t.priority] ?? t.priority}`, t.assignee && `**Responsable:** ${t.assignee}`,
         t.tags?.length && '**Etiquetas:** ' + t.tags.map((x) => `\`${x}\``).join(', ')].filter(Boolean);
       if (meta.length) L.push(meta.join(' · '), '');
+      if (t.description) L.push(t.description, '');
       const cl = t.checklist ?? [];
       // El detalle de un paso va sangrado debajo, como continuación del ítem de la lista.
       L.push(...cl.flatMap((c) => [`- [${c.done ? 'x' : ' '}] ${c.text}`, ...(c.detail ? c.detail.split('\n').map((l) => (l ? `  ${l}` : '')) : [])]));

@@ -161,6 +161,7 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `code` | string | `"0.3"`; puede estar vacío |
 | `order` | number | Orden dentro de la columna |
 | `title` | string | |
+| `description` | string | Opcional. Qué hay que hacer y por qué, el enunciado de la tarea (§25, D37) |
 | `status` | `"todo" \| "doing" \| "review" \| "done"` | |
 | `checklist` | `{ text: string, done: boolean, detail?: string }[]` | `text`: el paso en una línea. `detail` (opcional): el cómo y el porqué; se muestra plegado debajo del paso |
 | `due` | string | Opcional. Fecha límite, `YYYY-MM-DD` o `YYYY-MM-DDTHH:MM` en hora local (§16.5, D26) |
@@ -168,7 +169,7 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `assignee` | string | Opcional. Responsable: una persona o un agente, texto libre (§19, D32) |
 | `tags` | string[] | Opcional. Etiquetas, sin repetir, sin comas ni espacios en los bordes, hasta 40 caracteres (§19, D32) |
 | `test` | string | "Cómo probarlo" |
-| `notes` | string | |
+| `notes` | string | Lo que va saliendo al trabajarla: decisiones, hallazgos, lo que el siguiente necesita saber (D37) |
 | `refs` | `{ doc: string, section: string }[]` | Opcional. Referencias a secciones de documentos (§10). v1 las guarda y las muestra como texto; v2 las resuelve. |
 | `links` | `{ type: "blocks" \| "related", task: string }[]` | Opcional. Vínculos con otras tareas (D22): `blocks` = esta tarea bloquea a `task`; `related` = relacionadas. El inverso ("bloqueada por") no se guarda, se calcula. |
 | `created_at` / `updated_at` | ISO 8601 | `updated_at` es opcional en ediciones a mano; la app lo completa en su próxima escritura |
@@ -307,11 +308,11 @@ scompass update [--check]                    # pone al día compass/schema/ y co
 scompass serve [--port] [--open]
 scompass list [--milestone m00] [--status doing] [--json]
 scompass show <id> [--json]
-scompass add "<título>" --milestone m00 [--code 0.11]
+scompass add "<título>" --milestone m00 [--code 0.11] [--description "…"]
 scompass move <id> <todo|doing|review|done>
 scompass check <id> <n> [--undo]             # n desde 1, como lo muestra `show`
 scompass set <id> --file task.json          # reemplazo completo, para cargas grandes
-scompass set <id> [--title] [--notes] [--test] [--code] [--milestone] [--status]   # solo esos campos
+scompass set <id> [--title] [--description] [--notes] [--test] [--code] [--milestone] [--status]   # solo esos campos
 scompass milestone list | show <id> | set <id> --file m.json
 scompass link add <id> <blocks|blocked-by|related> <otra>   # vínculo entre tareas (D22)
 scompass link rm <id> <otra>
@@ -426,7 +427,7 @@ La referencia no puede depender del número (`11.3`) ni del texto del título (s
 <!-- id: referencias -->
 
 - **Campo estructurado** `refs` en la tarea: `[{ doc: "gdd.md", section: "ventanas-ataque" }]`. Se edita desde el detalle con un buscador de secciones (título + documento).
-- **Enlaces en línea** dentro de `notes`, `test` y los pasos: `[[gdd#ventanas-ataque]]`. Se muestran como un enlace con el título actual de la sección. `gdd` es el alias del documento definido en `config.json`.
+- **Enlaces en línea** dentro de `description`, `notes`, `test` y los pasos: `[[gdd#ventanas-ataque]]`. Se muestran como un enlace con el título actual de la sección. `gdd` es el alias del documento definido en `config.json`.
 - **Documento entero (12.1):** una ref sin `section` (`{ doc: "docs/enemigos.md" }`) y el enlace `[[enemigos]]` apuntan al documento completo, para tareas descritas por un archivo propio. Se muestran con el título de nivel 1 del documento (o su ruta) y no se despliegan en el detalle: se abren en la vista Documentos, que lista las tareas que referencian el documento cuando no hay una sección elegida. Solo se rompen si el documento no está (`missing_doc`). En la CLI, `ref add|rm <tarea> <alias>` sin `#<id>` y `doc show <alias>` devuelve el documento entero.
 
 ### 10.3 UI
@@ -979,3 +980,19 @@ Con `--lan` (D36) el tablero se abre en el teléfono. Lo que se ajustó al usarl
 - [x] Atrás cierra la tarea abierta y vuelve a la vista de antes; cada tarea tiene su enlace (`#task/<id>`).
 
 Tests: `ui-filters.test.js` (13.4, a 390×844; 16.1, táctil a 602 px y con mouse a 900), `ui-docs.test.js` (16.2 y 16.4, a 390 y táctil a 900) y `ui.test.js` (16.3, 16.5, 16.6 y 16.7; la vuelta a Documentos, en `ui-docs.test.js`).
+
+## 25. Descripción de las tareas (M17)
+<!-- id: descripcion -->
+
+Hasta acá la tarea no tenía dónde decir qué hay que hacer: el pedido iba en las notas, mezclado con lo que salía al trabajarla ("Pedido del usuario … Hecho: …"). Ahora son dos campos (D37):
+
+- **`description`:** qué hay que hacer y por qué. Se escribe al crear la tarea y casi no cambia. Es opcional; sin descripción, el campo no está.
+- **`notes`:** lo que va saliendo al trabajarla: decisiones, hallazgos, lo que el siguiente necesita saber.
+- **CLI:** `add` y `set` aceptan `--description`; en `set`, `""` la quita. `show` la imprime debajo del título, antes de los pasos.
+- **Export markdown:** va como párrafo debajo del título (y de vence, prioridad, responsable y etiquetas), antes de los pasos.
+- **Enlaces:** `[[alias#id]]` en la descripción cuenta como en las notas: `refs check`, `refs suggest` y las tareas de cada sección la miran.
+
+### 25.1 Criterios de aceptación de M17
+<!-- id: criterios-descripcion -->
+
+- [x] Una tarea tiene una descripción opcional (campo `description`), separada de las notas, que la CLI escribe y el export muestra antes de los pasos.

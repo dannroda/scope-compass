@@ -348,3 +348,14 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Dejar `/api/shutdown` y `restart` solo para 127.0.0.1: el Inicio igual deja apagar hubs desde la red, así que no cerraba nada.
   - Un QR en la terminal: sería una dependencia para no tipear una IP una vez (después queda en favoritos).
   - Que la PWA se pueda instalar: sin HTTPS el navegador no la instala. Queda para (c).
+
+## D37 · La tarea tiene descripción: qué y por qué, aparte de las notas
+**2026-10-11 · vigente** · spec §4.2, §25
+
+- **Qué:** un campo opcional `description` con el enunciado de la tarea: qué hay que hacer y por qué. `notes` queda para lo que va saliendo al trabajarla.
+- **Por qué:** el modelo, que viene del artifact, tenía notas y *Cómo probarlo*, pero no un enunciado. Las notas terminaron haciendo de las dos cosas ("Pedido del usuario … Hecho: …"), y el pedido quedaba enterrado debajo de lo hecho. Separados, el detalle arranca por lo que hay que hacer, y quien la toma no tiene que buscarlo.
+- **Opcional, y sin `""` por defecto:** una tarea vieja, o una cuyo título alcanza, no tiene descripción. `add` no la escribe vacía, a diferencia de `test` y `notes`, que vienen del artifact.
+- **Descartado:**
+  - Usar las notas como descripción y agregar un campo para lo hecho: las notas ya se usan así en todos los proyectos, y la CLI y la guía dicen que lo del final va en `notes`.
+  - Markdown con formato en la descripción: los demás textos tampoco lo tienen (solo `` `código` `` y `[[enlaces]]`).
+

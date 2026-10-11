@@ -65,17 +65,18 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
                                             --priority high,medium,low,none, --assignee nombre|none
   show <id>                                 una tarea, con los pasos numerados
   add "<título>" --milestone m00 [--code 0.11] [--status todo] [--due 2026-10-10]
-      [--tags arte,audio] [--priority high|medium|low] [--assignee nombre]
+      [--tags arte,audio] [--priority high|medium|low] [--assignee nombre] [--description "…"]
   move <id> <todo|doing|review|done>
   check <id> <n> [--undo]                   tilda el paso n (desde 1)
   step add <id> "<texto>" [--detail "…"]     agrega un paso (texto corto; el detalle se despliega)
   step set <id> <n> [--text …] [--detail …]  cambia un paso (--detail "" lo quita)
   step rm <id> <n>                          quita un paso
   set <id> --file task.json                 reemplazo completo (--file - lee stdin)
-  set <id> [--title t] [--notes n] [--test p] [--code c] [--milestone m] [--status s] [--due d]
-      [--tags a,b] [--priority p] [--assignee a]
+  set <id> [--title t] [--description d] [--notes n] [--test p] [--code c] [--milestone m] [--status s]
+      [--due d] [--tags a,b] [--priority p] [--assignee a]
                                             cambia solo esos campos (--due: fecha límite, YYYY-MM-DD o
-                                            YYYY-MM-DDTHH:MM; "" quita --due, --tags, --priority o --assignee)
+                                            YYYY-MM-DDTHH:MM; "" quita --description, --due, --tags,
+                                            --priority o --assignee)
   milestone list | show <id> | set <id> --file m.json
   lists                                     listas, con cuántos ítems quedan
   lists show <lista>                        una lista, con los ítems numerados
@@ -128,7 +129,7 @@ const taskLabel = (tasks, id) => { const t = tasks.find((x) => x.id === id); ret
 const AGENTS_HINT = 'Para que los agentes la usen, agregá al AGENTS.md o CLAUDE.md del proyecto: "El tablero de tareas se maneja con scompass; leé compass/AGENTS.md antes de tocarlo."';
 
 // Campos de una tarea que `set` edita sin --file.
-const FIELDS = ['title', 'notes', 'test', 'code', 'milestone', 'status', 'due', 'tags', 'priority', 'assignee'];
+const FIELDS = ['title', 'description', 'notes', 'test', 'code', 'milestone', 'status', 'due', 'tags', 'priority', 'assignee'];
 
 const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
@@ -138,7 +139,7 @@ const OPTIONS = {
   port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, lan: { type: 'boolean' }, force: { type: 'boolean' }, log: { type: 'string' },
   q: { type: 'string' }, blocked: { type: 'boolean' }, unblocked: { type: 'boolean' }, 'pending-steps': { type: 'boolean' }, 'with-refs': { type: 'boolean' },
   tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, assignee: { type: 'string' },
-  title: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
+  title: { type: 'string' }, description: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
 
@@ -499,6 +500,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       print(`${d.code ? d.code + ' ' : ''}${d.title}  [${t.id}]`);
       print(`Estado: ${STATUS[d.status]} · Hito: ${d.milestone}${d.due ? ' · ' + dueNote(d.due, d.status === 'done').replace(/^v/, 'V') : ''}${d.updated_at ? ' · Actualizada: ' + d.updated_at : ''}`);
       if (extras(d).length) print(extras(d).join(' · ').replace(/^p/, 'P'));
+      if (d.description) print(d.description);
       (d.checklist ?? []).forEach((c, i) => {
         print(`  ${String(i + 1).padStart(2)}. [${c.done ? 'x' : ' '}] ${c.text}`);
         if (c.detail) for (const l of c.detail.split('\n')) print(`         ${l}`);
@@ -852,7 +854,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         ...(o.due ? { due: due(o.due) } : {}),
         ...(o.tags && tagList(o.tags) ? { tags: tagList(o.tags) } : {}),
         ...(o.priority ? { priority: priority(o.priority) } : {}),
-        ...(o.assignee ? { assignee: o.assignee.trim() } : {})
+        ...(o.assignee ? { assignee: o.assignee.trim() } : {}),
+        ...(o.description?.trim() ? { description: o.description } : {})
       });
       return written({ id: r.id, etag: r.etag, ...r.doc }, `Creada ${r.id}: ${title}`);
     },
@@ -921,6 +924,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (fields.tags !== undefined) fields.tags = tagList(fields.tags);
       if (fields.priority !== undefined) fields.priority = priority(fields.priority);
       if (fields.assignee !== undefined) fields.assignee = fields.assignee.trim() || null;
+      if (fields.description !== undefined) fields.description = fields.description.trim() ? fields.description : null;
       const r = o.file !== undefined
         ? await store.put('tasks', id, await readJsonFile(o.file), ifMatch)
         : await store.patch('tasks', id, fields, ifMatch);
