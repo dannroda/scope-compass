@@ -1,4 +1,5 @@
 // Listas (8.3, spec §16.4, D25): schema, store, CLI con y sin hub, API y export markdown.
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

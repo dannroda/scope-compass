@@ -1,5 +1,6 @@
 // Escritorio (§18): abrir el navegador y el selector de carpetas, con los reemplazos de los tests (que andan en
 // Linux y en Windows). Los programas reales (xdg-open, kdialog, el diálogo de Windows) se prueban a mano.
+import './isolate.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

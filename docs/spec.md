@@ -1107,6 +1107,8 @@ Lo que encontró la auditoría completa después de M18 (seguridad, backend, web
   - En la lista del teléfono, la marca de vencida no dice *Vencida ·* (el rojo y el tooltip ya lo dicen) y no se parte en dos renglones; el estado muestra una etiqueta corta (*Pend.*, *Curso*, *Rev.*, *Hecho*) además del color.
   - El detalle de una tarea sin código empieza con el hito (*M1*), no con *· M1*; el vacío de Listas dice *Creá una con «+ Nueva lista»*; la búsqueda de Documentos resalta solo al empezar una palabra; la marca del encabezado dice *cambios del tablero sin commitear* (Archivos cuenta todo el repo).
   - En tablet táctil, la barra de abajo de Documentos no repite el índice lateral; el selector de la barra corta con …; los avisos empiezan con mayúscula; el alias inválido de *+ Documento* avisa en castellano; la ruta de un proyecto en el Inicio va en un renglón, cortada con …
+- **Tableros de prueba en el Inicio (19.14):** cada tablero creado para probar algo quedaba anotado en `projects.json` y el Inicio se llenaba de *no encontrado*. `init` y `serve` no anotan solos un proyecto en una carpeta temporal (`os.tmpdir()`, `/tmp`, `/var/tmp`), salvo que `projects.json` también sea temporal (tests aislados); `home add` sí lo anota. El Inicio, al arrancar, olvida los temporales que ya no existen. Y cada archivo de test importa `test/isolate.js`, que con `node --test` directo (sin `npm test`) pone un registro, una config y una carpeta de datos temporales.
+- **Ícono dorado (19.15):** el ícono de la bandeja (el SVG del tema) y el favicon usan el dorado de la interfaz, `#d9a441`, como el dibujo de respaldo de la bandeja; antes eran grises.
 
 ### 27.1 Criterios de aceptación de M19
 <!-- id: criterios-auditoria -->

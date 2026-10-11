@@ -1,4 +1,5 @@
 // Repetición simple en ítems de lista (8.5, spec §16.5, D26): nextDue, checkItem, CLI y export.
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';

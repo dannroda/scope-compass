@@ -1,5 +1,6 @@
 // Inicio (8.8, spec §16.2, D24): resumen y "Hoy" de todos los proyectos, escrituras por el hub o directo,
 // cambios en vivo desde los hubs, y un solo Inicio por usuario.
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

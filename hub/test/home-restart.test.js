@@ -1,5 +1,6 @@
 // Reiniciar el Inicio (9.8): `scompass home restart` (y POST /api/restart) lo vuelve a lanzar en el mismo puerto,
 // con otro PID, y sigue sirviendo los proyectos.
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';

@@ -1,4 +1,5 @@
 // Página del Inicio en el navegador (8.10): Hoy, tarjetas, prender y apagar, importar y crear con plantilla.
+import './isolate.js';
 import { test, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';

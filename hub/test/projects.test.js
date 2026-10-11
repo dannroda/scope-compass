@@ -1,4 +1,5 @@
 // Registro de proyectos conocidos (8.1, D23): serve se anota solo, home add/rm/list, y un registro roto no se pisa.
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
@@ -156,5 +157,31 @@ test('folderName: nombres que sirven de carpeta en Linux y en Windows', () => {
   for (const ok of ['Vida', 'Project Epiphany', 'juego.v2', 'com10', 'Lecturas 2026']) assert.equal(folderName(` ${ok} `), ok);
   for (const bad of ['', '.', '..', 'a/b', 'a\\b', 'x:y', 'a*', 'q?', '"x"', '<x>', 'a|b', 'tab\tx', 'CON', 'con.txt', 'Nul', 'COM1', 'lpt9.md', 'Vida.']) {
     assert.equal(folderName(bad), null, JSON.stringify(bad));
+  }
+});
+
+test('tableros de prueba: con el projects.json del usuario, init y serve no anotan una carpeta temporal y el Inicio olvida las que se borraron', async () => {
+  const { recordProject, pruneTempProjects, loadProjects, isTempPath } = await import('../src/projects.js');
+  const { homedir } = await import('node:os');
+  const { mkdtempSync, writeFileSync, mkdirSync, rmSync } = await import('node:fs');
+  // Un projects.json fuera de las carpetas temporales, como el real (en el home, dentro de una carpeta de prueba).
+  const cfg = mkdtempSync(join(homedir(), '.scompass-test-'));
+  const before = process.env.SCOMPASS_CONFIG;
+  process.env.SCOMPASS_CONFIG = cfg;
+  try {
+    const tmp = mkdtempSync(join(dir, 'tablero-'));
+    mkdirSync(join(tmp, 'compass'));
+    writeFileSync(join(tmp, 'compass', 'config.json'), JSON.stringify({ project: 'Prueba' }));
+    assert.equal(isTempPath(tmp), true);
+    assert.deepEqual(await recordProject(tmp, { auto: true }), { entry: null, added: false });
+    assert.deepEqual(loadProjects(), []);
+    // Anotado a mano (home add) sí queda; borrado, el Inicio lo olvida al arrancar.
+    assert.equal((await recordProject(tmp)).added, true);
+    rmSync(tmp, { recursive: true, force: true });
+    assert.equal(await pruneTempProjects(), 1);
+    assert.deepEqual(loadProjects(), []);
+  } finally {
+    process.env.SCOMPASS_CONFIG = before;
+    rmSync(cfg, { recursive: true, force: true });
   }
 });

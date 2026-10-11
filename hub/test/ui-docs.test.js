@@ -1,4 +1,5 @@
 // UI de documentos y referencias (6.4, 6.5) en el navegador.
+import './isolate.js';
 import { test, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

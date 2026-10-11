@@ -1,4 +1,5 @@
 // Historial de una tarea desde git (18.5): un repo real con unos commits que la cambian.
+import './isolate.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';

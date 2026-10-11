@@ -1,5 +1,6 @@
 // Bandeja del sistema (5.9) en un bus D-Bus privado: el test hace de Plasma (StatusNotifierWatcher)
 // y habla con el ícono como lo haría el escritorio. No toca la bandeja real.
+import './isolate.js';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';

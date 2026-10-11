@@ -1,4 +1,5 @@
 // Lo que comparten las dos bandejas: el menú evaluado y el .ico de Windows (corre en las dos plataformas).
+import './isolate.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildMenu, compassIco, compassPixmap } from '../src/tray-menu.js';

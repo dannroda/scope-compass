@@ -1,4 +1,5 @@
 // Registro de hubs activos: un hub por proyecto, y encontrarlo aunque no esté en el puerto de la config.
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';

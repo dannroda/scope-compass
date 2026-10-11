@@ -140,7 +140,7 @@ scompass doc diff gdd                        # cambios sin commitear y las secci
 
 ## Proyectos del equipo
 
-Cada hub que se levanta anota su proyecto en `~/.config/scope-compass/projects.json` (en Windows, `%APPDATA%\scope-compass\projects.json`), para que el Inicio lo muestre aunque después se apague. No hace falta tocarlo para operar el tablero.
+Cada hub que se levanta anota su proyecto en `~/.config/scope-compass/projects.json` (en Windows, `%APPDATA%\scope-compass\projects.json`), para que el Inicio lo muestre aunque después se apague. No hace falta tocarlo para operar el tablero. Un tablero en una carpeta temporal (`/tmp`, para probar algo) no se anota solo, y el Inicio olvida al arrancar los temporales que ya no existen; para tests, `SCOMPASS_CONFIG` y `SCOMPASS_REGISTRY` apuntando a una carpeta propia aíslan todo.
 
 ```sh
 scompass home list --json   # { "file", "projects": [ { "path", "name", "found", "hubs": [ { "pid", "port" } ] } ] }

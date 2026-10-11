@@ -1,4 +1,5 @@
 // Criterios de aceptación de v1 (spec §14) que necesitan el hub, sin UI (la UI es M3).
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

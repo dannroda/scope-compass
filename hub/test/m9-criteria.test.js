@@ -1,5 +1,6 @@
 // Criterios de aceptación de v4 (spec §17.1). Los otros tienen su test donde está la pieza: home-serve.test.js
 // (CLI en vivo, hub suelto), dock.test.js (el dock con el Inicio), home-restart.test.js y home.test.js (actualizar).
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';

@@ -1,4 +1,5 @@
 // Plantillas de proyecto en `scompass init` (8.7, spec §16.6, D25).
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';

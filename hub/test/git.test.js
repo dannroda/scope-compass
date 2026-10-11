@@ -1,5 +1,6 @@
 // Aviso de cambios sin commitear (4.4): el hub cuenta compass/ y el export con git status, lo publica después de cada
 // escritura y lo vuelve a mirar mientras haya algo pendiente (un commit no toca compass/).
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';

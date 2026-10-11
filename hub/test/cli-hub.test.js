@@ -1,4 +1,5 @@
 // La CLI con y sin hub (tarea 2.5): mismo resultado, y con hub las escrituras pasan por la API.
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

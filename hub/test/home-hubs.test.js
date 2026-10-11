@@ -1,5 +1,6 @@
 // Prender y apagar hubs desde el Inicio (8.9, spec §16.2): hijos del Inicio que mueren con él, y aviso antes de
 // apagar uno que abrió otro programa (el dock).
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';

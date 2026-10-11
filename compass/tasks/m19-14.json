@@ -1,0 +1,24 @@
+{
+  "checklist": [],
+  "code": "19.14",
+  "created_at": "2026-10-11T07:48:39.403Z",
+  "description": "Pedido del usuario (2026-10-11): cada tablero que se crea para probar algo queda como entrada basura en el Inicio (había 98 en projects.json, casi todas carpetas de /tmp que ya no existen).",
+  "done_at": "2026-10-11T07:51:20.576Z",
+  "milestone": "m19",
+  "notes": "Hecho: isTempPath (os.tmpdir(), /tmp, /var/tmp) y recordProject({ auto }) en projects.js; init y serve pasan auto. pruneTempProjects al arrancar el Inicio. test/isolate.js importado primero en los 44 archivos de test: con node --test directo pone registro, config y datos temporales (npm test ya lo hacía). El projects.json del usuario quedó con sus 2 proyectos reales (tenía 98). AGENTS.md lo cuenta. De paso, la paridad del export con Python ignora size (Epiphany ya tiene una tarea con tamaño).",
+  "order": 14,
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "auditoria"
+    }
+  ],
+  "status": "done",
+  "tags": [
+    "bug",
+    "hub"
+  ],
+  "test": "projects.test.js (19.14): con un projects.json fuera de /tmp, recordProject auto de un tablero en /tmp no lo anota; anotado a mano sí, y borrado, pruneTempProjects lo olvida. Con los tests aislados (projects.json en /tmp) serve sigue anotando, como verifican m8 y m9. La suite completa no tocó el projects.json del usuario.",
+  "title": "Los tableros de prueba no quedan en el Inicio",
+  "updated_at": "2026-10-11T07:51:20.576Z"
+}

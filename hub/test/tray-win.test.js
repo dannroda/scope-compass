@@ -1,5 +1,6 @@
 // Bandeja de Windows (D31): el PowerShell de verdad, sin escritorio (el ícono no se ve por SSH, pero el menú se arma
 // igual). `dump` devuelve lo que armó PowerShell e `invoke` hace clic por el handler del ítem.
+import './isolate.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';

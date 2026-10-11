@@ -1,4 +1,5 @@
 // Tests del dock de Godot (M5): lanza Godot sin ventana con hub/test/godot/runner.gd sobre una copia del fixture.
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile, execFileSync } from 'node:child_process';

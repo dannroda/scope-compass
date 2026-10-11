@@ -1,5 +1,6 @@
 // Criterios de aceptación de v3 (spec §16.8), uno por test. El de la bandeja con tres hubs está en tray.test.js
 // (necesita un bus D-Bus de prueba).
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';

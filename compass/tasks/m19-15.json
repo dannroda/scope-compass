@@ -1,0 +1,17 @@
+{
+  "checklist": [],
+  "code": "19.15",
+  "created_at": "2026-10-11T07:48:39.697Z",
+  "description": "Pedido del usuario (2026-10-11): colorear el ícono y el favicon con el mismo amarillo que la interfaz.",
+  "milestone": "m19",
+  "notes": "",
+  "order": 15,
+  "refs": [],
+  "status": "todo",
+  "tags": [
+    "ui"
+  ],
+  "test": "",
+  "title": "Ícono y favicon con el dorado de la interfaz",
+  "updated_at": "2026-10-11T07:48:39.697Z"
+}

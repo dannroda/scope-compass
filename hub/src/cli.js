@@ -26,7 +26,7 @@ import { boardStatus, docDiff, docLog, docsStatus, repoFiles } from './git.js';
 import { imageFile, repoFile } from './files-api.js';
 import { dropImage, IMAGE_EXT, importImage, insideProject, isImagePath } from './images.js';
 import { taskHistory } from './history.js';
-import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
+import { forgetProject, projectsFile, projectsStatus, pruneTempProjects, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
 import { dueState, EVERY, isValidDue, localDay, localStamp, milestoneDueState, showDue } from './dates.js';
@@ -259,6 +259,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       throw e;
     }
     registerHub({ port: addr.port, kind: 'home', lan: o.lan });
+    // Tableros de prueba en carpetas temporales que ya se borraron: no quedan en el Inicio.
+    try { await pruneTempProjects(); } catch { /* un projects.json roto lo informa la página */ }
     const url = `http://127.0.0.1:${addr.port}/`;
     const lan = o.lan ? lanUrls(addr.port) : undefined;
     o.json ? print(JSON.stringify({ url, port: addr.port, lan })) : print(`Inicio de Scope Compass en ${url} · ${projectsFile()} · Ctrl+C para cerrar`);
@@ -334,7 +336,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       // Con datos iniciales, el export ya los muestra; sin datos (vacio) se genera en la primera escritura, como antes.
       if (Object.keys(tpl.milestones ?? {}).length + Object.keys(tpl.lists ?? {}).length) await exportMarkdown(project, await store.loadAll());
-      try { await recordProject(project); } catch (e) { warn(`aviso: no se anotó el proyecto en ${projectsFile()}: ${e.message}`); }
+      try { await recordProject(project, { auto: true }); } catch (e) { warn(`aviso: no se anotó el proyecto en ${projectsFile()}: ${e.message}`); }
       const extra = [...files.created.map((f) => `Creado ${f}`), ...files.kept.map((f) => `Ya existía ${f}: no se tocó`)];
       return done({ dir: compass, config, template: tpl.name, files },
         [`Creado ${compass} (plantilla ${tpl.name})`, ...extra, AGENTS_HINT].join('\n'));
@@ -391,7 +393,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       registerHub({ port: addr.port, project, attached: !!o['exit-on-stdin-close'] });
       // Registro de proyectos (D23): el Inicio lo conoce aunque después se apague. Un registro roto no frena al hub.
-      try { await recordProject(project, { seen: true }); } catch (e) { warn(`aviso: no se anotó el proyecto en ${projectsFile()}: ${e.message}`); }
+      try { await recordProject(project, { seen: true, auto: true }); } catch (e) { warn(`aviso: no se anotó el proyecto en ${projectsFile()}: ${e.message}`); }
       const url = `http://127.0.0.1:${addr.port}/`;
       const lan = o.lan ? lanUrls(addr.port) : undefined;
       o.json ? print(JSON.stringify({ url, port: addr.port, project, lan })) : print(`Scope Compass en ${url} · ${project} · Ctrl+C para cerrar`);

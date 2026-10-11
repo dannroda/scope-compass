@@ -1,5 +1,6 @@
 // El Inicio como multi-hub (9.2, spec §17, D29): sirve cada proyecto en /p/<clave>/ sin un puerto propio, o
 // reenvía a su hub suelto si ya hay uno (un solo proceso escribe cada compass/).
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

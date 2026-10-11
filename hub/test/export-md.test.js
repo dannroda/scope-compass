@@ -1,3 +1,4 @@
+import './isolate.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -38,8 +39,8 @@ for (const [name, dir] of [['Scope Compass', join(REPO, 'compass')], ['Project E
     const expected = await python(dir, board, name);
     if (expected === null) return t.skip('sin python3');
     // El prototipo de Python es anterior a los vínculos (D22), las listas (D25), las fechas (D26), a etiquetas, prioridad y
-    // responsable (D32), a la descripción (D37) y a done_at (18.1): la paridad se mide sin ellos.
-    const noLinks = { ...all, lists: [], tasks: [...all.tasks].map(([id, { links, due, tags, priority, assignee, description, done_at, ...doc }]) => [id, doc]) };
+    // responsable (D32), a la descripción (D37), a done_at (18.1) y al tamaño (18.3): la paridad se mide sin ellos.
+    const noLinks = { ...all, lists: [], tasks: [...all.tasks].map(([id, { links, due, tags, priority, assignee, description, done_at, size, ...doc }]) => [id, doc]) };
     assert.equal(renderMarkdown(noLinks, { title: name, board, date: dateOf(expected) }), expected);
   });
 }

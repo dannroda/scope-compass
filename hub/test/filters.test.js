@@ -1,4 +1,5 @@
 // Lista y filtros (M11, spec §19, D32): reglas de filterTasks, y etiquetas/prioridad/responsable en la CLI con y sin hub.
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

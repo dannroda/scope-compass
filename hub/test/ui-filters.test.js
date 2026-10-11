@@ -1,4 +1,5 @@
 // Tests de navegador de M11 (spec §19, D32): filtros del tablero, vista de lista y prioridad/responsable/etiquetas.
+import './isolate.js';
 import { test, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

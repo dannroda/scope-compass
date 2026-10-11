@@ -1,5 +1,6 @@
 // Archivos del repo (14.1, spec §22): lo que git no ignora, su estado y cada archivo con su contenido, su diff y su
 // historial. Solo lectura, y solo rutas que git lista.
+import './isolate.js';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';

@@ -1,4 +1,5 @@
 // Fecha límite en tareas (8.2, spec §16.5, D26): dueState, CLI con y sin hub, y export markdown.
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

@@ -1,5 +1,6 @@
 // Pestaña Archivos (14.2, spec §22): el árbol del repo con la marca de git, un archivo con su contenido y sus
 // cambios, el filtro, Solo con cambios y el resumen del repo (rama, cambios, commits).
+import './isolate.js';
 import { test, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';

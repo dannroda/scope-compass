@@ -1,4 +1,5 @@
 // Tests de navegador de la UI (D18): Playwright como librería dentro de node:test.
+import './isolate.js';
 import { test, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

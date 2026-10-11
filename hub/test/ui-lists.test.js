@@ -1,5 +1,6 @@
 // Vista Listas del tablero (8.4): pestañas según config.views, agregar, tildar (lo que se repite avanza), editar,
 // reordenar, pasar a tarea, quitar tildados y crear una lista.
+import './isolate.js';
 import { test, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

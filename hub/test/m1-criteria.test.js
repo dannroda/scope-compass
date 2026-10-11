@@ -1,4 +1,5 @@
 // Criterios de aceptación de v1 (spec §14) que no necesitan el hub, probados como los describe el spec.
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';

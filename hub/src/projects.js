@@ -3,10 +3,11 @@
 // (en Windows, %APPDATA%\scope-compass\projects.json, §18)
 // ({ projects: [{ path, name, added_at, last_seen }] }) y solo guarda rutas y nombres: borrarlo no pierde datos.
 // A diferencia del registro de hubs vivos (registry.js), no se limpia solo: una carpeta que ya no existe se
-// muestra como no encontrada y la quita el usuario.
+// muestra como no encontrada y la quita el usuario. La excepción son las carpetas temporales (tableros de prueba):
+// no se anotan solas y el Inicio olvida al arrancar las que ya no existen.
 import { existsSync, mkdirSync, readFileSync, realpathSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { homedir, tmpdir } from 'node:os';
+import { dirname, join, relative, resolve, isAbsolute } from 'node:path';
 import { writeAtomic } from './store/atomic.js';
 import { canonical } from './store/canonical.js';
 import { hubsOf } from './registry.js';
@@ -69,15 +70,22 @@ async function save(projects) {
 
 const configOf = (dir) => { try { return JSON.parse(readFileSync(join(dir, 'compass', 'config.json'), 'utf8')); } catch { return null; } };
 
+// Carpetas temporales del sistema: lo que se crea ahí (un tablero para probar algo, los tests) se borra solo.
+const TEMP = [...new Set([tmpdir(), ...(WIN ? [] : ['/tmp', '/var/tmp'])].map((d) => real(d)))];
+export const isTempPath = (dir) => TEMP.some((t) => { const r = relative(t, real(dir)); return r !== '' && !r.startsWith('..') && !isAbsolute(r); });
+
 /**
- * Anota un proyecto o actualiza su nombre. seen: además marca last_seen (lo usa `serve`).
- * Devuelve { entry, added }.
+ * Anota un proyecto o actualiza su nombre. seen: además marca last_seen (lo usa `serve`). auto: lo anota `init` o
+ * `serve` sin que nadie lo pida; uno en una carpeta temporal no se anota (no queda basura en el Inicio).
+ * Devuelve { entry, added } (entry null si no se anotó).
  */
-export async function recordProject(dir, { seen = false, now = () => new Date().toISOString() } = {}) {
+export async function recordProject(dir, { seen = false, auto = false, now = () => new Date().toISOString() } = {}) {
   const path = real(dir);
   const config = configOf(path);
   if (!config) throw new ProjectsError('not_found', `no hay ${join(path, 'compass', 'config.json')}`);
   const projects = loadProjects();
+  // Con un projects.json también temporal (tests aislados, SCOMPASS_CONFIG en /tmp) no hay basura que evitar.
+  if (auto && isTempPath(path) && !isTempPath(projectsFile()) && !projects.some((p) => real(p.path) === path)) return { entry: null, added: false };
   const t = now();
   const i = projects.findIndex((p) => real(p.path) === path);
   const prev = i >= 0 ? projects[i] : { path, added_at: t };
@@ -95,6 +103,15 @@ export async function forgetProject(dir) {
   if (i < 0) throw new ProjectsError('not_found', `${resolve(dir)} no está en el registro`);
   await save(projects.toSpliced(i, 1));
   return projects[i];
+}
+
+/** Olvida los proyectos de carpetas temporales que ya no existen (al arrancar el Inicio). Devuelve cuántos. */
+export async function pruneTempProjects() {
+  const projects = loadProjects();
+  if (isTempPath(projectsFile())) return 0;
+  const keep = projects.filter((p) => !isTempPath(p.path) || existsSync(join(p.path, 'compass', 'config.json')));
+  if (keep.length !== projects.length) await save(keep);
+  return projects.length - keep.length;
 }
 
 /** El registro con el estado de cada proyecto: found (existe su compass/) y los hubs vivos. */

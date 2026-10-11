@@ -1,4 +1,5 @@
 // 19.2: nada se lee ni se escribe fuera del proyecto, venga de config.json o de la API.
+import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';

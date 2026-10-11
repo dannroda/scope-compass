@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (13/13)
+## M19 — Auditoría  (14/15)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2282,3 +2282,21 @@ Auditoría (2026-10-11): en Alegreya Sans el espacio mide 2-3 px (las palabras s
 **Notas:** Hecho: word-spacing y lining-nums en body; a y a.btn. dm-pre y data-short (::after) en la lista del teléfono. Cabecera del detalle sin «·» si no hay código. Textos de Listas y del badge de git. highlight() solo al inicio de palabra (\p{L}\p{N}). toast() con mayúscula. setCustomValidity en el alias. sec-bar sin select en tablet táctil y con elipsis. .proj .kind en un renglón con elipsis.
 
 **Referencias:** `docs/spec.md#auditoria`
+
+### 19.14 Los tableros de prueba no quedan en el Inicio · Hecho
+
+**Terminada:** 2026-10-11 · **Etiquetas:** `bug`, `hub`
+
+Pedido del usuario (2026-10-11): cada tablero que se crea para probar algo queda como entrada basura en el Inicio (había 98 en projects.json, casi todas carpetas de /tmp que ya no existen).
+
+**Prueba:** projects.test.js (19.14): con un projects.json fuera de /tmp, recordProject auto de un tablero en /tmp no lo anota; anotado a mano sí, y borrado, pruneTempProjects lo olvida. Con los tests aislados (projects.json en /tmp) serve sigue anotando, como verifican m8 y m9. La suite completa no tocó el projects.json del usuario.
+
+**Notas:** Hecho: isTempPath (os.tmpdir(), /tmp, /var/tmp) y recordProject({ auto }) en projects.js; init y serve pasan auto. pruneTempProjects al arrancar el Inicio. test/isolate.js importado primero en los 44 archivos de test: con node --test directo pone registro, config y datos temporales (npm test ya lo hacía). El projects.json del usuario quedó con sus 2 proyectos reales (tenía 98). AGENTS.md lo cuenta. De paso, la paridad del export con Python ignora size (Epiphany ya tiene una tarea con tamaño).
+
+**Referencias:** `docs/spec.md#auditoria`
+
+### 19.15 Ícono y favicon con el dorado de la interfaz · Pendiente
+
+**Etiquetas:** `ui`
+
+Pedido del usuario (2026-10-11): colorear el ícono y el favicon con el mismo amarillo que la interfaz.
