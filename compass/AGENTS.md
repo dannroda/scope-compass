@@ -119,7 +119,7 @@ scompass item task assets 3 --milestone m06         # pasa el ítem a una tarea 
 
 ## Documentos y referencias
 
-Los documentos citables están en `compass/config.json` › `docs` (alias y ruta, o un patrón como `docs/**/*.md`). Se declaran con `doc add`, no editando la config. Un archivo de un patrón toma el alias del patrón más su ruta bajo la carpeta del patrón, sin `.md`: `docs/notas/arte.md` es `docs/notas/arte`. Una referencia apunta a una sección por su id estable (`<!-- id: … -->` debajo del título), o al documento entero si va sin `#<id>`. En la descripción, notas, prueba y pasos, `[[alias#id]]` enlaza una sección y `[[alias]]` el documento.
+Los documentos citables están en `compass/config.json` › `docs` (alias y ruta, o un patrón como `docs/**/*.md`). Se declaran con `doc add`, no editando la config: tiene que ser un `.md` dentro del proyecto que git no ignore (o un patrón que termine en `.md`); nada con `..`, llaves, rutas absolutas ni enlaces simbólicos que lleven afuera. Un archivo de un patrón toma el alias del patrón más su ruta bajo la carpeta del patrón, sin `.md`: `docs/notas/arte.md` es `docs/notas/arte`. Una referencia apunta a una sección por su id estable (`<!-- id: … -->` debajo del título), o al documento entero si va sin `#<id>`. En la descripción, notas, prueba y pasos, `[[alias#id]]` enlaza una sección y `[[alias]]` el documento.
 
 ```sh
 scompass doc list                  # documentos con su índice de secciones

@@ -1,7 +1,9 @@
 // Export markdown legible de compass/ (spec §4.4, §6, D13). Port de tools/artifact_to_md.py:
 // para los mismos datos produce el mismo texto, salvo la fecha.
 import { mkdir } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { projectRel, realInside } from './paths.js';
+import { StoreError } from './store/json-files.js';
 import { writeAtomic } from './store/atomic.js';
 import { linkView } from './links.js';
 import { EVERY, localDay, milestoneDueState } from './dates.js';
@@ -70,11 +72,20 @@ export function renderMarkdown({ milestones, tasks, lists = [] }, { title, board
   return L.join('\n').replace(/\s+$/, '') + '\n';
 }
 
-// Escribe el export de un proyecto. out: ruta absoluta o relativa al proyecto (por defecto config.export_md).
+// Escribe el export de un proyecto. out: ruta absoluta o relativa al proyecto (scompass export --out, la elige quien
+// la escribe). Sin out, config.export_md, que tiene que ser un .md dentro del proyecto (19.2): config.json viene con
+// el repo, y un export a ~/.bashrc sería escribir donde nadie lo pidió.
 export async function exportMarkdown(projectDir, { config, milestones, tasks, lists }, { out, date } = {}) {
-  const path = resolve(projectDir, out ?? config?.export_md ?? 'docs/tareas.md');
+  let path;
+  if (out !== undefined) path = resolve(projectDir, out);
+  else {
+    const rel = projectRel(config?.export_md ?? 'docs/tareas.md');
+    if (!rel || !rel.endsWith('.md') || rel.includes('*')) throw new StoreError('invalid_argument', `export_md tiene que ser un .md dentro del proyecto: ${config.export_md}`);
+    path = join(projectDir, rel);
+  }
   const text = renderMarkdown({ milestones, tasks, lists }, { title: config?.project ?? 'Proyecto', board: config?.board_url, date });
   await mkdir(dirname(path), { recursive: true });
+  if (out === undefined && !(await realInside(projectDir, path))) throw new StoreError('invalid_argument', `export_md sale del proyecto por un enlace simbólico: ${config.export_md}`);
   await writeAtomic(path, text);
   return path;
 }

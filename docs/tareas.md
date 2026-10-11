@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (1/13)
+## M19 — Auditoría  (2/13)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2132,11 +2132,17 @@ Auditoría (2026-10-11): en Linux, el fs.watch recursivo deja de avisar de un ar
 
 **Referencias:** `docs/spec.md#auditoria`
 
-### 19.2 Nada se lee ni se escribe fuera del proyecto · Pendiente
+### 19.2 Nada se lee ni se escribe fuera del proyecto · Hecho
 
-**Etiquetas:** `bug`, `hub`
+**Terminada:** 2026-10-11 · **Etiquetas:** `bug`, `hub`
 
 Auditoría (2026-10-11): export_md en config.json puede apuntar a cualquier ruta (por ejemplo ~/.bashrc); POST /api/docs lee fuera del proyecto con llaves de glob, .., rutas absolutas, enlaces simbólicos o archivos ignorados por git (.env); compass/images como enlace simbólico deja escribir y borrar afuera; repoFile deja pasar claves del prototipo (status['constructor']).
+
+**Prueba:** paths.test.js: projectRel; export_md fuera, a través de un enlace o no .md falla y no escribe afuera (--out sí puede); POST /api/docs rechaza llaves, .., absolutas, enlaces afuera, .env, lo ignorado y lo que no es .md; loadDocs no sigue enlaces afuera; compass/images enlazado afuera no guarda ni borra; repoFile('constructor') es 404. Cinco de los seis tests fallan sin el cambio.
+
+**Notas:** Hecho: paths.js (projectRel, realInside con realpath de lo existente más cercano). Pattern en el schema de config para docs[].path y export_md (las tres copias); las configs de este repo, Project Epiphany y scope-audio lo cumplen. exportMarkdown sin out valida y mira el realpath; changeDocs exige .md, realpath adentro y, con repo, que git no lo ignore; docFiles filtra los enlaces de los patrones; loadDocs no lee lo de afuera. saveImage y dropImage miran el realpath. repoFile con Object.hasOwn. Quedan sin hacer: CSP en la UI (uso local de un solo usuario; pediría revisar los estilos en línea) y nosniff en el proxy del Inicio (19.8).
+
+**Referencias:** `docs/spec.md#auditoria`
 
 ### 19.3 Historial en un repo con el proyecto en una subcarpeta · Pendiente
 

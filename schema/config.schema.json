@@ -38,7 +38,8 @@
           "path": {
             "type": "string",
             "minLength": 1,
-            "description": "Ruta relativa a la raíz del proyecto, o un patrón como docs/**/*.md"
+            "description": "Ruta a un .md dentro del proyecto, relativa a la raíz, o un patrón como docs/**/*.md (sin .., llaves ni rutas absolutas)",
+            "pattern": "^(?![/\\\\])(?![a-zA-Z]:)(?!(.*/)?\\.\\.(/|$))[^\\\\{}]+\\.md$"
           }
         }
       }
@@ -46,7 +47,8 @@
     "export_md": {
       "type": "string",
       "minLength": 1,
-      "description": "Ruta del export markdown, relativa a la raíz del proyecto"
+      "description": "Ruta del export markdown (.md), relativa a la raíz del proyecto y dentro de él",
+      "pattern": "^(?![/\\\\])(?![a-zA-Z]:)(?!(.*/)?\\.\\.(/|$))[^\\\\{}]+\\.md$"
     },
     "port": {
       "type": "integer",

@@ -7,6 +7,8 @@ import { canonical } from './store/canonical.js';
 import { writeAtomic } from './store/atomic.js';
 import { parseDoc } from './schema.js';
 import { StoreError } from './store/json-files.js';
+import { repoFiles } from './git.js';
+import { projectRel, realInside } from './paths.js';
 
 const HEADING = /^(#{1,6})[ \t]+(.+?)[ \t#]*$/;
 const ID_COMMENT = /^<!--\s*id:\s*([a-z0-9][a-z0-9_-]*)\s*-->\s*$/;
@@ -72,11 +74,16 @@ export async function docFiles(projectDir, config) {
   const out = [];
   for (const entry of entries) {
     if (!entry.path.includes('*')) { out.push({ alias: entry.alias, path: entry.path }); continue; }
+    // Un patrón que podría salir del proyecto ({..,x}, ../) no se recorre (19.2); el schema ya no lo deja pasar.
+    if (!projectRel(entry.path)) continue;
     const base = globBase(entry.path);
     // Rutas dentro del proyecto siempre con "/", como en git: glob devuelve las de Windows con "\".
     const files = (await Array.fromAsync(glob(entry.path, { cwd: projectDir, exclude: (p) => SKIP_DIR.test(p) })))
-      .map((f) => f.split(sep).join('/')).filter((f) => !taken.has(f)).sort();
-    for (const rel of files) out.push({ alias: `${entry.alias}/${rel.slice(base.length).replace(/\.md$/, '')}`, path: rel });
+      .map((f) => f.split(sep).join('/')).filter((f) => !taken.has(f) && f.endsWith('.md')).sort();
+    for (const rel of files) {
+      // Un enlace simbólico (o una carpeta enlazada) que lleva afuera no es un documento del proyecto.
+      if (await realInside(projectDir, join(projectDir, rel))) out.push({ alias: `${entry.alias}/${rel.slice(base.length).replace(/\.md$/, '')}`, path: rel });
+    }
   }
   return out;
 }
@@ -85,9 +92,10 @@ export async function docFiles(projectDir, config) {
 export async function loadDocs(projectDir, config) {
   const out = [];
   for (const { alias, path } of await docFiles(projectDir, config)) {
-    const text = await readFile(join(projectDir, path), 'utf8').catch(() => null);
+    const inside = projectRel(path) && (await realInside(projectDir, join(projectDir, path)));
+    const text = inside ? await readFile(join(projectDir, path), 'utf8').catch(() => null) : null;
     if (text === null) {
-      out.push({ alias, path, missing: true, sections: [], lines: [], warnings: [{ code: 'missing_doc', message: `no existe ${path}` }] });
+      out.push({ alias, path, missing: true, sections: [], lines: [], warnings: [{ code: 'missing_doc', message: inside ? `no existe ${path}` : `${path} está fuera del proyecto` }] });
       continue;
     }
     out.push({ alias, path: relative(projectDir, join(projectDir, path)).split(sep).join('/'), ...parseSections(text) });
@@ -99,7 +107,8 @@ const ALIAS = /^[a-z0-9][a-z0-9_-]*$/;
 
 /**
  * Cambia config.json › docs (12.2): add { alias, path } o remove alias. path: relativa al proyecto (o absoluta
- * dentro de él), un archivo que existe o un patrón con *. Lee la config en el momento, valida y escribe atómico.
+ * dentro de él), un .md que existe y git no ignora, o un patrón con * que termina en .md; nada que pueda salir del
+ * proyecto (19.2: ni .., ni llaves, ni un enlace simbólico). Lee la config en el momento, valida y escribe atómico.
  * Devuelve la entrada agregada o quitada.
  */
 export async function changeDocs(projectDir, validators, { add, remove }) {
@@ -120,10 +129,17 @@ export async function changeDocs(projectDir, validators, { add, remove }) {
     const alias = String(add?.alias ?? '');
     if (!ALIAS.test(alias)) throw new StoreError('invalid_argument', `alias inválido: "${alias}" (minúsculas, números, - y _; empieza con letra o número)`);
     const raw = String(add?.path ?? '');
-    const rel = relative(projectDir, resolve(projectDir, raw)).split(sep).join('/');
-    if (!raw || !rel || rel.startsWith('../') || rel === '..' || isAbsolute(rel)) throw new StoreError('invalid_argument', `la ruta tiene que estar dentro del proyecto: ${raw}`);
+    const abs = isAbsolute(raw) ? relative(projectDir, raw).split(sep).join('/') : raw;
+    const rel = projectRel(abs);
+    if (!raw || !rel || !(await realInside(projectDir, join(projectDir, globBase(rel) || '.')))) throw new StoreError('invalid_argument', `la ruta tiene que estar dentro del proyecto: ${raw}`);
+    if (!rel.endsWith('.md')) throw new StoreError('invalid_argument', `un documento es un archivo .md (o un patrón que termina en .md): ${raw}`);
     if (rel === config.export_md) throw new StoreError('invalid_argument', `${rel} es el export markdown del tablero: no es un documento`);
-    if (!rel.includes('*') && !(await stat(join(projectDir, rel)).then((s) => s.isFile(), () => false))) throw new StoreError('not_found', `no existe el archivo ${rel}`);
+    if (!rel.includes('*')) {
+      if (!(await stat(join(projectDir, rel)).then((s) => s.isFile(), () => false)) || !(await realInside(projectDir, join(projectDir, rel)))) throw new StoreError('not_found', `no existe el archivo ${rel}`);
+      // En un repo, un archivo que git ignora (un .env, un secreto) no se publica como documento.
+      const listed = await repoFiles(projectDir, rel);
+      if (listed && !listed.includes(rel)) throw new StoreError('invalid_argument', `git ignora ${rel}: no se puede declarar como documento`);
+    }
     const same = docs.find((d) => d.alias === alias);
     if (same) throw new StoreError('conflict', `ya hay un documento "${alias}" (${same.path})`);
     const dup = docs.find((d) => d.path === rel);

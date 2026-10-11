@@ -5,6 +5,7 @@ import { mkdir, readFile, rm, stat } from 'node:fs/promises';
 import { extname, join, relative, resolve, sep } from 'node:path';
 import { writeAtomic } from './store/atomic.js';
 import { StoreError } from './store/json-files.js';
+import { realInside } from './paths.js';
 
 export const IMAGE_EXT = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
 export const IMAGES_DIR = 'compass/images';
@@ -37,6 +38,8 @@ export async function saveImage(projectDir, taskId, buf, now = new Date()) {
   const ext = imageKind(buf);
   if (!ext) throw new StoreError('invalid_argument', 'no es una imagen PNG, JPEG, GIF ni WebP');
   await mkdir(join(projectDir, IMAGES_DIR), { recursive: true });
+  // compass/images como enlace simbólico a otra parte no recibe archivos (19.2).
+  if (!(await realInside(projectDir, join(projectDir, IMAGES_DIR)))) throw new StoreError('invalid_argument', `${IMAGES_DIR} apunta fuera del proyecto`);
   const rel = await freeName(projectDir, taskId, ext, now);
   await writeAtomic(join(projectDir, rel), buf);
   return rel;
@@ -61,6 +64,8 @@ export function insideProject(projectDir, abs) {
 export async function dropImage(projectDir, path, tasks) {
   if (!path.startsWith(IMAGES_DIR + '/') || path.includes('..')) return false;
   if (tasks.some((t) => (t.images ?? []).includes(path))) return false;
+  // Por un enlace simbólico (la carpeta o la captura) se borraría algo de afuera: se deja (19.2).
+  if (!(await realInside(projectDir, join(projectDir, path)))) return false;
   await rm(join(projectDir, path), { force: true });
   return true;
 }

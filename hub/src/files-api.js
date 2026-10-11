@@ -22,9 +22,10 @@ export async function repoFile(projectDir, raw) {
   const path = String(raw ?? '');
   const g = await docsStatus(projectDir);
   const ok = path && !path.startsWith('/') && !/(^|\/)\.\.(\/|$)/.test(path) && !/[\\\0]/.test(path) &&
-    ((await repoFiles(projectDir, path))?.includes(path) || g.status[path]);
+    ((await repoFiles(projectDir, path))?.includes(path) || Object.hasOwn(g.status, path));
   if (!ok) throw new StoreError('not_found', `no hay un archivo "${path}" en el repo (o git lo ignora)`);
-  return { path, git: g.status[path] ?? 'clean', abs: join(projectDir, path) };
+  // hasOwn: una ruta como "constructor" no puede pasar por una clave heredada del objeto (19.2).
+  return { path, git: Object.hasOwn(g.status, path) ? g.status[path] : 'clean', abs: join(projectDir, path) };
 }
 
 export function registerFilesApi(app, { projectDir }) {

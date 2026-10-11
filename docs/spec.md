@@ -1062,3 +1062,8 @@ Tests: `store.test.js` y `home.test.js` (18.1, 18.2), `cli.test.js` (18.1–18.4
 Lo que encontró la auditoría completa después de M18 (seguridad, backend, web y dock), arreglado por partes.
 
 - **Watcher (19.1):** en Linux, `fs.watch` recursivo deja de avisar de un archivo después de que se lo reemplaza con un rename (`writeAtomic`, `git checkout`, `sed -i`, muchos editores), así que los cambios hechos fuera del hub dejaban de llegar a la web y al dock. `watch-tree.js` mira cada carpeta por separado, sin recursión, y suma las que aparecen (una carpeta de colección vuelta a crear al cambiar de rama dispara un rescan). Lo usan el watcher de `compass/` y el de los documentos con patrón. En macOS y Windows sigue el recursivo nativo.
+- **Rutas dentro del proyecto (19.2):** `config.json` viene con el repo y la API se puede abrir en la LAN, así que nada de lo que dicen puede leer ni escribir fuera del proyecto (`paths.js`):
+  - `export_md` y la ruta de cada documento tienen que ser un `.md` relativo, sin `..`, llaves, `\` ni rutas absolutas (el `pattern` del schema de config); el export, además, no escribe a través de una carpeta que es un enlace afuera. `scompass export --out` queda libre: lo elige quien lo corre.
+  - `POST /api/docs` rechaza lo que git ignora (un `.env`) y lo que no es `.md`; un patrón no toma un archivo enlazado afuera, y un documento declarado a mano que lleva afuera queda como `missing_doc` (*fuera del proyecto*).
+  - `compass/images` como enlace simbólico afuera no recibe capturas, y quitar una no borra nada de afuera.
+  - `repoFile` no deja pasar una ruta con el nombre de una clave heredada (`constructor`).
