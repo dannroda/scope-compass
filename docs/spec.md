@@ -1091,3 +1091,7 @@ Lo que encontró la auditoría completa después de M18 (seguridad, backend, web
   - Un segundo *Iniciar hub* mientras arranca el primero no hace nada (el botón se deshabilita), y dos `scompass` seguidos (doble clic en *Actualizar*) esperan uno al otro.
   - Si se borra el hito abierto, el dock pasa al que toca por defecto; ir a una tarea de otro hito recuerda ese hito.
   - *Reiniciar hub* no se ofrece cuando el proyecto lo sirve el Inicio (ahí siempre fallaba).
+- **Dock angosto y la tarea en la web (19.11):**
+  - El dock entra en el slot derecho (~300 px): el título del aviso sin hub hace autowrap (con un error largo pedía ~960 px), los textos del pie se recortan con … (el tooltip los dice enteros) y *Reiniciar hub* es solo el ícono.
+  - Con hub, junto al título del detalle, ↗ abre la tarea en el navegador (`#task/<id>`), y una línea dice que acá se cambian el estado y los pasos y lo demás en el navegador.
+  - En Windows, `scope_compass/scompass_path` apuntando a `scompass.cmd` (lo que da `where`) usa el `.js` que el shim tiene al lado: Godot no lanza un `.cmd`.

@@ -86,6 +86,9 @@ var tasks_collapsed := false
 var detail_scroll: ScrollContainer
 var detail: VBoxContainer
 var detail_title: Label
+## Abre la tarea abierta en la web (19.11): ahí se edita lo que el dock solo muestra.
+var detail_web: Button
+var detail_hint: Label
 ## Fecha límite de la tarea abierta (solo lectura: se edita en la web o con `scompass set --due`).
 var detail_due: Label
 var detail_props: Label
@@ -410,6 +413,12 @@ func scompass_command() -> Array:
 	var candidates: Array = []
 	var configured: String = scompass_setting.call()
 	if configured != "":
+		# scompass.cmd (lo que da `where` después de npm link): Godot no lanza un .cmd, así que se usa el .js que el
+		# shim tiene al lado, como en la búsqueda por el PATH (19.11).
+		if configured.get_extension().to_lower() in ["cmd", "ps1"] or configured.get_file().to_lower() == "scompass":
+			var js := configured.replace("\\", "/").get_base_dir().path_join("node_modules/scope-compass/bin/scompass.js")
+			if FileAccess.file_exists(js):
+				configured = js
 		candidates.append(configured)
 	candidates.append(project_root.path_join("../scope-compass/hub/bin/scompass.js").simplify_path())
 	candidates.append(project_root.path_join("hub/bin/scompass.js"))
@@ -614,6 +623,9 @@ func _build() -> void:
 	var bv := VBoxContainer.new()
 	banner.add_child(bv)
 	banner_title = Label.new()
+	# Con autowrap: un error largo ("es el hub de otro proyecto: /ruta/…") pedía casi 1000 px de ancho (19.11).
+	banner_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	banner_title.custom_minimum_size.x = WRAP_MIN_WIDTH
 	banner_title.add_theme_color_override("font_color", Color("#ffde66"))
 	bv.add_child(banner_title)
 	banner_text = Label.new()
@@ -752,11 +764,25 @@ func _build() -> void:
 	detail = VBoxContainer.new()
 	detail.size_flags_horizontal = SIZE_EXPAND_FILL
 	detail_scroll.add_child(detail)
+	var trow := HBoxContainer.new()
+	detail.add_child(trow)
 	detail_title = Label.new()
 	detail_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_title.custom_minimum_size.x = WRAP_MIN_WIDTH
+	detail_title.size_flags_horizontal = SIZE_EXPAND_FILL
 	detail_title.add_theme_font_size_override("font_size", 15)
-	detail.add_child(detail_title)
+	trow.add_child(detail_title)
+	detail_web = _icon_button("browser", "Abrir esta tarea en el navegador, donde se edita todo")
+	detail_web.size_flags_vertical = SIZE_SHRINK_BEGIN
+	detail_web.pressed.connect(func(): OS.shell_open(web_url("#task/" + selected_task.uri_encode())))
+	trow.add_child(detail_web)
+	detail_hint = Label.new()
+	detail_hint.text = "Acá se cambian el estado y los pasos; lo demás, en el navegador (↗)."
+	detail_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail_hint.custom_minimum_size.x = WRAP_MIN_WIDTH
+	detail_hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.45))
+	detail_hint.add_theme_font_size_override("font_size", 11)
+	detail.add_child(detail_hint)
 	detail_due = Label.new()
 	detail.add_child(detail_due)
 	detail_props = Label.new()
@@ -808,17 +834,26 @@ func _build() -> void:
 	footer_dot.custom_minimum_size = Vector2(8, 8)
 	footer_dot.size_flags_vertical = SIZE_SHRINK_CENTER
 	foot.add_child(footer_dot)
+	# El pie no fija el ancho del dock (19.11): los textos se recortan con … y el tooltip los dice enteros.
 	footer_label = Label.new()
+	footer_label.clip_text = true
+	footer_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	footer_label.size_flags_horizontal = SIZE_EXPAND_FILL
+	footer_label.size_flags_stretch_ratio = 0.8
+	footer_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	foot.add_child(footer_label)
 	footer_right = Label.new()
+	footer_right.clip_text = true
+	footer_right.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	footer_right.size_flags_horizontal = SIZE_EXPAND_FILL
 	footer_right.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	footer_right.mouse_filter = Control.MOUSE_FILTER_PASS
 	foot.add_child(footer_right)
 	restart_button = Button.new()
-	restart_button.text = "Reiniciar hub"
+	# Solo el ícono: con el texto, el pie pedía casi 470 px (19.11). El tooltip dice qué hace.
 	restart_button.icon = ICONS.restart
 	restart_button.flat = true
-	restart_button.tooltip_text = "Reinicia el hub (para que cargue código nuevo de Scope Compass)"
+	restart_button.tooltip_text = "Reiniciar hub (para que cargue código nuevo de Scope Compass)"
 	restart_button.pressed.connect(restart_hub)
 	foot.add_child(restart_button)
 
@@ -901,6 +936,7 @@ func _render() -> void:
 
 	footer_dot.color = Color("#6fbf94") if online else Color("#e0655a")
 	footer_label.text = ("127.0.0.1:%d" % client.port) if online else "Sin hub · solo lectura"
+	footer_label.tooltip_text = footer_label.text
 	# Un proyecto que sirve el Inicio no se reinicia solo (su hub no tiene /api/restart): se reinicia el Inicio (19.10).
 	restart_button.visible = online and client.base == ""
 	# Hub y addon de versiones distintas: uno de los dos quedó viejo (o el hub no se reinició tras actualizar).
@@ -996,6 +1032,8 @@ func _render_detail() -> void:
 	if t == null:
 		return
 	detail_title.text = (((str(t.code) + " ") if str(t.get("code", "")) != "" else "") + str(t.title)).replace("`", "")
+	detail_web.visible = online
+	detail_hint.visible = online
 	var due := str(t.get("due", ""))
 	var ds := Board.due_state(t)
 	detail_due.visible = due != ""

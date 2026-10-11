@@ -522,6 +522,10 @@ test('19.10: con hub: un guardado o una creación que fallan no mienten, y Reini
   expectOk(r, 'failed_writes');
 });
 
+test('19.11: dock: entra en 300 px con un error largo y con hub; la tarea se abre en el navegador', { skip }, async () => {
+  expectOk(await godot('narrow', dir, 'm1-04'), 'narrow');
+});
+
 test('dock: los archivos de la tarea se listan en el detalle y un clic los abre en el editor', { skip }, async () => {
   const { mkdir } = await import('node:fs/promises');
   await mkdir(join(dir, 'src'));

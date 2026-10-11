@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (10/13)
+## M19 — Auditoría  (11/13)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2240,11 +2240,17 @@ Auditoría (2026-10-11): sin hub, un JSON con links/checklist/refs de forma rara
 
 **Referencias:** `docs/spec.md#auditoria`
 
-### 19.11 Dock: ancho mínimo y abrir la tarea en la web · Pendiente
+### 19.11 Dock: ancho mínimo y abrir la tarea en la web · Hecho
 
-**Etiquetas:** `ui`, `dock`
+**Terminada:** 2026-10-11 · **Etiquetas:** `ui`, `dock`
 
 Auditoría (2026-10-11): el dock pide 466 px (947 con un error largo) porque el aviso no hace autowrap y el pie no recorta; no hay forma de abrir en la web la tarea abierta, y lo que es de solo lectura no lo dice; en Windows, scompass_path apuntando a un .cmd no arranca.
+
+**Prueba:** dock.test.js (19.11): narrow: con un error largo sin hub y con hub (12 sin commitear) el ancho mínimo de la vista es ≤ 300 px; sin hub no hay ↗; con hub está y web_url termina en /#task/<id>. Falla sin el cambio (pedía 961 px). La suite del dock pasa entera (39). Lo del .cmd en Windows queda por probar en la VM.
+
+**Notas:** Hecho: autowrap en banner_title; clip_text + elipsis en los labels del pie, con tooltip; restart sin texto. detail_web (↗) y detail_hint en el detalle, visibles con hub. scompass_command toma el .js junto a un .cmd/.ps1 configurado.
+
+**Referencias:** `docs/spec.md#auditoria`
 
 ### 19.12 Web: nueva tarea, Pasar a tarea y confirmaciones · Pendiente
 

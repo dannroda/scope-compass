@@ -702,3 +702,25 @@ func test_failed_writes(a: Array) -> void:
 	v.online = false
 	v._starting = true
 	_check(c, (await v.start_hub()) == false and v._starting, "un segundo Iniciar hub no esperó al primero")
+
+
+# 19.11: el dock entra en el slot derecho (~300 px), también con un error largo y con hub; la tarea abierta tiene
+# el botón para abrirla en el navegador.
+func test_narrow(a: Array) -> void:
+	var c := "narrow"
+	var v := await _view(a[0])
+	v.client.last_error = "es el hub de otro proyecto: /home/alguien/Proyectos/Godot/un-proyecto-con-nombre-largo"
+	v.current_milestone = "m01"
+	v.selected_task = a[1]
+	v._render()
+	await process_frame
+	var w: float = v.get_combined_minimum_size().x
+	if not _check(c, w <= 300, "sin hub pide %d px" % w): return
+	if not _check(c, not v.detail_web.visible, "abrir en el navegador sin hub"): return
+	v.online = true
+	v._uncommitted = 12
+	v._render()
+	await process_frame
+	w = v.get_combined_minimum_size().x
+	if not _check(c, w <= 300, "con hub pide %d px" % w): return
+	_check(c, v.detail_web.visible and v.web_url("#task/" + a[1]).ends_with("/#task/" + a[1]), "falta abrir la tarea en el navegador")
