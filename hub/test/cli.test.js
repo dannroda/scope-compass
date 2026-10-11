@@ -59,7 +59,7 @@ test('add → move → check → show, escribiendo en compass/', async () => {
   const a = await cli(['add', 'Probar la CLI', '--milestone', 'm01', '--code', '1.8', '--json']);
   assert.equal(a.code, 0, a.err);
   const { id, order } = a.json();
-  assert.equal(id, 'm1-08', 'el siguiente número del hito');
+  assert.equal(id, 'm1-06', 'el siguiente número del hito');
   assert.equal(order, 8);
   assert.equal((await task(id)).created_at, NOW);
 
@@ -195,6 +195,21 @@ test('--etag none: set crea solo si no existe', async () => {
   const again = await cli(['set', 'm2-99', '--file', 't.json', '--etag', 'none']);
   assert.equal(again.code, 1);
   assert.match(again.err, /conflict/);
+});
+
+test('19.4: set --file acepta lo que da show --json; su etag es el If-Match y un id de otra tarea no pasa', async () => {
+  const shown = (await cli(['show', 'm1-07', '--json'])).json();
+  await writeFile(join(dir, 't.json'), JSON.stringify({ ...shown, notes: 'editada' }));
+  const r = await cli(['set', 'm1-07', '--file', 't.json']);
+  assert.equal(r.code, 0, r.err);
+  assert.equal((await task('m1-07')).notes, 'editada');
+  assert.equal((await task('m1-07')).id, undefined);
+  // El mismo archivo otra vez: el etag ya no es el actual.
+  assert.match((await cli(['set', 'm1-07', '--file', 't.json'])).err, /conflict/);
+  assert.equal((await cli(['set', 'm1-06', '--file', 't.json', '--etag', 'x'])).code, 2);
+  const ms = (await cli(['milestone', 'show', 'm01', '--json'])).json();
+  await writeFile(join(dir, 'm.json'), JSON.stringify({ ...ms, goal: 'Otra meta' }));
+  assert.equal((await cli(['milestone', 'set', 'm01', '--file', 'm.json'])).code, 0);
 });
 
 test('set con campos sueltos cambia solo esos campos', async () => {

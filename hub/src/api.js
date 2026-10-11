@@ -18,7 +18,8 @@ function preconditions(req) {
     return { ifMatch: null };
   }
   const ifMatch = req.headers['if-match'];
-  return ifMatch === undefined ? {} : { ifMatch: unquote(ifMatch) };
+  // * es "cualquier versión" (19.4): como no mandar la cabecera.
+  return ifMatch === undefined || ifMatch.trim() === '*' ? {} : { ifMatch: unquote(ifMatch) };
 }
 
 // Cuerpo de escritura: un objeto JSON. `id` y `etag` se ignoran (vienen de una lectura previa).

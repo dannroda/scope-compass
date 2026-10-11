@@ -65,7 +65,7 @@ scompass step set m5-02 2 --text "…" --detail "…"              # --detail ""
 scompass step rm m5-02 2
 scompass check m5-02 2                                        # tilda el paso 2
 scompass check m5-02 2 --undo
-scompass set m5-02 --file tarea.json                          # reemplazo completo (--file - lee stdin)
+scompass set m5-02 --file tarea.json                          # reemplazo completo (--file - lee stdin); vale la salida de show --json, y su etag protege de pisar un cambio
 scompass milestone set m08 --file hito.json                   # crea o reemplaza un hito
 scompass milestone set m08 --due 2026-11-01                   # fecha objetivo del hito ("" la quita)
 ```

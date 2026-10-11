@@ -73,6 +73,11 @@ test('dos PATCH con el mismo If-Match: el segundo es 409 con el documento actual
   assert.equal(w.statusCode, 200);
 });
 
+test('19.4: If-Match: * acepta cualquier versión', async () => {
+  const r = await req('PATCH', '/api/tasks/m1-04', { notes: 'cualquiera' }, { 'if-match': '*' });
+  assert.equal(r.statusCode, 200);
+});
+
 test('PATCH: null borra, los arrays se reemplazan, id/etag del cuerpo se ignoran', async () => {
   const cur = (await req('GET', '/api/tasks/m0-01')).json();
   const r = await req('PATCH', '/api/tasks/m0-01', { ...cur, notes: null, checklist: [{ text: 'uno', done: false }] });

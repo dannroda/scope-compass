@@ -3,16 +3,22 @@
   "code": "19.4",
   "created_at": "2026-10-11T06:54:26.731Z",
   "description": "Auditoría (2026-10-11): sin hub, scompass set <id> --file con lo que devuelve show --json falla porque trae id y etag. Además If-Match: * da 409 en vez de aceptar cualquier versión.",
+  "done_at": "2026-10-11T07:00:41.496Z",
   "milestone": "m19",
-  "notes": "",
+  "notes": "Hecho: readDocFile en la CLI saca id y etag, usa el etag como If-Match si no hay --etag y rechaza un id distinto; lo usan set y milestone set. preconditions() trata * como sin cabecera. Ayuda de la CLI y AGENTS.md.",
   "order": 4,
-  "refs": [],
-  "status": "todo",
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "auditoria"
+    }
+  ],
+  "status": "done",
   "tags": [
     "bug",
     "cli"
   ],
-  "test": "",
+  "test": "cli.test.js (19.4): show --json → editar → set --file guarda sin id; el mismo archivo otra vez es conflict; un id de otra tarea sale con código 2; milestone show --json → milestone set --file anda. api.test.js: PATCH con If-Match: * es 200. Fallan sin el cambio.",
   "title": "set --file acepta la salida de show --json",
-  "updated_at": "2026-10-11T06:54:26.731Z"
+  "updated_at": "2026-10-11T07:00:41.496Z"
 }

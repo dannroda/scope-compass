@@ -75,7 +75,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   step add <id> "<texto>" [--detail "…"]     agrega un paso (texto corto; el detalle se despliega)
   step set <id> <n> [--text …] [--detail …]  cambia un paso (--detail "" lo quita)
   step rm <id> <n>                          quita un paso
-  set <id> --file task.json                 reemplazo completo (--file - lee stdin)
+  set <id> --file task.json                 reemplazo completo (--file - lee stdin; vale la salida de show --json)
   set <id> [--title t] [--description d] [--notes n] [--test p] [--code c] [--milestone m] [--status s]
       [--due d] [--tags a,b] [--priority p] [--size s|m|l] [--assignee a]
                                             cambia solo esos campos (--due: fecha límite, YYYY-MM-DD o
@@ -213,6 +213,15 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const readJsonFile = async (path) => {
     const text = path === '-' ? await streamText(stdin) : await readFile(resolve(cwd, path), 'utf8');
     try { return JSON.parse(text); } catch (e) { throw new StoreError('invalid_argument', `${path}: JSON inválido: ${e.message}`); }
+  };
+  // Documento entero para --file (19.4): lo que devuelve show --json trae id y etag, que no son campos. El etag, si
+  // no se pasó --etag, sirve de If-Match: si alguien cambió el documento después del show, es un conflicto.
+  const readDocFile = async (path, id) => {
+    const body = await readJsonFile(path);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new StoreError('invalid_argument', `${path}: tiene que ser un objeto JSON`);
+    const { id: fileId, etag, ...doc } = body;
+    if (fileId !== undefined && fileId !== id) throw new UsageError(`${path} es de ${fileId}, no de ${id}`);
+    return { doc, opts: o.etag === undefined && typeof etag === 'string' ? { ifMatch: etag } : ifMatch };
   };
   const done = (r, msg) => { o.json ? print(JSON.stringify(r)) : print(msg); return 0; };
   // D13: después de cada escritura se regenera el export, salvo auto_export_md: false. Con hub, lo hace el hub.
@@ -999,9 +1008,11 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         const template = descriptionTemplate(cur.doc.tags, fields.tags, cur.doc.description, (await store.loadAll()).config);
         if (template) fields.description = template;
       }
-      const r = o.file !== undefined
-        ? await store.put('tasks', id, await readJsonFile(o.file), ifMatch)
-        : await store.patch('tasks', id, fields, ifMatch);
+      let r;
+      if (o.file !== undefined) {
+        const f = await readDocFile(o.file, id);
+        r = await store.put('tasks', id, f.doc, f.opts);
+      } else r = await store.patch('tasks', id, fields, ifMatch);
       return written({ id: r.id, etag: r.etag, ...r.doc }, `Guardada ${id}`);
     },
 
@@ -1135,7 +1146,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
           return written({ id: r.id, etag: r.etag, ...r.doc }, r.doc.due ? `${r.id}: fecha objetivo ${showDue(r.doc.due)}` : `${r.id}: sin fecha objetivo`);
         }
         if (o.due !== undefined) throw new UsageError('--file reemplaza el hito entero: no se combina con --due');
-        const r = await store.put('milestones', need(id, 'el id'), await readJsonFile(need(o.file, '--file')), ifMatch);
+        const f = await readDocFile(need(o.file, '--file'), need(id, 'el id'));
+        const r = await store.put('milestones', id, f.doc, f.opts);
         return written({ id: r.id, etag: r.etag, ...r.doc }, `Guardado ${r.id}`);
       }
       throw new UsageError(`subcomando desconocido: milestone ${sub ?? ''}`);

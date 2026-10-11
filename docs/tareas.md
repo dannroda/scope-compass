@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (3/13)
+## M19 — Auditoría  (4/13)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2156,11 +2156,17 @@ Auditoría (2026-10-11): si el proyecto no está en la raíz del repo, git cat-f
 
 **Referencias:** `docs/spec.md#auditoria`
 
-### 19.4 set --file acepta la salida de show --json · Pendiente
+### 19.4 set --file acepta la salida de show --json · Hecho
 
-**Etiquetas:** `bug`, `cli`
+**Terminada:** 2026-10-11 · **Etiquetas:** `bug`, `cli`
 
 Auditoría (2026-10-11): sin hub, scompass set <id> --file con lo que devuelve show --json falla porque trae id y etag. Además If-Match: * da 409 en vez de aceptar cualquier versión.
+
+**Prueba:** cli.test.js (19.4): show --json → editar → set --file guarda sin id; el mismo archivo otra vez es conflict; un id de otra tarea sale con código 2; milestone show --json → milestone set --file anda. api.test.js: PATCH con If-Match: * es 200. Fallan sin el cambio.
+
+**Notas:** Hecho: readDocFile en la CLI saca id y etag, usa el etag como If-Match si no hay --etag y rechaza un id distinto; lo usan set y milestone set. preconditions() trata * como sin cabecera. Ayuda de la CLI y AGENTS.md.
+
+**Referencias:** `docs/spec.md#auditoria`
 
 ### 19.5 Registro de hubs y claves del Inicio estables · Pendiente
 
