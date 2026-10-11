@@ -600,6 +600,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
       const hub = await detectHub(project, cfg?.port);
       if (!hub) throw new StoreError('not_found', `no hay un hub de este proyecto en el puerto ${cfg?.port ?? 4711}`);
+      // Lo sirve el Inicio (/p/<clave>, D29): ese hub no se reinicia solo (19.8).
+      if (new URL(hub).pathname.startsWith('/p/')) throw new StoreError('invalid_argument', 'este proyecto lo sirve el Inicio: reinicialo con scompass home restart');
       const before = (await (await fetch(hub + '/api/health')).json()).pid;
       const r = await fetch(hub + '/api/restart', { method: 'POST' });
       if (r.status !== 202) throw new StoreError('io_error', `el hub no aceptó reiniciarse (HTTP ${r.status})`);
@@ -816,7 +818,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (sub !== 'add' && sub !== 'rm') throw new UsageError(`subcomando desconocido: file ${sub ?? ''} (add, rm)`);
       need(taskId, 'la tarea');
       // Desde la raíz del proyecto, como la pestaña Archivos. res:// es la misma carpeta: el dock vive en el proyecto de Godot.
-      const path = need(target, '<ruta>').replace(/^res:\/\//, '').replace(/^\.\//, '');
+      // \ → / (19.8): en Windows la terminal completa las rutas con \; en el repo van con /.
+      const path = need(target, '<ruta>').replace(/\\/g, '/').replace(/^res:\/\//, '').replace(/^\.\//, '');
       const cur = await store.get('tasks', taskId);
       const files = cur.doc.files ?? [];
       let next;
@@ -856,7 +859,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const cur = await store.get('tasks', taskId);
       const images = cur.doc.images ?? [];
       if (sub === 'rm') {
-        const path = raw.replace(/^res:\/\//, '').replace(/^\.\//, '');
+        const path = raw.replace(/\\/g, '/').replace(/^res:\/\//, '').replace(/^\.\//, '');
         if (!images.includes(path)) throw new StoreError('not_found', `${taskId} no tiene la captura ${path}`);
         const next = images.filter((x) => x !== path);
         const w = await store.patch('tasks', taskId, { images: next.length ? next : null }, { ifMatch: o.etag ?? cur.etag });
@@ -868,7 +871,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       let path;
       if (existsSync(abs) && here === null) path = await importImage(project, taskId, abs);
       else {
-        path = here ?? raw.replace(/^res:\/\//, '').replace(/^\.\//, '');
+        path = here ?? raw.replace(/\\/g, '/').replace(/^res:\/\//, '').replace(/^\.\//, '');
         if (!isImagePath(path)) throw new StoreError('invalid_argument', `${path} no es una imagen (${IMAGE_EXT.join(', ')})`);
         await imageFile(project, path);
         if (images.includes(path)) return done({ id: cur.id, etag: cur.etag, ...cur.doc }, `${taskId} ya tiene ${path}`);

@@ -11,6 +11,7 @@ import { canonical } from './canonical.js';
 import { writeAtomic } from './atomic.js';
 import { COLLECTIONS, loadCollection, loadCompass } from './load.js';
 import { parseDoc } from '../schema.js';
+import { isValidDue } from '../dates.js';
 
 export class StoreError extends Error {
   // code: invalid_argument | not_found | conflict | invalid_file | io_error
@@ -91,6 +92,9 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
     }
     const res = parseDoc(JSON.stringify(doc), COLLECTIONS[collection], validators);
     if (!res.ok) throw new StoreError('invalid_argument', res.message, { details: res.details });
+    // El schema mira el formato; una fecha que no existe (2026-02-30) se rechaza al ponerla (19.8). Una que ya estaba
+    // en el archivo no impide editar otra cosa.
+    if (doc.due !== undefined && doc.due !== current?.doc.due && !isValidDue(doc.due)) throw new StoreError('invalid_argument', `fecha inexistente: ${doc.due}`);
     try {
       // La carpeta puede faltar en un proyecto de antes de esa colección (lists/, D25).
       await mkdir(dirname(pathOf(collection, id)), { recursive: true });

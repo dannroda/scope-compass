@@ -53,6 +53,7 @@ test('fecha: vencidas, hoy, semana (con las vencidas) y sin fecha; las hechas no
   assert.deepEqual(ids({ due: 'week' }), ['a', 'b', 'c']);
   assert.deepEqual(filterTasks([...T, { id: 'f', title: 'f', status: 'todo' }], { due: 'none' }, { now }).map((t) => t.id), ['f']);
   assert.equal(dueMatches({ status: 'todo', due: '2026-10-15T13:00' }, 'week', now), false, '7 días justos ya no');
+  assert.equal(dueMatches({ status: 'todo', due: '2026-02-30' }, 'week', now), false, '19.8: una fecha que no existe no cae en la semana');
 });
 
 test('bloqueo (por una tarea sin terminar), pasos pendientes y referencias', () => {

@@ -213,6 +213,13 @@ test('init: <carpeta de datos>/<nombre> con git init, o <otra>/<nombre>; una que
       assert.equal((await api('POST', '/api/projects/init', { name })).status, 400, name);
     }
     assert.equal((await api('POST', '/api/projects/init', { name: 'Rel', parent: 'relativa' })).status, 400, 'carpeta relativa');
+    // 19.8: un nombre que empieza con - es el nombre, no otra opción de scompass init.
+    r = await api('POST', '/api/projects/init', { name: '-guion', template: 'vacio' });
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    assert.equal(JSON.parse(await readFile(join(r.body.path, 'compass', 'config.json'), 'utf8')).project, '-guion');
+    // Si init falla, la carpeta que creó el pedido no queda.
+    r = await api('POST', '/api/projects/init', { name: 'Rota', template: 'vacio', parent: join(root, 'datos', 'Vida', 'compass', 'config.json') });
+    assert.ok(r.status >= 400);
     assert.equal((await api('GET', '/api/templates')).body.data_dir, join(root, 'datos'));
     assert.equal((await api('GET', '/api/templates')).body.sep, sep, 'la página arma la ruta con el separador del sistema');
     // Otra carpeta: el proyecto queda adentro, con su nombre; dentro de un repo no se hace otro.

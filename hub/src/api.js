@@ -108,8 +108,14 @@ export function registerApi(app, { store, projectDir, publish }) {
   });
 
   app.delete('/api/tasks/:id', async (req, reply) => {
+    const cur = await store.get('tasks', req.params.id).catch(() => null);
     await store.delete('tasks', req.params.id, preconditions(req));
     publish.delete('tasks', req.params.id);
+    // Sus capturas guardadas por la app que nadie más cita se borran, como al quitarlas (19.8).
+    if (cur?.doc.images?.length) {
+      const all = (await store.list('tasks')).items.map((x) => x.doc);
+      for (const path of cur.doc.images) await dropImage(projectDir, path, all);
+    }
     return reply.code(204).send();
   });
 

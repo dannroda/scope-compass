@@ -160,6 +160,15 @@ test('POST /api/export/markdown escribe export_md', async () => {
   assert.match(await readFile(r.json().path, 'utf8'), /^# Tareas — Scope Compass/);
 });
 
+test('19.8: borrar una tarea borra las capturas que guardó la app y nadie más cita; una fecha inexistente no se guarda', async () => {
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+  const [path] = (await req('POST', '/api/tasks/m1-04/images', { data: png })).json().images;
+  assert.equal(existsSync(join(dir, path)), true);
+  assert.equal((await req('DELETE', '/api/tasks/m1-04')).statusCode, 204);
+  assert.equal(existsSync(join(dir, path)), false);
+  assert.equal((await req('PATCH', '/api/tasks/m1-07', { due: '2026-02-30' })).statusCode, 400);
+});
+
 test('capturas (18.4): POST guarda en compass/images/ y la suma a la tarea; DELETE la saca y borra lo que guardó la app', async () => {
   const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
   const r = await req('POST', '/api/tasks/m1-04/images', { data: 'data:image/png;base64,' + png });

@@ -1072,3 +1072,10 @@ Lo que encontró la auditoría completa después de M18 (seguridad, backend, web
 - **Registro y claves del Inicio (19.5):** cada entrada del registro se escribe en un temporal y se renombra, así otro proceso nunca lee una a medio escribir; y `listHubs` borra una entrada solo si murió el proceso de su nombre (antes borraba la de un hub vivo si la leía rota). Las claves `/p/<clave>/` del Inicio no se corren al quitar un proyecto: el que ya tenía `vida-2` la conserva mientras viva el Inicio, así una pestaña abierta o la base anotada en el registro no pasan a otro proyecto.
 - **Capturas sin git (19.6):** en un proyecto sin repo, `/api/files/raw` y `scompass image add` aceptan una imagen que está en el disco dentro del proyecto (sin enlaces que lleven afuera), y `refs check` mira el disco en vez de lo que lista git. Sin repo no se sirve ningún otro archivo.
 - **Export con textos de varias líneas (19.7):** un título (de tarea, hito o lista), un paso, un *hecho cuando* o un ítem con saltos de línea van en un renglón; en la descripción, la meta, la prueba y las notas, un renglón que empieza con `#` se escapa (`\#`) para no volverse un encabezado que rompa la estructura de `docs/tareas.md`. Para los datos de siempre el texto es el mismo (la paridad con `tools/artifact_to_md.py` sigue).
+- **Detalles del backend (19.8):**
+  - Una fecha que no existe (`2026-02-30`) ya no cae en `--due week`, y el store la rechaza al ponerla (una que ya estaba en el archivo no impide editar otra cosa).
+  - `scompass restart` en un proyecto que sirve el Inicio dice que se reinicia con `scompass home restart`, en vez de *HTTP 400*.
+  - Borrar una tarea (`DELETE /api/tasks/:id`) borra sus capturas de `compass/images/` que nadie más cita, como al quitarlas.
+  - `file` e `image add|rm` pasan `\` a `/`: en Windows la terminal completa las rutas con `\`.
+  - Un proyecto nuevo del Inicio con un nombre que empieza con `-` se crea con ese nombre (`--project=<nombre>`), y si `scompass init` falla no queda la carpeta a medio armar.
+  - El proxy del Inicio pasa `X-Content-Type-Options` y `Content-Security-Policy` del hub del proyecto (las de `/api/files/raw`).

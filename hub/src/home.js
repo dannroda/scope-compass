@@ -18,7 +18,7 @@
 import { execFile, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { existsSync, realpathSync, statSync } from 'node:fs';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, readFile, rm } from 'node:fs/promises';
 import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
@@ -185,7 +185,8 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     await mkdir(path, { recursive: true });
     const inRepo = await new Promise((r) => execFile('git', ['-C', path, 'rev-parse', '--is-inside-work-tree'], { windowsHide: true }, (err) => r(!err)));
     const gitInit = !inRepo && await new Promise((r) => execFile('git', ['-C', path, 'init', '-q'], { windowsHide: true }, (err) => r(!err)));
-    const args = [BIN, '--dir', path, 'init', '--template', template, '--json', ...(name ? ['--project', name] : [])];
+    // --project=<nombre>: un nombre que empieza con - no se toma por otra opción (19.8).
+    const args = [BIN, '--dir', path, 'init', '--template', template, '--json', ...(name ? [`--project=${name}`] : [])];
     const r = await new Promise((resolve) => {
       const child = spawn(process.execPath, args, { stdio: ['ignore', 'pipe', 'pipe'], env: process.env, windowsHide: true });
       let out = '', err = '';
@@ -194,6 +195,8 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
       child.on('exit', (code) => resolve({ code, out, err }));
     });
     if (r.code !== 0) {
+      // La carpeta la creó este pedido (antes no existía): no queda a medio armar.
+      await rm(path, { recursive: true, force: true }).catch(() => {});
       let e = null;
       try { e = JSON.parse(r.err.trim().split('\n').at(-1)).error; } catch { /* no era JSON */ }
       throw new StoreError(e?.code ?? 'io_error', e?.message ?? (r.err.trim() || `scompass init salió con ${r.code}`));

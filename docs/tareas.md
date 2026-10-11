@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (7/13)
+## M19 — Auditoría  (8/13)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2204,11 +2204,17 @@ Auditoría (2026-10-11): un título, un paso o unas notas con saltos de línea r
 
 **Referencias:** `docs/spec.md#auditoria`
 
-### 19.8 Detalles del backend · Pendiente
+### 19.8 Detalles del backend · Hecho
 
-**Etiquetas:** `bug`, `cli`
+**Terminada:** 2026-10-11 · **Etiquetas:** `bug`, `cli`
 
 Auditoría (2026-10-11): una fecha imposible (2026-02-30) cuenta en --due week; scompass restart en un proyecto del Inicio da HTTP 400 sin explicar; borrar una tarea no borra sus capturas guardadas por la app; file/image add y rm no normalizan \\ en Windows; un proyecto nuevo con nombre que empieza con - deja una carpeta huérfana; el proxy del Inicio no pasa nosniff.
+
+**Prueba:** filters.test.js: 2026-02-30 no está en la semana. api.test.js (19.8): DELETE de una tarea borra su captura de compass/images/; PATCH con due 2026-02-30 es 400. home.test.js: el proyecto «-guion» se crea con ese nombre. Los tres fallan sin el cambio.
+
+**Notas:** Hecho: dueMatches con s !== null; write() del store valida la fecha si cambió. restart avisa si la base del hub es /p/. DELETE de tarea llama a dropImage por cada captura. \\ → / en file e image. --project=<nombre> y rm de la carpeta si init falla. OUT del proxy con nosniff y CSP. El mensaje de restart y el proxy no tienen test propio (los dos son de una línea).
+
+**Referencias:** `docs/spec.md#auditoria`
 
 ### 19.9 Dock: reconexión al moverlo y capturas sin trabar el editor · Pendiente
 

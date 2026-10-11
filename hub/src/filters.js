@@ -22,7 +22,8 @@ export function dueMatches(t, which, now = new Date()) {
   const s = dueState(t.due, now);
   if (which === 'overdue') return s === 'overdue';
   if (which === 'today') return s === 'today';
-  if (which === 'week') return s === 'overdue' || s === 'today' || parseDue(t.due) < new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
+  // Una fecha que no existe (2026-02-30) no cae en ningún filtro (19.8): null < fecha daba true.
+  if (which === 'week') return s === 'overdue' || s === 'today' || (s !== null && parseDue(t.due) < new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7));
   return true;
 }
 

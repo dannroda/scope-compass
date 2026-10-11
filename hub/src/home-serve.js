@@ -21,7 +21,8 @@ export function projectKeys(projects, keys = new Map()) {
 
 // Cabeceras que pasan del navegador al hub y de vuelta.
 const IN = ['content-type', 'if-match', 'if-none-match', 'accept'];
-const OUT = ['content-type', 'etag', 'location', 'cache-control'];
+// nosniff y la CSP con sandbox de /api/files/raw también pasan (19.8).
+const OUT = ['content-type', 'etag', 'location', 'cache-control', 'x-content-type-options', 'content-security-policy'];
 
 /**
  * Registra /p/:key, /p/:key/* y /p/:key/ws en la app del Inicio. projects(): el registro con su estado
