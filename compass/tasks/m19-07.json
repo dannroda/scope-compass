@@ -3,16 +3,22 @@
   "code": "19.7",
   "created_at": "2026-10-11T06:54:27.549Z",
   "description": "Auditoría (2026-10-11): un título, un paso o unas notas con saltos de línea rompen la estructura de docs/tareas.md (listas y encabezados).",
+  "done_at": "2026-10-11T07:05:56.837Z",
   "milestone": "m19",
-  "notes": "",
+  "notes": "Hecho: line() para títulos, pasos, done_when e ítems; block() escapa # al empezar un renglón en descripción, meta, prueba y notas. No se tocó el schema (cambiarlo podía invalidar datos existentes): la web ya usa campos de un renglón para títulos y pasos.",
   "order": 7,
-  "refs": [],
-  "status": "todo",
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "auditoria"
+    }
+  ],
+  "status": "done",
   "tags": [
     "bug",
     "hub"
   ],
-  "test": "",
+  "test": "export-md.test.js (19.7): título, hito y paso con saltos de línea quedan en un renglón; los únicos encabezados son los del export; ## y # dentro de la descripción salen escapados. Falla sin el cambio; la paridad con Python sigue pasando.",
   "title": "El export no se rompe con textos de varias líneas",
-  "updated_at": "2026-10-11T06:54:27.549Z"
+  "updated_at": "2026-10-11T07:05:56.837Z"
 }

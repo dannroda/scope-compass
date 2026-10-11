@@ -113,6 +113,18 @@ test('prioridad, responsable y etiquetas van en una línea debajo del título (M
   assert.doesNotMatch(md.split('### 0.2')[1], /Prioridad/);
 });
 
+test('19.7: un título o un paso con saltos de línea van en un renglón; un # al empezar un renglón no es un encabezado', () => {
+  const md = renderMarkdown({
+    milestones: [['m00', { code: 'M0', title: 'Hito\nroto', order: 0, goal: 'Meta\n# no' }]],
+    tasks: [['a', { milestone: 'm00', code: '0.1', title: 'Dos\nrenglones', status: 'todo', description: 'Uno\n## Falso\n  # otro', notes: 'n\n# x',
+      checklist: [{ text: 'paso\npartido', done: false }] }]]
+  }, { title: 'T', date: '2026-10-08' });
+  assert.deepEqual(md.split('\n').filter((l) => /^#/.test(l)), ['# Tareas — T', '## M0 — Hito roto  (0/1)', '### 0.1 Dos renglones · Pendiente']);
+  assert.match(md, /^- \[ \] paso partido$/m);
+  assert.match(md, /^\\## Falso$/m);
+  assert.match(md, /^ {2}\\# otro$/m);
+});
+
 test('referencias: con sección "ruta#id"; al documento entero, solo la ruta (12.1)', () => {
   const md = renderMarkdown({
     milestones: [['m00', { code: 'M0', title: 'Hito', order: 0 }]],

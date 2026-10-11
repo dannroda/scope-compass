@@ -15,6 +15,11 @@ const ST = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'H
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const byOrderCode = (a, b) => cmp(a.order ?? 0, b.order ?? 0) || cmp(a.code ?? '', b.code ?? '');
 
+// Textos que viene a mano o de la API (19.7): un título o un paso con saltos de línea van en un renglón, y un renglón
+// de un texto largo que empieza con # no se vuelve un encabezado que rompa la estructura del export.
+const line = (s) => String(s ?? '').replace(/\s*\n\s*/g, ' ').trim();
+const block = (s) => String(s).split('\n').map((l) => l.replace(/^(\s{0,3})#/, '$1\\#')).join('\n');
+
 const today = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -23,7 +28,7 @@ const today = () => {
 // milestones / tasks / lists: Map o iterable de [id, doc]. board: URL del artifact si todavía es la fuente de verdad.
 export function renderMarkdown({ milestones, tasks, lists = [] }, { title, board, date = today() }) {
   const ts = [...tasks].map(([id, t]) => ({ id, ...t }));
-  const name = (id) => { const t = ts.find((x) => x.id === id); return t ? [t.code ?? '', t.title].filter(Boolean).join(' ') : `${id} (no existe)`; };
+  const name = (id) => { const t = ts.find((x) => x.id === id); return t ? [t.code ?? '', line(t.title)].filter(Boolean).join(' ') : `${id} (no existe)`; };
   const L = [`# Tareas — ${title}`, '',
     board
       ? `> Copia local del tablero ${board}. El tablero es la fuente de verdad; este archivo se regenera desde ahí.`
@@ -33,24 +38,24 @@ export function renderMarkdown({ milestones, tasks, lists = [] }, { title, board
   for (const [mid, m] of ms) {
     const mt = ts.filter((t) => t.milestone === mid).sort(byOrderCode);
     const done = mt.filter((t) => t.status === 'done').length;
-    L.push(`## ${m.code} — ${m.title}` + (mt.length ? `  (${done}/${mt.length})` : ''), '', m.goal ?? '', '');
+    L.push(`## ${m.code} — ${line(m.title)}` + (mt.length ? `  (${done}/${mt.length})` : ''), '', block(m.goal ?? ''), '');
     if (m.due) L.push(`**Fecha objetivo:** ${m.due.replace('T', ' ')}${milestoneDueState({ id: mid, ...m }, ts) === 'overdue' ? ' (atrasado)' : ''}`, '');
-    if (m.done_when?.length) L.push('**Hecho cuando:**', ...m.done_when.map((x) => `- ${x}`), '');
+    if (m.done_when?.length) L.push('**Hecho cuando:**', ...m.done_when.map((x) => `- ${line(x)}`), '');
     for (const t of mt) {
-      const head = [t.code ?? '', t.title].filter(Boolean).join(' ');
+      const head = [t.code ?? '', line(t.title)].filter(Boolean).join(' ');
       L.push(`### ${head} · ${ST[t.status ?? 'todo'] ?? t.status}`, '');
       if (t.due) L.push(`**Vence:** ${t.due.replace('T', ' ')}`, '');
       // Cuándo se terminó (18.1), prioridad, responsable y etiquetas (D32) en una línea.
       const meta = [t.done_at && `**Terminada:** ${localDay(t.done_at)}`, t.priority && `**Prioridad:** ${PRIORITY_LABEL[t.priority] ?? t.priority}`, t.size && `**Tamaño:** ${t.size.toUpperCase()}`, t.assignee && `**Responsable:** ${t.assignee}`,
         t.tags?.length && '**Etiquetas:** ' + t.tags.map((x) => `\`${x}\``).join(', ')].filter(Boolean);
       if (meta.length) L.push(meta.join(' · '), '');
-      if (t.description) L.push(t.description, '');
+      if (t.description) L.push(block(t.description), '');
       const cl = t.checklist ?? [];
       // El detalle de un paso va sangrado debajo, como continuación del ítem de la lista.
-      L.push(...cl.flatMap((c) => [`- [${c.done ? 'x' : ' '}] ${c.text}`, ...(c.detail ? c.detail.split('\n').map((l) => (l ? `  ${l}` : '')) : [])]));
+      L.push(...cl.flatMap((c) => [`- [${c.done ? 'x' : ' '}] ${line(c.text)}`, ...(c.detail ? c.detail.split('\n').map((l) => (l ? `  ${l}` : '')) : [])]));
       if (cl.length) L.push('');
-      if (t.test) L.push(`**Prueba:** ${t.test}`, '');
-      if (t.notes) L.push(`**Notas:** ${t.notes}`, '');
+      if (t.test) L.push(`**Prueba:** ${block(t.test)}`, '');
+      if (t.notes) L.push(`**Notas:** ${block(t.notes)}`, '');
       if (t.refs?.length) L.push('**Referencias:** ' + t.refs.map((r) => `\`${r.section ? `${r.doc}#${r.section}` : r.doc}\``).join(', '), '');
       if (t.files?.length) L.push('**Archivos:** ' + t.files.map((f) => `\`${f}\``).join(', '), '');
       if (t.images?.length) L.push('**Capturas:** ' + t.images.map((f) => `\`${f}\``).join(', '), '');
@@ -65,8 +70,8 @@ export function renderMarkdown({ milestones, tasks, lists = [] }, { title, board
   if (ls.length) L.push('## Listas', '');
   for (const [, l] of ls) {
     const items = l.items ?? [];
-    L.push(`### ${l.title}` + (items.length ? `  (${items.filter((x) => x.done).length}/${items.length})` : ''), '');
-    L.push(...items.map((x) => `- [${x.done ? 'x' : ' '}] ${x.text}` + (x.due ? ` · vence ${x.due.replace('T', ' ')}` : '') + (x.repeat ? ` · se repite ${EVERY[x.repeat.every]}` : '') + (x.task ? ` · → tarea ${ts.find((t) => t.id === x.task)?.code || x.task}` : '')));
+    L.push(`### ${line(l.title)}` + (items.length ? `  (${items.filter((x) => x.done).length}/${items.length})` : ''), '');
+    L.push(...items.map((x) => `- [${x.done ? 'x' : ' '}] ${line(x.text)}` + (x.due ? ` · vence ${x.due.replace('T', ' ')}` : '') + (x.repeat ? ` · se repite ${EVERY[x.repeat.every]}` : '') + (x.task ? ` · → tarea ${ts.find((t) => t.id === x.task)?.code || x.task}` : '')));
     if (items.length) L.push('');
   }
   return L.join('\n').replace(/\s+$/, '') + '\n';

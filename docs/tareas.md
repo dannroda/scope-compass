@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (6/13)
+## M19 — Auditoría  (7/13)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2192,11 +2192,17 @@ Auditoría (2026-10-11): sin repo de git, las capturas no se sirven (raw pide un
 
 **Referencias:** `docs/spec.md#auditoria`
 
-### 19.7 El export no se rompe con textos de varias líneas · Pendiente
+### 19.7 El export no se rompe con textos de varias líneas · Hecho
 
-**Etiquetas:** `bug`, `hub`
+**Terminada:** 2026-10-11 · **Etiquetas:** `bug`, `hub`
 
 Auditoría (2026-10-11): un título, un paso o unas notas con saltos de línea rompen la estructura de docs/tareas.md (listas y encabezados).
+
+**Prueba:** export-md.test.js (19.7): título, hito y paso con saltos de línea quedan en un renglón; los únicos encabezados son los del export; ## y # dentro de la descripción salen escapados. Falla sin el cambio; la paridad con Python sigue pasando.
+
+**Notas:** Hecho: line() para títulos, pasos, done_when e ítems; block() escapa # al empezar un renglón en descripción, meta, prueba y notas. No se tocó el schema (cambiarlo podía invalidar datos existentes): la web ya usa campos de un renglón para títulos y pasos.
+
+**Referencias:** `docs/spec.md#auditoria`
 
 ### 19.8 Detalles del backend · Pendiente
 
