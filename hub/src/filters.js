@@ -6,6 +6,8 @@ import { openBlockers } from './links.js';
 export const DUE_FILTERS = ['overdue', 'today', 'week', 'none'];
 export const PRIORITIES = ['high', 'medium', 'low'];
 export const PRIORITY_LABEL = { high: 'alta', medium: 'media', low: 'baja' };
+// Estimación (18.3): chica, mediana o grande.
+export const SIZES = ['s', 'm', 'l'];
 
 // Sin mayúsculas ni tildes: "Diseño" encuentra "diseno".
 export const norm = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -29,8 +31,8 @@ export const isBlocked = (all, t) => t.status !== 'done' && openBlockers(all, t.
 
 /**
  * Las tareas que pasan el filtro f (todas las condiciones a la vez; un campo vacío no filtra):
- * { q, status: [], due, blocked: true | false, pendingSteps, withRefs, tags: [], priority: [], assignee: [] }.
- * En priority y assignee, "none" es "sin el campo". Las etiquetas pasan si la tarea tiene alguna.
+ * { q, status: [], due, blocked: true | false, pendingSteps, withRefs, tags: [], priority: [], size: [], assignee: [] }.
+ * En priority, size y assignee, "none" es "sin el campo". Las etiquetas pasan si la tarea tiene alguna.
  */
 export function filterTasks(tasks, f = {}, { all = tasks, now = new Date() } = {}) {
   const words = norm(f.q).split(/\s+/).filter(Boolean);
@@ -48,6 +50,7 @@ export function filterTasks(tasks, f = {}, { all = tasks, now = new Date() } = {
     if (f.withRefs && !(t.refs ?? []).length) return false;
     if (has(f.tags) && !(t.tags ?? []).some((x) => f.tags.includes(x))) return false;
     if (has(f.priority) && !f.priority.includes(t.priority ?? 'none')) return false;
+    if (has(f.size) && !f.size.includes(t.size ?? 'none')) return false;
     if (assignees && !assignees.includes(t.assignee ? norm(t.assignee) : 'none')) return false;
     return true;
   });

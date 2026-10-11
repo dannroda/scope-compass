@@ -232,9 +232,12 @@
   // Las reglas son las de hub/src/filters.js (`scompass list`): si cambian allá, cambian acá.
   const PRIORITIES = [['high', 'Alta'], ['medium', 'Media'], ['low', 'Baja']];
   const PRIORITY_LABEL = Object.fromEntries(PRIORITIES);
+  // Estimación (18.3): chica, mediana o grande; en pantalla, la letra.
+  const SIZES = [['s', 'S'], ['m', 'M'], ['l', 'L']];
+  const SIZE_NAME = { s: 'chica', m: 'mediana', l: 'grande' };
   const DUE_FILTERS = [['', 'Cualquier fecha'], ['overdue', 'Vencidas'], ['today', 'Vencen hoy'], ['week', 'Esta semana'], ['none', 'Sin fecha']];
   const BLOCK_FILTERS = [['', 'Con y sin bloqueo'], ['yes', 'Bloqueadas'], ['no', 'No bloqueadas']];
-  const emptyFilter = () => ({ q: '', status: [], due: '', blocked: '', pendingSteps: false, withRefs: false, tags: [], priority: [], assignee: [] });
+  const emptyFilter = () => ({ q: '', status: [], due: '', blocked: '', pendingSteps: false, withRefs: false, tags: [], priority: [], size: [], assignee: [] });
   // Se recuerdan por proyecto. Dentro del Inicio todos los tableros comparten el origen (D29): la clave lleva la ruta.
   const FILTER_KEY = 'taskFilter:' + BASE, MODE_KEY = 'boardMode:' + BASE, SORT_KEY = 'listSort:' + BASE, SUM_KEY = 'summaryOpen:' + BASE;
   function readJsonPref(key, fallback) { try { return JSON.parse(pref(key) || 'null') ?? fallback; } catch (e) { return fallback; } }
@@ -243,7 +246,7 @@
   S.sort = readJsonPref(SORT_KEY, null); // { key, dir: 1 | -1 } o null: el orden del tablero
   function setF(changes) { S.f = { ...S.f, ...changes }; pref(FILTER_KEY, JSON.stringify(S.f)); render(); }
   function setMode(mode) { S.mode = mode; pref(MODE_KEY, mode); render(); }
-  const filterActive = (f = S.f) => !!(f.q.trim() || f.status.length || f.due || f.blocked || f.pendingSteps || f.withRefs || f.tags.length || f.priority.length || f.assignee.length);
+  const filterActive = (f = S.f) => !!(f.q.trim() || f.status.length || f.due || f.blocked || f.pendingSteps || f.withRefs || f.tags.length || f.priority.length || f.size.length || f.assignee.length);
 
   const tagsOf = (t) => (Array.isArray(t.tags) ? t.tags : []);
   const normText = (x) => String(x ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -266,6 +269,7 @@
     if (f.withRefs && !refsOf(t).length) return false;
     if (f.tags.length && !tagsOf(t).some((x) => f.tags.includes(x))) return false;
     if (f.priority.length && !f.priority.includes(t.priority || 'none')) return false;
+    if (f.size.length && !f.size.includes(t.size || 'none')) return false;
     if (f.assignee.length && !f.assignee.map(normText).includes(t.assignee ? normText(t.assignee) : 'none')) return false;
     return true;
   }
@@ -296,7 +300,7 @@
     const q = document.getElementById('f-q');
     if (q.value !== S.f.q) q.value = S.f.q;
     const more = bar.querySelector('.f-more'), side = bar.querySelector('.f-side');
-    const n = ['status', 'due', 'blocked', 'pendingSteps', 'withRefs', 'tags', 'priority', 'assignee'].filter((k) => Array.isArray(S.f[k]) ? S.f[k].length : S.f[k]).length;
+    const n = ['status', 'due', 'blocked', 'pendingSteps', 'withRefs', 'tags', 'priority', 'size', 'assignee'].filter((k) => Array.isArray(S.f[k]) ? S.f[k].length : S.f[k]).length;
     const panel = document.getElementById('f-panel');
     panel.replaceChildren(...['Filtros', n ? h('span', { class: 'n' }, n) : null, h('span', { class: 'caret', 'aria-hidden': 'true' }, S.filtersOpen ? '▴' : '▾')].filter(Boolean));
     panel.setAttribute('aria-expanded', S.filtersOpen ? 'true' : 'false');
@@ -331,7 +335,7 @@
     // Los valores elegidos siguen en la lista aunque ninguna tarea los tenga ya (se pueden destildar).
     const values = (all, chosen) => [...new Set([...all, ...chosen.filter((x) => x !== 'none')])].map((x) => [x, x]);
     // Orden de las tarjetas (y de la lista): mismo aspecto que los filtros de una opción, más el sentido al lado.
-    const sortKeys = ['', 'code', 'title', 'updated', 'created', 'done', 'due', 'priority'];
+    const sortKeys = ['', 'code', 'title', 'updated', 'created', 'done', 'due', 'priority', 'size'];
     if (S.sort && !sortKeys.includes(S.sort.key)) sortKeys.push(S.sort.key); // uno elegido en la lista (Estado, Pasos…)
     const sortDrop = h('details', { class: 'fdrop sort' + (S.sort ? ' on' : ''), 'data-key': 'sort', open: open.includes('sort') },
       h('summary', { id: 'f-sort', 'aria-label': 'Orden: ' + (S.sort ? sortLabel(S.sort.key) : 'Manual') }, 'Orden: ' + (S.sort ? sortLabel(S.sort.key) : 'Manual')),
@@ -356,6 +360,7 @@
       toggle('withRefs', 'Con referencias'),
       multi('tags', 'Etiquetas', values(allTags(), S.f.tags)),
       multi('priority', 'Prioridad', [...PRIORITIES, ['none', 'Sin prioridad']]),
+      multi('size', 'Tamaño', [...SIZES, ['none', 'Sin estimar']]),
       multi('assignee', 'Responsable', [...values(allAssignees(), S.f.assignee), ['none', 'Sin responsable']])
     ]);
     if (focus) document.getElementById(focus)?.focus();
@@ -377,6 +382,7 @@
     { key: 'due', label: 'Fecha límite', val: (t) => t.due || null },
     { key: 'blocked', label: 'Bloqueo', val: (t) => (openBlockers(t).length ? 0 : null), opt: true },
     { key: 'priority', label: 'Prioridad', val: (t) => ({ high: 0, medium: 1, low: 2 })[t.priority] ?? null, opt: true },
+    { key: 'size', label: 'Tamaño', val: (t) => ({ s: 0, m: 1, l: 2 })[t.size] ?? null, opt: true },
     { key: 'assignee', label: 'Responsable', val: (t) => t.assignee || null, opt: true },
     { key: 'tags', label: 'Etiquetas', val: (t) => tagsOf(t).join(', ') || null, opt: true },
     { key: 'updated', label: 'Actualizada', val: (t) => t.updated_at || null, opt: true, newestFirst: true },
@@ -446,6 +452,7 @@
         due: h('td', null, t.due ? dueMark(t) : null),
         blocked: h('td', { class: 'opt' }, blockers.length ? h('span', { class: 'blockmark', title: 'Bloqueada por: ' + blockers.map(taskName).join('; ') }, 'Bloqueada') : null),
         priority: h('td', { class: 'opt' }, t.priority ? h('span', { class: 'prio ' + t.priority }, PRIORITY_LABEL[t.priority] || t.priority) : null),
+        size: h('td', { class: 'opt' }, t.size ? h('span', { class: 'size', title: 'Tamaño: ' + SIZE_NAME[t.size] }, t.size.toUpperCase()) : null),
         assignee: h('td', { class: 'opt' }, t.assignee || ''),
         tags: h('td', { class: 'opt' }, tagsOf(t).map((x) => h('span', { class: 'tag' }, x))),
         updated: h('td', { class: 'opt when' }, stamp(t.updated_at)),
@@ -518,6 +525,7 @@
     box.append(h('div', { class: 'sum-line' },
       h('h2', null, m ? m.code + ' · ' + m.title : 'Todos los hitos'),
       m && m.due ? msDueMark(m, ts) : null,
+      sizeLoad(ts),
       h('div', { class: 'progress' }, h('div', { class: 'bar', role: 'img', 'aria-label': pct + '% hecho' }, h('i', { style: 'width:' + pct + '%' })), d + '/' + ts.length + ' tareas',
         hidden ? h('span', { class: 'hidden-n' }, '· ' + (hidden === 1 ? '1 oculta' : hidden + ' ocultas') + ' por los filtros') : null),
       more ? h('button', { type: 'button', class: 'sum-more', id: 'sum-more', 'aria-expanded': open ? 'true' : 'false', 'aria-controls': 'sum-body',
@@ -545,6 +553,15 @@
       for (const t of items) col.append(cardFor(t, s));
       board.append(col);
     }
+  }
+
+  // Lo que falta, por tamaño (18.3): "Falta 2 S · 1 M · 1 L" sobre las tareas sin terminar; las sin estimar se cuentan aparte.
+  function sizeLoad(ts) {
+    const open = ts.filter((t) => t.status !== 'done');
+    if (!open.some((t) => t.size)) return null;
+    const parts = SIZES.map(([v, l]) => [open.filter((t) => t.size === v).length, l]).filter(([n]) => n).map(([n, l]) => n + ' ' + l);
+    const none = open.filter((t) => !t.size).length;
+    return h('span', { class: 'size-load', title: 'Tareas sin terminar, por tamaño' }, 'Falta ' + parts.join(' · ') + (none ? ' · ' + none + ' sin estimar' : ''));
   }
 
   // Fecha objetivo del hito (18.2): atrasado si pasó con tareas sin terminar; hoy, se marca; con todo hecho, apagada.
@@ -595,6 +612,11 @@
         h('select', { id: 'd-priority', onchange: (e) => updateTask(t.id, { priority: e.target.value || null }) },
           h('option', { value: '', selected: !t.priority }, '—'),
           PRIORITIES.map(([v, l]) => h('option', { value: v, selected: t.priority === v }, l)))),
+      h('span', { class: 'pchip' + (t.size ? '' : ' empty') },
+        h('label', { class: 'pk', for: 'd-size' }, 'Tamaño'),
+        h('select', { id: 'd-size', title: 'Estimación: chica, mediana o grande', onchange: (e) => updateTask(t.id, { size: e.target.value || null }) },
+          h('option', { value: '', selected: !t.size }, '—'),
+          SIZES.map(([v, l]) => h('option', { value: v, selected: t.size === v }, l + ' · ' + SIZE_NAME[v])))),
       h('span', { class: 'pchip' + (t.assignee ? '' : ' empty') },
         h('label', { class: 'pk', for: 'd-assignee' }, 'Responsable'),
         h('input', { id: 'd-assignee', list: 'd-assignees', value: t.assignee || '', 'data-orig': t.assignee || '', placeholder: 'Nadie', autocomplete: 'off',
@@ -633,6 +655,7 @@
       },
       onclick: () => openTask(t.id) },
       h('span', { class: 'meta' }, t.code ? h('span', null, t.code) : null, m && S.filter === 'all' ? h('span', { class: 'ms' }, m.code) : null,
+        t.size ? h('span', { class: 'size', title: 'Tamaño: ' + SIZE_NAME[t.size] }, t.size.toUpperCase()) : null,
         t.assignee ? h('span', { class: 'who', title: 'Responsable' }, '@' + t.assignee) : null),
       h('span', { class: 't' }, rich(t.title, true)),
       t.priority === 'high' || tagsOf(t).length ? h('span', { class: 'marks' }, t.priority === 'high' ? h('span', { class: 'prio high', title: 'Prioridad alta' }, 'Alta') : null,

@@ -2022,13 +2022,14 @@ Pedido del usuario (2026-10-11): las tareas existentes tienen el pedido al princ
 
 **Referencias:** `docs/spec.md#descripcion`
 
-## M18 — Fechas, capturas e historial  (2/6)
+## M18 — Fechas, capturas e historial  (3/6)
 
 Saber cuándo se terminó cada tarea y si un hito se atrasa, y que la tarea muestre más que texto: capturas, su historial en git y plantillas para bugs.
 
 **Hecho cuando:**
 - Cada tarea hecha dice cuándo se terminó (done_at), y el Inicio cuenta las terminadas en los últimos 7 días.
 - Un hito puede tener fecha objetivo; pasada con tareas sin terminar, la CLI, la web, el dock y el Inicio lo marcan atrasado.
+- Una tarea se puede estimar (S, M o L); la lista la filtra y ordena, y el resumen del hito dice cuánto falta por tamaño.
 
 ### 18.1 done_at: fecha en que la tarea pasó a Hecho · Hecho
 
@@ -2054,11 +2055,17 @@ Pedido del usuario (2026-10-11): los hitos tienen goal y done_when pero no fecha
 
 **Referencias:** `docs/spec.md#fechas-capturas-historial`
 
-### 18.3 Estimación S/M/L · Pendiente
+### 18.3 Estimación S/M/L · Hecho
 
-**Etiquetas:** `cli`
+**Terminada:** 2026-10-11 · **Etiquetas:** `cli`
 
 Pedido del usuario (2026-10-11): un tamaño opcional por tarea (S, M o L) para ver cuánto entra en un hito: filtro en la lista y la suma por hito en el resumen.
+
+**Prueba:** set --size m (o M) la guarda; xl da error; list --size l,m y none filtran; show, list y el export la muestran; "" la quita. En la web: el chip Tamaño del detalle, la letra en la tarjeta, la columna y el filtro Tamaño, y «Falta 1 M» en el resumen. En el dock, «Tamaño M» en las propiedades. Tests: cli, ui y dock (props).
+
+**Notas:** Hecho: size (s, m, l) en el schema, SIZES y el filtro en filters.js (lo comparten list y la web), --size en add/set/list. El resumen cuenta solo las tareas sin terminar y nombra las sin estimar; si ninguna está estimada no muestra nada, así un proyecto que no estima no ve ruido. Sin puntos ni horas: S/M/L alcanza para una sola persona.
+
+**Referencias:** `docs/spec.md#fechas-capturas-historial`
 
 ### 18.4 Capturas en la tarea · Pendiente
 

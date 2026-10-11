@@ -242,6 +242,19 @@ test('fecha objetivo del hito (18.2): milestone set --due, atrasado si pasa con 
   assert.equal('due' in JSON.parse(await readFile(join(dir, 'compass', 'milestones', 'm01.json'), 'utf8')), false);
 });
 
+test('tamaño (18.3): add y set --size (sin distinguir mayúsculas), list --size, show y el export', async () => {
+  const id = (await cli(['add', 'Grande', '--milestone', 'm01', '--size', 'L', '--json'])).json().id;
+  assert.equal((await task(id)).size, 'l');
+  assert.equal((await cli(['set', 'm1-07', '--size', 'm'])).code, 0);
+  assert.equal((await cli(['set', 'm1-07', '--size', 'xl'])).code, 2);
+  assert.deepEqual((await cli(['list', '--size', 'l,m', '--json'])).json().tasks.map((t) => t.id), ['m1-07', id]);
+  assert.equal((await cli(['list', '--size', 'none', '--json'])).json().tasks.some((t) => t.size), false);
+  assert.match((await cli(['show', id])).out, /tamaño L/);
+  assert.match(await readFile(join(dir, 'docs', 'tareas.md'), 'utf8'), /### Grande · Pendiente\n\n\*\*Tamaño:\*\* L\n/);
+  assert.equal((await cli(['set', id, '--size', ''])).code, 0);
+  assert.equal('size' in (await task(id)), false);
+});
+
 test('serve --exit-on-stdin-close: se cierra cuando se corta la entrada; sin la opción, no', async () => {
   const { spawn } = await import('node:child_process');
   const bin = join(REPO, 'hub', 'bin', 'scompass.js');

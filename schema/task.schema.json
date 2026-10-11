@@ -76,6 +76,14 @@
       ],
       "description": "Prioridad opcional. Sin el campo, la tarea no tiene prioridad."
     },
+    "size": {
+      "enum": [
+        "s",
+        "m",
+        "l"
+      ],
+      "description": "Estimación opcional: s (chica), m (mediana) o l (grande). Sin el campo, la tarea no está estimada."
+    },
     "assignee": {
       "type": "string",
       "minLength": 1,

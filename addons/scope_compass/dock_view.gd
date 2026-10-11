@@ -936,7 +936,8 @@ func _render_detail() -> void:
 	else:
 		detail_due.remove_theme_color_override("font_color")
 	var prio := str(t.get("priority", ""))
-	var props := (["Prioridad " + PRIORITIES[prio].to_lower()] if PRIORITIES.has(prio) else []) + _who_and_tags(t)
+	var size := str(t.get("size", ""))
+	var props := (["Prioridad " + PRIORITIES[prio].to_lower()] if PRIORITIES.has(prio) else []) + (["Tamaño " + size.to_upper()] if size != "" else []) + _who_and_tags(t)
 	detail_props.visible = not props.is_empty()
 	detail_props.text = " · ".join(props)
 	for i in status_select.item_count:

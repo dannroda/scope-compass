@@ -39,7 +39,7 @@ export function renderMarkdown({ milestones, tasks, lists = [] }, { title, board
       L.push(`### ${head} · ${ST[t.status ?? 'todo'] ?? t.status}`, '');
       if (t.due) L.push(`**Vence:** ${t.due.replace('T', ' ')}`, '');
       // Cuándo se terminó (18.1), prioridad, responsable y etiquetas (D32) en una línea.
-      const meta = [t.done_at && `**Terminada:** ${localDay(t.done_at)}`, t.priority && `**Prioridad:** ${PRIORITY_LABEL[t.priority] ?? t.priority}`, t.assignee && `**Responsable:** ${t.assignee}`,
+      const meta = [t.done_at && `**Terminada:** ${localDay(t.done_at)}`, t.priority && `**Prioridad:** ${PRIORITY_LABEL[t.priority] ?? t.priority}`, t.size && `**Tamaño:** ${t.size.toUpperCase()}`, t.assignee && `**Responsable:** ${t.assignee}`,
         t.tags?.length && '**Etiquetas:** ' + t.tags.map((x) => `\`${x}\``).join(', ')].filter(Boolean);
       if (meta.length) L.push(meta.join(' · '), '');
       if (t.description) L.push(t.description, '');

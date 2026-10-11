@@ -302,6 +302,28 @@ test('fecha objetivo del hito (18.2): el chip se marca atrasado y el resumen dic
   await page.context().close();
 });
 
+test('tamaño (18.3): se elige en el detalle, se ve en la tarjeta y la lista, se filtra y el resumen suma lo que falta', async () => {
+  const page = await open();
+  await page.click('.card[data-id="m1-07"]');
+  await page.click('.seg button:has-text("En curso")');
+  await page.selectOption('#d-size', 'm');
+  await page.waitForSelector('.card[data-id="m1-07"] .size');
+  assert.equal((await task('m1-07')).size, 'm');
+  assert.equal(await page.textContent('.card[data-id="m1-07"] .size'), 'M');
+  assert.equal(await page.textContent('.sum-line .size-load'), 'Falta 1 M');
+  await page.locator('.detail .close').click();
+  await page.click('#f-panel');
+  await page.click('details[data-key="size"] summary');
+  await page.check('#f-size-l');
+  await page.waitForFunction(() => !document.querySelector('.card[data-id="m1-07"]'));
+  await page.uncheck('#f-size-l');
+  await page.check('#f-size-m');
+  await page.waitForFunction(() => document.querySelectorAll('#board .card').length === 1);
+  await page.click('#mode-list');
+  assert.ok((await page.locator('#tasklist th').allTextContents()).includes('Tamaño'));
+  await page.context().close();
+});
+
 test('un clic afuera del detalle lo cierra; otra tarjeta cambia de tarea; adentro o arrastrando una selección, no (16.5)', async () => {
   const page = await open();
   const openId = () => page.evaluate(() => (document.getElementById('detail').hidden ? null : document.querySelector('#detail #d-title')?.value));
@@ -512,14 +534,14 @@ test('detalle (13.3): pasos sin bajar a 1440×900, título sin borde en reposo, 
   assert.notEqual(await border(), 'rgba(0, 0, 0, 0)');
   await page.locator('.detail .close').focus();
   // Una fila de chips: hito, fecha, prioridad, responsable y etiquetas; los vacíos, apagados.
-  assert.deepEqual(await page.locator('#detail .props .pk').allTextContents(), ['Hito', 'Vence', 'Prioridad', 'Responsable', 'Etiquetas']);
-  assert.equal(await page.locator('#detail .props .pchip.empty').count(), 4);
+  assert.deepEqual(await page.locator('#detail .props .pk').allTextContents(), ['Hito', 'Vence', 'Prioridad', 'Tamaño', 'Responsable', 'Etiquetas']);
+  assert.equal(await page.locator('#detail .props .pchip.empty').count(), 5);
   await page.selectOption('#d-ms', 'm02');
   for (let i = 0; i < 100 && (await task('m1-03')).milestone !== 'm02'; i++) await new Promise((r) => setTimeout(r, 30));
   assert.equal((await task('m1-03')).milestone, 'm02');
   await page.selectOption('#d-priority', 'low');
   await page.waitForSelector('#detail .pchip.prio-low');
-  assert.equal(await page.locator('#detail .props .pchip.empty').count(), 3);
+  assert.equal(await page.locator('#detail .props .pchip.empty').count(), 4);
   // El orden: estado, descripción, pasos y notas antes que referencias y "Cómo probarlo".
   const order = await page.locator('#detail > *').evaluateAll((els) => els.map((e) => e.matches('.seg') ? 'estado' : e.querySelector('#d-description') ? 'descripción' : e.querySelector('.checklist, .addcl') ? 'pasos' : e.querySelector('#d-notes') ? 'notas' : e.querySelector('#d-test') ? 'prueba' : e.matches('.refs') ? 'refs' : null).filter(Boolean));
   assert.deepEqual([...new Set(order)], ['estado', 'descripción', 'pasos', 'notas', 'refs', 'prueba']); // vínculos también es .refs

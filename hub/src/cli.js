@@ -29,7 +29,7 @@ import { listLists, listMilestones, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
 import { dueState, EVERY, isValidDue, localDay, milestoneDueState, showDue } from './dates.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
-import { DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, splitList } from './filters.js';
+import { DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, SIZES, splitList } from './filters.js';
 
 const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
 const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
@@ -62,10 +62,11 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
                                             tareas (--json para agentes). Filtros (§19): --q "texto",
                                             --due overdue|today|week|none, --blocked, --unblocked,
                                             --pending-steps, --with-refs, --tag arte,audio,
-                                            --priority high,medium,low,none, --assignee nombre|none
+                                            --priority high,medium,low,none, --size s,m,l,none,
+                                            --assignee nombre|none
   show <id>                                 una tarea, con los pasos numerados
   add "<título>" --milestone m00 [--code 0.11] [--status todo] [--due 2026-10-10]
-      [--tags arte,audio] [--priority high|medium|low] [--assignee nombre] [--description "…"]
+      [--tags arte,audio] [--priority high|medium|low] [--size s|m|l] [--assignee nombre] [--description "…"]
   move <id> <todo|doing|review|done>
   check <id> <n> [--undo]                   tilda el paso n (desde 1)
   step add <id> "<texto>" [--detail "…"]     agrega un paso (texto corto; el detalle se despliega)
@@ -73,10 +74,10 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   step rm <id> <n>                          quita un paso
   set <id> --file task.json                 reemplazo completo (--file - lee stdin)
   set <id> [--title t] [--description d] [--notes n] [--test p] [--code c] [--milestone m] [--status s]
-      [--due d] [--tags a,b] [--priority p] [--assignee a]
+      [--due d] [--tags a,b] [--priority p] [--size s|m|l] [--assignee a]
                                             cambia solo esos campos (--due: fecha límite, YYYY-MM-DD o
                                             YYYY-MM-DDTHH:MM; "" quita --description, --due, --tags,
-                                            --priority o --assignee)
+                                            --priority, --size o --assignee)
   milestone list | show <id> | set <id> --file m.json
   milestone set <id> --due 2026-11-01       fecha objetivo del hito ("" la quita); atrasado si pasa con tareas pendientes
   lists                                     listas, con cuántos ítems quedan
@@ -130,7 +131,7 @@ const taskLabel = (tasks, id) => { const t = tasks.find((x) => x.id === id); ret
 const AGENTS_HINT = 'Para que los agentes la usen, agregá al AGENTS.md o CLAUDE.md del proyecto: "El tablero de tareas se maneja con scompass; leé compass/AGENTS.md antes de tocarlo."';
 
 // Campos de una tarea que `set` edita sin --file.
-const FIELDS = ['title', 'description', 'notes', 'test', 'code', 'milestone', 'status', 'due', 'tags', 'priority', 'assignee'];
+const FIELDS = ['title', 'description', 'notes', 'test', 'code', 'milestone', 'status', 'due', 'tags', 'priority', 'size', 'assignee'];
 
 const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
@@ -139,7 +140,7 @@ const OPTIONS = {
   raw: { type: 'boolean' }, check: { type: 'boolean' }, template: { type: 'string' }, due: { type: 'string' }, repeat: { type: 'string' },
   port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, lan: { type: 'boolean' }, force: { type: 'boolean' }, log: { type: 'string' },
   q: { type: 'string' }, blocked: { type: 'boolean' }, unblocked: { type: 'boolean' }, 'pending-steps': { type: 'boolean' }, 'with-refs': { type: 'boolean' },
-  tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, assignee: { type: 'string' },
+  tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, size: { type: 'string' }, assignee: { type: 'string' },
   title: { type: 'string' }, description: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
@@ -194,8 +195,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const due = (v) => { if (v !== '' && !isValidDue(v)) throw new StoreError('invalid_argument', `fecha inválida: ${v} (YYYY-MM-DD o YYYY-MM-DDTHH:MM)`); return v; };
   // Etiquetas, prioridad y responsable (D32): "" quita el campo (null en un patch).
   const priority = (v) => { if (v !== '' && !PRIORITIES.includes(v)) throw new UsageError(`prioridad inválida: ${v} (${PRIORITIES.join(', ')})`); return v || null; };
+  const size = (v) => { const s = v.toLowerCase(); if (s !== '' && !SIZES.includes(s)) throw new UsageError(`tamaño inválido: ${v} (${SIZES.join(', ')})`); return s || null; };
   const tagList = (v) => { const t = [...new Set(splitList(v))]; return t.length ? t : null; };
-  const extras = (d) => [d.priority && `prioridad ${PRIORITY_LABEL[d.priority] ?? d.priority}`, d.assignee && `@${d.assignee}`, d.tags?.length && d.tags.map((x) => '#' + x).join(' ')].filter(Boolean);
+  const extras = (d) => [d.priority && `prioridad ${PRIORITY_LABEL[d.priority] ?? d.priority}`, d.size && `tamaño ${d.size.toUpperCase()}`, d.assignee && `@${d.assignee}`, d.tags?.length && d.tags.map((x) => '#' + x).join(' ')].filter(Boolean);
   // Fecha objetivo de un hito (18.2): atrasado si pasó con tareas sin terminar.
   const msDueNote = (m, tasks) => {
     const s = milestoneDueState(m, tasks);
@@ -465,13 +467,15 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (o.blocked && o.unblocked) throw new UsageError('--blocked y --unblocked no van juntos');
       const priorities = splitList(o.priority);
       for (const p of priorities) if (p !== 'none' && !PRIORITIES.includes(p)) throw new UsageError(`prioridad inválida: ${p} (${PRIORITIES.join(', ')}, none)`);
+      const sizes = splitList(o.size).map((x) => x.toLowerCase());
+      for (const s of sizes) if (s !== 'none' && !SIZES.includes(s)) throw new UsageError(`tamaño inválido: ${s} (${SIZES.join(', ')}, none)`);
       const all = await store.loadAll();
       showWarnings(all.warnings);
       const ms = new Map(all.milestones);
       const everything = listTasks(all);
       const tasks = filterTasks(listTasks(all, { milestone: o.milestone }), {
         q: o.q, status: statuses, due: o.due, blocked: o.blocked ? true : o.unblocked ? false : undefined,
-        pendingSteps: o['pending-steps'], withRefs: o['with-refs'], tags: splitList(o.tag ?? o.tags), priority: priorities, assignee: splitList(o.assignee)
+        pendingSteps: o['pending-steps'], withRefs: o['with-refs'], tags: splitList(o.tag ?? o.tags), priority: priorities, size: sizes, assignee: splitList(o.assignee)
       }, { all: everything });
       const git = await boardStatus(project, all.config);
       if (o.json) {
@@ -860,6 +864,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         ...(o.due ? { due: due(o.due) } : {}),
         ...(o.tags && tagList(o.tags) ? { tags: tagList(o.tags) } : {}),
         ...(o.priority ? { priority: priority(o.priority) } : {}),
+        ...(o.size ? { size: size(o.size) } : {}),
         ...(o.assignee ? { assignee: o.assignee.trim() } : {}),
         ...(o.description?.trim() ? { description: o.description } : {})
       });
@@ -929,6 +934,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (fields.due !== undefined) fields.due = due(fields.due) || null; // "" → null: patch quita el campo
       if (fields.tags !== undefined) fields.tags = tagList(fields.tags);
       if (fields.priority !== undefined) fields.priority = priority(fields.priority);
+      if (fields.size !== undefined) fields.size = size(fields.size);
       if (fields.assignee !== undefined) fields.assignee = fields.assignee.trim() || null;
       if (fields.description !== undefined) fields.description = fields.description.trim() ? fields.description : null;
       const r = o.file !== undefined

@@ -167,6 +167,7 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `checklist` | `{ text: string, done: boolean, detail?: string }[]` | `text`: el paso en una línea. `detail` (opcional): el cómo y el porqué; se muestra plegado debajo del paso |
 | `due` | string | Opcional. Fecha límite, `YYYY-MM-DD` o `YYYY-MM-DDTHH:MM` en hora local (§16.5, D26) |
 | `priority` | `"high" \| "medium" \| "low"` | Opcional. Prioridad (§19, D32) |
+| `size` | `"s" \| "m" \| "l"` | Opcional. Estimación: chica, mediana o grande (§26) |
 | `assignee` | string | Opcional. Responsable: una persona o un agente, texto libre (§19, D32) |
 | `tags` | string[] | Opcional. Etiquetas, sin repetir, sin comas ni espacios en los bordes, hasta 40 caracteres (§19, D32) |
 | `test` | string | "Cómo probarlo" |
@@ -1019,5 +1020,8 @@ Tests: `cli.test.js` y `docs.test.js` (17.1), `ui.test.js` y `dock.test.js` (`pr
   - CLI: `milestone set <id> --due …` (`""` la quita). Por el hub el hito se reescribe entero con su etag, porque la API no tiene PATCH de hitos (D12). `milestone list`, `milestone show` y los encabezados de `list` dicen *fecha objetivo … (atrasado)*; el export, **Fecha objetivo:**.
   - Web: el resumen del hito dice *Objetivo 01/11*, *Hoy · …* o, en rojo, *Atrasado · …*; el chip de un hito atrasado tiene el borde rojo. Se edita con la CLI, como el resto del hito.
   - Dock: el selector de hito suma *· atrasado 01/11*.
-  - Inicio: la tarjeta del proyecto marca *atrasado* (u *objetivo hoy*) junto al hito actual.
+  - Inicio: la tarjeta del proyecto marca *atrasado* (u *objetivo hoy*) junto al hito actual.- **Estimación (18.3):** `size` opcional en la tarea: `s`, `m` o `l` (en pantalla, S, M y L). Es para ver cuánto queda en un hito, no para medir horas.
+  - CLI: `add` y `set --size` (sin distinguir mayúsculas; `""` la quita), `list --size s,m,l,none`; `show` y `list` dicen *tamaño M*; el export, **Tamaño:**.
+  - Web: chip *Tamaño* en el detalle, la letra en la tarjeta y en la columna *Tamaño* de la lista (con su orden), y el filtro *Tamaño* (con *Sin estimar*). El resumen del hito dice lo que falta: *Falta 2 S · 1 M · 3 sin estimar*, solo si alguna tarea sin terminar está estimada.
+  - Dock: *Tamaño M* en las propiedades del detalle.
 

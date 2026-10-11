@@ -557,7 +557,7 @@ func test_props(a: Array) -> void:
 	var v := await _view(a[0])
 	v.current_milestone = "m01"
 	_select(v, a[1])
-	if not _check(c, v.detail_props.visible and v.detail_props.text == "Prioridad alta · @ana · #arte #audio", "detalle: " + v.detail_props.text): return
+	if not _check(c, v.detail_props.visible and v.detail_props.text == "Prioridad alta · Tamaño M · @ana · #arte #audio", "detalle: " + v.detail_props.text): return
 	if not _check(c, v.detail_description.visible and v.detail_description.text == "Qué hacer y por qué", "descripción: " + v.detail_description.text): return
 	var ms_text := v.milestone_select.get_item_text(v.milestone_select.selected)
 	if not _check(c, ms_text.contains(" · atrasado "), "hito atrasado (18.2): " + ms_text): return

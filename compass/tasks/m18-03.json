@@ -3,15 +3,21 @@
   "code": "18.3",
   "created_at": "2026-10-11T06:17:29.227Z",
   "description": "Pedido del usuario (2026-10-11): un tamaño opcional por tarea (S, M o L) para ver cuánto entra en un hito: filtro en la lista y la suma por hito en el resumen.",
+  "done_at": "2026-10-11T06:28:00.558Z",
   "milestone": "m18",
-  "notes": "",
+  "notes": "Hecho: size (s, m, l) en el schema, SIZES y el filtro en filters.js (lo comparten list y la web), --size en add/set/list. El resumen cuenta solo las tareas sin terminar y nombra las sin estimar; si ninguna está estimada no muestra nada, así un proyecto que no estima no ve ruido. Sin puntos ni horas: S/M/L alcanza para una sola persona.",
   "order": 3,
-  "refs": [],
-  "status": "todo",
+  "refs": [
+    {
+      "doc": "docs/spec.md",
+      "section": "fechas-capturas-historial"
+    }
+  ],
+  "status": "done",
   "tags": [
     "cli"
   ],
-  "test": "",
+  "test": "set --size m (o M) la guarda; xl da error; list --size l,m y none filtran; show, list y el export la muestran; \"\" la quita. En la web: el chip Tamaño del detalle, la letra en la tarjeta, la columna y el filtro Tamaño, y «Falta 1 M» en el resumen. En el dock, «Tamaño M» en las propiedades. Tests: cli, ui y dock (props).",
   "title": "Estimación S/M/L",
-  "updated_at": "2026-10-11T06:17:29.227Z"
+  "updated_at": "2026-10-11T06:28:00.558Z"
 }

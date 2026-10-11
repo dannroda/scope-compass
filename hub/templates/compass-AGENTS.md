@@ -22,6 +22,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
   - `checklist`: pasos `{ text, done, detail? }`. `text` es una línea corta; el cómo y el porqué van en `detail`;
   - `due`: fecha límite opcional, `YYYY-MM-DD` o `YYYY-MM-DDTHH:MM` (hora local);
   - `priority`: prioridad opcional, `high`, `medium` o `low`;
+  - `size`: estimación opcional, `s`, `m` o `l` (chica, mediana, grande);
   - `assignee`: responsable opcional, texto libre (una persona o un agente);
   - `tags`: etiquetas opcionales, textos cortos sin comas (`["arte", "audio"]`);
   - `test`: cómo se comprueba que la tarea está terminada;
@@ -40,6 +41,7 @@ scompass list                                # todas las tareas, por hito
 scompass list --milestone m05 --status doing # filtros (se pueden combinar)
 scompass list --q "menú pausa"               # todas las palabras en código, título o id (sin tildes)
 scompass list --status todo,doing --priority high --assignee Claude
+scompass list --size l,none                  # estimación: s, m, l o sin estimar
 scompass list --due overdue                  # overdue | today | week | none (las hechas no vencen)
 scompass list --tag arte,audio               # con alguna de esas etiquetas
 scompass list --blocked                      # o --unblocked; también --pending-steps y --with-refs
@@ -55,7 +57,7 @@ scompass add "Título de la tarea" --milestone m05 --code 5.9 --description "Qu�
 scompass move m5-02 doing                                     # todo | doing | review | done
 scompass set m5-02 --title "…" --notes "…" --test "…"          # cambia solo esos campos (--description "" la quita)
 scompass set m5-02 --due 2026-10-10                           # fecha límite (--due "" la quita)
-scompass set m5-02 --priority high --assignee Claude --tags arte,nivel  # "" quita cada uno; --tags reemplaza la lista
+scompass set m5-02 --priority high --size m --assignee Claude --tags arte,nivel  # "" quita cada uno; --tags reemplaza la lista
 scompass step add m5-02 "Paso corto" --detail "Cómo y por qué"
 scompass step set m5-02 2 --text "…" --detail "…"              # --detail "" quita el detalle
 scompass step rm m5-02 2
