@@ -9,10 +9,13 @@ import { createServer } from './server.js';
 import { createJsonFilesStore } from './store/json-files.js';
 import { attachSocket } from './ws.js';
 
-/** Clave de cada proyecto en la URL (/p/<clave>/): el nombre de su carpeta como slug, sin repetir, en orden. */
-export function projectKeys(projects) {
-  const keys = new Map();
-  for (const p of projects) keys.set(p.path, freeId(slugify(basename(p.path)), [...keys.values()]));
+/**
+ * Clave de cada proyecto en la URL (/p/<clave>/): el nombre de su carpeta como slug, sin repetir, en orden. keys: las
+ * que ya se dieron (19.5): un proyecto conserva la suya aunque se quite otro anterior con el mismo nombre, así una
+ * pestaña abierta o la base anotada en el registro no pasan a otro proyecto.
+ */
+export function projectKeys(projects, keys = new Map()) {
+  for (const p of projects) if (!keys.has(p.path)) keys.set(p.path, freeId(slugify(basename(p.path)), [...keys.values()]));
   return keys;
 }
 
@@ -27,9 +30,10 @@ const OUT = ['content-type', 'etag', 'location', 'cache-control'];
  */
 export function registerProjectRoutes(app, { validators, projects, onChange, port: portOf = () => app.server?.address()?.port }) {
   const live = new Map(); // path → { key, hub, ready }
+  const given = new Map(); // path → clave, mientras viva el Inicio
   const keyed = () => {
     const list = projects().filter((p) => p.found);
-    const keys = projectKeys(list);
+    const keys = projectKeys(list, given);
     return { list, keys };
   };
   const find = (key) => {

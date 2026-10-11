@@ -44,6 +44,16 @@ test('registro: alta, baja y limpieza de procesos muertos', async () => {
   assert.deepEqual(listHubs(), []);
 });
 
+test('19.5: un registro a medio escribir de un hub vivo no se borra; se escribe con un rename', async () => {
+  registerHub({ port: 1234, project: join(dir, 'p') });
+  const other = process.ppid;
+  await writeFile(join(registryDir(), `${other}.json`), '{"pid":');
+  assert.deepEqual(listHubs().map((h) => h.pid), [process.pid]);
+  assert.ok((await readdir(registryDir())).includes(`${other}.json`), 'el del proceso vivo sigue');
+  assert.ok(!(await readdir(registryDir())).some((n) => n.endsWith('.tmp')));
+  unregisterHub();
+});
+
 test('serve se niega si ya hay un hub del mismo proyecto (aunque en otro puerto); --force lo permite', async () => {
   const project = join(dir, 'p');
   const a = await serve(project, 0);

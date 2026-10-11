@@ -2,7 +2,7 @@
 // %TEMP%\scope-compass\hubs, que ya es de cada usuario) con
 // { pid, port, project, startedAt }. El Inicio (`scompass home`, D24) se anota igual, con kind: "home" y sin project. Sirve para no levantar dos hubs del mismo proyecto y para encontrar el hub
 // de un proyecto aunque no esté en el puerto de su config. Los registros de procesos muertos se limpian solos.
-import { mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir, userInfo } from 'node:os';
 import { join } from 'node:path';
 
@@ -14,6 +14,12 @@ export function registryDir() {
 
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
 const real = (p) => { try { return realpathSync(p); } catch { return p; } };
+// Escribe entero o nada (19.5): otro proceso que lee el registro nunca ve un archivo a medio escribir.
+function writeEntry(file, entry) {
+  const tmp = `${file}.${process.pid}.tmp`;
+  writeFileSync(tmp, JSON.stringify(entry) + '\n');
+  renameSync(tmp, file);
+}
 
 /** Hubs vivos (limpia los registros de procesos que ya no existen). */
 export function listHubs() {
@@ -25,7 +31,9 @@ export function listHubs() {
     let h = null;
     try { h = JSON.parse(readFileSync(join(dir, n), 'utf8')); } catch { /* a medio escribir o roto */ }
     if (h && Number.isInteger(h.pid) && alive(h.pid)) out.push(h);
-    else if (!h || !alive(parseInt(n, 10))) rmSync(join(dir, n), { force: true });
+    // Solo se borra si el proceso del nombre (<pid>.json, <pid>-<clave>.json) murió: uno roto de un hub vivo se
+    // deja, que lo reescribe él (19.5).
+    else if (!alive(parseInt(n, 10))) rmSync(join(dir, n), { force: true });
   }
   return out.sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 }
@@ -44,7 +52,7 @@ export function registerHub({ port, project, pid = process.pid, kind, attached =
     : { pid, port, project: real(project), startedAt: new Date().toISOString(), ...(attached && { attached, parent }),
       // SCOMPASS_LAUNCHED_BY=home: lo prendió el Inicio (se hereda al reiniciar el hub, que cambia de padre).
       ...(process.env.SCOMPASS_LAUNCHED_BY && { by: process.env.SCOMPASS_LAUNCHED_BY }) };
-  writeFileSync(join(dir, `${pid}.json`), JSON.stringify(entry) + '\n');
+  writeEntry(join(dir, `${pid}.json`), entry);
   return entry;
 }
 
@@ -58,7 +66,7 @@ export function registerServed({ port, project, base, key, pid = process.pid }) 
   const dir = registryDir();
   mkdirSync(dir, { recursive: true });
   const entry = { pid, port, project: real(project), base, kind: 'served', startedAt: new Date().toISOString() };
-  writeFileSync(join(dir, `${pid}-${key}.json`), JSON.stringify(entry) + '\n');
+  writeEntry(join(dir, `${pid}-${key}.json`), entry);
   return entry;
 }
 

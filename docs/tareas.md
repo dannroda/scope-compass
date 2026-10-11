@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (4/13)
+## M19 — Auditoría  (5/13)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2168,11 +2168,17 @@ Auditoría (2026-10-11): sin hub, scompass set <id> --file con lo que devuelve s
 
 **Referencias:** `docs/spec.md#auditoria`
 
-### 19.5 Registro de hubs y claves del Inicio estables · Pendiente
+### 19.5 Registro de hubs y claves del Inicio estables · Hecho
 
-**Etiquetas:** `bug`, `hub`
+**Terminada:** 2026-10-11 · **Etiquetas:** `bug`, `hub`
 
 Auditoría (2026-10-11): listHubs puede borrar la entrada de un hub vivo si lee el archivo a medio escribir; las claves /p/<n>/ del Inicio se corren al quitar un proyecto, y el registro queda con la base vieja.
+
+**Prueba:** registry.test.js (19.5): un registro roto con el PID de un proceso vivo sigue después de listHubs y no quedan temporales. home-serve.test.js: después de quitar /a/Vida, /b/vida sigue en vida-2 y uno nuevo toma vida-3. Fallan sin el cambio.
+
+**Notas:** Hecho: writeEntry (temporal + renameSync) para registerHub y registerServed; listHubs borra solo si el PID del nombre está muerto. projectKeys recibe las claves ya dadas; registerProjectRoutes guarda las suyas mientras vive el proceso.
+
+**Referencias:** `docs/spec.md#auditoria`
 
 ### 19.6 Capturas en un proyecto sin git · Pendiente
 

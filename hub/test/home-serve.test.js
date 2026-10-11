@@ -54,6 +54,11 @@ test('projectKeys: el nombre de la carpeta como slug, sin repetir', () => {
   assert.deepEqual([...keys.values()], ['vida', 'vida-2', 'project-epiphany']);
 });
 
+test('19.5: projectKeys conserva las claves ya dadas aunque se quite un proyecto', () => {
+  const given = projectKeys([{ path: '/a/Vida' }, { path: '/b/vida' }]);
+  assert.deepEqual([...projectKeys([{ path: '/b/vida' }, { path: '/c/vida' }], given)].filter(([p]) => p !== '/a/Vida'), [['/b/vida', 'vida-2'], ['/c/vida', 'vida-3']]);
+});
+
 test('sin hub suelto: el Inicio sirve el tablero, la API y el WebSocket del proyecto, sin abrir otro puerto', async () => {
   const p = await project('Vida');
   const projects = (await (await fetch(base + '/api/projects')).json()).projects;
