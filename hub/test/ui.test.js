@@ -568,6 +568,23 @@ test('19.12: Nueva tarea en Todos arranca en el primer hito sin terminar y se ab
   await page.context().close();
 });
 
+test('19.13: palabras separadas y números rectos; una tarea sin código no arranca con «·»; en el teléfono la marca de vencida no se parte y el estado tiene texto', async () => {
+  await cli(['set', 'm1-07', '--status', 'todo', '--due', '2020-01-01', '--code', '']);
+  const page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const css = await page.evaluate(() => { const b = getComputedStyle(document.body); return [parseFloat(b.wordSpacing) > 0, b.fontVariantNumeric]; });
+  assert.deepEqual(css, [true, 'lining-nums']);
+  await page.click('#miles .chip:has-text("M1")');
+  await page.click('#mode-list');
+  await page.waitForSelector('table.tasks tr[data-id="m1-07"]');
+  const mark = await page.evaluate(() => { const el = document.querySelector('tr[data-id="m1-07"] .duemark'); return [el.getClientRects().length, getComputedStyle(el.querySelector('.dm-pre')).display]; });
+  assert.deepEqual(mark, [1, 'none'], 'la marca en un renglón, sin "Vencida ·"');
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('tr[data-id="m1-07"] .st'), '::after').content), '"Pend."');
+  await page.click('tr[data-id="m1-07"] .row-open');
+  await page.waitForSelector('#detail .head');
+  assert.match(await page.textContent('#detail .head'), /^M1/);
+  await page.context().close();
+});
+
 test('§14: sin la app, todo lo hecho en la UI está en compass/ y en docs/tareas.md', async () => {
   const page = await open();
   await page.keyboard.press('n');

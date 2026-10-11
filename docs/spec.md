@@ -1101,3 +1101,9 @@ Lo que encontró la auditoría completa después de M18 (seguridad, backend, web
   - *Quitar* en el visor de capturas pregunta *¿Quitar la captura? Sí / No*, como *Borrar tarea*.
   - En los buscadores de vínculos y referencias, Enter elige el primer resultado y ↓ ↑ los recorren.
   - Destildar un ítem que se repite deja la casilla tildada (no se destilda); el separador del panel informa su ancho real desde que se abre.
+- **Web: tipografía y detalles (19.13):**
+  - En Alegreya Sans el espacio mide 2-3 px y las palabras se pegaban (*Specydecisiones*): `word-spacing: .12em` en toda la app. Los números son rectos (`lining-nums`): con los antiguos, *M0* se leía *Mo* y *M1*, *MI*.
+  - Los enlaces usan el color de la app y uno con forma de botón (*Abrir en Documentos*) se ve como botón.
+  - En la lista del teléfono, la marca de vencida no dice *Vencida ·* (el rojo y el tooltip ya lo dicen) y no se parte en dos renglones; el estado muestra una etiqueta corta (*Pend.*, *Curso*, *Rev.*, *Hecho*) además del color.
+  - El detalle de una tarea sin código empieza con el hito (*M1*), no con *· M1*; el vacío de Listas dice *Creá una con «+ Nueva lista»*; la búsqueda de Documentos resalta solo al empezar una palabra; la marca del encabezado dice *cambios del tablero sin commitear* (Archivos cuenta todo el repo).
+  - En tablet táctil, la barra de abajo de Documentos no repite el índice lateral; el selector de la barra corta con …; los avisos empiezan con mayúscula; el alias inválido de *+ Documento* avisa en castellano; la ruta de un proyecto en el Inicio va en un renglón, cortada con …

@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (12/13)
+## M19 — Auditoría  (13/13)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2264,8 +2264,14 @@ Auditoría (2026-10-11): Nueva tarea en Todos la crea en M0 (terminado) y lo rea
 
 **Referencias:** `docs/spec.md#auditoria`
 
-### 19.13 Web: tipografía y detalles visuales · Pendiente
+### 19.13 Web: tipografía y detalles visuales · Hecho
 
-**Etiquetas:** `ui`
+**Terminada:** 2026-10-11 · **Etiquetas:** `ui`
 
 Auditoría (2026-10-11): en Alegreya Sans el espacio mide 2-3 px (las palabras se pegan) y los números antiguos hacen que M0 se lea Mo; enlaces con el azul del navegador en el Inicio y en Archivos; en el teléfono el borde de Vencida se parte y el estado de la Lista es solo color; el detalle de una tarea sin código empieza con «· M0»; el vacío de Listas dice «a la izquierda» en el teléfono; la búsqueda de Documentos resalta pedazos de palabras; dos conteos distintos de cambios sin commitear; el índice de Documentos dos veces en tablet; títulos cortados sin puntos suspensivos; toasts en minúscula.
+
+**Prueba:** ui.test.js (19.13): el body tiene word-spacing y lining-nums; en el teléfono, en Lista, la marca de una tarea vencida es un solo rectángulo sin «Vencida ·», el estado dice «Pend.», y el detalle de la tarea sin código empieza con M1. Falla sin el cambio. Las suites ui*.test.js pasan (77; «← Inicio» falla solo con un Inicio real corriendo, como antes).
+
+**Notas:** Hecho: word-spacing y lining-nums en body; a y a.btn. dm-pre y data-short (::after) en la lista del teléfono. Cabecera del detalle sin «·» si no hay código. Textos de Listas y del badge de git. highlight() solo al inicio de palabra (\p{L}\p{N}). toast() con mayúscula. setCustomValidity en el alias. sec-bar sin select en tablet táctil y con elipsis. .proj .kind en un renglón con elipsis.
+
+**Referencias:** `docs/spec.md#auditoria`

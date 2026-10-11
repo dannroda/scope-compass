@@ -25,7 +25,7 @@ header.top h1 { flex: 1 1 auto; }
 .proj .head { display: flex; align-items: flex-start; gap: 10px; }
 .proj .head > div { flex: 1; min-width: 0; }
 .proj h3 { margin: 0; font-size: 20px; overflow-wrap: anywhere; }
-.proj .kind { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.proj .kind { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .proj .ms { display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
 .proj .ms .row { display: flex; justify-content: space-between; gap: 8px; }
 .proj .ms .bar { max-width: none; }

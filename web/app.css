@@ -33,7 +33,12 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { background: var(--bg); color: var(--fg); font: 16px/1.45 var(--font-body); }
+/* 19.13: en Alegreya Sans el espacio mide 2-3 px y las palabras se pegan ("Specydecisiones"); y sus números antiguos
+   hacen que M0 se lea "Mo" y M1 "MI". */
+body { background: var(--bg); color: var(--fg); font: 16px/1.45 var(--font-body); word-spacing: .12em; font-variant-numeric: lining-nums; }
+/* Los enlaces con el color de la app, no el azul del navegador; uno con forma de botón, como un botón. */
+a { color: var(--accent); }
+a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items: center; }
 .wrap { padding-block: 20px 48px; padding-inline: 20px; max-width: 1480px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
@@ -342,13 +347,15 @@ a.link-task:hover code { text-decoration: underline; }
 @media (max-width: 760px), (max-width: 1180px) and (hover: none) {
   .sec-bar { display: flex; align-items: center; gap: 8px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
     padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -6px 18px rgba(0, 0, 0, .12); }
-  .sec-bar select { flex: 0 1 auto; min-width: 0; max-width: 45%; min-height: 38px; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 6px 8px; }
+  .sec-bar select { flex: 0 1 auto; min-width: 0; max-width: 45%; min-height: 38px; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 6px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sec-tasks { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; }
   .sec-bar .label { flex: none; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 700; }
   .sec-bar .bl-task { flex: none; max-width: 75vw; }
   .sec-bar .bl-task .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .docs-body:has(.sec-bar) { padding-bottom: 64px; }
 }
+/* En tablet táctil el índice lateral se ve: la barra de abajo no lo repite (19.13). */
+@media (min-width: 761px) and (max-width: 1180px) and (hover: none) { .sec-bar select { display: none; } }
 @media (max-width: 760px) { .docs-grid { grid-template-columns: minmax(0, 1fr); } .docs-side { position: static; max-height: none; } .docs-side .toc { max-height: 40vh; overflow-y: auto; } .doc-article { padding: 4px 14px 16px; } }
 
 /* Borde para cambiar el ancho del panel de detalle. */
@@ -505,7 +512,7 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
 .tasks .st .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 .tasks td .tag { margin: 0 4px 2px 0; }
 .tasks .duemark, .tasks .blockmark { white-space: nowrap; }
-@media (max-width: 760px) { .tasks .opt { display: none; } .tasks td.title { min-width: 9em; } .tasks td, .tasks th button { padding-inline: 8px; } .tasks .duemark { white-space: normal; } .tasks .st-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
+@media (max-width: 760px) { .tasks .opt { display: none; } .tasks td.title { min-width: 9em; } .tasks td, .tasks th button { padding-inline: 8px; } .tasks .dm-pre { display: none; } .tasks .st-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } .tasks .st::after { content: attr(data-short); font-size: 12px; color: var(--muted); } }
 /* Teléfono (13.4): menos filas antes de las tareas; al final, para ganarle a las reglas de cada parte. Encabezado en dos filas (título; vistas), hitos en
    una fila que se desplaza de costado, resumen más chico y columnas vacías de una línea. */
 @media (max-width: 560px) {

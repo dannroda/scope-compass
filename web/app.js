@@ -2,10 +2,10 @@
 // El render es el mismo; los datos vienen de la API del hub en lugar de claude.use("db").
 (function () {
   const STATUSES = [
-    { id: 'todo', label: 'Pendiente', color: 'var(--s-todo)' },
-    { id: 'doing', label: 'En curso', color: 'var(--s-doing)' },
-    { id: 'review', label: 'Revisión', color: 'var(--s-review)' },
-    { id: 'done', label: 'Hecho', color: 'var(--s-done)' }
+    { id: 'todo', label: 'Pendiente', short: 'Pend.', color: 'var(--s-todo)' },
+    { id: 'doing', label: 'En curso', short: 'Curso', color: 'var(--s-doing)' },
+    { id: 'review', label: 'Revisión', short: 'Rev.', color: 'var(--s-review)' },
+    { id: 'done', label: 'Hecho', short: 'Hecho', color: 'var(--s-done)' }
   ];
   const S = { descTemplates: {}, project: '', milestones: [], tasks: [], warnings: [], filter: pref('filter') || 'all', openId: null, confirmDelete: false, loaded: false, offline: false, connected: false,
     // Documentos (M6): índice de /api/docs, vista actual por el hash, referencias desplegadas, HTML en caché.
@@ -162,7 +162,9 @@
 
   function toast(msg) {
     const t = document.getElementById('toast');
-    t.textContent = msg; t.hidden = false;
+    // Los mensajes del hub vienen en minúscula ("no existe el archivo…"): como frase (19.13).
+    msg = String(msg);
+    t.textContent = msg.charAt(0).toUpperCase() + msg.slice(1); t.hidden = false;
     clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, 3200);
   }
 
@@ -455,7 +457,8 @@
         code: h('td', { class: 'code' }, t.code || ''),
         title: h('td', { class: 'title' }, h('button', { type: 'button', class: 'row-open', onclick: () => openTask(t.id) }, rich(t.title, true))),
         milestone: h('td', { class: 'opt code' }, m ? h('span', { title: m.title }, m.code) : t.milestone),
-        status: h('td', null, h('span', { class: 'st', title: s.label }, h('span', { class: 'dot', style: 'background:' + s.color }), h('span', { class: 'st-l' }, s.label))),
+        // En el teléfono, la etiqueta corta (19.13): solo el color no alcanza para distinguir el estado.
+        status: h('td', null, h('span', { class: 'st', title: s.label, 'data-short': s.short }, h('span', { class: 'dot', style: 'background:' + s.color }), h('span', { class: 'st-l' }, s.label))),
         steps: h('td', { class: 'opt code' }, p.total ? p.done + '/' + p.total : ''),
         due: h('td', null, t.due ? dueMark(t) : null),
         blocked: h('td', { class: 'opt' }, blockers.length ? h('span', { class: 'blockmark', title: 'Bloqueada por: ' + blockers.map(taskName).join('; ') }, 'Bloqueada') : null),
@@ -676,7 +679,8 @@
   function dueMark(t) {
     const g = t.status === 'done' ? null : dueGroup(t.due);
     const cls = g === 'overdue' ? ' bad' : g === 'today' ? ' today' : '';
-    return h('span', { class: 'duemark' + cls, title: g === 'overdue' ? 'Vencida' : g === 'today' ? 'Vence hoy' : 'Fecha límite' }, (g === 'overdue' ? 'Vencida · ' : '') + showDue(t.due));
+    // "Vencida · " aparte: en la lista del teléfono se esconde y el recuadro rojo no se parte en dos renglones (19.13).
+    return h('span', { class: 'duemark' + cls, title: g === 'overdue' ? 'Vencida' : g === 'today' ? 'Vence hoy' : 'Fecha límite' }, g === 'overdue' ? h('span', { class: 'dm-pre' }, 'Vencida · ') : null, showDue(t.due));
   }
 
   // Fecha y hora opcionales; vaciar la fecha la quita (null borra el campo en el PATCH). La hora aparece con la fecha.
@@ -898,7 +902,7 @@
     const edits = box.dataset.task === t.id ? captureEdits(box) : null;
     box.replaceChildren(
       resizeHandle(),
-      h('div', { class: 'head' }, t.code || '', m ? h('span', { title: m.title }, '· ' + m.code) : null,
+      h('div', { class: 'head' }, t.code || '', m ? h('span', { title: m.title }, (t.code ? '· ' : '') + m.code) : null,
         h('button', { class: 'btn ghost close', type: 'button', 'aria-label': 'Cerrar detalle', onclick: closeTask }, 'Cerrar')),
       h('label', { for: 'd-title', class: 'sr' }, 'Título'),
       h('input', { class: 'title', id: 'd-title', value: t.title || '', 'data-orig': t.title || '', onchange: (e) => { const v = e.target.value.trim(); if (v && v !== t.title) updateTask(t.id, { title: v }); } }),
@@ -1282,7 +1286,9 @@
     const words = fold(q).split(/\s+/).filter(Boolean);
     if (f.length !== text.length) return text; // con caracteres que cambian de largo al plegarse, sin resaltar
     const marks = [];
-    for (const w of words) for (let i = f.indexOf(w); i >= 0; i = f.indexOf(w, i + w.length)) marks.push([i, i + w.length]);
+    // Solo al empezar una palabra (19.13): "lan" no resalta "de-lan-te".
+    const startsWord = (i) => i === 0 || !/[\p{L}\p{N}]/u.test(f[i - 1]);
+    for (const w of words) for (let i = f.indexOf(w); i >= 0; i = f.indexOf(w, i + 1)) if (startsWord(i)) { marks.push([i, i + w.length]); }
     marks.sort((a, b) => a[0] - b[0]);
     const out = [];
     let last = 0;
@@ -1353,7 +1359,10 @@
         h('button', { class: 'btn ghost small', type: 'button', id: 'doc-add-btn', 'aria-expanded': 'false',
           onclick: () => { S.docAdd = !S.docAdd; renderDocs(); if (S.docAdd) document.getElementById('doc-alias').focus(); } }, '+ Documento')),
       h('form', { class: 'doc-add', id: 'doc-add', hidden: true, onsubmit: addDoc },
-        h('label', { for: 'doc-alias' }, 'Alias'), h('input', { id: 'doc-alias', placeholder: 'enemigos', autocomplete: 'off', required: true, pattern: '[a-z0-9][a-z0-9_\\-]*', title: 'Minúsculas, números, - y _' }),
+        h('label', { for: 'doc-alias' }, 'Alias'), h('input', { id: 'doc-alias', placeholder: 'enemigos', autocomplete: 'off', required: true, pattern: '[a-z0-9][a-z0-9_\\-]*', title: 'Minúsculas, números, - y _',
+          // El aviso del navegador sale en su idioma ("Please match…"): el nuestro (19.13).
+          oninvalid: (e) => e.target.setCustomValidity(e.target.validity.valueMissing ? 'Falta el alias.' : 'Minúsculas, números, - y _; empieza con letra o número.'),
+          oninput: (e) => e.target.setCustomValidity('') }),
         h('label', { for: 'doc-path' }, 'Archivo o patrón'), h('input', { id: 'doc-path', placeholder: 'docs/enemigos.md o docs/**/*.md', autocomplete: 'off', required: true }),
         h('button', { class: 'btn primary small', type: 'submit' }, 'Agregar'),
         h('button', { class: 'btn ghost small', type: 'button', onclick: () => { S.docAdd = false; renderDocs(); } }, 'Cancelar'),
@@ -1815,7 +1824,7 @@
         input.value = '';
         write(async () => { const r = await api.listCreate(title); applyList(r.id, r); location.hash = '#lists/' + encodeURIComponent(r.id); }, 'Lista creada');
       } }, h('label', { for: 'list-new', class: 'sr' }, 'Nueva lista'), h('input', { type: 'text', id: 'list-new', placeholder: '+ Nueva lista', autocomplete: 'off', 'data-keep': '1' })));
-    if (!l) { box.replaceChildren(h('div', { class: 'lists-grid' }, side, h('div', { class: 'notice' }, 'Este proyecto no tiene listas todavía. Creá una a la izquierda (pendientes, compras, ideas…).'))); return; }
+    if (!l) { box.replaceChildren(h('div', { class: 'lists-grid' }, side, h('div', { class: 'notice' }, 'Este proyecto no tiene listas todavía. Creá una con «+ Nueva lista» (pendientes, compras, ideas…).'))); return; }
     box.replaceChildren(h('div', { class: 'lists-grid' }, side, listPanel(l)));
   }
 
@@ -1977,7 +1986,8 @@
     const el = document.getElementById('git');
     const n = S.git?.repo ? S.git.uncommitted : 0;
     el.hidden = !n;
-    el.textContent = n === 1 ? '1 cambio sin commitear' : n + ' cambios sin commitear';
+    // "del tablero" (19.13): cuenta compass/ y el export; Archivos cuenta todo el repo, y el número puede ser otro.
+    el.textContent = n === 1 ? '1 cambio del tablero sin commitear' : n + ' cambios del tablero sin commitear';
     el.title = n ? 'Sin commitear en git:\n' + S.git.files.join('\n') : '';
   }
 
