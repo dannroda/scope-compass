@@ -59,7 +59,7 @@ test('add → move → check → show, escribiendo en compass/', async () => {
   const a = await cli(['add', 'Probar la CLI', '--milestone', 'm01', '--code', '1.8', '--json']);
   assert.equal(a.code, 0, a.err);
   const { id, order } = a.json();
-  assert.equal(id, 'm1-06', 'el siguiente número del hito');
+  assert.equal(id, 'm1-08', 'el siguiente número del hito');
   assert.equal(order, 8);
   assert.equal((await task(id)).created_at, NOW);
 
@@ -299,6 +299,33 @@ test('capturas (18.4): image add copia una de afuera a compass/images/, cita una
   } finally {
     await rm(outside, { recursive: true, force: true });
   }
+});
+
+test('19.6: sin repo de git, las capturas andan: image add de una del proyecto, refs check y /api/files/raw', async () => {
+  const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+  await mkdir(join(dir, 'arte'));
+  await writeFile(join(dir, 'arte', 'boceto.png'), PNG);
+  await writeFile(join(dir, 'secreto.txt'), 'no');
+  const r = await cli(['image', 'add', 'm1-07', 'arte/boceto.png']);
+  assert.equal(r.code, 0, r.err);
+  assert.equal((await cli(['image', 'add', 'm1-07', 'nada.png'])).code, 1);
+  assert.deepEqual((await cli(['refs', 'check', '--json'])).json().broken.filter((b) => b.where === 'images'), []);
+  const { createServer } = await import('../src/server.js');
+  const { createJsonFilesStore } = await import('../src/store/json-files.js');
+  const { loadValidators } = await import('../src/schema.js');
+  const V = loadValidators();
+  const app = createServer({ projectDir: dir, store: createJsonFilesStore(join(dir, 'compass'), { validators: V }), validators: V });
+  try {
+    const raw = await app.inject({ url: '/api/files/raw?path=arte/boceto.png' });
+    assert.equal(raw.statusCode, 200);
+    assert.equal(raw.headers['content-type'], 'image/png');
+    // Sin repo no se sirve otra cosa que imágenes.
+    assert.equal((await app.inject({ url: '/api/files/file?path=secreto.txt' })).statusCode, 404);
+  } finally {
+    await app.close();
+  }
+  await rm(join(dir, 'arte', 'boceto.png'));
+  assert.deepEqual((await cli(['refs', 'check', '--json'])).json().broken.filter((b) => b.where === 'images').map((b) => b.ref), ['arte/boceto.png']);
 });
 
 test('plantilla de descripción por etiqueta (18.6): add y set --tags la ponen solo si no hay descripción', async () => {

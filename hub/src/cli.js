@@ -23,7 +23,7 @@ import { listTemplates, loadTemplate as loadTemplateFile } from './templates.js'
 import { hubsOf, listHubs, liveHome, registerHub, unregisterHub } from './registry.js';
 import { createHomeServer } from './home.js';
 import { boardStatus, docDiff, docLog, docsStatus, repoFiles } from './git.js';
-import { repoFile } from './files-api.js';
+import { imageFile, repoFile } from './files-api.js';
 import { dropImage, IMAGE_EXT, importImage, insideProject, isImagePath } from './images.js';
 import { taskHistory } from './history.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
@@ -772,7 +772,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       // Archivos citados (15.1) que git ya no lista: se borraron o se movieron.
       const [listing, g] = await Promise.all([repoFiles(project), docsStatus(project)]);
       const known = new Set([...(listing ?? []), ...Object.keys(g.status)]);
-      for (const t of tasks) for (const where of ['files', 'images']) for (const f of t[where] ?? []) if (!known.has(f)) problems.push({ task: t.id, ref: f, where, problem: 'missing_file' });
+      // Sin repo (19.6), lo que cuenta es que esté en el disco.
+      const there = (f) => (listing ? known.has(f) : existsSync(join(project, f)));
+      for (const t of tasks) for (const where of ['files', 'images']) for (const f of t[where] ?? []) if (!there(f)) problems.push({ task: t.id, ref: f, where, problem: 'missing_file' });
       const broken = problems.filter((p) => p.problem !== 'fragile');
       if (o.json) print(JSON.stringify({ broken, fragile: problems.filter((p) => p.problem === 'fragile') }));
       else {
@@ -868,7 +870,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       else {
         path = here ?? raw.replace(/^res:\/\//, '').replace(/^\.\//, '');
         if (!isImagePath(path)) throw new StoreError('invalid_argument', `${path} no es una imagen (${IMAGE_EXT.join(', ')})`);
-        await repoFile(project, path);
+        await imageFile(project, path);
         if (images.includes(path)) return done({ id: cur.id, etag: cur.etag, ...cur.doc }, `${taskId} ya tiene ${path}`);
       }
       try {

@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (5/13)
+## M19 — Auditoría  (6/13)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2180,11 +2180,17 @@ Auditoría (2026-10-11): listHubs puede borrar la entrada de un hub vivo si lee 
 
 **Referencias:** `docs/spec.md#auditoria`
 
-### 19.6 Capturas en un proyecto sin git · Pendiente
+### 19.6 Capturas en un proyecto sin git · Hecho
 
-**Etiquetas:** `bug`, `hub`
+**Terminada:** 2026-10-11 · **Etiquetas:** `bug`, `hub`
 
 Auditoría (2026-10-11): sin repo de git, las capturas no se sirven (raw pide un repo) y refs check las marca faltantes aunque estén.
+
+**Prueba:** cli.test.js (19.6): sin git, image add de arte/boceto.png anda y nada.png no; refs check no marca nada hasta que se borra el archivo; /api/files/raw sirve la imagen y /api/files/file de un .txt es 404. Falla sin el cambio.
+
+**Notas:** Hecho: imageFile en files-api.js (con repo, repoFile; sin repo, una imagen existente dentro del proyecto con realInside). La usan /api/files/raw y image add. refs check usa existsSync sin repo. También devuelve a m1-08 una aserción de cli.test.js que el sed de 19.4 había cambiado por error.
+
+**Referencias:** `docs/spec.md#auditoria`
 
 ### 19.7 El export no se rompe con textos de varias líneas · Pendiente
 
