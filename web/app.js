@@ -1132,7 +1132,7 @@
         box.append(h('div', { class: 'link-row' + (other ? '' : ' broken') + (kind === 'blockedBy' && other && other.status !== 'done' && t.status !== 'done' ? ' blocking' : ''), 'data-kind': kind, 'data-task': id },
           h('span', { class: 'link-kind' }, label),
           other
-            ? h('button', { class: 'link-task', type: 'button', title: 'Abrir la tarea', onclick: () => openTask(id) }, rich(taskName(id), true))
+            ? h('button', { class: 'link-task', type: 'button', title: 'Abrir la tarea', onclick: () => goToTask(id) }, rich(taskName(id), true))
             : h('span', { class: 'link-task' }, '⚠ ' + taskName(id)),
           st ? h('span', { class: 'link-status', style: 'color:' + st.color }, st.label) : null,
           h('button', { class: 'rm', type: 'button', 'aria-label': 'Quitar vínculo', onclick: () => removeLink(t.id, id) }, '×')));

@@ -2022,7 +2022,7 @@ Pedido del usuario (2026-10-11): las tareas existentes tienen el pedido al princ
 
 **Referencias:** `docs/spec.md#descripcion`
 
-## M18 — Fechas, capturas e historial  (6/6)
+## M18 — Fechas, capturas e historial  (7/7)
 
 Saber cuándo se terminó cada tarea y si un hito se atrasa, y que la tarea muestre más que texto: capturas, su historial en git y plantillas para bugs.
 
@@ -2105,3 +2105,13 @@ Pedido del usuario (2026-10-11): un bug pide pasos para reproducirlo, qué se es
 **Notas:** Hecho: description_templates en config.schema ({ etiqueta: texto }). descriptionTemplate en filters.js (la primera etiqueta nueva con plantilla, solo si no hay descripción); la web repite la regla al agregar etiquetas en el detalle, como con los filtros. Se edita en config.json, sin comando: es una config de una vez por proyecto.
 
 **Referencias:** `docs/spec.md#fechas-capturas-historial`
+
+### 18.7 Bug: un vínculo a una tarea de otro hito no cambia el tablero · Hecho
+
+**Terminada:** 2026-10-11 · **Etiquetas:** `bug`, `ui`
+
+Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hito, un clic en un vínculo del detalle a una tarea de otro hito abre su detalle pero deja el tablero en el hito anterior, porque usa openTask en vez de goToTask. Desde Documentos sí cambia.
+
+**Prueba:** Con el tablero en M1, un clic en el vínculo de m1-07 a m0-01 abre m0-01 y el resumen dice M0. El test falla sin el cambio.
+
+**Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.

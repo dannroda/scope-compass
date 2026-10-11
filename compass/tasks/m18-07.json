@@ -1,0 +1,19 @@
+{
+  "checklist": [],
+  "code": "18.7",
+  "created_at": "2026-10-11T06:38:14.253Z",
+  "description": "Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hito, un clic en un vínculo del detalle a una tarea de otro hito abre su detalle pero deja el tablero en el hito anterior, porque usa openTask en vez de goToTask. Desde Documentos sí cambia.",
+  "done_at": "2026-10-11T06:39:06.785Z",
+  "milestone": "m18",
+  "notes": "Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.",
+  "order": 7,
+  "refs": [],
+  "status": "done",
+  "tags": [
+    "bug",
+    "ui"
+  ],
+  "test": "Con el tablero en M1, un clic en el vínculo de m1-07 a m0-01 abre m0-01 y el resumen dice M0. El test falla sin el cambio.",
+  "title": "Bug: un vínculo a una tarea de otro hito no cambia el tablero",
+  "updated_at": "2026-10-11T06:39:06.785Z"
+}

@@ -385,6 +385,18 @@ test('plantilla de descripción (18.6): etiquetar #bug una tarea sin descripció
   await page.context().close();
 });
 
+test('un vínculo a una tarea de otro hito abre la tarea y lleva el tablero a su hito (18.7)', async () => {
+  assert.equal(await cli(['link', 'add', 'm1-07', 'related', 'm0-01']), 0);
+  const page = await open();
+  await page.click('.ms-done summary').catch(() => {});
+  await page.click('#miles .chip:has-text("M1")');
+  await page.click('.card[data-id="m1-07"]');
+  await page.click('#detail .link-row[data-task="m0-01"] .link-task');
+  await page.waitForFunction(() => document.querySelector('#detail #d-title')?.value && document.querySelector('.card[data-id="m0-01"]'));
+  assert.match(await page.textContent('.sum-line h2'), /^M0 · /, 'el tablero pasó a M0');
+  await page.context().close();
+});
+
 test('un clic afuera del detalle lo cierra; otra tarjeta cambia de tarea; adentro o arrastrando una selección, no (16.5)', async () => {
   const page = await open();
   const openId = () => page.evaluate(() => (document.getElementById('detail').hidden ? null : document.querySelector('#detail #d-title')?.value));

@@ -1035,5 +1035,17 @@ Tests: `cli.test.js` y `docs.test.js` (17.1), `ui.test.js` y `dock.test.js` (`pr
   - Por commit: fecha, autor, hash y un renglón por campo que cambió (*Estado: Pendiente → En curso*, *Pasos: +«x», tildado «y»*, *Etiquetas: +arte −audio*, *Notas: editadas*). No cuentan `order` ni los sellos de fecha; un commit que solo cambió eso no aparece. Arriba, lo que hay sin commitear contra HEAD.
   - Todas las versiones del JSON se leen con un solo `git cat-file --batch`; hasta 30 commits.
   - CLI: `scompass history <id>` (`--json`). API: `GET /api/tasks/:id/history` → `{ repo, entries: [{ hash, date, author, subject, created?, deleted?, changes }] }`; sin repo, `{ repo: false, entries: [] }`.
-  - Web: *Historial* plegado al final del detalle; se pide al abrirlo y otra vez cuando la tarea cambia.- **Plantilla de descripción por etiqueta (18.6):** `config.json` › `description_templates`: `{ "<etiqueta>": "<texto>" }`. Al sumarle a una tarea sin descripción una etiqueta con plantilla, la descripción arranca con ese texto; con descripción, no se toca. Vale para `scompass add --tags` (sin `--description`), `set --tags` y las etiquetas que se agregan en el detalle de la web. La plantilla *juego* trae una para `bug`: *Cómo reproducirlo / Qué se esperaba / Qué pasó*. Se edita en `config.json`.
+  - Web: *Historial* plegado al final del detalle; se pide al abrirlo y otra vez cuando la tarea cambia.- **Plantilla de descripción por etiqueta (18.6):** `config.json` › `description_templates`: `{ "<etiqueta>": "<texto>" }`. Al sumarle a una tarea sin descripción una etiqueta con plantilla, la descripción arranca con ese texto; con descripción, no se toca. Vale para `scompass add --tags` (sin `--description`), `set --tags` y las etiquetas que se agregan en el detalle de la web. La plantilla *juego* trae una para `bug`: *Cómo reproducirlo / Qué se esperaba / Qué pasó*. Se edita en `config.json`.- **Vínculos entre hitos (18.7):** un vínculo del detalle a una tarea de otro hito la abre y lleva el tablero a ese hito, como los enlaces de Documentos.
+
+### 26.1 Criterios de aceptación de M18
+<!-- id: criterios-fechas-capturas-historial -->
+
+- [x] Cada tarea hecha dice cuándo se terminó (done_at), y el Inicio cuenta las terminadas en los últimos 7 días.
+- [x] Un hito puede tener fecha objetivo; pasada con tareas sin terminar, la CLI, la web, el dock y el Inicio lo marcan atrasado.
+- [x] Una tarea se puede estimar (S, M o L); la lista la filtra y ordena, y el resumen del hito dice cuánto falta por tamaño.
+- [x] Una tarea tiene capturas: en la web se pegan, se sueltan o se suben (en el teléfono, con la cámara), se ven en miniatura y en un visor; la CLI y el dock también las manejan.
+- [x] El detalle de la tarea y scompass history muestran qué cambió en cada commit, sacado de git.
+- [x] Etiquetar una tarea sin descripción con una etiqueta que tiene plantilla (como bug) arranca la descripción con esa plantilla.
+
+Tests: `store.test.js` y `home.test.js` (18.1, 18.2), `cli.test.js` (18.1–18.4, 18.6), `api.test.js` (18.4), `history.test.js` (18.5), `ui.test.js` (18.1–18.7) y `dock.test.js` (`props`: 18.2–18.4).
 
