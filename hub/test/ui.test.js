@@ -349,6 +349,11 @@ test('capturas (18.4): + Captura y pegar las suben, la miniatura abre el visor, 
   assert.equal(await page.isVisible('#detail'), true, 'Esc cierra el visor, no la tarea');
   await page.click('#detail .shot >> nth=0');
   await page.click('dialog.lightbox button:has-text("Quitar")');
+  // 19.12: pide confirmación; No deja todo como estaba.
+  await page.click('dialog.lightbox button:has-text("No")');
+  assert.equal(await page.locator('#detail .shot').count(), 2);
+  await page.click('dialog.lightbox button:has-text("Quitar")');
+  await page.click('dialog.lightbox button:has-text("Sí, quitar")');
   await page.waitForFunction(() => document.querySelectorAll('#detail .shot').length === 1);
   assert.equal((await task('m1-07')).images.length, 1);
   assert.equal(await page.isVisible('#detail'), true, 'el clic en el visor no cuenta como afuera');
@@ -540,6 +545,26 @@ test('§14: un cliente WebSocket mínimo recibe upsert al mover una tarjeta desd
   assert.ok(m, `llegó el upsert (recibidos: ${JSON.stringify(got.map((x) => [x.type, x.id]))}, en disco: ${(await task('m0-01')).status})`);
   assert.equal(m.doc.status, 'doing');
   ws.close();
+  await page.context().close();
+});
+
+test('19.12: Nueva tarea en Todos arranca en el primer hito sin terminar y se abre al crearla; el buscador de vínculos anda con el teclado; el separador dice su ancho', async () => {
+  const page = await open();
+  await page.click('#miles .chip:has-text("Todos")');
+  await page.keyboard.press('n');
+  assert.equal(await page.inputValue('#new-ms'), 'm02', 'm00 y m01 están terminados; m02 no tiene tareas');
+  await page.fill('#new-title', 'Recién hecha');
+  await page.click('#new-form button[type=submit]');
+  await page.waitForFunction(() => document.getElementById('d-title')?.value === 'Recién hecha');
+  assert.ok(Number(await page.getAttribute('#detail .resize', 'aria-valuenow')) >= 360);
+  await page.click('#detail .links button:has-text("+ Agregar")');
+  await page.fill('#d-linkq', 'm0-01');
+  await page.press('#d-linkq', 'ArrowDown');
+  assert.equal(await page.evaluate(() => document.activeElement.closest('.ref-matches') !== null), true, '↓ va a los resultados');
+  await page.keyboard.press('ArrowUp');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'd-linkq', '↑ desde el primero vuelve al campo');
+  await page.press('#d-linkq', 'Enter');
+  await page.waitForSelector('#detail .link-row[data-task="m0-01"]');
   await page.context().close();
 });
 

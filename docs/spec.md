@@ -1095,3 +1095,9 @@ Lo que encontró la auditoría completa después de M18 (seguridad, backend, web
   - El dock entra en el slot derecho (~300 px): el título del aviso sin hub hace autowrap (con un error largo pedía ~960 px), los textos del pie se recortan con … (el tooltip los dice enteros) y *Reiniciar hub* es solo el ícono.
   - Con hub, junto al título del detalle, ↗ abre la tarea en el navegador (`#task/<id>`), y una línea dice que acá se cambian el estado y los pasos y lo demás en el navegador.
   - En Windows, `scope_compass/scompass_path` apuntando a `scompass.cmd` (lo que da `where`) usa el `.js` que el shim tiene al lado: Godot no lanza un `.cmd`.
+- **Web: nueva tarea, Pasar a tarea y confirmaciones (19.12):**
+  - *Nueva tarea* arranca en el hito elegido o, en *Todos*, en el primero sin terminar (uno sin tareas cuenta como sin terminar; si están todos terminados, el último). Antes era M0, que se reabría y pasaba a ser el hito actual del Inicio. Lo que se elige a mano en el formulario se respeta. Al crearla, se abre su detalle.
+  - *Pasar a tarea* (Listas) abre un diálogo con un selector: los hitos sin terminar primero y los terminados aparte, en vez de un `prompt()` donde había que tipear el código.
+  - *Quitar* en el visor de capturas pregunta *¿Quitar la captura? Sí / No*, como *Borrar tarea*.
+  - En los buscadores de vínculos y referencias, Enter elige el primer resultado y ↓ ↑ los recorren.
+  - Destildar un ítem que se repite deja la casilla tildada (no se destilda); el separador del panel informa su ancho real desde que se abre.

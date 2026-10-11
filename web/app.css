@@ -75,6 +75,13 @@ dialog.lightbox { border: 0; padding: 0; background: transparent; max-width: 100
 dialog.lightbox::backdrop { background: rgb(0 0 0 / .82); }
 dialog.lightbox img { max-width: calc(100vw - 32px); max-height: calc(100vh - 96px); object-fit: contain; border-radius: 6px; background: var(--surface); }
 .lb-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; padding: 0 16px; }
+.lb-bar .confirm { color: #fff; }
+/* Elegir hito para "Pasar a tarea" (19.12). */
+dialog.pick { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); padding: 16px; width: min(420px, calc(100vw - 32px)); }
+dialog.pick::backdrop { background: rgb(0 0 0 / .45); }
+dialog.pick form { display: grid; gap: 8px; }
+dialog.pick p { margin: 0 0 4px; overflow-wrap: anywhere; }
+dialog.pick .row { display: flex; gap: 8px; margin-top: 8px; }
 .lb-path { color: #ddd; font-family: var(--font-mono); font-size: 12px; overflow-wrap: anywhere; }
 .sum-line .size-load { font-size: 13px; color: var(--muted); white-space: nowrap; }
 

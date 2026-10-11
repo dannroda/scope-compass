@@ -503,7 +503,16 @@
     const sel = document.getElementById('new-ms');
     const cur = sel.value;
     sel.replaceChildren(...S.milestones.map((m) => h('option', { value: m.id }, m.code + ' · ' + m.title)));
-    sel.value = cur || (S.filter !== 'all' ? S.filter : (S.milestones[0] && S.milestones[0].id) || '');
+    // Lo que eligió el usuario en el formulario se respeta; si no, el hito que toca (19.12).
+    sel.value = (sel.dataset.touched && cur) || defaultMilestone();
+  }
+
+  // Dónde va una tarea nueva (19.12): el hito elegido o, en "Todos", el primero sin terminar (uno sin tareas cuenta
+  // como sin terminar), o el último si están todos terminados. Antes era M0, que se reabría.
+  function defaultMilestone() {
+    if (S.filter !== 'all' && msById(S.filter)) return S.filter;
+    const open = S.milestones.find((m) => { const ts = S.tasks.filter((t) => t.milestone === m.id); return !ts.length || ts.some((t) => t.status !== 'done'); });
+    return (open || S.milestones.at(-1))?.id || '';
   }
 
   function renderSummary() {
@@ -610,17 +619,19 @@
       queueTask(id, async (cur) => applyTask(id, await api.imageAdd(id, await readAsDataUrl(f), cur.etag)));
     }
   }
-  function openLightbox(id, i) {
+  function openLightbox(id, i, confirming = false) {
     const t = taskById(id), imgs = t ? imagesOf(t) : [];
     if (!imgs.length) return;
     i = (i + imgs.length) % imgs.length;
     document.querySelector('dialog.lightbox')?.remove();
     const close = () => d.remove();
+    // Quitar pide confirmación (19.12), como Borrar tarea: si la guardó la app y nadie más la usa, se borra el archivo.
     const remove = () => {
       const path = imgs[i];
       close();
       queueTask(id, async (cur) => applyTask(id, await api.imageRemove(id, path, cur.etag)));
     };
+    const ask = () => { openLightbox(id, i, true); document.querySelector('dialog.lightbox .lb-yes')?.focus(); };
     const d = h('dialog', { class: 'lightbox', 'aria-label': 'Captura ' + (i + 1) + ' de ' + imgs.length,
       onclick: (e) => { if (e.target === d) close(); },
       onkeydown: (e) => {
@@ -633,7 +644,11 @@
         h('span', { class: 'lb-path' }, imgs[i], imgs.length > 1 ? ' · ' + (i + 1) + '/' + imgs.length : ''),
         imgs.length > 1 ? h('button', { type: 'button', class: 'btn small', 'aria-label': 'Anterior', onclick: () => openLightbox(id, i - 1) }, '←') : null,
         imgs.length > 1 ? h('button', { type: 'button', class: 'btn small', 'aria-label': 'Siguiente', onclick: () => openLightbox(id, i + 1) }, '→') : null,
-        h('button', { type: 'button', class: 'btn small danger', title: 'La saca de la tarea; si la había guardado la app (compass/images/) y nadie más la usa, borra el archivo', onclick: remove }, 'Quitar'),
+        confirming
+          ? h('span', { class: 'confirm' }, '¿Quitar la captura?',
+              h('button', { type: 'button', class: 'btn small danger lb-yes', onclick: remove }, 'Sí, quitar'),
+              h('button', { type: 'button', class: 'btn small', onclick: () => openLightbox(id, i) }, 'No'))
+          : h('button', { type: 'button', class: 'btn small danger', title: 'La saca de la tarea; si la había guardado la app (compass/images/) y nadie más la usa, borra el archivo', onclick: ask }, 'Quitar'),
         h('button', { type: 'button', class: 'btn small', onclick: close }, 'Cerrar')));
     document.body.append(d);
     d.showModal();
@@ -933,6 +948,8 @@
           : h('button', { class: 'btn ghost danger', type: 'button', onclick: () => { S.confirmDelete = true; renderDetail(); } }, 'Borrar tarea')));
     box.hidden = false;
     box.dataset.task = t.id;
+    // El separador se arma con el panel todavía oculto (ancho 0): el valor real, ya visible (19.12).
+    box.querySelector('.resize')?.setAttribute('aria-valuenow', String(Math.round(detailWidth())));
     if (edits) restoreEdits(edits);
   }
 
@@ -1141,6 +1158,16 @@
     return box;
   }
 
+  // Teclado en los buscadores de vínculos y referencias (19.12): Enter elige el primero, ↓ y ↑ recorren los resultados.
+  function searchKeys(e) {
+    const box = e.currentTarget.closest('.ref-search');
+    const btns = [...box.querySelectorAll('.ref-matches button')];
+    const at = btns.indexOf(document.activeElement);
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT' && btns.length) { e.preventDefault(); btns[0].click(); }
+    else if (e.key === 'ArrowDown' && btns.length) { e.preventDefault(); btns[Math.min(at + 1, btns.length - 1)].focus(); }
+    else if (e.key === 'ArrowUp' && at >= 0) { e.preventDefault(); (at === 0 ? box.querySelector('input') : btns[at - 1]).focus(); }
+  }
+
   // Buscador de tareas para vincular: título, código o id.
   function linkSearch(t, v) {
     const norm = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -1148,7 +1175,7 @@
     const have = new Set([t.id, ...v.blocks, ...v.blockedBy, ...v.related]);
     const matches = S.tasks.filter((x) => !have.has(x.id) && words.every((w) => norm(x.code + ' ' + x.title + ' ' + x.id).includes(w)))
       .sort((a, b) => (a.milestone === t.milestone ? 0 : 1) - (b.milestone === t.milestone ? 0 : 1) || sortTasks(a, b)).slice(0, 8);
-    return h('div', { class: 'ref-search' },
+    return h('div', { class: 'ref-search', onkeydown: searchKeys },
       h('div', { class: 'seg small', role: 'group', 'aria-label': 'Tipo de vínculo' }, LINK_KINDS.map(([kind, label]) =>
         h('button', { type: 'button', 'aria-pressed': S.linkSearch.type === kind ? 'true' : 'false', onclick: () => { S.linkSearch.type = kind; renderDetail(); document.getElementById('d-linkq')?.focus(); } }, label))),
       h('label', { for: 'd-linkq', class: 'sr' }, 'Buscar tarea'),
@@ -1170,7 +1197,7 @@
       .filter(({ d, s }) => !refsOf(t).some((r) => sameRef(r, { doc: d.path, section: s?.id }))
         && words.every((w) => norm(s ? s.title + ' ' + s.id : d.path + ' ' + d.alias + ' ' + docTitle(d)).includes(w)))
       .slice(0, 8);
-    return h('div', { class: 'ref-search' },
+    return h('div', { class: 'ref-search', onkeydown: searchKeys },
       h('label', { for: 'd-refq', class: 'sr' }, 'Buscar sección'),
       h('input', { id: 'd-refq', placeholder: 'Buscar documento o sección', autocomplete: 'off', value: S.refSearch || '', 'data-orig': S.refSearch || '',
         oninput: (e) => { S.refSearch = e.target.value; renderDetail(); } }),
@@ -1858,7 +1885,8 @@
       ondragleave: (e) => e.currentTarget.classList.remove('drop-before'),
       ondrop: (e) => { e.preventDefault(); e.currentTarget.classList.remove('drop-before'); const [lid, from] = e.dataTransfer.getData('text/x-item').split(':'); if (lid === l.id) moveItem(l.id, Number(from), n); } },
       h('input', { type: 'checkbox', id, checked: x.done, onchange: (e) => {
-        if (x.repeat && !e.target.checked) return;
+        // Un ítem que se repite no se destilda (al tildarlo avanza la fecha): la casilla vuelve a como estaba (19.12).
+        if (x.repeat && !e.target.checked) { e.target.checked = true; return; }
         listWrite(l.id, (cur) => (e.target.checked ? api.listCheck(cur.id, n, cur.etag) : api.listPatch(cur.id, { items: cur.items.map((y, i) => (i === n - 1 ? { ...y, done: false } : y)) }, cur.etag)),
           (r) => (r?.advanced ? `↻ ${x.text}: la próxima vez es el ${showDue(r.list.items[n - 1].due)}` : null));
       } }),
@@ -1908,13 +1936,36 @@
     });
   }
 
-  function toTask(l, n) {
+  async function toTask(l, n) {
     const ms = S.milestones;
-    const pick = ms.length === 1 ? ms[0].id : prompt('¿En qué hito? ' + ms.map((m) => m.code + ' (' + m.id + ')').join(', '), (S.filter !== 'all' ? S.filter : ms[0].id));
-    const m = ms.find((x) => x.id === pick || x.code === pick);
-    if (!pick) return;
-    if (!m) { toast('No hay un hito "' + pick + '".'); return; }
+    const pick = ms.length === 1 ? ms[0].id : await pickMilestone(l.items[n - 1]?.text || '');
+    const m = msById(pick);
+    if (!m) return;
     listWrite(l.id, (cur) => api.listTask(cur.id, n, m.id, cur.etag), (r) => `Tarea creada en ${m.code}: ${r.task.title}`);
+  }
+
+  // Elegir un hito (19.12): un diálogo con los hitos sin terminar primero, en vez de tipear un código en un prompt().
+  // Resuelve con el id elegido, o null si se cancela.
+  function pickMilestone(text) {
+    return new Promise((resolve) => {
+      const isDone = (m) => { const ts = S.tasks.filter((t) => t.milestone === m.id); return ts.length > 0 && ts.every((t) => t.status === 'done'); };
+      const opt = (m) => h('option', { value: m.id }, m.code + ' · ' + m.title);
+      const finished = S.milestones.filter(isDone);
+      const sel = h('select', { id: 'pick-ms' }, S.milestones.filter((m) => !isDone(m)).map(opt),
+        finished.length ? h('optgroup', { label: 'Terminados' }, finished.map(opt)) : null);
+      sel.value = defaultMilestone();
+      const end = (v) => { d.close(); d.remove(); resolve(v); };
+      const d = h('dialog', { class: 'pick', 'aria-label': 'Pasar a tarea', onclose: () => { if (d.isConnected) end(null); } },
+        h('form', { method: 'dialog', onsubmit: (e) => { e.preventDefault(); end(sel.value); } },
+          h('p', null, 'Pasar a tarea ', h('strong', null, '«' + text + '»')),
+          h('label', { for: 'pick-ms' }, 'Hito'), sel,
+          h('div', { class: 'row' },
+            h('button', { class: 'btn primary', type: 'submit' }, 'Crear tarea'),
+            h('button', { class: 'btn', type: 'button', onclick: () => end(null) }, 'Cancelar'))));
+      document.body.append(d);
+      d.showModal();
+      sel.focus();
+    });
   }
 
   async function copy(text) {
@@ -2024,7 +2075,9 @@
   function openNewForm() {
     const f = document.getElementById('new-form');
     f.hidden = false;
-    if (S.filter !== 'all') document.getElementById('new-ms').value = S.filter;
+    const sel = document.getElementById('new-ms');
+    delete sel.dataset.touched;
+    sel.value = defaultMilestone();
     document.getElementById('new-title').focus();
   }
   document.getElementById('new-btn').addEventListener('click', () => {
@@ -2032,6 +2085,7 @@
     if (f.hidden) openNewForm(); else f.hidden = true;
   });
   document.getElementById('new-cancel').addEventListener('click', () => { document.getElementById('new-form').hidden = true; });
+  document.getElementById('new-ms').addEventListener('change', (e) => { e.target.dataset.touched = '1'; });
   document.getElementById('new-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const title = document.getElementById('new-title').value.trim();
@@ -2044,6 +2098,8 @@
     write(async () => {
       const t = await api.create({ title, milestone, code: '', status: 'todo', checklist: [], test: '', notes: '', refs: [] });
       applyTask(t.id, t);
+      // Se abre, para sumarle la descripción o los pasos sin buscarla en el tablero (19.12).
+      openTask(t.id);
       toast(taskMatches(t) ? 'Tarea agregada' : 'Tarea agregada; los filtros la ocultan');
     });
   });

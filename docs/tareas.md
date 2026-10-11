@@ -2116,7 +2116,7 @@ Visto al revisar los vínculos entre hitos (2026-10-11): con el tablero en un hi
 
 **Notas:** Hecho: el botón del vínculo usa goToTask (cambia el hito del tablero si hace falta) en vez de openTask. El dock ya cambiaba de hito.
 
-## M19 — Auditoría  (11/13)
+## M19 — Auditoría  (12/13)
 
 Arreglar lo que encontró la auditoría completa de M18 (seguridad, backend, web y dock): que los cambios en vivo no se pierdan, que nada escriba ni lea fuera del proyecto, y que la web y el dock no mientan ni se traben.
 
@@ -2252,11 +2252,17 @@ Auditoría (2026-10-11): el dock pide 466 px (947 con un error largo) porque el 
 
 **Referencias:** `docs/spec.md#auditoria`
 
-### 19.12 Web: nueva tarea, Pasar a tarea y confirmaciones · Pendiente
+### 19.12 Web: nueva tarea, Pasar a tarea y confirmaciones · Hecho
 
-**Etiquetas:** `bug`, `ui`
+**Terminada:** 2026-10-11 · **Etiquetas:** `bug`, `ui`
 
 Auditoría (2026-10-11): Nueva tarea en Todos la crea en M0 (terminado) y lo reabre; Pasar a tarea pide el hito con un prompt() con los 19 hitos; Quitar en el visor borra sin confirmar; destildar un ítem que se repite deja la casilla mintiendo; el buscador de vínculos no responde a Enter ni a las flechas; el separador del panel arranca con aria-valuenow 0; la nueva tarea no se abre al crearla.
+
+**Prueba:** ui.test.js (19.12): en Todos, N propone m02 (m00 y m01 terminados, m02 sin tareas); crear abre el detalle; aria-valuenow del separador ≥ 360; en el buscador de vínculos ↓ va a los resultados, ↑ vuelve, Enter vincula el primero. 18.4: Quitar pide confirmación y No no saca nada. ui-lists.test.js: Pasar a tarea abre el diálogo en m02, con los dos terminados aparte, y crea en m01. Fallan sin el cambio.
+
+**Notas:** Hecho: defaultMilestone() en app.js (data-touched en el select para respetar lo elegido a mano); openTask al crear. pickMilestone(): dialog.pick con optgroup Terminados. openLightbox(id, i, confirming). searchKeys() en .ref-search. e.target.checked = true en un ítem que se repite. aria-valuenow después de mostrar el panel. Estilos de dialog.pick.
+
+**Referencias:** `docs/spec.md#auditoria`
 
 ### 19.13 Web: tipografía y detalles visuales · Pendiente
 

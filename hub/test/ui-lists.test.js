@@ -98,8 +98,13 @@ test('reordenar arrastrando en una lista simple', async () => {
 
 test('pasar a tarea y crear una lista nueva', async () => {
   const page = await open();
-  page.on('dialog', (d) => d.accept('m01'));
+  // 19.12: un diálogo con un selector de hitos, que arranca en el primero sin terminar (m02, sin tareas).
   await page.locator('.item[data-n="2"] button:has-text("Pasar a tarea")').click();
+  await page.waitForSelector('dialog.pick[open]');
+  assert.equal(await page.inputValue('#pick-ms'), 'm02');
+  assert.equal(await page.locator('#pick-ms optgroup[label="Terminados"] option').count(), 2, 'los terminados van aparte');
+  await page.selectOption('#pick-ms', 'm01');
+  await page.click('dialog.pick button:has-text("Crear tarea")');
   await until(async () => !!(await items())[1].task);
   const id = (await items())[1].task;
   const t = JSON.parse(await readFile(join(compass, 'tasks', `${id}.json`), 'utf8'));
