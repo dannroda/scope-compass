@@ -2,12 +2,13 @@
   "checklist": [],
   "code": "6.11",
   "created_at": "2026-09-30T02:49:43.473Z",
+  "description": "Reportado por el usuario. \"Cerrar\" no cerraba: el buscador abierto sin texto guarda \"\" y el toggle lo tomaba como cerrado.",
   "milestone": "m06",
-  "notes": "Reportado por el usuario. \"Cerrar\" no cerraba: el buscador abierto sin texto guarda \"\" y el toggle lo tomaba como cerrado. Panel: borde izquierdo arrastrable (y flechas, Shift = paso grande), entre 360 px y 90 % de la ventana, recordado en el navegador; doble clic vuelve a 460 px.",
+  "notes": "Panel: borde izquierdo arrastrable (y flechas, Shift = paso grande), entre 360 px y 90 % de la ventana, recordado en el navegador; doble clic vuelve a 460 px.",
   "order": 11,
   "refs": [],
   "status": "done",
   "test": "",
   "title": "UI web: \"Cerrar\" del buscador de referencias y panel de detalle redimensionable",
-  "updated_at": "2026-09-30T02:49:44.220Z"
+  "updated_at": "2026-10-11T03:50:51.188Z"
 }

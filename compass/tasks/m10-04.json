@@ -15,8 +15,9 @@
   ],
   "code": "10.4",
   "created_at": "2026-10-06T04:23:22.366Z",
+  "description": "En Windows Node no tiene SIGTERM: `kill` termina el proceso en seco, sin cerrar el servidor ni darse de baja.",
   "milestone": "m10",
-  "notes": "En Windows Node no tiene SIGTERM: `kill` termina el proceso en seco, sin cerrar el servidor ni darse de baja. Hecho: `POST /api/shutdown` en el hub y en el Inicio (un proyecto servido por el Inicio lo rechaza con 400). El Inicio apaga a sus hijos cortándoles la entrada y a los demás hubs por la API; `kill` solo si en 3 s siguen vivos. `windowsHide` en todos los procesos que se lanzan (salvo el selector de carpetas, 10.6). Tests: cierre por API con código 0 (cli, tray, home-hubs, home-restart); SIGTERM solo en Linux. Encontrado: un hub reiniciado cuyo padre es Node (con la tubería 'pipe' directa) recibe fin de entrada al irse el viejo y se cierra, en Linux y en Windows; por eso el test usa cat (findstr en Windows). Con el dock (Godot de padre) se ve en 10.8. Con el Inicio de padre pasaría igual, pero desde D29 el Inicio no crea hubs.",
+  "notes": "Hecho: `POST /api/shutdown` en el hub y en el Inicio (un proyecto servido por el Inicio lo rechaza con 400). El Inicio apaga a sus hijos cortándoles la entrada y a los demás hubs por la API; `kill` solo si en 3 s siguen vivos. `windowsHide` en todos los procesos que se lanzan (salvo el selector de carpetas, 10.6). Tests: cierre por API con código 0 (cli, tray, home-hubs, home-restart); SIGTERM solo en Linux. Encontrado: un hub reiniciado cuyo padre es Node (con la tubería 'pipe' directa) recibe fin de entrada al irse el viejo y se cierra, en Linux y en Windows; por eso el test usa cat (findstr en Windows). Con el dock (Godot de padre) se ve en 10.8. Con el Inicio de padre pasaría igual, pero desde D29 el Inicio no crea hubs.",
   "order": 4,
   "refs": [
     {
@@ -27,5 +28,5 @@
   "status": "done",
   "test": "",
   "title": "Cerrar hubs e Inicio sin señales",
-  "updated_at": "2026-10-06T04:53:02.110Z"
+  "updated_at": "2026-10-11T03:50:52.278Z"
 }

@@ -15,12 +15,13 @@
   ],
   "code": "5.12",
   "created_at": "2026-10-04T22:58:06.309Z",
+  "description": "Pedido al usar Epiphany.",
   "milestone": "m05",
-  "notes": "Pedido al usar Epiphany. `startTray` ahora acepta `label` y `visible` como funciones y expone `refresh()` (emite LayoutUpdated). Los ids del menú son la posición + 1: Abrir 1, Actualizar 2, Reiniciar 3, Detener 4.",
+  "notes": "`startTray` ahora acepta `label` y `visible` como funciones y expone `refresh()` (emite LayoutUpdated). Los ids del menú son la posición + 1: Abrir 1, Actualizar 2, Reiniciar 3, Detener 4.",
   "order": 12,
   "refs": [],
   "status": "done",
   "test": "Con `compass/schema/task.schema.json` viejo, el menú muestra \"Actualizar compass/ (1 archivo)\"; al tocarlo se copia el schema y el ítem desaparece.",
   "title": "Bandeja: \"Actualizar compass/\" cuando el schema o AGENTS.md quedaron viejos",
-  "updated_at": "2026-10-04T22:58:08.105Z"
+  "updated_at": "2026-10-11T03:51:00.274Z"
 }

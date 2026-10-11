@@ -17,8 +17,9 @@
   ],
   "code": "16.1",
   "created_at": "2026-10-10T23:08:22.318Z",
+  "description": "Pedido del usuario al abrirlo en el teléfono (2026-10-10): apiladas, las columnas quedaban interminables.",
   "milestone": "m16",
-  "notes": "Pedido del usuario al abrirlo en el teléfono (2026-10-10): apiladas, las columnas quedaban interminables. Hecho: solo CSS en la media query del teléfono (flex con overflow-x y scroll-snap-type x mandatory, margen negativo como la fila de hitos). La comparación con el artifact (§14) ya no mira la grilla del tablero a 390 px: el artifact apilaba. Comprobado a 390×844 con toque: desliza y encaja en En curso con Revisión asomando; tras un cambio en vivo el scroll queda igual (main.board no se recrea). Corregido: en el teléfono del usuario (unos 600 px de ancho) seguía la grilla de dos columnas, porque el corte era 560 px y solo se había probado a 390. Ahora vale a ≤ 560 px o en pantallas táctiles (hover: none) de hasta 980 px, con columnas de hasta 360 px; con mouse, entre 561 y 980, sigue la grilla. La barra de Documentos (16.2), igual: táctil hasta 1180 px. Revisado a 390, 412, 602 y 900 táctil, y a 900 y 1440 con mouse; el test nuevo falla con el CSS anterior.",
+  "notes": "Hecho: solo CSS en la media query del teléfono (flex con overflow-x y scroll-snap-type x mandatory, margen negativo como la fila de hitos). La comparación con el artifact (§14) ya no mira la grilla del tablero a 390 px: el artifact apilaba. Comprobado a 390×844 con toque: desliza y encaja en En curso con Revisión asomando; tras un cambio en vivo el scroll queda igual (main.board no se recrea). Corregido: en el teléfono del usuario (unos 600 px de ancho) seguía la grilla de dos columnas, porque el corte era 560 px y solo se había probado a 390. Ahora vale a ≤ 560 px o en pantallas táctiles (hover: none) de hasta 980 px, con columnas de hasta 360 px; con mouse, entre 561 y 980, sigue la grilla. La barra de Documentos (16.2), igual: táctil hasta 1180 px. Revisado a 390, 412, 602 y 900 táctil, y a 900 y 1440 con mouse; el test nuevo falla con el CSS anterior.",
   "order": 1,
   "refs": [
     {
@@ -32,5 +33,5 @@
   ],
   "test": "A 390×844 el tablero se desplaza de costado y encaja en una columna; la página no se desplaza de costado; un cambio en vivo no devuelve el tablero a la primera columna.",
   "title": "Tablero deslizable en el teléfono",
-  "updated_at": "2026-10-10T23:25:18.108Z"
+  "updated_at": "2026-10-11T03:50:57.471Z"
 }

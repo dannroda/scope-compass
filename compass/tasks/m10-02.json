@@ -15,8 +15,9 @@
   ],
   "code": "10.2",
   "created_at": "2026-10-06T04:23:19.556Z",
+  "description": "Las rutas dentro del proyecto son identificadores, como en git: siempre con `/`. Las absolutas, con el separador del sistema.",
   "milestone": "m10",
-  "notes": "Las rutas dentro del proyecto son identificadores, como en git: siempre con `/`. Las absolutas, con el separador del sistema. Hecho: `rel()` de store/load.js (avisos del Store) y loadDocs (glob devuelve `\\` en Windows, y el alias quedaba `docs/docs\\audio`). El watcher de compass/ ya aceptaba los dos separadores y el de documentos usa basename, que también.",
+  "notes": "Hecho: `rel()` de store/load.js (avisos del Store) y loadDocs (glob devuelve `\\` en Windows, y el alias quedaba `docs/docs\\audio`). El watcher de compass/ ya aceptaba los dos separadores y el de documentos usa basename, que también.",
   "order": 2,
   "refs": [
     {
@@ -27,5 +28,5 @@
   "status": "done",
   "test": "",
   "title": "Rutas relativas al proyecto siempre con /",
-  "updated_at": "2026-10-06T04:31:56.386Z"
+  "updated_at": "2026-10-11T03:50:51.715Z"
 }

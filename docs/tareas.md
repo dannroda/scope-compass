@@ -573,13 +573,19 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 ### 5.10 Reiniciar el hub (dock, bandeja, CLI y API) · Hecho
 
-**Notas:** Pedido del usuario, para cargar código nuevo sin cerrar el editor. `POST /api/restart`: el hub cierra, libera el puerto y se relanza con los mismos argumentos (y el puerto que tenía de verdad), heredando entrada y salida: si lo lanzó el dock sigue atado a Godot por la misma tubería. `/api/health` informa el PID. Dock: botón "Reiniciar hub" en el pie; bandeja: "Reiniciar hub" en el menú; CLI: `scompass restart`. Detalles: la tubería "pipe" de Node es un par de sockets y el test necesitó un pipe real (cat); OS.is_process_running de Godot no ve al hub reiniciado (es nieto), se usa kill -0. Los tests que leen Epiphany ya no dependen de su contenido exacto.
+Pedido del usuario, para cargar código nuevo sin cerrar el editor.
+
+**Notas:** `POST /api/restart`: el hub cierra, libera el puerto y se relanza con los mismos argumentos (y el puerto que tenía de verdad), heredando entrada y salida: si lo lanzó el dock sigue atado a Godot por la misma tubería. `/api/health` informa el PID. Dock: botón "Reiniciar hub" en el pie; bandeja: "Reiniciar hub" en el menú; CLI: `scompass restart`. Detalles: la tubería "pipe" de Node es un par de sockets y el test necesitó un pipe real (cat); OS.is_process_running de Godot no ve al hub reiniciado (es nieto), se usa kill -0. Los tests que leen Epiphany ya no dependen de su contenido exacto.
 
 ### 5.11 Dock: el texto del paso despliega su detalle, divisor lista/detalle, bloque de tareas plegable · Hecho
 
-**Notas:** Pedido del usuario. El cuadradito tilda y el texto (o ▸) despliega el detalle: tildar al tocar el texto era contraintuitivo. VSplitContainer entre la lista de tareas y el detalle, con el divisor recordado por proyecto; "▾ Tareas · n" pliega la lista y el detalle usa todo el alto (también recordado). De paso: el selector de hito fijaba el ancho mínimo del dock al del hito más largo (`fit_to_longest_item = false`) y los botones del aviso bajan de renglón.
+Pedido del usuario. El cuadradito tilda y el texto (o ▸) despliega el detalle: tildar al tocar el texto era contraintuitivo.
+
+**Notas:** VSplitContainer entre la lista de tareas y el detalle, con el divisor recordado por proyecto; "▾ Tareas · n" pliega la lista y el detalle usa todo el alto (también recordado). De paso: el selector de hito fijaba el ancho mínimo del dock al del hito más largo (`fit_to_longest_item = false`) y los botones del aviso bajan de renglón.
 
 ### 5.12 Bandeja: "Actualizar compass/" cuando el schema o AGENTS.md quedaron viejos · Hecho
+
+Pedido al usar Epiphany.
 
 - [x] Lógica de `scompass update` en `hub/src/update.js`, compartida por la CLI y el hub
 - [x] Ítem del menú visible solo si hay archivos viejos; se reevalúa al abrir el menú (AboutToShow)
@@ -587,7 +593,7 @@ Addon `scope_compass` con un dock que muestra las tareas del hito actual y las m
 
 **Prueba:** Con `compass/schema/task.schema.json` viejo, el menú muestra "Actualizar compass/ (1 archivo)"; al tocarlo se copia el schema y el ítem desaparece.
 
-**Notas:** Pedido al usar Epiphany. `startTray` ahora acepta `label` y `visible` como funciones y expone `refresh()` (emite LayoutUpdated). Los ids del menú son la posición + 1: Abrir 1, Actualizar 2, Reiniciar 3, Detener 4.
+**Notas:** `startTray` ahora acepta `label` y `visible` como funciones y expone `refresh()` (emite LayoutUpdated). Los ids del menú son la posición + 1: Abrir 1, Actualizar 2, Reiniciar 3, Detener 4.
 
 ## M6 — Documentos y referencias (v2)  (12/12)
 
@@ -706,15 +712,21 @@ Visor de documentos del proyecto (GDD) y referencias estables entre tareas y sec
 
 ### 6.10 Snippets del dock en CodeEdit con el resaltado del editor · Hecho
 
-**Notas:** Pedido del usuario: los snippets en el dock se ven mejor en un CodeEdit. `?format=blocks` (texto en BBCode, código crudo); el dock usa `GDScriptSyntaxHighlighter` del editor (verificado en el editor: resaltado y fuente `EditorFonts/source`); fuera del editor, un CodeHighlighter básico.
+Pedido del usuario: los snippets en el dock se ven mejor en un CodeEdit.
+
+**Notas:** `?format=blocks` (texto en BBCode, código crudo); el dock usa `GDScriptSyntaxHighlighter` del editor (verificado en el editor: resaltado y fuente `EditorFonts/source`); fuera del editor, un CodeHighlighter básico.
 
 ### 6.11 UI web: "Cerrar" del buscador de referencias y panel de detalle redimensionable · Hecho
 
-**Notas:** Reportado por el usuario. "Cerrar" no cerraba: el buscador abierto sin texto guarda "" y el toggle lo tomaba como cerrado. Panel: borde izquierdo arrastrable (y flechas, Shift = paso grande), entre 360 px y 90 % de la ventana, recordado en el navegador; doble clic vuelve a 460 px.
+Reportado por el usuario. "Cerrar" no cerraba: el buscador abierto sin texto guarda "" y el toggle lo tomaba como cerrado.
+
+**Notas:** Panel: borde izquierdo arrastrable (y flechas, Shift = paso grande), entre 360 px y 90 % de la ventana, recordado en el navegador; doble clic vuelve a 460 px.
 
 ### 6.12 Pasos con texto corto y detalle desplegable · Hecho
 
-**Notas:** Pedido del usuario: los pasos eran ambiguos cortos o demasiado largos para el dock. `checklist[].detail` opcional. Web: ▸ despliega, ✎ edita texto y detalle (vacío lo quita). Dock: ▸ debajo del checkbox. CLI: `step add|set|rm`, `show` con el detalle sangrado. Export md con el detalle sangrado (y `tools/artifact_to_md.py`, para seguir idénticos). Los enlaces del detalle cuentan en refs check, backlinks y refs suggest. `refs suggest` también reconoce "en el GDD (§4.3)".
+Pedido del usuario: los pasos eran ambiguos cortos o demasiado largos para el dock.
+
+**Notas:** `checklist[].detail` opcional. Web: ▸ despliega, ✎ edita texto y detalle (vacío lo quita). Dock: ▸ debajo del checkbox. CLI: `step add|set|rm`, `show` con el detalle sangrado. Export md con el detalle sangrado (y `tools/artifact_to_md.py`, para seguir idénticos). Los enlaces del detalle cuentan en refs check, backlinks y refs suggest. `refs suggest` también reconoce "en el GDD (§4.3)".
 
 ## M7 — Hosting privado  (0/2)
 
@@ -729,6 +741,8 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 
 **Prioridad:** media · **Etiquetas:** `investigacion`, `seguridad`
 
+Pedido desde Project Epiphany (2026-10-10): ver el panel en el teléfono por el wifi de casa. Por ahora alcanza con abrirlo en la red, sin login (usuario, 2026-10-10).
+
 - [x] Relevar el estado actual
   El hub escucha solo en 127.0.0.1 y sin auth (spec §servidor). createServer ya acepta un token, pero como header Authorization: Bearer, que el navegador del teléfono no puede mandar. Hoy funciona un túnel SSH desde el teléfono (Termux / Termius).
 - [x] Comparar opciones de acceso
@@ -742,13 +756,15 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
 
 **Prueba:** D36 registra la comparación de las cuatro opciones. Con scompass home --lan, el tablero se abre y se edita desde el teléfono por el wifi de casa; un Host con nombre o un pedido con el Origin de otra página dan 403. Sin login, por pedido: es para la red de casa.
 
-**Notas:** Pedido desde Project Epiphany (2026-10-10): ver el panel en el teléfono por el wifi de casa. Por ahora alcanza con abrirlo en la red, sin login (usuario, 2026-10-10). Hecho: --lan en serve y home (listen en 0.0.0.0; las URLs de siempre siguen en 127.0.0.1 para el dock, la CLI y el Inicio, y se imprimen las direcciones de la red, también en --json). El chequeo de Host (D34) acepta una IP y no un nombre. Además, cualquier pedido con un Origin distinto de http://<Host> da 403 en el hub y en el Inicio: faltaba también en local, donde cualquier página podía hacer POST /api/shutdown o abrir el WebSocket y leer el tablero. Probado con un Inicio aislado --lan por 192.168.100.56 desde Chromium a 390×844: el tablero carga, el WebSocket conecta y un PATCH desde la página se guarda; Host malo.example y un POST con Origin ajeno dan 403. --host <ip> descartado: el dock y la CLI hablan por 127.0.0.1. De paso: el import de Godot en los tests del dock a veces aborta al salir (bug de tiempos del motor: EditorHelp::load_script_doc_cache diferido corre con EditorNode ya borrado); se reintenta una vez. Encontrado al probarlo: con un Inicio ya corriendo sin --lan, scompass home --lan decía que ya corría y salía sin hacer nada; ahora el registro anota lan y el comando falla diciendo que hay que cerrarlo.
+**Notas:** Hecho: --lan en serve y home (listen en 0.0.0.0; las URLs de siempre siguen en 127.0.0.1 para el dock, la CLI y el Inicio, y se imprimen las direcciones de la red, también en --json). El chequeo de Host (D34) acepta una IP y no un nombre. Además, cualquier pedido con un Origin distinto de http://<Host> da 403 en el hub y en el Inicio: faltaba también en local, donde cualquier página podía hacer POST /api/shutdown o abrir el WebSocket y leer el tablero. Probado con un Inicio aislado --lan por 192.168.100.56 desde Chromium a 390×844: el tablero carga, el WebSocket conecta y un PATCH desde la página se guarda; Host malo.example y un POST con Origin ajeno dan 403. --host <ip> descartado: el dock y la CLI hablan por 127.0.0.1. De paso: el import de Godot en los tests del dock a veces aborta al salir (bug de tiempos del motor: EditorHelp::load_script_doc_cache diferido corre con EditorNode ya borrado); se reintenta una vez. Encontrado al probarlo: con un Inicio ya corriendo sin --lan, scompass home --lan decía que ya corría y salía sin hacer nada; ahora el registro anota lan y el comando falla diciendo que hay que cerrarlo.
 
 **Referencias:** `docs/spec.md#hosting`, `docs/spec.md#servidor`
 
 ### 7.2 Acceso fuera de casa con Tailscale · Pendiente
 
 **Prioridad:** baja · **Etiquetas:** `seguridad`
+
+La opción recomendada en D36 para cuando la red de casa no alcance: cifrado de punta a punta, solo tus dispositivos y HTTPS sin escribir autenticación.
 
 - [ ] Probar --lan por la IP de Tailscale (100.x) desde el teléfono con datos móviles
   Debería andar sin cambios: es una IP más, y el hub escucha en todas las interfaces.
@@ -758,8 +774,6 @@ El mismo hub en un servidor privado para usarlo desde el teléfono, con git como
   Manifest y service worker; caché del último estado para leer sin conexión (§12).
 
 **Prueba:** Desde el teléfono, fuera de casa, el tablero se abre por HTTPS dentro de la tailnet, se instala como app y otro dispositivo fuera de la tailnet no llega.
-
-**Notas:** La opción recomendada en D36 para cuando la red de casa no alcance: cifrado de punta a punta, solo tus dispositivos y HTTPS sin escribir autenticación.
 
 **Referencias:** `docs/spec.md#hosting`
 
@@ -978,12 +992,12 @@ Página de Inicio con todos los proyectos, listas con fecha límite y repetició
 
 ### 8.15 Tablero: enlace "← Inicio" si el Inicio está corriendo · Hecho
 
+Pedido al usar el Inicio.
+
 - [x] `GET /api/home` en el hub (el Inicio del registro, o null)
 - [x] Web: "← Inicio" arriba del título; se revisa cada 10 s y al volver a la pestaña
 
 **Prueba:** Sin Inicio no aparece; con uno anotado en el registro, el enlace apunta a su puerto (hub/test/ui.test.js).
-
-**Notas:** Pedido al usar el Inicio.
 
 ### 8.16 Bandeja del Inicio: el estado de los hubs prendidos desde la web no se actualizaba · Hecho
 
@@ -1110,52 +1124,62 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 
 ### 10.1 npm test corre en Windows · Hecho
 
+Primera corrida en la VM (2026-10-06): 280 tests, 188 pasan, 54 fallan, 37 saltados. 41 fallas eran de Playwright sin navegador y 29 saltos, de que Node no lanza `godot.cmd` (resuelto en la VM con `godot.exe`).
+
 - [x] El script `test` de package.json sin sintaxis de sh (un `node` que arma las variables)
 - [x] registry.test: simular otro hub con un PID vivo de verdad, no PID 1 (en Windows se colgaba)
 - [x] cli-hub.test: sin `sh -c`
 - [x] export-md: saltar los tests de Python si no hay `python3` que ande (en Windows, `python3` es el alias de la Store)
 - [x] Rutas absolutas esperadas con el separador del sistema (projects.test, home list)
 
-**Notas:** Primera corrida en la VM (2026-10-06): 280 tests, 188 pasan, 54 fallan, 37 saltados. 41 fallas eran de Playwright sin navegador y 29 saltos, de que Node no lanza `godot.cmd` (resuelto en la VM con `godot.exe`). Hecho: `npm test` es `scripts/run-tests.js` (arma las variables en Node y borra la carpeta temporal al final); registry.test simula el otro hub con `process.ppid`; cli-hub.test sin `sh` en Windows; export-md salta sin Python (también el alias de la Store, que sale con 9009); home list acepta los dos separadores. Después de 10.1 y 10.2: 255 pasan; lo que falla es de 10.3, 10.4, 10.6 y 10.8.
+**Notas:** Hecho: `npm test` es `scripts/run-tests.js` (arma las variables en Node y borra la carpeta temporal al final); registry.test simula el otro hub con `process.ppid`; cli-hub.test sin `sh` en Windows; export-md salta sin Python (también el alias de la Store, que sale con 9009); home list acepta los dos separadores. Después de 10.1 y 10.2: 255 pasan; lo que falla es de 10.3, 10.4, 10.6 y 10.8.
 
 **Referencias:** `docs/spec.md#windows`
 
 ### 10.2 Rutas relativas al proyecto siempre con / · Hecho
 
+Las rutas dentro del proyecto son identificadores, como en git: siempre con `/`. Las absolutas, con el separador del sistema.
+
 - [x] Documentos: path y alias con / (docs.js, config docs)
 - [x] Avisos y errores del Store con rutas con /
 - [x] Revisar export, watcher y refs que comparen rutas relativas
 
-**Notas:** Las rutas dentro del proyecto son identificadores, como en git: siempre con `/`. Las absolutas, con el separador del sistema. Hecho: `rel()` de store/load.js (avisos del Store) y loadDocs (glob devuelve `\` en Windows, y el alias quedaba `docs/docs\audio`). El watcher de compass/ ya aceptaba los dos separadores y el de documentos usa basename, que también.
+**Notas:** Hecho: `rel()` de store/load.js (avisos del Store) y loadDocs (glob devuelve `\` en Windows, y el alias quedaba `docs/docs\audio`). El watcher de compass/ ya aceptaba los dos separadores y el de documentos usa basename, que también.
 
 **Referencias:** `docs/spec.md#windows`
 
 ### 10.3 Carpetas de config, datos y registro en Windows · Hecho
 
+D23, D28 y el registro de hubs usaban solo XDG.
+
 - [x] Carpetas por plataforma en projects.js y registry.js
 - [x] Ruta absoluta con isAbsolute; nombres de proyecto sin \ / : * ? " < > | ni nombres reservados
 - [x] Mensajes y docs que nombran ~/.config muestran la ruta real
 
-**Notas:** D23, D28 y el registro de hubs usaban solo XDG. Hecho: en Windows, proyectos conocidos en %APPDATA%\scope-compass, datos en %LOCALAPPDATA%\scope-compass y hubs vivos en %TEMP%\scope-compass\hubs (%TEMP% ya es de cada usuario; `userInfo().uid` es -1). Crear un proyecto valida la carpeta con `isAbsolute`. Los nombres de proyecto siguen la regla de Windows en las dos plataformas (sin \ / : * ? " < > |, sin CON/NUL/COM1…, sin punto al final), para que un proyecto de Linux se abra en Windows. La página del Inicio arma "Se crea en …" con el separador que manda /api/templates (`sep`). AGENTS.md y hub/README nombran la ruta de Windows.
+**Notas:** Hecho: en Windows, proyectos conocidos en %APPDATA%\scope-compass, datos en %LOCALAPPDATA%\scope-compass y hubs vivos en %TEMP%\scope-compass\hubs (%TEMP% ya es de cada usuario; `userInfo().uid` es -1). Crear un proyecto valida la carpeta con `isAbsolute`. Los nombres de proyecto siguen la regla de Windows en las dos plataformas (sin \ / : * ? " < > |, sin CON/NUL/COM1…, sin punto al final), para que un proyecto de Linux se abra en Windows. La página del Inicio arma "Se crea en …" con el separador que manda /api/templates (`sep`). AGENTS.md y hub/README nombran la ruta de Windows.
 
 **Referencias:** `docs/spec.md#windows`
 
 ### 10.4 Cerrar hubs e Inicio sin señales · Hecho
 
+En Windows Node no tiene SIGTERM: `kill` termina el proceso en seco, sin cerrar el servidor ni darse de baja.
+
 - [x] Cierre pedido por API/stdin en el Inicio (stop, apagar al cerrar); el del dock, en 10.8
 - [x] windowsHide en spawn y execFile; restart con detached sin ventana
 - [x] Tests de cierre que corran en las dos plataformas
 
-**Notas:** En Windows Node no tiene SIGTERM: `kill` termina el proceso en seco, sin cerrar el servidor ni darse de baja. Hecho: `POST /api/shutdown` en el hub y en el Inicio (un proyecto servido por el Inicio lo rechaza con 400). El Inicio apaga a sus hijos cortándoles la entrada y a los demás hubs por la API; `kill` solo si en 3 s siguen vivos. `windowsHide` en todos los procesos que se lanzan (salvo el selector de carpetas, 10.6). Tests: cierre por API con código 0 (cli, tray, home-hubs, home-restart); SIGTERM solo en Linux. Encontrado: un hub reiniciado cuyo padre es Node (con la tubería 'pipe' directa) recibe fin de entrada al irse el viejo y se cierra, en Linux y en Windows; por eso el test usa cat (findstr en Windows). Con el dock (Godot de padre) se ve en 10.8. Con el Inicio de padre pasaría igual, pero desde D29 el Inicio no crea hubs.
+**Notas:** Hecho: `POST /api/shutdown` en el hub y en el Inicio (un proyecto servido por el Inicio lo rechaza con 400). El Inicio apaga a sus hijos cortándoles la entrada y a los demás hubs por la API; `kill` solo si en 3 s siguen vivos. `windowsHide` en todos los procesos que se lanzan (salvo el selector de carpetas, 10.6). Tests: cierre por API con código 0 (cli, tray, home-hubs, home-restart); SIGTERM solo en Linux. Encontrado: un hub reiniciado cuyo padre es Node (con la tubería 'pipe' directa) recibe fin de entrada al irse el viejo y se cierra, en Linux y en Windows; por eso el test usa cat (findstr en Windows). Con el dock (Godot de padre) se ve en 10.8. Con el Inicio de padre pasaría igual, pero desde D29 el Inicio no crea hubs.
 
 **Referencias:** `docs/spec.md#windows`
 
 ### 10.5 Escritura atómica: reintentar el rename en Windows · Hecho
 
+En Windows, `rename` sobre un archivo que otro proceso tiene abierto sin compartir (antivirus, indexador, un editor) falla con EPERM/EBUSY/EACCES.
+
 - [x] Reintento con espera corta en writeAtomic
 - [x] Test que simula el destino ocupado
 
-**Notas:** En Windows, `rename` sobre un archivo que otro proceso tiene abierto sin compartir (antivirus, indexador, un editor) falla con EPERM/EBUSY/EACCES. Hecho: `renameRetrying` en store/atomic.js, que usa writeAtomic (y con él el Store, projects.json, el export y doc stamp-ids): hasta 10 intentos con esperas que crecen (~1 s en total), solo en Windows; en Linux esos errores son de permisos y salen enseguida. Verificado en la VM con el destino abierto por PowerShell con FileShare None: sin reintento, EPERM al instante; con reintento, anda cuando lo suelta.
+**Notas:** Hecho: `renameRetrying` en store/atomic.js, que usa writeAtomic (y con él el Store, projects.json, el export y doc stamp-ids): hasta 10 intentos con esperas que crecen (~1 s en total), solo en Windows; en Linux esos errores son de permisos y salen enseguida. Verificado en la VM con el destino abierto por PowerShell con FileShare None: sin reintento, EPERM al instante; con reintento, anda cuando lo suelta.
 
 **Referencias:** `docs/spec.md#windows`
 
@@ -1171,12 +1195,14 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 
 ### 10.7 Bandeja en Windows con NotifyIcon · Hecho
 
+D31.
+
 - [x] Script de PowerShell: ícono, tooltip, menú con submenús, clics
 - [x] tray.js elige D-Bus o PowerShell según la plataforma, con la misma interfaz
 - [x] Ícono .ico generado del mismo dibujo
 - [x] Test con el script real en Windows (sin hacer clic: menú y respuesta simulada)
 
-**Notas:** D31. Hecho: tray.js elige por plataforma; tray-win.js lanza tray-win.ps1 (NotifyIcon de Windows Forms) con -EncodedCommand y windowsHide, y le habla en JSON por líneas: el hub manda ícono, tooltip y menú; PowerShell devuelve clics, clic en el ícono y "opening" (antes de abrir el menú, el hub lo reevalúa, como AboutToShow en D-Bus). stdin se lee sin bloquear con un Timer de la interfaz; si se corta (el hub se cerró o murió), saca el ícono y termina. tray-menu.js tiene lo compartido: buildMenu (lo usa también D-Bus) y el dibujo, más el .ico de 16 a 48 px armado en JS. Tests en la VM sin escritorio (dump e invoke de prueba): menú con submenús, tildes, ocultos y deshabilitados; clics por el handler real; refresh; cierre; home --tray; el hub muerto de golpe saca el ícono. Visto en el escritorio de la VM (captura): ícono en la bandeja y el menú como en Linux. Falta mirar en la máquina real el clic izquierdo en el ícono (abre el Inicio): 10.10.
+**Notas:** Hecho: tray.js elige por plataforma; tray-win.js lanza tray-win.ps1 (NotifyIcon de Windows Forms) con -EncodedCommand y windowsHide, y le habla en JSON por líneas: el hub manda ícono, tooltip y menú; PowerShell devuelve clics, clic en el ícono y "opening" (antes de abrir el menú, el hub lo reevalúa, como AboutToShow en D-Bus). stdin se lee sin bloquear con un Timer de la interfaz; si se corta (el hub se cerró o murió), saca el ícono y termina. tray-menu.js tiene lo compartido: buildMenu (lo usa también D-Bus) y el dibujo, más el .ico de 16 a 48 px armado en JS. Tests en la VM sin escritorio (dump e invoke de prueba): menú con submenús, tildes, ocultos y deshabilitados; clics por el handler real; refresh; cierre; home --tray; el hub muerto de golpe saca el ícono. Visto en el escritorio de la VM (captura): ícono en la bandeja y el menú como en Linux. Falta mirar en la máquina real el clic izquierdo en el ícono (abre el Inicio): 10.10.
 
 **Referencias:** `docs/spec.md#windows`
 
@@ -1203,6 +1229,8 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
 
 ### 10.10 Tests de M10, spec y guía · Pendiente
 
+Criterios de §18.1. Al cerrar: suite completa en la VM, y una sesión real en la máquina con Windows (Inicio con bandeja, un proyecto sincronizado por git con Linux, dock en Godot). AGENTS.md (plantilla, copia del addon y compass/) con lo que cambie para Windows.
+
 - [ ] Tests de los criterios de §18.1
 - [ ] Suite completa en la VM
 - [ ] Prueba en Windows en la máquina real (incluye Ctrl+C en la consola cierra ordenado el hub y el Inicio, y el clic izquierdo en el ícono abre el Inicio)
@@ -1215,8 +1243,6 @@ Scope Compass funciona en Windows como segunda plataforma: CLI, hub, Inicio, ban
   Falló en 3 corridas completas del 2026-10-10 sin guardar el mensaje. La próxima vez, mirar el log entero (npm test > log) antes de tocar las esperas.
 - [ ] home-hubs «los hubs que prendió el Inicio mueren con él» falló una vez con la suite entera (2026-10-10: /api/projects/start sin hub en la respuesta); sola pasa 5 de 5. También ui-filters «detalle: prioridad, responsable y etiquetas» una vez
   Como el paso anterior: guardar la respuesta completa la próxima vez antes de tocar esperas.
-
-**Notas:** Criterios de §18.1. Al cerrar: suite completa en la VM, y una sesión real en la máquina con Windows (Inicio con bandeja, un proyecto sincronizado por git con Linux, dock en Godot). AGENTS.md (plantilla, copia del addon y compass/) con lo que cambie para Windows.
 
 **Referencias:** `docs/spec.md#windows`
 
@@ -1286,6 +1312,8 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 ### 12.1 Refs a un documento entero · Hecho
 
+Hoy refs exige doc y section. Se hace section opcional: una ref sin sección apunta al documento entero. En texto, `[[alias]]` sin #. Afecta resolveRef/checkRefs/suggestRefs, export md, ref add|rm y backlinks (docs-api).
+
 - [x] Schema: section opcional en refs (schema/, compass/schema/ y fixture de tests)
 - [x] docs.js: resolveRef, LINK y checkRefs aceptan doc sin sección
 - [x] CLI ref add|rm <tarea> <alias>[#<id>] y doc show <alias> sin sección
@@ -1294,9 +1322,9 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Prueba:** scompass ref add <tarea> gdd; refs check no lo marca roto; `[[gdd]]` en notas resuelve; borrar el archivo lo marca missing_doc.
 
-**Notas:** Hoy refs exige doc y section. Se hace section opcional: una ref sin sección apunta al documento entero. En texto, `[[alias]]` sin #. Afecta resolveRef/checkRefs/suggestRefs, export md, ref add|rm y backlinks (docs-api).
-
 ### 12.8 Ordenar las tarjetas del tablero · Hecho
+
+Selector de orden en la barra del tablero: orden manual (el de hoy, order), código, actualizada, creada, fecha límite, prioridad y título, ascendente o descendente. Se ordena dentro de cada columna. Reusa COLUMNS/sortedForList de la vista de lista y el mismo S.sort, así tablero y lista comparten el orden; la lista suma las columnas Actualizada y Creada. Con un orden que no es el manual, arrastrar entre columnas sigue cambiando el estado pero no reordena (aviso en el tooltip). Se recuerda por proyecto como el filtro. Solo web: no toca datos.
 
 - [x] Columnas Actualizada y Creada en la lista (updated_at, created_at)
 - [x] Selector de orden y sentido en la barra del tablero, compartido con la lista
@@ -1306,9 +1334,11 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Prueba:** Elegir Actualizada ▼: la tarea recién editada sube al tope de su columna, también al llegar el cambio por ws; volver a Manual restaura el orden y el arrastre.
 
-**Notas:** Selector de orden en la barra del tablero: orden manual (el de hoy, order), código, actualizada, creada, fecha límite, prioridad y título, ascendente o descendente. Se ordena dentro de cada columna. Reusa COLUMNS/sortedForList de la vista de lista y el mismo S.sort, así tablero y lista comparten el orden; la lista suma las columnas Actualizada y Creada. Con un orden que no es el manual, arrastrar entre columnas sigue cambiando el estado pero no reordena (aviso en el tooltip). Se recuerda por proyecto como el filtro. Solo web: no toca datos. Hecho: AGENTS.md no cambia (es solo web, sin CLI ni datos).
+**Notas:** Hecho: AGENTS.md no cambia (es solo web, sin CLI ni datos).
 
 ### 12.2 Agregar y quitar documentos sin editar config.json · Hecho
+
+scompass doc add <alias> <ruta|glob> y doc rm <alias>; API POST/DELETE /api/docs que escribe config.json (atómico). La plantilla juego declara docs/**/*.md además de gdd.md; el glob excluye el export_md (docs/tareas.md) para no listarse a sí mismo.
 
 - [x] CLI doc add / doc rm con validación de alias y ruta dentro del proyecto
 - [x] API POST/DELETE /api/docs que reescribe config.json
@@ -1319,9 +1349,11 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Prueba:** doc add enemigos docs/enemigos.md lo muestra en doc list; un glob nuevo toma archivos creados después; init --template juego no lista tareas.md.
 
-**Notas:** scompass doc add <alias> <ruta|glob> y doc rm <alias>; API POST/DELETE /api/docs que escribe config.json (atómico). La plantilla juego declara docs/**/*.md además de gdd.md; el glob excluye el export_md (docs/tareas.md) para no listarse a sí mismo. Hecho: un patrón tampoco toma los archivos declarados aparte (el GDD no sale dos veces) ni carpetas ocultas o node_modules, y el alias de sus archivos es <alias>/<ruta desde la carpeta fija> (docs/arte/paleta), no solo el nombre: dos README en carpetas distintas chocaban (D33, a registrar en la 12.7). Sin etag en config.json: el cambio se aplica sobre la config leída en el momento y un alias o ruta repetidos dan conflicto. El hub rearma el watcher de documentos y avisa doc_changed con el alias. La ruta de la CLI es relativa a la carpeta actual, como --file.
+**Notas:** Hecho: un patrón tampoco toma los archivos declarados aparte (el GDD no sale dos veces) ni carpetas ocultas o node_modules, y el alias de sus archivos es <alias>/<ruta desde la carpeta fija> (docs/arte/paleta), no solo el nombre: dos README en carpetas distintas chocaban (D33, a registrar en la 12.7). Sin etag en config.json: el cambio se aplica sobre la config leída en el momento y un alias o ruta repetidos dan conflicto. El hub rearma el watcher de documentos y avisa doc_changed con el alias. La ruta de la CLI es relativa a la carpeta actual, como --file.
 
 ### 12.3 Estado de git de los documentos · Hecho
+
+Ampliar git.js: por documento, estado (sin cambios, modificado, nuevo sin seguir, borrado), último commit (hash corto, fecha, autor, asunto) y diff contra HEAD. Historial con git log --follow. Sin repo: los campos quedan vacíos, nada falla. Solo lectura: la app nunca commitea (spec §4.5).
 
 - [x] git.js: docStatus (porcelain por ruta) y lastCommit (git log -1)
 - [x] git.js: docDiff contra HEAD y docLog con --follow
@@ -1332,9 +1364,11 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Prueba:** Modificar docs/gdd.md sin commitear: doc status lo marca modificado y doc diff gdd muestra el cambio; tras commitear vuelve a limpio con el commit nuevo.
 
-**Notas:** Ampliar git.js: por documento, estado (sin cambios, modificado, nuevo sin seguir, borrado), último commit (hash corto, fecha, autor, asunto) y diff contra HEAD. Historial con git log --follow. Sin repo: los campos quedan vacíos, nada falla. Solo lectura: la app nunca commitea (spec §4.5). Hecho: docsStatus hace un solo git status del proyecto (no un proceso por documento, ni rutas en la línea de comandos, que en Windows tiene tope) y pasa las rutas, que porcelain da desde la raíz del repo, a relativas al proyecto. /api/docs y /api/docs/:alias traen git (clean|modified|added|untracked|deleted|renamed; sin repo no va, y /api/docs dice repo). GET /api/docs/:alias/diff trae además las secciones tocadas (diffSections, para la 12.6) y /log el historial. Un archivo sin seguir no sale en git diff: se arma entero como agregado. El hub manda docs_git { repo, docs: { alias: estado } } cuando cambia alguno; mira después de doc_changed y, mientras haya documentos con cambios, cada gitPollMs (un commit no toca los archivos).
+**Notas:** Hecho: docsStatus hace un solo git status del proyecto (no un proceso por documento, ni rutas en la línea de comandos, que en Windows tiene tope) y pasa las rutas, que porcelain da desde la raíz del repo, a relativas al proyecto. /api/docs y /api/docs/:alias traen git (clean|modified|added|untracked|deleted|renamed; sin repo no va, y /api/docs dice repo). GET /api/docs/:alias/diff trae además las secciones tocadas (diffSections, para la 12.6) y /log el historial. Un archivo sin seguir no sale en git diff: se arma entero como agregado. El hub manda docs_git { repo, docs: { alias: estado } } cuando cambia alguno; mira después de doc_changed y, mientras haya documentos con cambios, cada gitPollMs (un commit no toca los archivos).
 
 ### 12.4 Búsqueda de texto en los documentos · Hecho
+
+Buscar en todos los documentos declarados, sin índice externo: recorrer las líneas ya cargadas. Cada resultado dice documento, sección y un fragmento. Sin tildes ni mayúsculas, como los filtros de M11.
 
 - [x] docs.js: searchDocs(docs, q) → [{ alias, section, line, snippet }]
 - [x] API GET /api/docs/search?q=
@@ -1343,9 +1377,11 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Prueba:** scompass doc search slime encuentra la sección de enemigos.md con su fragmento; la API devuelve lo mismo.
 
-**Notas:** Buscar en todos los documentos declarados, sin índice externo: recorrer las líneas ya cargadas. Cada resultado dice documento, sección y un fragmento. Sin tildes ni mayúsculas, como los filtros de M11. Hecho: searchDocs devuelve { results, more } (corta en 200); una línea coincide si tiene todas las palabras; la sección es la más chica que la contiene (null antes del primer título); los comentarios <!-- id --> no cuentan; el fragmento recorta las líneas largas alrededor de la primera palabra. /api/docs/search es una ruta fija: gana sobre /api/docs/:alias (un documento con alias search no se puede pedir por ahí).
+**Notas:** Hecho: searchDocs devuelve { results, more } (corta en 200); una línea coincide si tiene todas las palabras; la sección es la más chica que la contiene (null antes del primer título); los comentarios <!-- id --> no cuentan; el fragmento recorta las líneas largas alrededor de la primera palabra. /api/docs/search es una ruta fija: gana sobre /api/docs/:alias (un documento con alias search no se puede pedir por ahí).
 
 ### 12.5 Biblioteca en la web · Hecho
+
+La vista Docs pasa de un selector a un explorador: árbol por carpetas a la izquierda, búsqueda arriba y, por documento, ficha con secciones, tareas que lo referencian (a nivel documento y por sección) y estado de git. Resaltar documentos o secciones sin tareas (diseño sin planificar). Agregar y quitar documentos desde la UI.
 
 - [x] Árbol de documentos por carpeta con contadores de tareas
 - [x] Caja de búsqueda con resultados por documento y sección
@@ -1355,9 +1391,11 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Prueba:** Con 5+ documentos en carpetas: navegar el árbol, buscar un término y saltar a la sección, ver qué tareas referencian el documento.
 
-**Notas:** La vista Docs pasa de un selector a un explorador: árbol por carpetas a la izquierda, búsqueda arriba y, por documento, ficha con secciones, tareas que lo referencian (a nivel documento y por sección) y estado de git. Resaltar documentos o secciones sin tareas (diseño sin planificar). Agregar y quitar documentos desde la UI. Hecho: a la izquierda el árbol (una carpeta por grupo, plegable; el número es cuántas tareas citan el documento, entero o por sección; punto apagado si ninguna) y debajo el índice del documento abierto. La barra de arriba (buscador y + Documento) se arma una sola vez, como la de filtros, para no perder lo escrito cuando llega un cambio. La búsqueda reemplaza el artículo por los resultados, por documento, con las palabras resaltadas; ir a uno limpia la búsqueda. La ficha (aside) dice título, ruta, estado de git, de qué entrada sale (un documento de un patrón no se quita solo) y Quitar del proyecto con confirmación; sin sección elegida, Secciones sin tareas. El paso 5 ya estaba desde la 12.1. Arreglado de paso: al abrir un documento, el IntersectionObserver elegía enseguida la primera sección y la ficha del documento entero no se veía; ahora ignora su primer aviso (el del armado).
+**Notas:** Hecho: a la izquierda el árbol (una carpeta por grupo, plegable; el número es cuántas tareas citan el documento, entero o por sección; punto apagado si ninguna) y debajo el índice del documento abierto. La barra de arriba (buscador y + Documento) se arma una sola vez, como la de filtros, para no perder lo escrito cuando llega un cambio. La búsqueda reemplaza el artículo por los resultados, por documento, con las palabras resaltadas; ir a uno limpia la búsqueda. La ficha (aside) dice título, ruta, estado de git, de qué entrada sale (un documento de un patrón no se quita solo) y Quitar del proyecto con confirmación; sin sección elegida, Secciones sin tareas. El paso 5 ya estaba desde la 12.1. Arreglado de paso: al abrir un documento, el IntersectionObserver elegía enseguida la primera sección y la ficha del documento entero no se veía; ahora ignora su primer aviso (el del armado).
 
 ### 12.6 Cambios y diff de documentos en la web · Hecho
+
+Marca en el árbol para documentos con cambios sin commitear. En la ficha: último commit, historial y el diff contra HEAD con líneas agregadas y quitadas. Marcar las secciones tocadas por el diff para ver qué tareas pueden quedar afectadas.
 
 - [x] Marca de modificado/nuevo en el árbol, en vivo por ws
 - [x] Vista de diff contra HEAD
@@ -1366,15 +1404,17 @@ Explorar los documentos del proyecto como una biblioteca de conocimiento: muchos
 
 **Prueba:** Editar un documento con el hub abierto: aparece la marca sin recargar, el diff muestra el cambio y las tareas de esa sección quedan señaladas.
 
-**Notas:** Marca en el árbol para documentos con cambios sin commitear. En la ficha: último commit, historial y el diff contra HEAD con líneas agregadas y quitadas. Marcar las secciones tocadas por el diff para ver qué tareas pueden quedar afectadas. Hecho: el árbol marca M (modificado), N (nuevo) o B (borrado) y se actualiza con docs_git, sin recargar. Con cambios, la web pide el diff aunque no se mire: el índice marca ± en las secciones tocadas (también las que las contienen) y la ficha lista las tareas que pueden quedar afectadas. Ver los cambios reemplaza el documento por el diff, con el título de la sección donde empieza cada bloque. Historial plegable en la ficha. Arreglado en el hub: después de un doc_changed manda docs_git siempre, aunque no vea un cambio; si se editaba y commiteaba antes de que mirara (400 ms), la web quedaba con la marca de modificado.
+**Notas:** Hecho: el árbol marca M (modificado), N (nuevo) o B (borrado) y se actualiza con docs_git, sin recargar. Con cambios, la web pide el diff aunque no se mire: el índice marca ± en las secciones tocadas (también las que las contienen) y la ficha lista las tareas que pueden quedar afectadas. Ver los cambios reemplaza el documento por el diff, con el título de la sección donde empieza cada bloque. Historial plegable en la ficha. Arreglado en el hub: después de un doc_changed manda docs_git siempre, aunque no vea un cambio; si se editaba y commiteaba antes de que mirara (400 ms), la web quedaba con la marca de modificado.
 
 ### 12.7 Tests de M12, spec y guía · Hecho
+
+Cerrar M12: tests, spec y guía al día.
 
 - [x] Tests de UI de la biblioteca y el diff
 - [x] Spec §20 y decisiones
 - [x] AGENTS.md (plantilla, copia del addon y compass/), README y spec al día
 
-**Notas:** Cerrar M12: tests, spec y guía al día. Hecho: los tests de UI de la biblioteca y del diff ya estaban de la 12.5 y la 12.6 (ui-docs.test.js). Spec §20 Biblioteca de documentos con sus criterios, la tabla de rutas y los comandos; §10.4 apunta a §20 y §5.5 suma los eventos git y docs_git. D33: la app declara documentos y lee git, pero no escribe documentos ni commitea; alias de patrón por ruta bajo la carpeta base. AGENTS.md (plantilla, compass/ y addon, idénticos) con doc add/rm/search/status/diff y la regla de alias; README (estado con M12), web/README y hub/README (los archivos de documentos y git).
+**Notas:** Hecho: los tests de UI de la biblioteca y del diff ya estaban de la 12.5 y la 12.6 (ui-docs.test.js). Spec §20 Biblioteca de documentos con sus criterios, la tabla de rutas y los comandos; §10.4 apunta a §20 y §5.5 suma los eventos git y docs_git. D33: la app declara documentos y lee git, pero no escribe documentos ni commitea; alias de patrón por ruta bajo la carpeta base. AGENTS.md (plantilla, compass/ y addon, idénticos) con doc add/rm/search/status/diff y la regla de alias; README (estado con M12), web/README y hub/README (los archivos de documentos y git).
 
 ## M13 — UI más compacta  (7/7)
 
@@ -1398,6 +1438,8 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 ### 13.2 Tablero: parte de arriba compacta · Hecho
 
+Hoy la primera tarjeta empieza a ~580 px en escritorio. Resumen del hito en una línea (título, barra, contador y "Hecho cuando ▸" que despliega la lista, recordado por proyecto). Hitos terminados agrupados en "Terminados (n) ▾". "Orden" a la derecha de la fila del buscador; los 9 filtros detrás de un botón "Filtros (n)" que abre un panel. Sacar el "tareas" del encabezado.
+
 - [x] Resumen del hito en una línea con "Hecho cuando" desplegable
 - [x] Chip "Terminados (n)" que agrupa los hitos hechos (el elegido siempre visible)
 - [x] Botón "Filtros (n)" con panel; Orden a la derecha
@@ -1406,9 +1448,11 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 **Prueba:** A 1440×900 con M12 elegido la primera tarjeta empieza antes de los 320 px; los filtros y el orden siguen funcionando y recordándose.
 
-**Notas:** Hoy la primera tarjeta empieza a ~580 px en escritorio. Resumen del hito en una línea (título, barra, contador y "Hecho cuando ▸" que despliega la lista, recordado por proyecto). Hitos terminados agrupados en "Terminados (n) ▾". "Orden" a la derecha de la fila del buscador; los 9 filtros detrás de un botón "Filtros (n)" que abre un panel. Sacar el "tareas" del encabezado. Hecho: con M12 elegido a 1440×900 la primera tarjeta queda a 301 px (antes 622). Lo que más ganó, además de lo pedido: las pestañas Tablero/Listas/Documentos y el "← Inicio" van en la fila del título, con la línea del encabezado debajo. El resumen despliega el objetivo y "Hecho cuando" ("Objetivo" si el hito no tiene la lista); abierto o cerrado se recuerda por proyecto, no por hito. "Terminados (n)" va después de Todos y lista código, título y avance; el hito elegido queda en la fila aunque esté terminado. "Filtros (n)" cuenta los filtros del panel (no el texto, que está a la vista); el contador de ocultas y Limpiar filtros quedan en la fila. El panel no se recuerda abierto. Los tests que elegían M1 (terminado en el fixture) pasan por "Terminados"; el de §14 ya no compara el padding ni la grilla del resumen.
+**Notas:** Hecho: con M12 elegido a 1440×900 la primera tarjeta queda a 301 px (antes 622). Lo que más ganó, además de lo pedido: las pestañas Tablero/Listas/Documentos y el "← Inicio" van en la fila del título, con la línea del encabezado debajo. El resumen despliega el objetivo y "Hecho cuando" ("Objetivo" si el hito no tiene la lista); abierto o cerrado se recuerda por proyecto, no por hito. "Terminados (n)" va después de Todos y lista código, título y avance; el hito elegido queda en la fila aunque esté terminado. "Filtros (n)" cuenta los filtros del panel (no el texto, que está a la vista); el contador de ocultas y Limpiar filtros quedan en la fila. El panel no se recuerda abierto. Los tests que elegían M1 (terminado en el fixture) pasan por "Terminados"; el de §14 ya no compara el padding ni la grilla del resumen.
 
 ### 13.3 Detalle: propiedades en chips y pasos arriba · Hecho
+
+Hito, fecha, prioridad, responsable y etiquetas ocupan ~450 px antes de los pasos. Pasan a una fila de chips que se editan al hacer clic (vacíos en tono apagado). El título sin borde en reposo, con borde al enfocarlo.
 
 - [x] Fila de chips de propiedades con edición en el lugar
 - [x] Título sin borde en reposo
@@ -1417,9 +1461,11 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 **Prueba:** Al abrir una tarea a 1440×900 se ven los pasos sin bajar; cada propiedad se edita desde su chip y se guarda como hoy.
 
-**Notas:** Hito, fecha, prioridad, responsable y etiquetas ocupan ~450 px antes de los pasos. Pasan a una fila de chips que se editan al hacer clic (vacíos en tono apagado). El título sin borde en reposo, con borde al enfocarlo. Hecho: los chips son los mismos controles nativos (select, date, input con datalist) con aspecto de chip y field-sizing: content, así que un clic ya edita en el lugar y no hay estados de edición nuevos; cada uno lleva su nombre chico adelante (Hito, Vence, Prioridad, Responsable, Etiquetas). Vacíos: borde punteado y texto apagado; vencida en rojo, hoy en ámbar, prioridad alta en rojo. La hora aparece cuando hay fecha, y × quita la fecha. Orden: título, chips, estado, pasos, notas, referencias, vínculos y Cómo probarlo. Con 5 pasos, a 1440×900 los pasos empiezan a 339 px (antes 519). El título ya tenía borde transparente: se veía con borde porque abrir la tarea lo enfocaba; ahora el foco va al panel (tabindex -1), y de paso 1–4 cambian el estado apenas se abre.
+**Notas:** Hecho: los chips son los mismos controles nativos (select, date, input con datalist) con aspecto de chip y field-sizing: content, así que un clic ya edita en el lugar y no hay estados de edición nuevos; cada uno lleva su nombre chico adelante (Hito, Vence, Prioridad, Responsable, Etiquetas). Vacíos: borde punteado y texto apagado; vencida en rojo, hoy en ámbar, prioridad alta en rojo. La hora aparece cuando hay fecha, y × quita la fecha. Orden: título, chips, estado, pasos, notas, referencias, vínculos y Cómo probarlo. Con 5 pasos, a 1440×900 los pasos empiezan a 339 px (antes 519). El título ya tenía borde transparente: se veía con borde porque abrir la tarea lo enfocaba; ahora el foco va al panel (tabindex -1), y de paso 1–4 cambian el estado apenas se abre.
 
 ### 13.4 Teléfono: menos filas antes de las tareas · Hecho
+
+A 390×844 la primera tarjeta aparece a ~1220 px. Hitos en una fila con scroll horizontal; columnas vacías de una línea; acciones de los pasos (✎ ×) de 36 px o más; la cabecera del detalle con solo el código del hito.
 
 - [x] Hitos en una fila con scroll horizontal
 - [x] Columnas vacías de una línea
@@ -1429,9 +1475,11 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 **Prueba:** A 390×844 la primera tarjeta empieza antes de los 450 px, sin scroll horizontal de la página; ✎ y × miden 36 px o más.
 
-**Notas:** A 390×844 la primera tarjeta aparece a ~1220 px. Hitos en una fila con scroll horizontal; columnas vacías de una línea; acciones de los pasos (✎ ×) de 36 px o más; la cabecera del detalle con solo el código del hito. Hecho: con M13 a 390×844 la primera tarjeta queda a 399 px (373 sin el aviso de git, que ocupa una fila). Además de lo pedido: encabezado en dos filas (título; vistas con Nueva tarea a la derecha), la fila del buscador con Tablero/Lista, buscador y Filtros (el Orden baja a la segunda), y el título del hito en una línea con puntos suspensivos. La fila de hitos conserva el desplazamiento al redibujar y, la primera vez, deja a la vista el hito elegido; el desplegable de Terminados va fijo a lo ancho para que el scroll de la fila no lo recorte. Columnas vacías: solo el título con el 0, sin el texto. ✎ y × miden 36 px en el teléfono o sin mouse; en escritorio aparecen al pasar el mouse o con el foco. La cabecera del detalle dice el código del hito en todas las pantallas (el nombre está en el chip Hito y en el tooltip). Con M12 (todo hecho) la tarjeta queda más abajo, a 562 px: las tres columnas vacías van antes. El test de §14 compara una columna con tarjetas; el botón y el espacio entre columnas siguen iguales al artifact.
+**Notas:** Hecho: con M13 a 390×844 la primera tarjeta queda a 399 px (373 sin el aviso de git, que ocupa una fila). Además de lo pedido: encabezado en dos filas (título; vistas con Nueva tarea a la derecha), la fila del buscador con Tablero/Lista, buscador y Filtros (el Orden baja a la segunda), y el título del hito en una línea con puntos suspensivos. La fila de hitos conserva el desplazamiento al redibujar y, la primera vez, deja a la vista el hito elegido; el desplegable de Terminados va fijo a lo ancho para que el scroll de la fila no lo recorte. Columnas vacías: solo el título con el 0, sin el texto. ✎ y × miden 36 px en el teléfono o sin mouse; en escritorio aparecen al pasar el mouse o con el foco. La cabecera del detalle dice el código del hito en todas las pantallas (el nombre está en el chip Hito y en el tooltip). Con M12 (todo hecho) la tarjeta queda más abajo, a 562 px: las tres columnas vacías van antes. El test de §14 compara una columna con tarjetas; el botón y el espacio entre columnas siguen iguales al artifact.
 
 ### 13.5 Lista: fechas relativas y columnas vacías · Hecho
+
+Actualizada y Creada dicen todas "8 oct". Fecha relativa para lo reciente ("hace 3 h", "ayer") con la completa en el tooltip. Esconder las columnas sin ningún valor en lo que se está viendo (la de orden activo siempre visible).
 
 - [x] Fechas relativas en Actualizada y Creada
 - [x] Columnas sin valores escondidas
@@ -1439,7 +1487,7 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 **Prueba:** Con M11 elegido no aparecen las columnas vacías; una tarea editada recién dice "hace un momento".
 
-**Notas:** Actualizada y Creada dicen todas "8 oct". Fecha relativa para lo reciente ("hace 3 h", "ayer") con la completa en el tooltip. Esconder las columnas sin ningún valor en lo que se está viendo (la de orden activo siempre visible). Hecho: menos de un minuto, "hace un momento"; después, minutos y horas cortos ("hace 5 min", "hace 3 h") hasta las 24 h, y días por calendario hasta la semana ("ayer", "anteayer", "hace 4 días"); más viejo, la fecha corta de antes. Lo da Intl.RelativeTimeFormat en español; la fecha completa queda en el tooltip. No se actualiza sola con el reloj: se recalcula cada vez que la lista se redibuja (cualquier cambio del hub). Las columnas se calculan sobre las filas que se ven (hito y filtros); la del orden elegido se ve aunque esté vacía. Con M11 quedan Código, Título, Hito, Estado, Pasos, Actualizada y Creada.
+**Notas:** Hecho: menos de un minuto, "hace un momento"; después, minutos y horas cortos ("hace 5 min", "hace 3 h") hasta las 24 h, y días por calendario hasta la semana ("ayer", "anteayer", "hace 4 días"); más viejo, la fecha corta de antes. Lo da Intl.RelativeTimeFormat en español; la fecha completa queda en el tooltip. No se actualiza sola con el reloj: se recalcula cada vez que la lista se redibuja (cualquier cambio del hub). Las columnas se calculan sobre las filas que se ven (hito y filtros); la del orden elegido se ve aunque esté vacía. Con M11 quedan Código, Título, Hito, Estado, Pasos, Actualizada y Creada.
 
 ### 13.6 Spec y guía de M13 · Hecho
 
@@ -1452,6 +1500,8 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 **Prioridad:** baja · **Etiquetas:** `bug`, `cli`
 
+Visto en Project Epiphany (m11-20) el 2026-10-10.
+
 - [x] Arreglar el formato en scompass show
   hub/src/cli.js:489 arma `${r.doc}#${r.section}` sin mirar si hay sección; una ref sin #id (ref add <tarea> gdd.md) sale como gdd.md#undefined. Usar el mismo criterio que export-md.js:50 (solo doc si no hay section).
 - [x] Revisar la web y el dock
@@ -1461,7 +1511,7 @@ Llegar a las tareas sin bajar: tablero, detalle, teléfono y lista más compacto
 
 **Prueba:** scompass ref add <tarea> gdd.md y scompass show <tarea>: dice «Referencias: gdd.md», no «gdd.md#undefined»; lo mismo en la web.
 
-**Notas:** Visto en Project Epiphany (m11-20) el 2026-10-10. Hecho: solo fallaba scompass show; la web y el dock ya separaban la ref sin sección (12.1).
+**Notas:** Hecho: solo fallaba scompass show; la web y el dock ya separaban la ref sin sección (12.1).
 
 ## M14 — Archivos del repo  (4/4)
 
@@ -1475,6 +1525,8 @@ Ver los archivos del repo y su estado de git desde la web, sin salir del tablero
 
 ### 14.1 API de archivos del repo y su estado de git · Hecho
 
+Todo de lectura, como el estado de git de los documentos (12.3): reusa git.js (docsStatus, docLog, docDiff).
+
 - [x] GET /api/files: archivos que git no ignora, su estado, la rama y los últimos commits
 - [x] GET /api/files/file, /diff y /raw: contenido con resaltado, diff contra HEAD, historial e imágenes
 - [x] Solo rutas que git lista; el hub solo atiende pedidos a 127.0.0.1 o localhost
@@ -1482,7 +1534,7 @@ Ver los archivos del repo y su estado de git desde la web, sin salir del tablero
 
 **Prueba:** En un repo con un archivo modificado, uno nuevo y uno ignorado: /api/files lista los dos primeros con su estado y no el ignorado; /api/files/file de un .gd trae el código resaltado; pedir el ignorado o ../ da 404.
 
-**Notas:** Todo de lectura, como el estado de git de los documentos (12.3): reusa git.js (docsStatus, docLog, docDiff). Hecho: hub/src/files-api.js. GET /api/files trae { repo, branch, ahead, behind, files, status, commits }: los archivos salen de git ls-files --cached --others --exclude-standard (lo seguido y lo nuevo, nunca lo ignorado), más lo que solo está en el estado (un borrado ya agregado al índice); la rama de symbolic-ref (null con HEAD suelto) y ahead/behind solo si sigue a otra; los últimos 20 commits del proyecto (docLog con follow: false sobre '.'). GET /api/files/file?path= devuelve kind text (html con Prism por extensión: .gd, .tscn/.tres/.godot/.import como ini, json, js, py, cs, glsl, yaml, html, css), markdown (renderizado), image, binary (un NUL en los primeros 8000 bytes), big (más de 1 MB), link (un enlace simbólico no se sigue: se dice adónde apunta) o missing, con git, size y su historial. /diff: contra HEAD, el nuevo entero, binary o truncated cuando no hay texto que mostrar. /raw: solo imágenes (png, jpg, gif, webp), con nosniff y CSP sandbox. Una ruta se acepta solo si git la lista (o está en el estado), sin ../, sin / adelante y sin carpetas; si no, 404. Además, el hub y el Inicio solo atienden pedidos con Host 127.0.0.1 o localhost (403 si no): una página de otro sitio que apunte su nombre a 127.0.0.1 ya no puede leer el tablero ni los archivos. Sin token nada más; con token (hosting) manda el token. Sin repo: { repo: false, files: [] }.
+**Notas:** Hecho: hub/src/files-api.js. GET /api/files trae { repo, branch, ahead, behind, files, status, commits }: los archivos salen de git ls-files --cached --others --exclude-standard (lo seguido y lo nuevo, nunca lo ignorado), más lo que solo está en el estado (un borrado ya agregado al índice); la rama de symbolic-ref (null con HEAD suelto) y ahead/behind solo si sigue a otra; los últimos 20 commits del proyecto (docLog con follow: false sobre '.'). GET /api/files/file?path= devuelve kind text (html con Prism por extensión: .gd, .tscn/.tres/.godot/.import como ini, json, js, py, cs, glsl, yaml, html, css), markdown (renderizado), image, binary (un NUL en los primeros 8000 bytes), big (más de 1 MB), link (un enlace simbólico no se sigue: se dice adónde apunta) o missing, con git, size y su historial. /diff: contra HEAD, el nuevo entero, binary o truncated cuando no hay texto que mostrar. /raw: solo imágenes (png, jpg, gif, webp), con nosniff y CSP sandbox. Una ruta se acepta solo si git la lista (o está en el estado), sin ../, sin / adelante y sin carpetas; si no, 404. Además, el hub y el Inicio solo atienden pedidos con Host 127.0.0.1 o localhost (403 si no): una página de otro sitio que apunte su nombre a 127.0.0.1 ya no puede leer el tablero ni los archivos. Sin token nada más; con token (hosting) manda el token. Sin repo: { repo: false, files: [] }.
 
 ### 14.2 Pestaña Archivos en la web · Hecho
 
@@ -1498,12 +1550,16 @@ Ver los archivos del repo y su estado de git desde la web, sin salir del tablero
 
 ### 14.3 Spec, decisión y guía de M14 · Hecho
 
+Spec §22 (Archivos del repo: qué archivos, la pestaña, cuándo se actualiza, solo local, rutas de /api/files) con §22.1; D34 (de lectura, solo lo que git no ignora, Host 127.0.0.1/localhost, sin vigilar el repo entero). §16.6 suma files a views y a la plantilla juego; §21 dice que Nueva tarea flota en el teléfono; §10.4 apunta a §22. README (M14 en el estado y una coma que faltaba), web/README y hub/README al día.
+
 - [x] Spec §22 y decisión
 - [x] README, web/README y §16.6 (views) al día
 
-**Notas:** Spec §22 (Archivos del repo: qué archivos, la pestaña, cuándo se actualiza, solo local, rutas de /api/files) con §22.1; D34 (de lectura, solo lo que git no ignora, Host 127.0.0.1/localhost, sin vigilar el repo entero). §16.6 suma files a views y a la plantilla juego; §21 dice que Nueva tarea flota en el teléfono; §10.4 apunta a §22. README (M14 en el estado y una coma que faltaba), web/README y hub/README al día. Hecho: M14 documentado; suite 338/1 (la bandeja §16.8, inestable con la suite completa, pasa 3/3 sola).
+**Notas:** Hecho: M14 documentado; suite 338/1 (la bandeja §16.8, inestable con la suite completa, pasa 3/3 sola).
 
 ### 14.4 Dock al día: prioridad, responsable y etiquetas, botón de Archivos y el puerto con el Inicio · Hecho
+
+Visto con el Inicio abierto: el dock abría el tablero en 127.0.0.1:4711/p/<proyecto>. Causa: con el dock sin hub, el sondeo de cada 3 s encontraba el Inicio (puerto 4700, base /p/<proyecto>) y, antes de que abriera el WebSocket, reload() volvía client.port al de la config sin tocar la base; la carga, las escrituras y lo que abre en el navegador iban a ese puerto. Pasaba también tras home restart, o con un hub suelto en otro puerto que la config. reload() ya no toca el puerto: lo elige detect(), que vuelve a la config si no encuentra hub. web_url() arma lo que abre el navegador (tablero, documentos, archivos).
 
 - [x] El puerto: con el Inicio abierto, lo que abre el dock va al puerto del Inicio
   reload() pisaba client.port con el de la config mientras abría el WebSocket recién encontrado por el sondeo: quedaba la base /p/<proyecto> con el puerto 4711.
@@ -1511,7 +1567,7 @@ Ver los archivos del repo y su estado de git desde la web, sin salir del tablero
 - [x] Botón para abrir la pestaña Archivos en el navegador
 - [x] Tests del dock y spec §19 y §22
 
-**Notas:** Visto con el Inicio abierto: el dock abría el tablero en 127.0.0.1:4711/p/<proyecto>. Causa: con el dock sin hub, el sondeo de cada 3 s encontraba el Inicio (puerto 4700, base /p/<proyecto>) y, antes de que abriera el WebSocket, reload() volvía client.port al de la config sin tocar la base; la carga, las escrituras y lo que abre en el navegador iban a ese puerto. Pasaba también tras home restart, o con un hub suelto en otro puerto que la config. reload() ya no toca el puerto: lo elige detect(), que vuelve a la config si no encuentra hub. web_url() arma lo que abre el navegador (tablero, documentos, archivos). Hecho: arreglado el puerto; la fila muestra · Alta (solo la alta, como la tarjeta web) · @responsable · #etiquetas y el detalle Prioridad x · @responsable · #etiquetas; botón de Archivos al lado de Abrir el tablero, visible si views no está o incluye files. Tests poll_registry y props en dock.test.js; spec §19 y §22.
+**Notas:** Hecho: arreglado el puerto; la fila muestra · Alta (solo la alta, como la tarjeta web) · @responsable · #etiquetas y el detalle Prioridad x · @responsable · #etiquetas; botón de Archivos al lado de Abrir el tablero, visible si views no está o incluye files. Tests poll_registry y props en dock.test.js; spec §19 y §22.
 
 ## M15 — Tareas y archivos del repo  (5/5)
 
@@ -1582,6 +1638,8 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 
 **Etiquetas:** `ui`
 
+Pedido del usuario al abrirlo en el teléfono (2026-10-10): apiladas, las columnas quedaban interminables.
+
 - [x] Columnas lado a lado con scroll-snap a ≤ 560 px
   Una por pantalla (86 %), con la siguiente asomando; las vacías, angostas, solo con el título.
 - [x] El desplazamiento se mantiene al redibujar (cambios en vivo, cambio de hito)
@@ -1590,7 +1648,7 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 
 **Prueba:** A 390×844 el tablero se desplaza de costado y encaja en una columna; la página no se desplaza de costado; un cambio en vivo no devuelve el tablero a la primera columna.
 
-**Notas:** Pedido del usuario al abrirlo en el teléfono (2026-10-10): apiladas, las columnas quedaban interminables. Hecho: solo CSS en la media query del teléfono (flex con overflow-x y scroll-snap-type x mandatory, margen negativo como la fila de hitos). La comparación con el artifact (§14) ya no mira la grilla del tablero a 390 px: el artifact apilaba. Comprobado a 390×844 con toque: desliza y encaja en En curso con Revisión asomando; tras un cambio en vivo el scroll queda igual (main.board no se recrea). Corregido: en el teléfono del usuario (unos 600 px de ancho) seguía la grilla de dos columnas, porque el corte era 560 px y solo se había probado a 390. Ahora vale a ≤ 560 px o en pantallas táctiles (hover: none) de hasta 980 px, con columnas de hasta 360 px; con mouse, entre 561 y 980, sigue la grilla. La barra de Documentos (16.2), igual: táctil hasta 1180 px. Revisado a 390, 412, 602 y 900 táctil, y a 900 y 1440 con mouse; el test nuevo falla con el CSS anterior.
+**Notas:** Hecho: solo CSS en la media query del teléfono (flex con overflow-x y scroll-snap-type x mandatory, margen negativo como la fila de hitos). La comparación con el artifact (§14) ya no mira la grilla del tablero a 390 px: el artifact apilaba. Comprobado a 390×844 con toque: desliza y encaja en En curso con Revisión asomando; tras un cambio en vivo el scroll queda igual (main.board no se recrea). Corregido: en el teléfono del usuario (unos 600 px de ancho) seguía la grilla de dos columnas, porque el corte era 560 px y solo se había probado a 390. Ahora vale a ≤ 560 px o en pantallas táctiles (hover: none) de hasta 980 px, con columnas de hasta 360 px; con mouse, entre 561 y 980, sigue la grilla. La barra de Documentos (16.2), igual: táctil hasta 1180 px. Revisado a 390, 412, 602 y 900 táctil, y a 900 y 1440 con mouse; el test nuevo falla con el CSS anterior.
 
 **Referencias:** `docs/spec.md#telefono`
 
@@ -1598,12 +1656,14 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 
 **Etiquetas:** `ui`
 
+Pedido del usuario al usarlo en el teléfono (2026-10-10): en Documentos, las tareas de la sección quedaban al final, después de todo el documento.
+
 - [x] Barra fija abajo a ≤ 760 px con las tareas de la sección visible
   Cuántas son y un enlace a cada una (los mismos de la ficha), deslizable de costado; sin barra si la sección no tiene tareas, en la búsqueda o en el diff.
 
 **Prueba:** A 390×844, en #docs/gdd/ventanas-ataque la barra está fija y pegada abajo con 2 tareas; en una sección sin tareas no hay barra; un clic lleva a la tarea; en escritorio no se ve.
 
-**Notas:** Pedido del usuario al usarlo en el teléfono (2026-10-10): en Documentos, las tareas de la sección quedaban al final, después de todo el documento. Hecho: un nav.sec-bar al final de la vista, con backlinkTask (los mismos enlaces de la ficha); escondido por CSS fuera de ≤ 760 px, donde la ficha va al final. La sección es S.sec, que ya seguía el scroll con el IntersectionObserver del índice; la barra se redibuja con renderDocs y desaparece al salir de la vista (renderDocs la vacía). Comprobado con la spec de este repo a 390×844: en #docs/spec/hosting la barra muestra 2 tareas con la 7.1 y la 7.2.
+**Notas:** Hecho: un nav.sec-bar al final de la vista, con backlinkTask (los mismos enlaces de la ficha); escondido por CSS fuera de ≤ 760 px, donde la ficha va al final. La sección es S.sec, que ya seguía el scroll con el IntersectionObserver del índice; la barra se redibuja con renderDocs y desaparece al salir de la vista (renderDocs la vacía). Comprobado con la spec de este repo a 390×844: en #docs/spec/hosting la barra muestra 2 tareas con la 7.1 y la 7.2.
 
 **Referencias:** `docs/spec.md#telefono`
 
@@ -1611,9 +1671,11 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 
 **Etiquetas:** `ui`
 
+Pedido del usuario (2026-10-10): la esquina para agrandar el campo de notas es muy chica en el teléfono.
+
 **Prueba:** A 390×844 táctil, las notas vacías miden 72 px y con siete líneas crecen más de 60 px, sin scroll adentro; el test falla sin field-sizing.
 
-**Notas:** Pedido del usuario (2026-10-10): la esquina para agrandar el campo de notas es muy chica en el teléfono. Hecho: field-sizing: content en .detail textarea (notas, Cómo probarlo y el detalle de un paso, que está dentro del detalle), con el mínimo de antes; resize: vertical queda para los navegadores sin field-sizing. Sin JS: el Chromium de Playwright (153) y Chrome en Android lo soportan.
+**Notas:** Hecho: field-sizing: content en .detail textarea (notas, Cómo probarlo y el detalle de un paso, que está dentro del detalle), con el mínimo de antes; resize: vertical queda para los navegadores sin field-sizing. Sin JS: el Chromium de Playwright (153) y Chrome en Android lo soportan.
 
 **Referencias:** `docs/spec.md#telefono`
 
@@ -1621,9 +1683,11 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 
 **Etiquetas:** `ui`
 
+Pedido del usuario (2026-10-10): un desplegable con el índice en la barra de las referencias, para navegar más fácil.
+
 **Prueba:** A 390×844 táctil, en #docs/gdd/ventanas-ataque el desplegable de la barra lista las cuatro secciones con la actual elegida; elegir camara cambia el hash y dice Sin tareas; elegir juego la deja arriba.
 
-**Notas:** Pedido del usuario (2026-10-10): un desplegable con el índice en la barra de las referencias, para navegar más fácil. Hecho: un select nativo (en el teléfono abre el selector del sistema) a la izquierda de la barra de 16.2, con las secciones sangradas por nivel y la actual elegida; elegir una cambia el hash como los enlaces del índice. Las tareas van al lado en su propio contenedor que se desliza, así el desplegable queda fijo. La barra ahora está siempre que el documento tenga secciones: sin tareas dice Sin tareas. Visto con la spec de este repo a 390 y 602 px.
+**Notas:** Hecho: un select nativo (en el teléfono abre el selector del sistema) a la izquierda de la barra de 16.2, con las secciones sangradas por nivel y la actual elegida; elegir una cambia el hash como los enlaces del índice. Las tareas van al lado en su propio contenedor que se desliza, así el desplegable queda fijo. La barra ahora está siempre que el documento tenga secciones: sin tareas dice Sin tareas. Visto con la spec de este repo a 390 y 602 px.
 
 **Referencias:** `docs/spec.md#telefono`
 
@@ -1631,9 +1695,11 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 
 **Etiquetas:** `ui`
 
+Pedido del usuario (2026-10-10): al abrir una tarea, un clic afuera del panel debería cerrarlo.
+
 **Prueba:** Con el detalle abierto: tildar un paso no lo cierra; arrastrar una selección desde las notas hasta afuera tampoco; una tarjeta de otra columna abre esa tarea; un clic en el título del proyecto lo cierra. El test falla sin el cambio.
 
-**Notas:** Pedido del usuario (2026-10-10): al abrir una tarea, un clic afuera del panel debería cerrarlo. Hecho: dos escuchas en document, sin fondo nuevo (con el panel abierto se sigue pudiendo arrastrar y abrir otras tarjetas). pointerdown anota la tarea abierta si empieza fuera de #detail; click cierra si sigue abierta la misma. Así un clic que abre otra tarea (tarjeta, fila de la lista) cambia de tarea, una selección que sale del panel no cierra, y un botón del detalle que se redibuja (queda fuera del documento al llegar el click) tampoco. Las otras vistas ya cierran la tarea al entrar, así que sus enlaces a tareas no chocan.
+**Notas:** Hecho: dos escuchas en document, sin fondo nuevo (con el panel abierto se sigue pudiendo arrastrar y abrir otras tarjetas). pointerdown anota la tarea abierta si empieza fuera de #detail; click cierra si sigue abierta la misma. Así un clic que abre otra tarea (tarjeta, fila de la lista) cambia de tarea, una selección que sale del panel no cierra, y un botón del detalle que se redibuja (queda fuera del documento al llegar el click) tampoco. Las otras vistas ya cierran la tarea al entrar, así que sus enlaces a tareas no chocan.
 
 **Referencias:** `docs/spec.md#telefono`
 
@@ -1641,9 +1707,11 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 
 **Etiquetas:** `ui`
 
+Pedido del usuario (2026-10-10): en el teléfono la tarea debería ocupar toda la pantalla, según el tamaño.
+
 **Prueba:** A 390 y 602 px táctil el detalle mide todo el ancho; a 900 con mouse, 460 px. El test falla sin el cambio (a 602 quedaba de 460).
 
-**Notas:** Pedido del usuario (2026-10-10): en el teléfono la tarea debería ocupar toda la pantalla, según el tamaño. Hecho: hasta 760 px el detalle va a todo el ancho y sin el borde para cambiar su ancho (antes, solo bajo 460 px, así que en su teléfono de unos 600 quedaba una franja); desde 761 es el panel de siempre (el ancho elegido, 460 por defecto), con al menos 300 px de tablero al lado. 760 es el corte que ya usan Documentos, Listas y Archivos. De paso: overscroll-behavior: contain, así el scroll del detalle no arrastra la página de atrás.
+**Notas:** Hecho: hasta 760 px el detalle va a todo el ancho y sin el borde para cambiar su ancho (antes, solo bajo 460 px, así que en su teléfono de unos 600 quedaba una franja); desde 761 es el panel de siempre (el ancho elegido, 460 por defecto), con al menos 300 px de tablero al lado. 760 es el corte que ya usan Documentos, Listas y Archivos. De paso: overscroll-behavior: contain, así el scroll del detalle no arrastra la página de atrás.
 
 **Referencias:** `docs/spec.md#telefono`
 
@@ -1651,19 +1719,22 @@ Usar el tablero y los documentos cómodos desde el teléfono, ahora que se abren
 
 **Etiquetas:** `ui`
 
+Pedido del usuario (2026-10-10): con una tarea abierta, atrás llevaba a Documentos (la página anterior) en vez de cerrar la tarea.
+
 **Prueba:** Abrir m1-07 deja #task/m1-07 y atrás la cierra con el tablero a la vista; adelante la reabre; Cerrar no suma entradas al historial; cambiar a otra tarea reemplaza la entrada; el enlace directo la abre y uno a una tarea inexistente se descarta; desde Documentos, atrás vuelve a #docs/gdd/ventanas-ataque. Los tests fallan sin el cambio.
 
-**Notas:** Pedido del usuario (2026-10-10): con una tarea abierta, atrás llevaba a Documentos (la página anterior) en vez de cerrar la tarea. Hecho: openTask apila #task/<id> con pushState y guarda en history.state desde qué hash se abrió (taskFrom); con otra tarea abierta, replaceState. readHash lee la ruta (y sin ella no hay tarea abierta). closeTask: si se abrió desde el tablero, history.back(); si no (otra vista o enlace directo), reemplaza la ruta por la del tablero, así no quedan dos entradas iguales. goToTask ya no pone un hash vacío antes (eran dos entradas). Una ruta a una tarea que no existe se descarta al cargar y al cambiar el hash (dropMissingTask). El test del ancho del detalle ahora encuentra la tarea abierta al recargar.
+**Notas:** Hecho: openTask apila #task/<id> con pushState y guarda en history.state desde qué hash se abrió (taskFrom); con otra tarea abierta, replaceState. readHash lee la ruta (y sin ella no hay tarea abierta). closeTask: si se abrió desde el tablero, history.back(); si no (otra vista o enlace directo), reemplaza la ruta por la del tablero, así no quedan dos entradas iguales. goToTask ya no pone un hash vacío antes (eran dos entradas). Una ruta a una tarea que no existe se descarta al cargar y al cambiar el hash (dropMissingTask). El test del ancho del detalle ahora encuentra la tarea abierta al recargar.
 
 **Referencias:** `docs/spec.md#telefono`
 
-## M17 — Descripción de las tareas  (2/3)
+## M17 — Descripción de las tareas  (3/3)
 
 Que cada tarea diga qué hay que hacer y por qué en un campo propio, separado de las notas de lo que fue saliendo al trabajarla.
 
 **Hecho cuando:**
 - Una tarea tiene una descripción opcional (campo description), separada de las notas, que la CLI escribe y el export muestra antes de los pasos.
 - El detalle de la tarea muestra la descripción antes de los pasos: en la web se edita; en el dock se lee.
+- Las tareas de este repo que tenían el pedido en las notas lo tienen en la descripción.
 
 ### 17.1 Campo description: esquema, CLI, export y referencias · Hecho
 
@@ -1674,7 +1745,7 @@ Pedido del usuario (2026-10-11): las tareas no tenían dónde decir qué hay que
 - [x] Esquema, CLI, export y referencias
 - [x] Tests, spec, D37 y AGENTS.md
 
-**Prueba:** add --description la escribe; set --description "" la quita; show la imprime antes de los pasos y el export la pone debajo del título; refs check mira los [[enlaces]] de la descripción. `npm test` en `hub/` pasa (salvo los tres de la bandeja, que fallan igual en HEAD por el sandbox).
+**Prueba:** add --description la escribe; set --description "" la quita; show la imprime antes de los pasos y el export la pone debajo del título; refs check mira los `[[enlaces]]` de la descripción. `npm test` en `hub/` pasa (salvo los tres de la bandeja, que fallan igual en HEAD por el sandbox).
 
 **Notas:** Hecho: description en el esquema (las tres copias), add/set/show en la CLI, el export (párrafo debajo de la línea de etiquetas, antes de los pasos), checkRefs, suggestRefs y las tareas de cada sección. add no la escribe vacía. La paridad con artifact_to_md.py se mide sin la descripción, como con etiquetas. AGENTS.md: la diferencia entre description y notes, y add con --description. Spec §4.2, §6, §10.2 y §25; D37.
 
@@ -1691,10 +1762,16 @@ Pedido del usuario (2026-10-11): mostrar y editar la descripción arriba en el d
 
 **Prueba:** En el detalle de la web, Descripción va entre el estado y los pasos; escribir y salir la guarda, un cambio de la CLI se ve en vivo y dejarla en blanco quita el campo. En el dock, la descripción de m1-04 se lee debajo del estado y una tarea sin descripción no muestra nada. `ui.test.js` y `dock.test.js` pasan (salvo «← Inicio», que falla porque hay un Inicio real corriendo).
 
-**Notas:** Hecho: web: textarea #d-description debajo del selector de estado (las propiedades y el estado son de una línea, así la descripción queda arriba de todo lo largo), con placeholder, field-sizing como las notas y sus [[enlaces]] debajo; en blanco manda null y el campo se quita. Sobrevive al redibujado (EDITABLE). Las tareas de una sección y de un documento también miran la descripción. Dock: un Label de solo lectura en el mismo lugar, sin las comillas de código, como el título.
+**Notas:** Hecho: web: textarea #d-description debajo del selector de estado (las propiedades y el estado son de una línea, así la descripción queda arriba de todo lo largo), con placeholder, field-sizing como las notas y sus `[[enlaces]]` debajo; en blanco manda null y el campo se quita. Sobrevive al redibujado (EDITABLE). Las tareas de una sección y de un documento también miran la descripción. Dock: un Label de solo lectura en el mismo lugar, sin las comillas de código, como el título.
 
 **Referencias:** `docs/spec.md#descripcion`
 
-### 17.3 Migrar las notas: el pedido pasa a la descripción · Pendiente
+### 17.3 Migrar las notas: el pedido pasa a la descripción · Hecho
 
-Las tareas existentes tienen el pedido al principio de las notas ("Pedido del usuario … Hecho: …"). Pasar esa parte a la descripción y dejar en las notas lo que se hizo; las que no siguen el patrón quedan como están.
+Pedido del usuario (2026-10-11): las tareas existentes tienen el pedido al principio de las notas ("Pedido del usuario … Hecho: …"). Pasar esa parte a la descripción y dejar en las notas lo que se hizo; las que no siguen el patrón quedan como están.
+
+**Prueba:** scompass refs check resuelve todo y tools/validate.py da OK. En 16.3 la descripción es el pedido y las notas arrancan en «Hecho:»; 12.1 tiene todo en la descripción; 1.7 sigue sin descripción.
+
+**Notas:** Hecho: 39 tareas. 29 con texto antes de «Hecho:» (M10, M12–M16, 7.1): ese texto pasó a la descripción. 6 cortadas a mano en la primera oración (los «Pedido del usuario» sin «Hecho:», «Reportado por el usuario» de 6.11 y «Pedido al usar Epiphany» de 5.12). 4 eran solo un plan y pasaron enteras (12.1, 10.10, 7.2, 8.15). 4.2 («Depende del usuario.») y las de M1–M9, que son registro de lo hecho, quedaron sin descripción. Con la CLI, así que updated_at de esas tareas pasó a hoy. Project Epiphany no se tocó.
+
+**Referencias:** `docs/spec.md#descripcion`

@@ -23,12 +23,13 @@
   ],
   "code": "12.1",
   "created_at": "2026-10-08T04:54:55.146Z",
+  "description": "Hoy refs exige doc y section. Se hace section opcional: una ref sin sección apunta al documento entero. En texto, `[[alias]]` sin #. Afecta resolveRef/checkRefs/suggestRefs, export md, ref add|rm y backlinks (docs-api).",
   "milestone": "m12",
-  "notes": "Hoy refs exige doc y section. Se hace section opcional: una ref sin sección apunta al documento entero. En texto, `[[alias]]` sin #. Afecta resolveRef/checkRefs/suggestRefs, export md, ref add|rm y backlinks (docs-api).",
+  "notes": "",
   "order": -1,
   "refs": [],
   "status": "done",
   "test": "scompass ref add <tarea> gdd; refs check no lo marca roto; `[[gdd]]` en notas resuelve; borrar el archivo lo marca missing_doc.",
   "title": "Refs a un documento entero",
-  "updated_at": "2026-10-08T05:25:34.243Z"
+  "updated_at": "2026-10-11T03:50:53.382Z"
 }

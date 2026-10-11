@@ -2,12 +2,13 @@
   "checklist": [],
   "code": "5.11",
   "created_at": "2026-09-30T05:14:29.438Z",
+  "description": "Pedido del usuario. El cuadradito tilda y el texto (o ▸) despliega el detalle: tildar al tocar el texto era contraintuitivo.",
   "milestone": "m05",
-  "notes": "Pedido del usuario. El cuadradito tilda y el texto (o ▸) despliega el detalle: tildar al tocar el texto era contraintuitivo. VSplitContainer entre la lista de tareas y el detalle, con el divisor recordado por proyecto; \"▾ Tareas · n\" pliega la lista y el detalle usa todo el alto (también recordado). De paso: el selector de hito fijaba el ancho mínimo del dock al del hito más largo (`fit_to_longest_item = false`) y los botones del aviso bajan de renglón.",
+  "notes": "VSplitContainer entre la lista de tareas y el detalle, con el divisor recordado por proyecto; \"▾ Tareas · n\" pliega la lista y el detalle usa todo el alto (también recordado). De paso: el selector de hito fijaba el ancho mínimo del dock al del hito más largo (`fit_to_longest_item = false`) y los botones del aviso bajan de renglón.",
   "order": 11,
   "refs": [],
   "status": "done",
   "test": "",
   "title": "Dock: el texto del paso despliega su detalle, divisor lista/detalle, bloque de tareas plegable",
-  "updated_at": "2026-09-30T05:14:29.956Z"
+  "updated_at": "2026-10-11T03:51:00.800Z"
 }

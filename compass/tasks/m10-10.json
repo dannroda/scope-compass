@@ -42,8 +42,9 @@
   ],
   "code": "10.10",
   "created_at": "2026-10-06T04:23:31.616Z",
+  "description": "Criterios de §18.1. Al cerrar: suite completa en la VM, y una sesión real en la máquina con Windows (Inicio con bandeja, un proyecto sincronizado por git con Linux, dock en Godot). AGENTS.md (plantilla, copia del addon y compass/) con lo que cambie para Windows.",
   "milestone": "m10",
-  "notes": "Criterios de §18.1. Al cerrar: suite completa en la VM, y una sesión real en la máquina con Windows (Inicio con bandeja, un proyecto sincronizado por git con Linux, dock en Godot). AGENTS.md (plantilla, copia del addon y compass/) con lo que cambie para Windows.",
+  "notes": "",
   "order": 10,
   "refs": [
     {
@@ -54,5 +55,5 @@
   "status": "todo",
   "test": "",
   "title": "Tests de M10, spec y guía",
-  "updated_at": "2026-10-10T23:11:23.756Z"
+  "updated_at": "2026-10-11T03:50:53.089Z"
 }

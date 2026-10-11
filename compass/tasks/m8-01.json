@@ -11,12 +11,13 @@
   ],
   "code": "8.15",
   "created_at": "2026-10-05T01:12:58.624Z",
+  "description": "Pedido al usar el Inicio.",
   "milestone": "m08",
-  "notes": "Pedido al usar el Inicio.",
+  "notes": "",
   "order": 15,
   "refs": [],
   "status": "done",
   "test": "Sin Inicio no aparece; con uno anotado en el registro, el enlace apunta a su puerto (hub/test/ui.test.js).",
   "title": "Tablero: enlace \"← Inicio\" si el Inicio está corriendo",
-  "updated_at": "2026-10-05T01:13:00.157Z"
+  "updated_at": "2026-10-11T03:50:59.763Z"
 }

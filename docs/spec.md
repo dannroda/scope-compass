@@ -993,11 +993,13 @@ Hasta acá la tarea no tenía dónde decir qué hay que hacer: el pedido iba en 
 - **Enlaces:** `[[alias#id]]` en la descripción cuenta como en las notas: `refs check`, `refs suggest` y las tareas de cada sección la miran.
 - **Web (17.2):** en el detalle, *Descripción* va debajo del estado y antes de los pasos, así la tarea arranca por lo que hay que hacer. Crece con el texto, como las notas, y muestra sus enlaces. Borrada entera, el campo se quita.
 - **Dock (17.2):** la descripción en el mismo lugar, de solo lectura, como la fecha y las propiedades.
+- **Migración (17.3):** en las tareas de este repo, lo que las notas decían antes de "Hecho:" pasó a la descripción, y las notas quedaron desde "Hecho:". Las que arrancaban con el pedido sin "Hecho:" se cortaron en la primera oración, y las que eran solo un plan (12.1, 10.10, 7.2, 8.15) pasaron enteras. Las notas que son solo registro de lo hecho (casi todo M1–M9) quedaron como estaban, sin descripción.
 
 ### 25.1 Criterios de aceptación de M17
 <!-- id: criterios-descripcion -->
 
 - [x] Una tarea tiene una descripción opcional (campo `description`), separada de las notas, que la CLI escribe y el export muestra antes de los pasos.
 - [x] El detalle de la tarea muestra la descripción antes de los pasos: en la web se edita; en el dock se lee.
+- [x] Las tareas de este repo que tenían el pedido en las notas lo tienen en la descripción.
 
 Tests: `cli.test.js` y `docs.test.js` (17.1), `ui.test.js` y `dock.test.js` (`props`) (17.2).

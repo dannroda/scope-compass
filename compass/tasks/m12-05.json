@@ -23,12 +23,13 @@
   ],
   "code": "12.5",
   "created_at": "2026-10-08T04:55:41.041Z",
+  "description": "La vista Docs pasa de un selector a un explorador: árbol por carpetas a la izquierda, búsqueda arriba y, por documento, ficha con secciones, tareas que lo referencian (a nivel documento y por sección) y estado de git. Resaltar documentos o secciones sin tareas (diseño sin planificar). Agregar y quitar documentos desde la UI.",
   "milestone": "m12",
-  "notes": "La vista Docs pasa de un selector a un explorador: árbol por carpetas a la izquierda, búsqueda arriba y, por documento, ficha con secciones, tareas que lo referencian (a nivel documento y por sección) y estado de git. Resaltar documentos o secciones sin tareas (diseño sin planificar). Agregar y quitar documentos desde la UI. Hecho: a la izquierda el árbol (una carpeta por grupo, plegable; el número es cuántas tareas citan el documento, entero o por sección; punto apagado si ninguna) y debajo el índice del documento abierto. La barra de arriba (buscador y + Documento) se arma una sola vez, como la de filtros, para no perder lo escrito cuando llega un cambio. La búsqueda reemplaza el artículo por los resultados, por documento, con las palabras resaltadas; ir a uno limpia la búsqueda. La ficha (aside) dice título, ruta, estado de git, de qué entrada sale (un documento de un patrón no se quita solo) y Quitar del proyecto con confirmación; sin sección elegida, Secciones sin tareas. El paso 5 ya estaba desde la 12.1. Arreglado de paso: al abrir un documento, el IntersectionObserver elegía enseguida la primera sección y la ficha del documento entero no se veía; ahora ignora su primer aviso (el del armado).",
+  "notes": "Hecho: a la izquierda el árbol (una carpeta por grupo, plegable; el número es cuántas tareas citan el documento, entero o por sección; punto apagado si ninguna) y debajo el índice del documento abierto. La barra de arriba (buscador y + Documento) se arma una sola vez, como la de filtros, para no perder lo escrito cuando llega un cambio. La búsqueda reemplaza el artículo por los resultados, por documento, con las palabras resaltadas; ir a uno limpia la búsqueda. La ficha (aside) dice título, ruta, estado de git, de qué entrada sale (un documento de un patrón no se quita solo) y Quitar del proyecto con confirmación; sin sección elegida, Secciones sin tareas. El paso 5 ya estaba desde la 12.1. Arreglado de paso: al abrir un documento, el IntersectionObserver elegía enseguida la primera sección y la ficha del documento entero no se veía; ahora ignora su primer aviso (el del armado).",
   "order": 5,
   "refs": [],
   "status": "done",
   "test": "Con 5+ documentos en carpetas: navegar el árbol, buscar un término y saltar a la sección, ver qué tareas referencian el documento.",
   "title": "Biblioteca en la web",
-  "updated_at": "2026-10-10T19:10:36.207Z"
+  "updated_at": "2026-10-11T03:50:54.464Z"
 }

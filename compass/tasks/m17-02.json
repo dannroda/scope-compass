@@ -13,7 +13,7 @@
   "created_at": "2026-10-11T03:29:51.357Z",
   "description": "Pedido del usuario (2026-10-11): mostrar y editar la descripción arriba en el detalle de la web, debajo del título y antes de los pasos, para que la tarea arranque por lo que hay que hacer. En el dock de Godot, mostrarla de solo lectura en el mismo lugar.",
   "milestone": "m17",
-  "notes": "Hecho: web: textarea #d-description debajo del selector de estado (las propiedades y el estado son de una línea, así la descripción queda arriba de todo lo largo), con placeholder, field-sizing como las notas y sus [[enlaces]] debajo; en blanco manda null y el campo se quita. Sobrevive al redibujado (EDITABLE). Las tareas de una sección y de un documento también miran la descripción. Dock: un Label de solo lectura en el mismo lugar, sin las comillas de código, como el título.",
+  "notes": "Hecho: web: textarea #d-description debajo del selector de estado (las propiedades y el estado son de una línea, así la descripción queda arriba de todo lo largo), con placeholder, field-sizing como las notas y sus `[[enlaces]]` debajo; en blanco manda null y el campo se quita. Sobrevive al redibujado (EDITABLE). Las tareas de una sección y de un documento también miran la descripción. Dock: un Label de solo lectura en el mismo lugar, sin las comillas de código, como el título.",
   "order": 2,
   "refs": [
     {
@@ -27,5 +27,5 @@
   ],
   "test": "En el detalle de la web, Descripción va entre el estado y los pasos; escribir y salir la guarda, un cambio de la CLI se ve en vivo y dejarla en blanco quita el campo. En el dock, la descripción de m1-04 se lee debajo del estado y una tarea sin descripción no muestra nada. `ui.test.js` y `dock.test.js` pasan (salvo «← Inicio», que falla porque hay un Inicio real corriendo).",
   "title": "Descripción en el detalle de la web y del dock",
-  "updated_at": "2026-10-11T03:50:09.340Z"
+  "updated_at": "2026-10-11T03:51:08.051Z"
 }

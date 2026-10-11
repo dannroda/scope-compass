@@ -25,7 +25,7 @@
   "tags": [
     "cli"
   ],
-  "test": "add --description la escribe; set --description \"\" la quita; show la imprime antes de los pasos y el export la pone debajo del título; refs check mira los [[enlaces]] de la descripción. `npm test` en `hub/` pasa (salvo los tres de la bandeja, que fallan igual en HEAD por el sandbox).",
+  "test": "add --description la escribe; set --description \"\" la quita; show la imprime antes de los pasos y el export la pone debajo del título; refs check mira los `[[enlaces]]` de la descripción. `npm test` en `hub/` pasa (salvo los tres de la bandeja, que fallan igual en HEAD por el sandbox).",
   "title": "Campo description: esquema, CLI, export y referencias",
-  "updated_at": "2026-10-11T03:47:40.142Z"
+  "updated_at": "2026-10-11T03:51:07.554Z"
 }
