@@ -51,6 +51,7 @@ export function renderMarkdown({ milestones, tasks, lists = [] }, { title, board
       if (t.notes) L.push(`**Notas:** ${t.notes}`, '');
       if (t.refs?.length) L.push('**Referencias:** ' + t.refs.map((r) => `\`${r.section ? `${r.doc}#${r.section}` : r.doc}\``).join(', '), '');
       if (t.files?.length) L.push('**Archivos:** ' + t.files.map((f) => `\`${f}\``).join(', '), '');
+      if (t.images?.length) L.push('**Capturas:** ' + t.images.map((f) => `\`${f}\``).join(', '), '');
       const v = linkView(ts, t.id);
       if (v.blocks.length) L.push('**Bloquea a:** ' + v.blocks.map(name).join('; '), '');
       if (v.blockedBy.length) L.push('**Bloqueada por:** ' + v.blockedBy.map(name).join('; '), '');

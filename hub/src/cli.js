@@ -24,6 +24,7 @@ import { hubsOf, listHubs, liveHome, registerHub, unregisterHub } from './regist
 import { createHomeServer } from './home.js';
 import { boardStatus, docDiff, docLog, docsStatus, repoFiles } from './git.js';
 import { repoFile } from './files-api.js';
+import { dropImage, IMAGE_EXT, importImage, insideProject, isImagePath } from './images.js';
 import { forgetProject, projectsFile, projectsStatus, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
@@ -107,6 +108,8 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   refs suggest                              propone refs a partir de citas "gdd.md §4.3" (no aplica nada)
   ref add|rm <tarea> <alias>[#<id>]         agrega o quita una referencia (sin #<id>, al documento entero)
   file add|rm <tarea> <ruta>                vincula un archivo del repo a la tarea (un script, una escena; acepta res://)
+  image add|rm <tarea> <ruta>               captura de la tarea: una imagen del repo, o una de afuera, que se copia a
+                                            compass/images/ (rm borra el archivo si lo guardó la app y nadie más lo cita)
   link add <tarea> <blocks|blocked-by|related> <otra>
                                             vincula dos tareas (reemplaza el vínculo que tuvieran)
   link rm <tarea> <otra>                    quita el vínculo entre las dos
@@ -758,7 +761,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       // Archivos citados (15.1) que git ya no lista: se borraron o se movieron.
       const [listing, g] = await Promise.all([repoFiles(project), docsStatus(project)]);
       const known = new Set([...(listing ?? []), ...Object.keys(g.status)]);
-      for (const t of tasks) for (const f of t.files ?? []) if (!known.has(f)) problems.push({ task: t.id, ref: f, where: 'files', problem: 'missing_file' });
+      for (const t of tasks) for (const where of ['files', 'images']) for (const f of t[where] ?? []) if (!known.has(f)) problems.push({ task: t.id, ref: f, where, problem: 'missing_file' });
       const broken = problems.filter((p) => p.problem !== 'fragile');
       if (o.json) print(JSON.stringify({ broken, fragile: problems.filter((p) => p.problem === 'fragile') }));
       else {
@@ -814,6 +817,41 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       const w = await store.patch('tasks', taskId, { files: next.length ? next : null }, { ifMatch: o.etag ?? cur.etag });
       return written({ id: w.id, etag: w.etag, ...w.doc }, `${taskId}: ${sub === 'add' ? 'agregado' : 'quitado'} ${path}`);
+    },
+
+    // Capturas (18.4): una imagen del repo se cita tal cual; una de fuera del proyecto se copia a compass/images/.
+    async image() {
+      const [sub, taskId, target] = rest;
+      if (sub !== 'add' && sub !== 'rm') throw new UsageError(`subcomando desconocido: image ${sub ?? ''} (add, rm)`);
+      need(taskId, 'la tarea');
+      const raw = need(target, '<ruta>');
+      const cur = await store.get('tasks', taskId);
+      const images = cur.doc.images ?? [];
+      if (sub === 'rm') {
+        const path = raw.replace(/^res:\/\//, '').replace(/^\.\//, '');
+        if (!images.includes(path)) throw new StoreError('not_found', `${taskId} no tiene la captura ${path}`);
+        const next = images.filter((x) => x !== path);
+        const w = await store.patch('tasks', taskId, { images: next.length ? next : null }, { ifMatch: o.etag ?? cur.etag });
+        const gone = await dropImage(project, path, listTasks(await store.loadAll()));
+        return written({ id: w.id, etag: w.etag, ...w.doc }, `${taskId}: quitada ${path}${gone ? ' (y borrado el archivo, que había guardado la app)' : ''}`);
+      }
+      const abs = resolve(cwd, raw);
+      const here = existsSync(abs) ? insideProject(project, abs) : null;
+      let path;
+      if (existsSync(abs) && here === null) path = await importImage(project, taskId, abs);
+      else {
+        path = here ?? raw.replace(/^res:\/\//, '').replace(/^\.\//, '');
+        if (!isImagePath(path)) throw new StoreError('invalid_argument', `${path} no es una imagen (${IMAGE_EXT.join(', ')})`);
+        await repoFile(project, path);
+        if (images.includes(path)) return done({ id: cur.id, etag: cur.etag, ...cur.doc }, `${taskId} ya tiene ${path}`);
+      }
+      try {
+        const w = await store.patch('tasks', taskId, { images: [...images, path] }, { ifMatch: o.etag ?? cur.etag });
+        return written({ id: w.id, etag: w.etag, ...w.doc }, `${taskId}: agregada ${path}`);
+      } catch (e) {
+        if (here === null && existsSync(abs)) await dropImage(project, path, []);
+        throw e;
+      }
     },
 
     async export() {

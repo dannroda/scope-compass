@@ -174,6 +174,8 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `notes` | string | Lo que va saliendo al trabajarla: decisiones, hallazgos, lo que el siguiente necesita saber (D37) |
 | `refs` | `{ doc: string, section: string }[]` | Opcional. Referencias a secciones de documentos (§10). v1 las guarda y las muestra como texto; v2 las resuelve. |
 | `links` | `{ type: "blocks" \| "related", task: string }[]` | Opcional. Vínculos con otras tareas (D22): `blocks` = esta tarea bloquea a `task`; `related` = relacionadas. El inverso ("bloqueada por") no se guarda, se calcula. |
+| `files` | string[] | Opcional. Archivos del repo que la tarea toca (§23, D35) |
+| `images` | string[] | Opcional. Capturas: rutas del repo a imágenes PNG, JPEG, GIF o WebP; las pegadas van a `compass/images/` (§26, D38) |
 | `done_at` | ISO 8601 | Opcional. Cuándo pasó a Hecho: el store lo pone al pasarla a `done` y lo quita si sale (§26) |
 | `created_at` / `updated_at` | ISO 8601 | `updated_at` es opcional en ediciones a mano; la app lo completa en su próxima escritura |
 
@@ -1023,5 +1025,11 @@ Tests: `cli.test.js` y `docs.test.js` (17.1), `ui.test.js` y `dock.test.js` (`pr
   - Inicio: la tarjeta del proyecto marca *atrasado* (u *objetivo hoy*) junto al hito actual.- **Estimación (18.3):** `size` opcional en la tarea: `s`, `m` o `l` (en pantalla, S, M y L). Es para ver cuánto queda en un hito, no para medir horas.
   - CLI: `add` y `set --size` (sin distinguir mayúsculas; `""` la quita), `list --size s,m,l,none`; `show` y `list` dicen *tamaño M*; el export, **Tamaño:**.
   - Web: chip *Tamaño* en el detalle, la letra en la tarjeta y en la columna *Tamaño* de la lista (con su orden), y el filtro *Tamaño* (con *Sin estimar*). El resumen del hito dice lo que falta: *Falta 2 S · 1 M · 3 sin estimar*, solo si alguna tarea sin terminar está estimada.
-  - Dock: *Tamaño M* en las propiedades del detalle.
+  - Dock: *Tamaño M* en las propiedades del detalle.- **Capturas (18.4, D38):** `images` en la tarea: rutas desde la raíz del proyecto a imágenes PNG, JPEG, GIF o WebP, sin repetir. Son aparte de `files` (lo que la tarea toca): una captura muestra el bug o el efecto.
+  - **Dónde quedan:** una imagen del repo se cita tal cual. Una pegada, subida o traída de fuera del proyecto se guarda en `compass/images/<tarea>-<AAAAMMDD-HHMMSS>.<ext>`, después de verificar por su contenido que es una imagen (hasta 10 MB). `compass/.gitattributes` las marca binarias (sin eso, `eol=lf` les cambiaría los bytes).
+  - **Al quitarla:** sale de la tarea; si está en `compass/images/` y ninguna otra tarea la cita, se borra el archivo, así las pegadas no se acumulan. Una imagen del repo citada a mano nunca se borra.
+  - **CLI:** `image add <tarea> <ruta>` (del repo, con `res://` o `./`, o de afuera: se copia) e `image rm`. `refs check` marca `missing_file` la que ya no está; el export, **Capturas:**.
+  - **API:** `POST /api/tasks/:id/images` con `{ data }` (base64, con o sin el prefijo `data:`) y `DELETE /api/tasks/:id/images?path=…`; las dos aceptan `If-Match`. Se sirven con `/api/files/raw`, así que hace falta un repo de git, como en Archivos.
+  - **Web:** miniaturas debajo de la descripción y *+ Captura* (en el teléfono abre la cámara o la galería). Con una tarea abierta, pegar una imagen o soltarla sobre el detalle también la agrega. Un clic abre el visor: ← y → recorren, Esc lo cierra sin cerrar la tarea, *Quitar* la saca.
+  - **Dock:** miniaturas en el detalle; un clic la abre con el visor del sistema. La que no está en el disco se ve como *⚠ nombre*.
 

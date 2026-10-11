@@ -84,6 +84,8 @@ var detail_due: Label
 var detail_props: Label
 ## Qué hay que hacer y por qué (D37). Solo lectura: se edita en la web o con `scompass set --description`.
 var detail_description: Label
+## Capturas de la tarea (18.4): miniaturas; un clic abre la imagen con el visor del sistema.
+var images_box: HFlowContainer
 var status_select: OptionButton
 var steps_box: VBoxContainer
 var refs_box: VBoxContainer
@@ -734,6 +736,8 @@ func _build() -> void:
 	detail_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_description.custom_minimum_size.x = WRAP_MIN_WIDTH
 	detail.add_child(detail_description)
+	images_box = HFlowContainer.new()
+	detail.add_child(images_box)
 	steps_box = VBoxContainer.new()
 	detail.add_child(steps_box)
 	links_box = VBoxContainer.new()
@@ -947,6 +951,7 @@ func _render_detail() -> void:
 	var description := str(t.get("description", ""))
 	detail_description.visible = description != ""
 	detail_description.text = description.replace("`", "")
+	_render_images(t)
 	for c in steps_box.get_children():
 		steps_box.remove_child(c)
 		c.queue_free()
@@ -1063,6 +1068,38 @@ func set_editing(kind: String, res_path: String) -> void:
 	editing[kind] = res_path.trim_prefix("res://") if res_path.begins_with("res://") and not res_path.contains("::") else ""
 	_render_editing()
 	_render_detail()
+
+
+func _render_images(t: Dictionary) -> void:
+	for c in images_box.get_children():
+		images_box.remove_child(c)
+		c.queue_free()
+	var images = t.get("images", [])
+	images_box.visible = images is Array and not images.is_empty()
+	if not images_box.visible:
+		return
+	for p in images:
+		var abs_path := project_root.path_join(str(p))
+		if not FileAccess.file_exists(abs_path):
+			var gone := Label.new()
+			gone.text = "⚠ " + str(p).get_file()
+			gone.tooltip_text = str(p) + "\nNo está en el disco"
+			gone.add_theme_color_override("font_color", OVERDUE_COLOR)
+			images_box.add_child(gone)
+			continue
+		var b := TextureButton.new()
+		b.tooltip_text = str(p) + "\nAbrir con el visor del sistema"
+		b.ignore_texture_size = true
+		b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		b.custom_minimum_size = Vector2(96, 72)
+		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		var img := Image.load_from_file(abs_path)
+		if img != null:
+			if img.get_width() > 192:
+				img.resize(192, maxi(1, int(192.0 * img.get_height() / img.get_width())))
+			b.texture_normal = ImageTexture.create_from_image(img)
+		b.pressed.connect(func(): OS.shell_open(abs_path))
+		images_box.add_child(b)
 
 
 static func _files_of(t) -> Array:

@@ -2022,7 +2022,7 @@ Pedido del usuario (2026-10-11): las tareas existentes tienen el pedido al princ
 
 **Referencias:** `docs/spec.md#descripcion`
 
-## M18 — Fechas, capturas e historial  (3/6)
+## M18 — Fechas, capturas e historial  (4/6)
 
 Saber cuándo se terminó cada tarea y si un hito se atrasa, y que la tarea muestre más que texto: capturas, su historial en git y plantillas para bugs.
 
@@ -2030,6 +2030,7 @@ Saber cuándo se terminó cada tarea y si un hito se atrasa, y que la tarea mues
 - Cada tarea hecha dice cuándo se terminó (done_at), y el Inicio cuenta las terminadas en los últimos 7 días.
 - Un hito puede tener fecha objetivo; pasada con tareas sin terminar, la CLI, la web, el dock y el Inicio lo marcan atrasado.
 - Una tarea se puede estimar (S, M o L); la lista la filtra y ordena, y el resumen del hito dice cuánto falta por tamaño.
+- Una tarea tiene capturas: en la web se pegan, se sueltan o se suben (en el teléfono, con la cámara), se ven en miniatura y en un visor; la CLI y el dock también las manejan.
 
 ### 18.1 done_at: fecha en que la tarea pasó a Hecho · Hecho
 
@@ -2067,11 +2068,17 @@ Pedido del usuario (2026-10-11): un tamaño opcional por tarea (S, M o L) para v
 
 **Referencias:** `docs/spec.md#fechas-capturas-historial`
 
-### 18.4 Capturas en la tarea · Pendiente
+### 18.4 Capturas en la tarea · Hecho
 
-**Etiquetas:** `ui`
+**Terminada:** 2026-10-11 · **Etiquetas:** `ui`
 
 Pedido del usuario (2026-10-11): en un juego una imagen del bug o del efecto dice más que un párrafo. Rutas a imágenes del repo (como files) que el detalle muestra en miniatura y se abren grandes; sin servicio externo, versionadas con git.
+
+**Prueba:** En la web, + Captura y pegar una imagen con la tarea abierta la suben a compass/images/ y aparece la miniatura; un clic abre el visor (← → recorren, Esc lo cierra sin cerrar la tarea) y Quitar la saca y borra el archivo si nadie más la usa. image add copia una de afuera y cita una del repo; refs check marca la que falta. El dock muestra la miniatura y «⚠ nombre» para la que falta. Tests: api, cli, ui y dock (props).
+
+**Notas:** Hecho: images en el schema (rutas del repo con extensión de imagen). hub/src/images.js: verifica PNG/JPEG/GIF/WebP por los primeros bytes, hasta 10 MB, guarda en compass/images/<tarea>-<fecha-hora>[-n].<ext> y borra solo lo que guardó ahí cuando nadie lo cita (D38, que cambia D34 en ese punto). POST/DELETE /api/tasks/:id/images; el Inicio subió el límite del cuerpo de /p/:key/* a 16 MB, porque reenviaba con el de 1 MB. queueTask en la web: la cola por tarea ahora acepta cualquier escritura, no solo un PATCH. Bug evitado: compass/.gitattributes tenía «* text eol=lf», que habría corrompido las imágenes; ahora las marca binarias (scompass update lo lleva a los proyectos). Las miniaturas se sirven con /api/files/raw: hace falta un repo de git.
+
+**Referencias:** `docs/spec.md#fechas-capturas-historial`
 
 ### 18.5 Historial de la tarea desde git · Pendiente
 

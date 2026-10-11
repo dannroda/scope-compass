@@ -359,3 +359,19 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Usar las notas como descripción y agregar un campo para lo hecho: las notas ya se usan así en todos los proyectos, y la CLI y la guía dicen que lo del final va en `notes`.
   - Markdown con formato en la descripción: los demás textos tampoco lo tienen (solo `` `código` `` y `[[enlaces]]`).
 
+## D38 · Capturas en la tarea: un campo images, y la app guarda las pegadas en compass/images/
+**2026-10-11 · vigente** · spec §26 · cambia D34 en un punto
+
+- **Qué:** `images` en la tarea, con rutas del repo a imágenes. Lo que se pega o se sube desde la web, o se trae de fuera del proyecto con la CLI, el hub lo guarda en `compass/images/`.
+- **Por qué un campo y no `files`:** `files` es lo que la tarea toca (D35), y la web y el dock lo abren como código o escena. Una captura se mira: va en miniatura y en un visor.
+- **Lo que cambia de D34:** la app ya no es solo de lectura sobre los archivos. Escribe imágenes, pero solo:
+  - en `compass/images/`, con un nombre que arma ella;
+  - después de verificar por los primeros bytes que es PNG, JPEG, GIF o WebP, y hasta 10 MB;
+  - y borra solo lo que guardó ahí, cuando ninguna tarea lo cita.
+  - El resto del repo sigue siendo de lectura, y la app sigue sin commitear.
+- **Por qué pegar:** sin eso, agregar una captura es guardarla a mano en el repo y escribir la ruta. En el teléfono, *+ Captura* abre la cámara.
+- **Descartado:**
+  - Guardarlas fuera del repo o en un servicio: no viajarían con git (D1).
+  - Una carpeta configurable: una sola carpeta conocida se encuentra y se ignora fácil.
+  - SVG: puede llevar scripts, y con la miniatura alcanza.
+

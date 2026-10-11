@@ -255,6 +255,37 @@ test('tamaño (18.3): add y set --size (sin distinguir mayúsculas), list --size
   assert.equal('size' in (await task(id)), false);
 });
 
+test('capturas (18.4): image add copia una de afuera a compass/images/, cita una del repo; image rm; refs check', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const { existsSync } = await import('node:fs');
+  execFileSync('git', ['init', '-q', dir]);
+  const outside = await mkdtemp(join(tmpdir(), 'shot-'));
+  try {
+    await writeFile(join(outside, 'captura.png'), Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64'));
+    const a = await cli(['image', 'add', 'm1-07', join(outside, 'captura.png'), '--json']);
+    assert.equal(a.code, 0, a.err);
+    const [copied] = a.json().images;
+    assert.match(copied, /^compass\/images\/m1-07-.*\.png$/);
+    assert.ok(existsSync(join(dir, copied)));
+    await mkdir(join(dir, 'arte'));
+    await writeFile(join(dir, 'arte', 'boceto.png'), Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64'));
+    assert.equal((await cli(['image', 'add', 'm1-07', 'arte/boceto.png'])).code, 0);
+    assert.deepEqual((await task('m1-07')).images, [copied, 'arte/boceto.png']);
+    assert.equal((await cli(['image', 'add', 'm1-07', 'compass/config.json'])).code, 1, 'no es una imagen');
+    assert.equal((await cli(['image', 'add', 'm1-07', 'nada.png'])).code, 1, 'no está en el repo');
+    assert.match(await readFile(join(dir, 'docs', 'tareas.md'), 'utf8'), /\*\*Capturas:\*\* `compass\/images\/m1-07-.*\.png`, `arte\/boceto\.png`/);
+    assert.match((await cli(['image', 'rm', 'm1-07', copied])).out, /borrado el archivo/);
+    assert.equal(existsSync(join(dir, copied)), false);
+    await rm(join(dir, 'arte', 'boceto.png'));
+    const check = await cli(['refs', 'check', '--json']);
+    assert.deepEqual(check.json().broken.filter((b) => b.where === 'images').map((b) => [b.ref, b.problem]), [['arte/boceto.png', 'missing_file']]);
+    assert.match((await cli(['image', 'rm', 'm1-07', 'arte/boceto.png'])).out, /quitada arte\/boceto\.png$/m);
+    assert.equal('images' in (await task('m1-07')), false);
+  } finally {
+    await rm(outside, { recursive: true, force: true });
+  }
+});
+
 test('serve --exit-on-stdin-close: se cierra cuando se corta la entrada; sin la opción, no', async () => {
   const { spawn } = await import('node:child_process');
   const bin = join(REPO, 'hub', 'bin', 'scompass.js');

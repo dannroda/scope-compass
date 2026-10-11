@@ -324,6 +324,37 @@ test('tamaño (18.3): se elige en el detalle, se ve en la tarjeta y la lista, se
   await page.context().close();
 });
 
+test('capturas (18.4): + Captura y pegar las suben, la miniatura abre el visor, Esc lo cierra sin cerrar la tarea y Quitar la saca', async () => {
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+  const page = await open();
+  await page.click('.card[data-id="m1-07"]');
+  await page.setInputFiles('#d-image-file', { name: 'a.png', mimeType: 'image/png', buffer: png });
+  await page.waitForSelector('#detail .shot');
+  assert.equal((await task('m1-07')).images.length, 1);
+  // Pegar una imagen con la tarea abierta.
+  await page.evaluate((b64) => {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const dt = new DataTransfer();
+    dt.items.add(new File([bytes], 'pegada.png', { type: 'image/png' }));
+    document.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+  }, png.toString('base64'));
+  await page.waitForFunction(() => document.querySelectorAll('#detail .shot').length === 2);
+  await page.click('#detail .shot >> nth=1');
+  await page.waitForSelector('dialog.lightbox[open]');
+  assert.match(await page.textContent('.lb-path'), /2\/2$/);
+  await page.keyboard.press('ArrowLeft');
+  assert.match(await page.textContent('.lb-path'), /1\/2$/);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog.lightbox'));
+  assert.equal(await page.isVisible('#detail'), true, 'Esc cierra el visor, no la tarea');
+  await page.click('#detail .shot >> nth=0');
+  await page.click('dialog.lightbox button:has-text("Quitar")');
+  await page.waitForFunction(() => document.querySelectorAll('#detail .shot').length === 1);
+  assert.equal((await task('m1-07')).images.length, 1);
+  assert.equal(await page.isVisible('#detail'), true, 'el clic en el visor no cuenta como afuera');
+  await page.context().close();
+});
+
 test('un clic afuera del detalle lo cierra; otra tarjeta cambia de tarea; adentro o arrastrando una selección, no (16.5)', async () => {
   const page = await open();
   const openId = () => page.evaluate(() => (document.getElementById('detail').hidden ? null : document.querySelector('#detail #d-title')?.value));

@@ -29,6 +29,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
   - `notes`: lo que va saliendo al trabajarla: decisiones, hallazgos, lo que el siguiente necesita saber. El pedido va en `description`, no acá;
   - `refs`: documentos del proyecto que la tarea cita, enteros (`{ doc }`) o una sección (`{ doc, section }`);
   - `files`: archivos del repo que la tarea toca (scripts, escenas, recursos), con la ruta desde la raíz del proyecto (`["player/player.gd"]`);
+  - `images`: capturas de la tarea (PNG, JPEG, GIF o WebP), con la ruta desde la raíz; las pegadas en la web quedan en `compass/images/`;
   - `links`: vínculos con otras tareas (ver "Vínculos entre tareas");
   - `created_at`, `updated_at` y `done_at` (cuándo pasó a Hecho): los pone la CLI; no hace falta escribirlos.
 - En los textos, `` `así` `` se muestra como código.
@@ -127,6 +128,8 @@ scompass ref add m5-02 spec        # la tarea cita el documento entero
 scompass ref rm m5-02 spec#godot
 scompass refs check                # referencias rotas (sale con 1 si hay), también archivos que ya no están
 scompass file add m5-02 player/player.gd   # la tarea toca ese archivo (acepta res://); file rm lo quita
+scompass image add m5-02 /tmp/captura.png  # captura: una de afuera se copia a compass/images/; una del repo se cita
+scompass image rm m5-02 compass/images/m5-02-20261011-101500.png   # la saca (y borra el archivo si lo guardó la app)
 scompass doc add enemigos docs/enemigos.md   # o un patrón: doc add docs "docs/**/*.md"
 scompass doc rm enemigos                     # deja de declararlo; el archivo no se toca
 scompass doc search "salto doble"            # líneas con todas las palabras, con su sección

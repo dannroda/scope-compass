@@ -154,3 +154,27 @@ test('POST /api/export/markdown escribe export_md', async () => {
   assert.equal(r.json().path, join(dir, 'docs', 'tareas.md'));
   assert.match(await readFile(r.json().path, 'utf8'), /^# Tareas — Scope Compass/);
 });
+
+test('capturas (18.4): POST guarda en compass/images/ y la suma a la tarea; DELETE la saca y borra lo que guardó la app', async () => {
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+  const r = await req('POST', '/api/tasks/m1-04/images', { data: 'data:image/png;base64,' + png });
+  assert.equal(r.statusCode, 201, r.body);
+  const [path] = r.json().images;
+  assert.match(path, /^compass\/images\/m1-04-\d{8}-\d{6}\.png$/);
+  assert.deepEqual(await readFile(join(dir, path)), Buffer.from(png, 'base64'));
+  const again = (await req('POST', '/api/tasks/m1-04/images', { data: png })).json().images;
+  assert.equal(again.length, 2);
+  assert.notEqual(again[1], path, 'otra en el mismo segundo no pisa la primera');
+  const bad = await req('POST', '/api/tasks/m1-04/images', { data: Buffer.from('<svg/>').toString('base64') });
+  assert.equal(bad.statusCode, 400, 'solo PNG, JPEG, GIF o WebP por su contenido');
+  assert.equal((await req('POST', '/api/tasks/nada/images', { data: png })).statusCode, 404);
+  // Otra tarea cita la misma: quitarla de una no borra el archivo.
+  await req('PATCH', '/api/tasks/m1-05', { images: [path] });
+  const del = await req('DELETE', '/api/tasks/m1-04/images?path=' + encodeURIComponent(path));
+  assert.equal(del.statusCode, 200);
+  assert.deepEqual(del.json().images, [again[1]]);
+  assert.ok(existsSync(join(dir, path)), 'm1-05 todavía la cita');
+  await req('DELETE', '/api/tasks/m1-05/images?path=' + encodeURIComponent(path));
+  assert.equal(existsSync(join(dir, path)), false, 'nadie la cita: se borra');
+  assert.equal((await req('DELETE', '/api/tasks/m1-05/images?path=x.png')).statusCode, 404);
+});

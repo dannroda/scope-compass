@@ -137,6 +137,23 @@
         "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$"
       }
     },
+    "images": {
+      "type": "array",
+      "description": "Capturas de la tarea: rutas desde la raíz del proyecto a imágenes PNG, JPEG, GIF o WebP. Las que se pegan en la web van a compass/images/",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "allOf": [
+          {
+            "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$"
+          },
+          {
+            "pattern": "\\.([pP][nN][gG]|[jJ][pP][eE]?[gG]|[gG][iI][fF]|[wW][eE][bB][pP])$"
+          }
+        ]
+      }
+    },
     "links": {
       "type": "array",
       "description": "Vínculos con otras tareas: type = blocks (esta tarea bloquea a task) o related; task = id de la otra tarea. El inverso (bloqueada por) no se guarda.",

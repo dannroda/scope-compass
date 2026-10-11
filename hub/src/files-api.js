@@ -1,6 +1,7 @@
 // Archivos del repo (spec §22, 14.1): lo que git no ignora, con su estado, la rama y los últimos commits; y cada
 // archivo con su contenido, su diff contra HEAD y su historial. Todo de lectura: la app no escribe archivos ni
-// commitea (D34). Solo se sirven rutas que git lista, nunca un enlace simbólico seguido.
+// commitea (D34); la única excepción son las capturas de compass/images/ (D38, images.js). Solo se sirven rutas que
+// git lista, nunca un enlace simbólico seguido.
 import { lstat, readFile, readlink } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { docDiff, docLog, docsStatus, repoBranch, repoFiles } from './git.js';

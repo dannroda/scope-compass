@@ -69,6 +69,8 @@
     create: (doc) => call('POST', '/api/tasks', doc),
     update: (id, patch, etag) => call('PATCH', '/api/tasks/' + encodeURIComponent(id), patch, etag),
     remove: (id, etag) => call('DELETE', '/api/tasks/' + encodeURIComponent(id), undefined, etag),
+    imageAdd: (id, data, etag) => call('POST', '/api/tasks/' + encodeURIComponent(id) + '/images', { data }, etag),
+    imageRemove: (id, path, etag) => call('DELETE', '/api/tasks/' + encodeURIComponent(id) + '/images?path=' + encodeURIComponent(path), undefined, etag),
     docs: () => call('GET', '/api/docs'),
     doc: (alias) => call('GET', '/api/docs/' + encodeURIComponent(alias)),
     docSearch: (q) => call('GET', '/api/docs/search?q=' + encodeURIComponent(q)),
@@ -213,12 +215,17 @@
   // reciente y con su etag: tildar dos pasos seguidos no da 409 ni pisa el primero.
   const queues = new Map();
   function updateTask(id, patch) {
+    return queueTask(id, async (t) => {
+      const body = typeof patch === 'function' ? patch(t) : patch;
+      if (body) applyTask(id, await api.update(id, body, t.etag));
+    });
+  }
+  // Cualquier escritura de la tarea en su fila: fn recibe la versión más reciente (con su etag).
+  function queueTask(id, fn) {
     const run = () => write(async () => {
       const t = S.tasks.find((x) => x.id === id);
       if (!t) return;
-      const body = typeof patch === 'function' ? patch(t) : patch;
-      if (!body) return;
-      try { applyTask(id, await api.update(id, body, t.etag)); }
+      try { await fn(t); }
       catch (e) { e.id = id; throw e; }
     });
     const next = (queues.get(id) || Promise.resolve()).then(run);
@@ -555,6 +562,57 @@
     }
   }
 
+  // Capturas (18.4): miniaturas debajo de la descripción; un clic las abre grandes. Se agregan con + Captura (en el
+  // teléfono abre la cámara o la galería), pegando una imagen con el detalle abierto o soltándola sobre el detalle.
+  const imageUrl = (path) => BASE + 'api/files/raw?path=' + encodeURIComponent(path);
+  const imagesOf = (t) => (Array.isArray(t.images) ? t.images : []);
+  function renderImages(t) {
+    const imgs = imagesOf(t);
+    const pick = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/gif,image/webp', multiple: true, hidden: true, id: 'd-image-file',
+      onchange: (e) => { addImages(t.id, [...e.target.files]); e.target.value = ''; } });
+    return h('div', { class: 'shots', 'aria-label': 'Capturas' },
+      imgs.map((p, i) => h('button', { type: 'button', class: 'shot', title: p, 'aria-label': 'Ver captura ' + (i + 1), onclick: () => openLightbox(t.id, i) },
+        h('img', { src: imageUrl(p), alt: '', loading: 'lazy' }))),
+      h('button', { type: 'button', class: 'btn ghost small add-shot', title: 'Agregar una captura (también se puede pegar o soltar sobre el detalle)', onclick: () => pick.click() }, '+ Captura'), pick);
+  }
+  const readAsDataUrl = (file) => new Promise((ok, fail) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => fail(r.error); r.readAsDataURL(file); });
+  function addImages(id, files) {
+    const imgs = files.filter((f) => /^image\/(png|jpeg|gif|webp)$/.test(f.type));
+    if (!imgs.length) { if (files.length) toast('Solo imágenes PNG, JPEG, GIF o WebP.'); return; }
+    for (const f of imgs) {
+      if (f.size > 10 << 20) { toast(f.name + ' pesa más de 10 MB.'); continue; }
+      queueTask(id, async (cur) => applyTask(id, await api.imageAdd(id, await readAsDataUrl(f), cur.etag)));
+    }
+  }
+  function openLightbox(id, i) {
+    const t = taskById(id), imgs = t ? imagesOf(t) : [];
+    if (!imgs.length) return;
+    i = (i + imgs.length) % imgs.length;
+    document.querySelector('dialog.lightbox')?.remove();
+    const close = () => d.remove();
+    const remove = () => {
+      const path = imgs[i];
+      close();
+      queueTask(id, async (cur) => applyTask(id, await api.imageRemove(id, path, cur.etag)));
+    };
+    const d = h('dialog', { class: 'lightbox', 'aria-label': 'Captura ' + (i + 1) + ' de ' + imgs.length,
+      onclick: (e) => { if (e.target === d) close(); },
+      onkeydown: (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); close(); }
+        else if (e.key === 'ArrowRight' && imgs.length > 1) { e.preventDefault(); openLightbox(id, i + 1); }
+        else if (e.key === 'ArrowLeft' && imgs.length > 1) { e.preventDefault(); openLightbox(id, i - 1); }
+      } },
+      h('img', { src: imageUrl(imgs[i]), alt: imgs[i] }),
+      h('div', { class: 'lb-bar' },
+        h('span', { class: 'lb-path' }, imgs[i], imgs.length > 1 ? ' · ' + (i + 1) + '/' + imgs.length : ''),
+        imgs.length > 1 ? h('button', { type: 'button', class: 'btn small', 'aria-label': 'Anterior', onclick: () => openLightbox(id, i - 1) }, '←') : null,
+        imgs.length > 1 ? h('button', { type: 'button', class: 'btn small', 'aria-label': 'Siguiente', onclick: () => openLightbox(id, i + 1) }, '→') : null,
+        h('button', { type: 'button', class: 'btn small danger', title: 'La saca de la tarea; si la había guardado la app (compass/images/) y nadie más la usa, borra el archivo', onclick: remove }, 'Quitar'),
+        h('button', { type: 'button', class: 'btn small', onclick: close }, 'Cerrar')));
+    document.body.append(d);
+    d.showModal();
+  }
+
   // Lo que falta, por tamaño (18.3): "Falta 2 S · 1 M · 1 L" sobre las tareas sin terminar; las sin estimar se cuentan aparte.
   function sizeLoad(ts) {
     const open = ts.filter((t) => t.status !== 'done');
@@ -811,7 +869,8 @@
         h('label', { class: 'label', for: 'd-description' }, 'Descripción'),
         h('textarea', { id: 'd-description', 'data-orig': t.description || '', placeholder: 'Qué hay que hacer y por qué',
           onchange: (e) => updateTask(t.id, { description: e.target.value.trim() ? e.target.value : null }) }, t.description || ''),
-        linksOf(t.description)),
+        linksOf(t.description),
+        renderImages(t)),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('span', { class: 'label' }, 'Pasos ' + (p.total ? '(' + p.done + '/' + p.total + ')' : '')),
         cl.length ? h('ul', { class: 'checklist' }, cl.map((c, i) => stepItem(t, c, i))) : h('p', { style: 'margin:0;color:var(--muted);font-size:14px' }, 'Sin pasos todavía.'),
@@ -1889,7 +1948,23 @@
   // dónde empezó: arrastrar una selección desde las notas hasta afuera no lo cierra, y un botón del detalle que se
   // redibuja (y queda fuera del documento) tampoco.
   let openAtDown = null;
-  document.addEventListener('pointerdown', (e) => { openAtDown = S.openId && !e.target.closest('#detail') ? S.openId : null; });
+  document.addEventListener('pointerdown', (e) => { openAtDown = S.openId && !e.target.closest('#detail, dialog.lightbox') ? S.openId : null; });
+  // Pegar o soltar una imagen con la tarea abierta la agrega como captura (18.4).
+  document.addEventListener('paste', (e) => {
+    const files = [...(e.clipboardData?.files ?? [])];
+    if (!S.openId || !files.some((f) => f.type.startsWith('image/'))) return;
+    e.preventDefault();
+    addImages(S.openId, files);
+  });
+  document.getElementById('detail').addEventListener('dragover', (e) => { if ([...(e.dataTransfer?.types ?? [])].includes('Files')) { e.preventDefault(); e.currentTarget.classList.add('dropping'); } });
+  document.getElementById('detail').addEventListener('dragleave', (e) => { if (!e.currentTarget.contains(e.relatedTarget)) e.currentTarget.classList.remove('dropping'); });
+  document.getElementById('detail').addEventListener('drop', (e) => {
+    e.currentTarget.classList.remove('dropping');
+    const files = [...(e.dataTransfer?.files ?? [])];
+    if (!S.openId || !files.length) return;
+    e.preventDefault();
+    addImages(S.openId, files);
+  });
   document.addEventListener('click', () => { if (openAtDown && openAtDown === S.openId) closeTask(); openAtDown = null; });
   // Soltar una tarjeta sobre otra: toma el estado de esa columna y, si son del mismo hito, queda justo antes.
   function dropBefore(id, target) {

@@ -60,7 +60,8 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
 
   app.get('/p/:key', (req, reply) => reply.redirect(`/p/${encodeURIComponent(req.params.key)}/`));
 
-  app.all('/p/:key/*', async (req, reply) => {
+  // El límite del cuerpo alcanza para una captura en base64 (18.4); el hub del proyecto aplica el suyo, más fino.
+  app.all('/p/:key/*', { bodyLimit: 16 << 20 }, async (req, reply) => {
     const p = find(req.params.key);
     if (!p) return missing(reply, req.params.key);
     const q = req.url.indexOf('?');

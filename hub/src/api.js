@@ -4,6 +4,7 @@ import { exportMarkdown } from './export-md.js';
 import { StoreError } from './store/json-files.js';
 import { flat, listLists, listMilestones, listTasks, STATUSES } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
+import { dropImage, MAX_IMAGE, saveImage } from './images.js';
 
 const quote = (etag) => `"${etag}"`;
 const unquote = (v) => v.trim().replace(/^W\//, '').replace(/^"(.*)"$/, '$1');
@@ -68,6 +69,35 @@ export function registerApi(app, { store, projectDir, publish }) {
   // Merge de primer nivel: los arrays se reemplazan enteros y null borra el campo.
   app.patch('/api/tasks/:id', async (req, reply) =>
     send(reply, wrote('tasks', await store.patch('tasks', req.params.id, body(req), preconditions(req)))));
+
+  // Capturas (18.4, D38): { data: base64 } se guarda en compass/images/ y se suma a images de la tarea. If-Match opcional.
+  app.post('/api/tasks/:id/images', { bodyLimit: Math.ceil(MAX_IMAGE * 4 / 3) + 4096 }, async (req, reply) => {
+    const data = req.body?.data;
+    if (typeof data !== 'string' || !data) throw new StoreError('invalid_argument', 'falta data (la imagen en base64)');
+    const cur = await store.get('tasks', req.params.id);
+    const path = await saveImage(projectDir, req.params.id, Buffer.from(data.replace(/^data:[^,]*,/, ''), 'base64'));
+    const { ifMatch } = preconditions(req);
+    try {
+      return send(reply, wrote('tasks', await store.patch('tasks', req.params.id, { images: [...(cur.doc.images ?? []), path] }, { ifMatch: ifMatch ?? cur.etag })), 201);
+    } catch (e) {
+      await dropImage(projectDir, path, []); // no se pudo citar: no queda suelta
+      throw e;
+    }
+  });
+
+  // Quita una captura de la tarea; si la guardó la app y nadie más la cita, borra el archivo.
+  app.delete('/api/tasks/:id/images', async (req, reply) => {
+    const path = String(req.query.path ?? '');
+    const cur = await store.get('tasks', req.params.id);
+    const images = cur.doc.images ?? [];
+    if (!images.includes(path)) throw new StoreError('not_found', `${req.params.id} no tiene la captura ${path}`);
+    const next = images.filter((x) => x !== path);
+    const { ifMatch } = preconditions(req);
+    const r = wrote('tasks', await store.patch('tasks', req.params.id, { images: next.length ? next : null }, { ifMatch: ifMatch ?? cur.etag }));
+    const all = await store.list('tasks');
+    await dropImage(projectDir, path, all.items.map((x) => x.doc));
+    return send(reply, r);
+  });
 
   app.delete('/api/tasks/:id', async (req, reply) => {
     await store.delete('tasks', req.params.id, preconditions(req));

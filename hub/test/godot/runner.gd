@@ -559,6 +559,8 @@ func test_props(a: Array) -> void:
 	_select(v, a[1])
 	if not _check(c, v.detail_props.visible and v.detail_props.text == "Prioridad alta · Tamaño M · @ana · #arte #audio", "detalle: " + v.detail_props.text): return
 	if not _check(c, v.detail_description.visible and v.detail_description.text == "Qué hacer y por qué", "descripción: " + v.detail_description.text): return
+	var shots := v.images_box.get_children()
+	if not _check(c, v.images_box.visible and shots.size() == 2 and shots[0].texture_normal != null and shots[1] is Label and shots[1].text == "⚠ falta.png", "capturas (18.4): %d" % shots.size()): return
 	var ms_text := v.milestone_select.get_item_text(v.milestone_select.selected)
 	if not _check(c, ms_text.contains(" · atrasado "), "hito atrasado (18.2): " + ms_text): return
 	var row: TreeItem = v.tree.get_selected()
@@ -569,6 +571,7 @@ func test_props(a: Array) -> void:
 	_select(v, a[3])
 	if not _check(c, not v.detail_props.visible, "sin nada no muestra nada: " + v.detail_props.text): return
 	if not _check(c, not v.detail_description.visible, "sin descripción no muestra nada: " + v.detail_description.text): return
+	if not _check(c, not v.images_box.visible, "sin capturas no muestra nada"): return
 	if not _check(c, v.files_button.visible, "sin views falta el botón de Archivos"): return
 	v.board.config.views = ["board", "docs"]
 	v._render()
