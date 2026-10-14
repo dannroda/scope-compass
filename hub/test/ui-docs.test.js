@@ -160,7 +160,8 @@ test('§10.6: la vista Documentos muestra los backlinks correctos por sección',
   await page.waitForSelector('.backlinks .bl-task');
   await page.click('.backlinks .bl-task >> nth=0');
   await page.waitForSelector('#detail:not([hidden]) #d-title');
-  assert.equal(await page.isHidden('#docs'), true);
+  assert.equal(await page.isVisible('#docs'), true, 'la tarea se abre encima de Documentos, sin pasar al tablero');
+  assert.equal(await page.isVisible('#board'), false);
   // Atrás cierra la tarea y vuelve a Documentos, en la misma sección (16.7).
   assert.match(new URL(page.url()).hash, /^#task\//);
   await page.goBack();
@@ -194,7 +195,7 @@ test('16.2 y 16.4: en el teléfono, el índice y las tareas de la sección van f
   await page.selectOption('.sec-bar select', 'ventanas-ataque');
   await page.click('.sec-bar .bl-task >> nth=0');
   await page.waitForSelector('#detail:not([hidden]) #d-title');
-  assert.equal(await page.locator('.sec-bar').count(), 0);
+  assert.equal(await page.isVisible('.sec-bar'), false, 'la barra no tapa el detalle');
   await page.close();
   // Un teléfono o una tableta táctil más anchos también: la ficha queda al final hasta 1180 px.
   const ctx = await browser.newContext({ viewport: { width: 900, height: 1200 }, hasTouch: true, isMobile: true });

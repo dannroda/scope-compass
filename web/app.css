@@ -353,6 +353,8 @@ a.link-task:hover code { text-decoration: underline; }
   .sec-bar .bl-task { flex: none; max-width: 75vw; }
   .sec-bar .bl-task .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .docs-body:has(.sec-bar) { padding-bottom: 64px; }
+  /* Con una tarea abierta encima de Documentos, la barra fija no tapa el detalle. */
+  body:has(#detail:not([hidden])) .sec-bar { display: none; }
 }
 /* En tablet táctil el índice lateral se ve: la barra de abajo no lo repite (19.13). */
 @media (min-width: 761px) and (max-width: 1180px) and (hover: none) { .sec-bar select { display: none; } }

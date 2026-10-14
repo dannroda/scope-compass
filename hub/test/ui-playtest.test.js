@@ -91,6 +91,27 @@ test('sin sesiones, crea una con las de Revisión; agregar, reordenar, anda/fall
   await until(async () => !(await session('revision')).items[2].result);
 });
 
+test('abrir una tarea desde Playtest (o Listas) la abre encima, sin pasar al tablero; Cerrar y atrás vuelven ahí', async () => {
+  await store.put('playtests', 'build', { title: 'Build', order: 1, items: [{ task: 'm1-04' }, { task: 'm1-05' }] }, { ifMatch: null });
+  const page = await open('#playtest/build');
+  await page.click('.pt-item[data-task="m1-04"] .pt-task');
+  await page.waitForFunction(() => document.getElementById('detail').dataset.task === 'm1-04' && !document.getElementById('detail').hidden);
+  assert.equal(new URL(page.url()).hash, '#task/m1-04');
+  assert.equal(await page.isVisible('#playtest .pt-panel'), true, 'la sesión sigue a la vista');
+  assert.equal(await page.isVisible('#board'), false);
+  // Otra tarea de la sesión reemplaza la abierta; Cerrar vuelve a la sesión.
+  await page.click('.pt-item[data-task="m1-05"] .pt-task');
+  await page.waitForFunction(() => document.getElementById('detail').dataset.task === 'm1-05');
+  await page.click('#detail .close');
+  await page.waitForFunction(() => document.getElementById('detail').hidden && location.hash === '#playtest/build');
+  assert.equal(await page.isVisible('#playtest .pt-panel'), true);
+  // Atrás también.
+  await page.click('.pt-item[data-task="m1-04"] .pt-task');
+  await page.waitForFunction(() => location.hash === '#task/m1-04');
+  await page.goBack();
+  await page.waitForFunction(() => document.getElementById('detail').hidden && location.hash === '#playtest/build');
+});
+
 test('una sesión creada por la CLI (otro proceso) aparece sola, y su tarea borrada se avisa', async () => {
   const page = await open('#playtest');
   await createJsonFilesStore(compass, { validators: V }).put('playtests', 'build-0-3', { title: 'Build 0.3', order: 1, items: [{ task: 'm1-04' }, { task: 'zz-99' }] }, { ifMatch: null });

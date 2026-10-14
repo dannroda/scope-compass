@@ -1236,13 +1236,15 @@
     if (l) { S.view = 'lists'; S.openId = null; S.confirmDelete = false; if (l[1]) S.list = decodeURIComponent(l[1]); return; }
     const pt = /^#playtest(?:\/([^/]+))?$/.exec(location.hash);
     if (pt) { S.view = 'playtest'; S.openId = null; S.confirmDelete = false; if (pt[1]) S.playtest = decodeURIComponent(pt[1]); return; }
+    // La tarea se abre encima de la vista desde la que se abrió (taskFrom); un enlace directo, encima del tablero.
     const t = TASK_HASH.exec(location.hash);
-    if (t) { S.view = 'board'; S.openId = decodeURIComponent(t[1]); return; }
+    if (t) { S.view = viewOf(history.state?.taskFrom ?? ''); S.openId = decodeURIComponent(t[1]); return; }
     const m = /^#docs(?:\/([^/]+)(?:\/([^/]+))?)?$/.exec(location.hash);
     S.view = m ? 'docs' : 'board';
     S.openId = null; S.confirmDelete = false; // la tarea abierta tiene su ruta (#task/<id>, 16.7)
     if (m) { S.doc = m[1] ? decodeURIComponent(m[1]) : (S.doc || ''); S.sec = m[2] ? decodeURIComponent(m[2]) : ''; }
   }
+  const viewOf = (hash) => /^#(lists|playtest|docs|files)\b/.exec(hash)?.[1] ?? 'board';
   function docHtml(alias) {
     if (docCache.has(alias)) return docCache.get(alias);
     docCache.set(alias, null);
@@ -1568,7 +1570,7 @@
   function goToTask(id) {
     const t = S.tasks.find((x) => x.id === id);
     if (!t) return;
-    if (S.filter !== 'all' && S.filter !== t.milestone) setFilter(t.milestone);
+    if (S.view === 'board' && S.filter !== 'all' && S.filter !== t.milestone) setFilter(t.milestone);
     openTask(id);
   }
   function docChanged(alias) {
@@ -2200,21 +2202,21 @@
   }
 
   function setFilter(id) { S.filter = id; pref('filter', id); render(); }
-  // Cada tarea abierta tiene su ruta, #task/<id> (16.7): atrás la cierra y vuelve a la vista desde la que se abrió (el
-  // tablero, o Documentos en su sección). Cambiar de tarea con una abierta reemplaza la entrada: atrás no las recorre.
-  // La entrada guarda desde dónde se abrió (taskFrom), así Cerrar no deja dos entradas iguales del tablero.
+  // Cada tarea abierta tiene su ruta, #task/<id> (16.7): atrás la cierra y vuelve a la vista desde la que se abrió.
+  // Cambiar de tarea con una abierta reemplaza la entrada: atrás no las recorre. La entrada guarda desde dónde se abrió
+  // (taskFrom): el detalle se abre encima de esa vista (Listas, Playtest, Documentos, Archivos), sin pasar al tablero.
   function openTask(id) {
     const hash = '#task/' + encodeURIComponent(id);
     if (TASK_HASH.test(location.hash)) history.replaceState(history.state, '', hash);
     else history.pushState({ taskFrom: location.hash }, '', hash);
-    S.view = 'board'; S.openId = id; S.confirmDelete = false; S.linkSearch = null; S.fileSearch = null; render(); document.getElementById('detail').focus({ preventScroll: true });
+    S.openId = id; S.confirmDelete = false; S.linkSearch = null; S.fileSearch = null; render(); document.getElementById('detail').focus({ preventScroll: true });
   }
-  // Cerrar deja el tablero: si se abrió desde ahí, volviendo atrás; si no (otra vista, o un enlace directo), cambiando la
-  // ruta por la del tablero, y atrás sigue llevando a la vista de antes.
+  // Cerrar vuelve a la vista desde la que se abrió, volviendo atrás (no deja dos entradas iguales); un enlace directo
+  // cambia la ruta por la del tablero.
   function closeTask() {
     S.openId = null; S.confirmDelete = false;
     if (TASK_HASH.test(location.hash)) {
-      if (history.state?.taskFrom === '') history.back(); else history.replaceState(null, '', location.pathname + location.search);
+      if (history.state?.taskFrom !== undefined) history.back(); else history.replaceState(null, '', location.pathname + location.search);
     }
     render();
   }
@@ -2222,7 +2224,7 @@
   function dropMissingTask() {
     if (!S.openId || S.tasks.some((t) => t.id === S.openId)) return;
     S.openId = null;
-    if (TASK_HASH.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+    if (TASK_HASH.test(location.hash)) history.replaceState(null, '', history.state?.taskFrom || location.pathname + location.search);
   }
   // Un clic afuera del detalle lo cierra, salvo que ese clic abra otra tarea (una tarjeta, una fila, un enlace). Cuenta
   // dónde empezó: arrastrar una selección desde las notas hasta afuera no lo cierra, y un botón del detalle que se
