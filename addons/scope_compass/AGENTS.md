@@ -18,7 +18,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
 - **Tarea** (`compass/tasks/<id>.json`): el id es el nombre del archivo. `scompass add` le da el siguiente número de su hito (`m5-12` en `m05`) y lo imprime; las tareas de antes pueden tener ids al azar como `sd3tg577`. No se renombra, aunque la tarea cambie de hito. Campos:
   - `milestone` (id del hito), `title`, `code` (número visible, por ejemplo "5.2"; opcional);
   - `description`: qué hay que hacer y por qué, el enunciado de la tarea, que se escribe al crearla (opcional);
-  - `status`: `todo` (Pendiente), `doing` (En curso), `review` (Revisión), `done` (Hecho);
+  - `status`: `todo` (Pendiente), `paused` (Pausado: empezada y dejada de lado por ahora), `doing` (En curso), `review` (Revisión), `done` (Hecho);
   - `checklist`: pasos `{ text, done, detail? }`. `text` es una línea corta; el cómo y el porqué van en `detail`;
   - `due`: fecha límite opcional, `YYYY-MM-DD` o `YYYY-MM-DDTHH:MM` (hora local);
   - `priority`: prioridad opcional, `high`, `medium` o `low`;
@@ -56,7 +56,7 @@ scompass history m5-02                       # qué cambió en la tarea en cada 
 
 ```sh
 scompass add "Título de la tarea" --milestone m05 --code 5.9 --description "Qué y por qué"   # imprime el id nuevo
-scompass move m5-02 doing                                     # todo | doing | review | done
+scompass move m5-02 doing                                     # todo | paused | doing | review | done
 scompass set m5-02 --title "…" --notes "…" --test "…"          # cambia solo esos campos (--description "" la quita)
 scompass set m5-02 --due 2026-10-10                           # fecha límite (--due "" la quita)
 scompass set m5-02 --priority high --size m --assignee Claude --tags arte,nivel  # "" quita cada uno; --tags reemplaza la lista

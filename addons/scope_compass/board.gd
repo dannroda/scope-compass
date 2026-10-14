@@ -6,6 +6,7 @@ const STATUSES := [
 	{ "id": "doing", "label": "En curso", "color": Color("#7fb0dc") },
 	{ "id": "review", "label": "Revisión", "color": Color("#e0a95a") },
 	{ "id": "todo", "label": "Pendiente", "color": Color("#9a917f") },
+	{ "id": "paused", "label": "Pausado", "color": Color("#a99bd1") },
 	{ "id": "done", "label": "Hecho", "color": Color("#6fbf94") },
 ]
 

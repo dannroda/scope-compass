@@ -72,7 +72,7 @@ test('summarize: hito actual, en curso, lo que sigue y listas', async () => {
   assert.ok(s.next.length <= 3);
   assert.deepEqual(s.lists, [{ id: 'compras', title: 'Compras', left: 2, total: 2, today: 1, overdue: 0 }]);
   const empty = summarize({ milestones: new Map(), tasks: new Map(), lists: new Map() }, TODAY);
-  assert.deepEqual(empty, { milestone: null, counts: { todo: 0, doing: 0, review: 0, done: 0 }, doing: [], next: [], lists: [], done_week: 0 });
+  assert.deepEqual(empty, { milestone: null, counts: { todo: 0, paused: 0, doing: 0, review: 0, done: 0 }, doing: [], next: [], lists: [], done_week: 0 });
   // Terminadas en los últimos 7 días (18.1): por done_at; sin el campo no cuentan.
   const day = (n) => new Date(TODAY.getTime() - n * 864e5).toISOString();
   const week = summarize({ milestones: new Map(), lists: new Map(), tasks: new Map([

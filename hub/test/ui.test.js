@@ -218,7 +218,7 @@ test('arrastrar una tarjeta sobre otra del mismo hito la deja justo antes', asyn
   await page.context().close();
 });
 
-test('atajos: N abre nueva tarea, 1–4 cambian el estado, y no se activan escribiendo', async () => {
+test('atajos: N abre nueva tarea, 1–5 cambian el estado, y no se activan escribiendo', async () => {
   const page = await open();
   await page.keyboard.press('n');
   assert.equal(await page.isVisible('#new-form'), true);
@@ -231,12 +231,15 @@ test('atajos: N abre nueva tarea, 1–4 cambian el estado, y no se activan escri
   await page.click('.card[data-id="m1-07"]');
   await page.locator('.detail .close').focus();
   await page.keyboard.press('2');
+  await page.waitForFunction(() => document.querySelector('.seg button[aria-pressed="true"]')?.textContent === 'Pausado');
+  assert.equal((await task('m1-07')).status, 'paused');
+  await page.keyboard.press('3');
   await page.waitForFunction(() => document.querySelector('.seg button[aria-pressed="true"]')?.textContent === 'En curso');
   assert.equal((await task('m1-07')).status, 'doing');
   await page.click('#d-notes');
-  await page.keyboard.type('3');
+  await page.keyboard.type('4');
   await page.waitForTimeout(200);
-  assert.equal((await task('m1-07')).status, 'doing', 'un 3 escrito en Notas no cambia el estado');
+  assert.equal((await task('m1-07')).status, 'doing', 'un 4 escrito en Notas no cambia el estado');
   await page.locator('.detail .close').focus();
   await page.keyboard.press('Escape');
   assert.equal(await page.isHidden('#detail'), true);
@@ -502,8 +505,10 @@ async function looks(page) {
       primary: cs('.btn.primary', ['backgroundColor', 'color', 'borderRadius', 'fontWeight', 'minHeight']),
       // El resumen del hito ya no es el del artifact: es una línea (13.2).
       summary: cs('section.summary', ['backgroundColor', 'borderRadius']),
-      // En el teléfono el tablero se desliza de costado (16.1); el artifact apilaba las columnas.
-      board: innerWidth > 560 ? cs('main.board', ['gridTemplateColumns', 'gap']) : null,
+      // En el teléfono el tablero se desliza de costado (16.1); el artifact apilaba las columnas. Columnas del mismo ancho;
+      // cuántas se mide aparte: el tablero tiene una más que el artifact, Pausado (D39).
+      board: innerWidth > 560 ? { gap: cs('main.board', ['gap']).gap, even: new Set(getComputedStyle(document.querySelector('main.board')).gridTemplateColumns.split(' ')).size === 1,
+        cols: getComputedStyle(document.querySelector('main.board')).gridTemplateColumns.split(' ').length } : null,
       // Una columna con tarjetas si hay (el artifact de referencia no tiene): en el teléfono, las vacías son de una línea (13.4).
       col: cs(document.querySelector('.col:not(:has(> .empty-col))') ? '.col:not(:has(> .empty-col))' : '.col', ['backgroundColor', 'borderRadius', 'padding', 'minHeight']),
       colTitle: cs('.col h3', ['fontSize', 'textTransform', 'letterSpacing'])
@@ -526,6 +531,7 @@ test('§14: mismo aspecto que el artifact en claro, oscuro, escritorio y pantall
       await ours.goto(url);
       await ours.waitForSelector('.card');
       const [a, b] = [await looks(ref), await looks(ours)];
+      if (a.board && width > 980) a.board.cols += 1; // Pausado (D39)
       for (const k of Object.keys(a)) assert.deepEqual(b[k], a[k], `${colorScheme} ${width}px: ${k}`);
       await ctx.close();
     }

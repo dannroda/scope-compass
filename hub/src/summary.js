@@ -1,7 +1,7 @@
 // Resumen de un proyecto para el Inicio (spec §16.2): hito actual, lo que está en curso, lo que sigue y las
 // listas; y lo de "Hoy" (vencido, de hoy y en curso). Funciones puras sobre lo que devuelve loadCompass.
 import { dueState, milestoneDueState } from './dates.js';
-import { listLists, listMilestones, listTasks } from './views.js';
+import { listLists, listMilestones, listTasks, STATUSES } from './views.js';
 
 const label = (t) => [t.code, t.title].filter(Boolean).join(' ');
 
@@ -20,7 +20,7 @@ function currentMilestone(milestones, tasks, now) {
 export function summarize(all, now = new Date()) {
   const tasks = listTasks(all);
   const milestone = currentMilestone(all.milestones, tasks, now);
-  const counts = Object.fromEntries(['todo', 'doing', 'review', 'done'].map((s) => [s, tasks.filter((t) => t.status === s).length]));
+  const counts = Object.fromEntries(STATUSES.map((s) => [s, tasks.filter((t) => t.status === s).length]));
   const brief = (t) => ({ id: t.id, code: t.code ?? '', title: t.title, label: label(t), ...(t.due && { due: t.due, due_state: dueState(t.due, now) }) });
   const doing = tasks.filter((t) => t.status === 'doing').map(brief);
   const next = milestone ? tasks.filter((t) => t.milestone === milestone.id && t.status === 'todo').slice(0, 3).map(brief) : [];

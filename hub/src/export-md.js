@@ -9,7 +9,7 @@ import { linkView } from './links.js';
 import { EVERY, localDay, milestoneDueState } from './dates.js';
 import { PRIORITY_LABEL } from './filters.js';
 
-const ST = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
+const ST = { todo: 'Pendiente', paused: 'Pausado', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
 
 // Mismo orden que Python: (order ?? 0, code como texto), estable.
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);

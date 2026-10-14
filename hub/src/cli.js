@@ -34,7 +34,7 @@ import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './link
 import { descriptionTemplate, DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, SIZES, splitList } from './filters.js';
 
 const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
-const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
+const STATUS = { todo: 'Pendiente', paused: 'Pausado', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
 // --lan (D36): las direcciones de este equipo en la red, para abrir el hub o el Inicio desde el teléfono.
 const lanUrls = (port) => Object.values(networkInterfaces()).flat().filter((a) => a.family === 'IPv4' && !a.internal).map((a) => `http://${a.address}:${port}/`);
 const LAN_WARNING = 'sin login: cualquiera en esta red puede ver y editar';
@@ -70,7 +70,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   history <id>                              qué cambió en la tarea en cada commit (y lo que hay sin commitear)
   add "<título>" --milestone m00 [--code 0.11] [--status todo] [--due 2026-10-10]
       [--tags arte,audio] [--priority high|medium|low] [--size s|m|l] [--assignee nombre] [--description "…"]
-  move <id> <todo|doing|review|done>
+  move <id> <todo|paused|doing|review|done>
   check <id> <n> [--undo]                   tilda el paso n (desde 1)
   step add <id> "<texto>" [--detail "…"]     agrega un paso (texto corto; el detalle se despliega)
   step set <id> <n> [--text …] [--detail …]  cambia un paso (--detail "" lo quita)
@@ -478,7 +478,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
 
     async list() {
       const statuses = splitList(o.status);
-      for (const st of statuses) if (!STATUS[st]) throw new UsageError(`estado inválido: ${st} (todo, doing, review, done)`);
+      for (const st of statuses) if (!STATUS[st]) throw new UsageError(`estado inválido: ${st} (todo, paused, doing, review, done)`);
       if (o.due !== undefined && !DUE_FILTERS.includes(o.due)) throw new UsageError(`--due en list: ${DUE_FILTERS.join(', ')}`);
       if (o.blocked && o.unblocked) throw new UsageError('--blocked y --unblocked no van juntos');
       const priorities = splitList(o.priority);
@@ -946,7 +946,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
 
     async move() {
       const [id, status] = [need(rest[0], 'el id'), need(rest[1], 'el estado')];
-      if (!STATUS[status]) throw new UsageError(`estado inválido: ${status} (todo, doing, review, done)`);
+      if (!STATUS[status]) throw new UsageError(`estado inválido: ${status} (todo, paused, doing, review, done)`);
       const r = await store.patch('tasks', id, { status }, ifMatch);
       return written({ id: r.id, etag: r.etag, ...r.doc }, `${id} → ${STATUS[status]}`);
     },
@@ -1003,7 +1003,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const fields = Object.fromEntries(FIELDS.filter((f) => o[f] !== undefined).map((f) => [f, o[f]]));
       if (o.file !== undefined && Object.keys(fields).length) throw new UsageError('--file reemplaza la tarea entera: no se combina con campos sueltos');
       if (o.file === undefined && !Object.keys(fields).length) throw new UsageError(`falta --file o algún campo (${FIELDS.map((f) => '--' + f).join(', ')})`);
-      if (fields.status && !STATUS[fields.status]) throw new UsageError(`estado inválido: ${fields.status} (todo, doing, review, done)`);
+      if (fields.status && !STATUS[fields.status]) throw new UsageError(`estado inválido: ${fields.status} (todo, paused, doing, review, done)`);
       if (fields.due !== undefined) fields.due = due(fields.due) || null; // "" → null: patch quita el campo
       if (fields.tags !== undefined) fields.tags = tagList(fields.tags);
       if (fields.priority !== undefined) fields.priority = priority(fields.priority);

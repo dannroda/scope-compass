@@ -19,7 +19,7 @@ Con la CLI: `scompass list`, `scompass show <id>`, `scompass move <id> doing`, `
 | Quiero… | Qué hacer |
 |---|---|
 | Ver las tareas | Abrir `docs/tareas.md` (último export legible) o los JSON de `tasks/` |
-| Mover una tarjeta | Cambiar `"status"` a `"todo"`, `"doing"`, `"review"` o `"done"` |
+| Mover una tarjeta | Cambiar `"status"` a `"todo"`, `"paused"`, `"doing"`, `"review"` o `"done"` |
 | Tildar un paso | Cambiar `"done": false` a `true` en `checklist` |
 | Crear una tarea | Copiar un JSON de `tasks/` con otro nombre de archivo y editarlo |
 | Borrar una tarea | Borrar el archivo |

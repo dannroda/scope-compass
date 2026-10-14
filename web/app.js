@@ -3,6 +3,7 @@
 (function () {
   const STATUSES = [
     { id: 'todo', label: 'Pendiente', short: 'Pend.', color: 'var(--s-todo)' },
+    { id: 'paused', label: 'Pausado', short: 'Paus.', color: 'var(--s-paused)' },
     { id: 'doing', label: 'En curso', short: 'Curso', color: 'var(--s-doing)' },
     { id: 'review', label: 'Revisión', short: 'Rev.', color: 'var(--s-review)' },
     { id: 'done', label: 'Hecho', short: 'Hecho', color: 'var(--s-done)' }
@@ -2113,7 +2114,7 @@
       toast(taskMatches(t) ? 'Tarea agregada' : 'Tarea agregada; los filtros la ocultan');
     });
   });
-  // Atajos (3.7): N nueva tarea, 1–4 estado de la tarea abierta, Esc cierra. Nunca mientras se escribe.
+  // Atajos (3.7): N nueva tarea, 1–5 estado de la tarea abierta, Esc cierra. Nunca mientras se escribe.
   const typing = (el) => el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
   document.addEventListener('keydown', (e) => {
     if (e.defaultPrevented) return;

@@ -24,7 +24,7 @@ test('campo desconocido, estado inválido y fecha rota se reportan', () => {
   assert.equal(res.code, 'invalid_schema');
   assert.equal(res.details.length, 3);
   assert.match(res.message, /extra/);
-  assert.match(res.message, /\/status.*todo, doing, review, done/);
+  assert.match(res.message, /\/status.*todo, paused, doing, review, done/);
   assert.match(res.message, /\/created_at.*date-time/);
 });
 

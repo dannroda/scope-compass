@@ -10,7 +10,7 @@ a = ap.parse_args()
 
 load = lambda d: {os.path.basename(p)[:-5]: json.load(open(p, encoding='utf-8')) for p in glob.glob(f'{a.src}/{d}/*.json')}
 ms, ts = load('milestones'), load('tasks')
-ST = {'todo': 'Pendiente', 'doing': 'En curso', 'review': 'Revisión', 'done': 'Hecho'}
+ST = {'todo': 'Pendiente', 'paused': 'Pausado', 'doing': 'En curso', 'review': 'Revisión', 'done': 'Hecho'}
 key = lambda t: (t.get('order', 0), t.get('code', ''))
 L = [f'# Tareas — {a.title}', '',
      f'> Copia local del tablero {a.board}. '

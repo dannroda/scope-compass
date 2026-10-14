@@ -4,7 +4,7 @@ import { execFile, spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-const STATUS = { todo: 'Pendiente', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
+const STATUS = { todo: 'Pendiente', paused: 'Pausado', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
 const PRIORITY = { high: 'alta', medium: 'media', low: 'baja' };
 const LABEL = { title: 'Título', status: 'Estado', milestone: 'Hito', code: 'Código', due: 'Vence', priority: 'Prioridad', size: 'Tamaño',
   assignee: 'Responsable', description: 'Descripción', notes: 'Notas', test: 'Cómo probarlo', checklist: 'Pasos', tags: 'Etiquetas',

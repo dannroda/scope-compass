@@ -2,7 +2,7 @@
 // { id, etag, ...campos del documento }.
 import { etagOf } from './store/json-files.js';
 
-export const STATUSES = ['todo', 'doing', 'review', 'done'];
+export const STATUSES = ['todo', 'paused', 'doing', 'review', 'done'];
 
 // Pestañas del proyecto (spec §16.6): config.views en su orden, o todas con el tablero primero.
 export const VIEWS = ['board', 'lists', 'docs', 'files'];

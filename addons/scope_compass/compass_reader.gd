@@ -3,7 +3,7 @@ extends RefCounted
 ## Lee compass/ desde disco en solo lectura (spec §11.1, nivel 1): el dock sin hub.
 ## Un archivo que no se puede leer va a `warnings` y no se carga, igual que en el hub.
 
-const STATUSES := ["todo", "doing", "review", "done"]
+const STATUSES := ["todo", "paused", "doing", "review", "done"]
 
 
 ## Devuelve { config, milestones, tasks, warnings, docs } (docs: ver read_docs).
