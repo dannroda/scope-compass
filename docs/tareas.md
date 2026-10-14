@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-10-11
+> Generado: 2026-10-13
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -2321,3 +2321,51 @@ Pedido del usuario (2026-10-11): después de ver los mockups con los marcos de P
 **Notas:** Hecho: web/settings.js (en el <head> del tablero y del Inicio, sin defer) con el botón de engranaje y el diálogo Ajustes; scompass.fantasy en localStorage, evento storage para las otras pestañas. web/frames/ con 9 marcos de Project Epiphany y su License.txt (Kenney, CC0) más un .gdignore para que Godot no los importe. app.css: :root.fantasy usa la paleta oscura y las reglas .fantasy ponen los marcos con border-image a 1:1 y píxel nítido, sin atajos border (borran el border-image). El hub y el Inicio sirven /frames/*.png y /settings.js. AGENTS.md (las 3 copias), web/README.md (también el favicon, que ya era dorado) y spec §27. De paso, la paridad del export con Python ignora files (Epiphany ya cita archivos en sus tareas).
 
 **Referencias:** `docs/spec.md#auditoria`
+
+## M20 — Playtest y Pausado  (0/5)
+
+Ordenar lo que está en Revisión: sesiones de playtest con tareas ya creadas en un orden de prueba, y un estado Pausado para lo que se dejó de lado sin terminar.
+
+**Hecho cuando:**
+- Una tarea puede estar en Pausado (paused), con su columna al lado de Pendiente en la web y en el dock.
+- Hay sesiones de playtest en compass/playtests/ con tareas en un orden, resultado (anda / falla) y nota por tarea, manejables desde la CLI, la API y la pestaña Playtest de la web.
+
+### 20.1 Estado Pausado · Revisión
+
+Un estado paused (Pausado) para tareas empezadas que se dejan de lado sin terminar: schema, CLI, API, export, Inicio, columna al lado de Pendiente en la web y en el dock.
+
+**Prueba:** playtest.test.js (CLI, schema, export), ui-playtest.test.js (columna), ui.test.js (atajos 1–5), dock.test.js
+
+**Notas:** Columna entre Pendiente y En curso; color --s-paused (#a99bd1 oscuro). En el dock va después de Pendiente en el árbol (su orden es doing, review, todo, paused, done). Atajos 1–5.
+
+### 20.2 Sesiones de playtest: datos, CLI y API · Revisión
+
+Colección compass/playtests/<id>.json: sesiones con tareas ya creadas en un orden de prueba, con resultado (pass/fail) y nota por tarea. Schema, store, watcher, API, CLI scompass playtest y export.
+
+**Prueba:** hub/test/playtest.test.js
+
+**Notas:** Colección playtests con la forma de las listas; ítems { task, result?, note? }. CLI: scompass playtest (show/new/set/rm/add/move/drop/pass/fail/reset), por posición o por id. POST /api/playtests { title, tasks? }. Export: sección Playtest al final; la paridad con artifact_to_md.py se mide sin playtests (y sin images, que faltaba).
+
+### 20.3 Pestaña Playtest en la web · Revisión
+
+Vista Playtest (#playtest/<id>): crear sesiones, cargar tareas (una a una o todas las de Revisión), arrastrar para ordenar, marcar anda/falla con nota y pasar la tarea a Hecho o En curso.
+
+**Prueba:** hub/test/ui-playtest.test.js
+
+**Notas:** Reusa las clases de Listas (lists-grid, list-side, list-panel), así los bordes de fantasía aplican. Anda/Falla no mueve la tarea: ofrece Pasar a Hecho / Volver a En curso.
+
+### 20.4 Docs y tests de M20 · Revisión
+
+Spec, decisión, AGENTS.md (template, addon y compass/), README de compass y tests de lo nuevo.
+
+**Prueba:** npm test (404 pass) y dock.test.js con Godot
+
+**Notas:** spec §28, D39, AGENTS.md (template, addon y compass/), compass README.
+
+### 20.5 Tarea abierta encima de la vista desde la que se abre · Revisión
+
+Pedido: un clic en una tarea desde Listas, Playtest, Documentos o Archivos la abría pasando al tablero. Tiene que abrirse encima de esa vista, y Cerrar/atrás volver ahí.
+
+**Prueba:** ui-playtest.test.js (abrir desde Playtest, Cerrar y atrás), ui-docs.test.js (backlinks)
+
+**Notas:** readHash toma la vista de history.state.taskFrom; closeTask vuelve atrás siempre que haya taskFrom. En el teléfono la barra fija de Documentos se esconde con el detalle abierto.

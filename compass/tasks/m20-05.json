@@ -1,0 +1,14 @@
+{
+  "checklist": [],
+  "code": "20.5",
+  "created_at": "2026-10-14T01:02:24.429Z",
+  "description": "Pedido: un clic en una tarea desde Listas, Playtest, Documentos o Archivos la abría pasando al tablero. Tiene que abrirse encima de esa vista, y Cerrar/atrás volver ahí.",
+  "milestone": "m20",
+  "notes": "readHash toma la vista de history.state.taskFrom; closeTask vuelve atrás siempre que haya taskFrom. En el teléfono la barra fija de Documentos se esconde con el detalle abierto.",
+  "order": 5,
+  "refs": [],
+  "status": "review",
+  "test": "ui-playtest.test.js (abrir desde Playtest, Cerrar y atrás), ui-docs.test.js (backlinks)",
+  "title": "Tarea abierta encima de la vista desde la que se abre",
+  "updated_at": "2026-10-14T01:02:27.180Z"
+}

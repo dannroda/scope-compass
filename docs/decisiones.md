@@ -375,3 +375,14 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Una carpeta configurable: una sola carpeta conocida se encuentra y se ignora fácil.
   - SVG: puede llevar scripts, y con la miniatura alcanza.
 
+## D39 · Playtest: sesiones con tareas en orden, en una colección aparte; y un estado Pausado
+**2026-10-13 · vigente** · spec §28
+
+- **Qué:** `compass/playtests/<id>.json`, sesiones con ids de tareas ya creadas en el orden en que se prueban, con `result` (`pass`/`fail`) y `note` por tarea. Y un quinto estado, `paused`, al lado de Pendiente.
+- **Por qué una colección y no una lista:** un ítem de lista es un texto que se tilda; acá cada fila es una tarea que ya existe y lo que importa es el orden y cómo salió la prueba. Con la forma de las listas (título, orden, ítems adentro) se reusan el store, el watcher, la API y la vista; con su propio schema, `result` y `note` se validan.
+- **Por qué no un campo en la tarea (orden de prueba):** una tarea puede entrar en varias sesiones (una por build), y reordenar sería escribir en muchas tareas. La sesión es un archivo: reordenar cambia un solo archivo.
+- **Probar no mueve la tarea:** se ofrece *Pasar a Hecho* / *Volver a En curso*, pero lo decide quien prueba; una sesión se puede repetir (*Reiniciar*).
+- **Pausado:** lo empezado y dejado de lado se mezclaba con Pendiente (parecía sin empezar) o se quedaba en En curso (parecía activo). Va al lado de Pendiente porque es trabajo que espera, como Pendiente.
+- **Descartado:**
+  - Una etiqueta `playtest` con un número de orden: no da sesiones separadas ni resultado por prueba.
+  - Pausado como etiqueta: no tendría columna ni entraría en los filtros por estado.

@@ -62,7 +62,7 @@ Recrear el tablero del artifact como **app local propia**: un servidor Node que 
 
 - Hitos como pestañas, con objetivo, criterio de "Hecho cuando" y progreso (tareas hechas / total).
 - Vista "Todos" con conteo por estado.
-- Tablero de 4 columnas: Pendiente, En curso, Revisión, Hecho.
+- Tablero de 4 columnas: Pendiente, En curso, Revisión, Hecho (5 desde M20, con Pausado al lado de Pendiente: §28).
 - Tarjetas con código, título, hito (en vista "Todos") y progreso de pasos.
 - Arrastrar tarjetas entre columnas; también cambiar estado desde el detalle.
 - Panel de detalle: título editable, estado, hito, pasos (tildar, agregar, quitar), "Cómo probarlo", notas, fecha de última actualización, borrar con confirmación.
@@ -163,7 +163,7 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `order` | number | Orden dentro de la columna |
 | `title` | string | |
 | `description` | string | Opcional. Qué hay que hacer y por qué, el enunciado de la tarea (§25, D37) |
-| `status` | `"todo" \| "doing" \| "review" \| "done"` | |
+| `status` | `"todo" \| "paused" \| "doing" \| "review" \| "done"` | `paused` (Pausado) desde M20 (§28) |
 | `checklist` | `{ text: string, done: boolean, detail?: string }[]` | `text`: el paso en una línea. `detail` (opcional): el cómo y el porqué; se muestra plegado debajo del paso |
 | `due` | string | Opcional. Fecha límite, `YYYY-MM-DD` o `YYYY-MM-DDTHH:MM` en hora local (§16.5, D26) |
 | `priority` | `"high" \| "medium" \| "low"` | Opcional. Prioridad (§19, D32) |
@@ -674,7 +674,7 @@ Solo dos fechas importan (D26): **cuándo se creó** (`created_at`, que ya exist
 ### 16.6 Vistas y plantillas
 <!-- id: v3-plantillas -->
 
-- **`views` en `config.json`:** las pestañas del proyecto, en orden; la primera es la que abre. Valores: `board`, `lists`, `docs` y, desde M14, `files` (§22). Sin `views`, se ven todas con el tablero primero.
+- **`views` en `config.json`:** las pestañas del proyecto, en orden; la primera es la que abre. Valores: `board`, `lists`, `docs`, desde M14 `files` (§22) y desde M20 `playtest` (§28). Sin `views`, se ven todas con el tablero primero.
 - **Plantillas:** `scompass init --template juego|personal|vacio`. Una plantilla es un `config.json` prearmado más datos iniciales; no tiene código propio. Cada una es un archivo `hub/templates/proyectos/<nombre>.json` con `{ description, config?, milestones?, lists?, files? }`: `config` se mezcla con la config base, hitos y listas se escriben con el Store, y `files` crea archivos del proyecto solo si no existen. Una plantilla desconocida no crea nada.
   - `juego`: `views` = board, lists, docs, files; hito M0 "Prototipo"; listas "Ideas sueltas" y "Assets a conseguir"; el documento `gdd` (`docs/gdd.md`, con un esqueleto con ids si no existe).
   - `personal`: `views` = lists, board; listas "Pendientes" y "Compras"; un hito "General" para el tablero (en vez de hacer opcionales los hitos).
@@ -861,7 +861,7 @@ scompass doc diff <alias> [--json]          # diff contra HEAD y "Secciones toca
 - **Detalle de la tarea:**
   - **Propiedades:** debajo del título, una fila de chips: hito, fecha límite (con hora si hay fecha, y × para quitarla), prioridad, responsable y etiquetas. Son los controles del navegador con forma de chip, así que un clic edita en el lugar. Los vacíos van con borde punteado y texto apagado. Una vencida va en rojo, y una de hoy en ámbar.
   - **Orden:** el estado, los pasos, las notas, las referencias, los vínculos y *Cómo probarlo*.
-  - **Al abrir:** el foco va al panel, no al título. El título no tiene borde hasta que se lo enfoca o se le pasa el mouse, y 1–4 cambian el estado enseguida.
+  - **Al abrir:** el foco va al panel, no al título. El título no tiene borde hasta que se lo enfoca o se le pasa el mouse, y 1–5 cambian el estado enseguida (en el orden de las columnas).
   - **Cabecera:** el código de la tarea y el del hito; el nombre del hito queda en el chip.
 - **Pasos:** en escritorio, ✎ y × aparecen al pasar el mouse o con el foco. En el teléfono, o sin mouse, se ven siempre y miden 36 px o más.
 - **Teléfono (≤ 560 px):**
@@ -1123,3 +1123,37 @@ Lo que encontró la auditoría completa después de M18 (seguridad, backend, web
 Tests: `watcher.test.js` (19.1), `paths.test.js` (19.2), `history.test.js` (19.3), `cli.test.js` (19.4, 19.6), `api.test.js` (19.4, 19.8), `registry.test.js` y `home-serve.test.js` (19.5), `export-md.test.js` (19.7), `filters.test.js` y `home.test.js` (19.8), `dock.test.js` (19.9–19.11), `ui.test.js` y `ui-lists.test.js` (19.12, 19.13, 19.16), `server.test.js` y `home-serve.test.js` (19.16).
 
 Quedaron fuera, a propósito: una CSP para la UI (uso local de un solo usuario; pediría revisar los estilos en línea), índices para tableros de miles de tareas en el dock (con 145 tareas el render tarda ~2 ms) y probar en la VM de Windows el `scompass.cmd` configurado (19.11).
+
+## 28. Playtest y Pausado (M20)
+<!-- id: playtest -->
+
+Para ordenar lo que está en Revisión y armar un orden de prueba (D39).
+
+- **Estado Pausado:** `status: "paused"`, para una tarea empezada que se deja de lado por ahora, sin que se confunda con lo que nunca se empezó ni con lo que está en curso. En la web es la columna al lado de Pendiente (Pendiente, Pausado, En curso, Revisión, Hecho; los atajos 1–5 siguen ese orden); en el dock, el grupo después de Pendiente. La CLI (`move <id> paused`, `list --status paused`), el export, el historial y el resumen del Inicio (`counts.paused`) lo conocen.
+- **Sesiones de playtest:** una colección nueva, `compass/playtests/<id>.json`, con la forma de las listas:
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `title` | string | |
+| `order` | number | Orden en la barra lateral |
+| `items` | `{ task, result?, note? }[]` | Las tareas, en el orden de la prueba. `task`: id de una tarea; `result`: `"pass"` (anda) o `"fail"` (falla), sin él todavía no se probó; `note`: lo que se vio |
+| `created_at` / `updated_at` | ISO 8601 | |
+
+  - La sesión apunta a tareas que ya existen; no copia nada de ellas. Una tarea borrada queda en la sesión como *ya no existe* hasta que se la saca.
+  - Probar no cambia el estado de la tarea: la web ofrece *Pasar a Hecho* (anda) o *Volver a En curso* (falla), y la CLI usa `move`.
+  - **Id legible:** sale del título, como las listas (`"Build 0.3"` → `build-0-3`; sin letras ni números, `playtest`).
+- **CLI:** `scompass playtest` (sesiones con cuántas faltan probar), `playtest show|new|set|rm`, `playtest add <sesión> <tarea>… [--at n] [--review] [--milestone m]` (no repite; `--review` suma las de Revisión), `playtest move <sesión> <n|tarea> <pos>`, `playtest drop`, `playtest pass|fail <sesión> <n|tarea> [--note …]` y `playtest reset`. Las tareas se nombran por posición (desde 1) o por id.
+- **API y WebSocket:** `GET/PUT/PATCH/DELETE /api/playtests[/:id]` y `POST /api/playtests { title, tasks? }` (id del título; `tasks`, ids que tienen que existir, la arranca cargada). Los ítems se escriben enteros con `PATCH { items }` e `If-Match`. Los eventos son los `upsert`/`delete` de siempre con `collection: "playtests"`; el dock los ignora.
+- **Web:** pestaña Playtest (`#playtest/<id>`): barra lateral con las sesiones (y cuántas faltan probar), *+ Nueva sesión*, y en un proyecto sin sesiones *Crear una con las N en Revisión*. En la sesión: buscar una tarea por título, código o id (las de Revisión primero) o *+ Las de Revisión*; arrastrar o ↑ ↓ para ordenar; *✓ Anda* / *✗ Falla* (otro clic lo quita), una nota por tarea, ×, *Reiniciar* (todas a *sin probar*, las notas quedan), *Renombrar* y *Borrar*.
+- **Export:** una sección *Playtest* al final de `docs/tareas.md`, con las tareas numeradas, su estado, cómo salieron y la nota.
+- **Tarea abierta desde otra vista:** un clic en una tarea desde Listas, Playtest, Documentos o Archivos la abre encima de esa vista, sin pasar al tablero; Cerrar y atrás vuelven ahí (`#task/<id>` guarda de dónde se abrió). Un enlace directo a `#task/<id>` la abre sobre el tablero.
+
+### 28.1 Criterios de aceptación de M20
+<!-- id: criterios-playtest -->
+
+- [x] Una tarea puede estar en Pausado (paused), con su columna al lado de Pendiente en la web y en el dock.
+- [x] Hay sesiones de playtest en compass/playtests/ con tareas en un orden, resultado (anda / falla) y nota por tarea, manejables desde la CLI, la API y la pestaña Playtest de la web.
+
+Tests: `playtest.test.js` (schema, CLI con y sin hub, API, watcher, export), `ui-playtest.test.js` (columna Pausado, pestaña Playtest, tarea abierta encima de la vista), `ui.test.js` (atajos 1–5), `ui-docs.test.js` y `dock.test.js`.
+
+Quedaron fuera, a propósito: sesiones en el dock de Godot y en el Inicio, y que *Anda* mueva la tarea a Hecho sola (una sesión se puede repasar varias veces; el estado de la tarea lo decide quien prueba).
