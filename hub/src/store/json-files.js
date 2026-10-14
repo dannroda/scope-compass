@@ -79,7 +79,7 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
   }
 
   async function write(collection, id, doc, current) {
-    if (collection === 'tasks' || collection === 'lists') {
+    if (collection === 'tasks' || collection === 'lists' || collection === 'playtests') {
       doc = { ...doc, updated_at: now() };
       doc.created_at = current?.doc.created_at ?? doc.created_at ?? doc.updated_at;
     }
@@ -96,7 +96,7 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
     // en el archivo no impide editar otra cosa.
     if (doc.due !== undefined && doc.due !== current?.doc.due && !isValidDue(doc.due)) throw new StoreError('invalid_argument', `fecha inexistente: ${doc.due}`);
     try {
-      // La carpeta puede faltar en un proyecto de antes de esa colección (lists/, D25).
+      // La carpeta puede faltar en un proyecto de antes de esa colección (lists/, D25; playtests/, D39).
       await mkdir(dirname(pathOf(collection, id)), { recursive: true });
       await writeAtomic(pathOf(collection, id), canonical(res.doc));
     } catch (e) {

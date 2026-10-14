@@ -75,11 +75,13 @@ export function createHttpStore(base, compassDir, { validators }) {
     hub: base,
 
     async loadAll() {
-      // Un hub de antes de las listas no tiene /api/lists: se ven vacías (la CLI ya avisa que el hub es viejo).
-      const [m, t, l, config] = await Promise.all([call('GET', '/api/milestones'), call('GET', '/api/tasks'),
-        call('GET', '/api/lists').catch((e) => (e.code === 'not_found' ? { lists: [], warnings: [] } : Promise.reject(e))), readConfig()]);
+      // Un hub de antes de las listas (o del playtest) no tiene /api/lists (/api/playtests): se ven vacías (la CLI ya
+      // avisa que el hub es viejo).
+      const optional = (name) => call('GET', `/api/${name}`).catch((e) => (e.code === 'not_found' ? { [name]: [], warnings: [] } : Promise.reject(e)));
+      const [m, t, l, p, config] = await Promise.all([call('GET', '/api/milestones'), call('GET', '/api/tasks'), optional('lists'), optional('playtests'), readConfig()]);
       const toMap = (list) => new Map(list.map((d) => { const { id, doc } = unflat(d); return [id, doc]; }));
-      return { config, milestones: toMap(m.milestones), tasks: toMap(t.tasks), lists: toMap(l.lists), warnings: [...m.warnings, ...t.warnings, ...l.warnings] };
+      return { config, milestones: toMap(m.milestones), tasks: toMap(t.tasks), lists: toMap(l.lists), playtests: toMap(p.playtests),
+        warnings: [...m.warnings, ...t.warnings, ...l.warnings, ...p.warnings] };
     },
 
     async list(collection) {

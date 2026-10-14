@@ -96,9 +96,9 @@ test('config.views: pestañas conocidas, sin repetir, y por defecto todas con el
   const cfg = (views) => JSON.stringify({ project: 'P', ...(views && { views }) });
   assert.ok(parseDoc(cfg(['lists', 'board']), 'config', V).ok);
   for (const bad of [[], ['lists', 'lists'], ['kanban']]) assert.equal(parseDoc(cfg(bad), 'config', V).ok, false, JSON.stringify(bad));
-  assert.deepEqual(viewsOf({ project: 'P' }), ['board', 'lists', 'docs', 'files']);
+  assert.deepEqual(viewsOf({ project: 'P' }), ['board', 'lists', 'playtest', 'docs', 'files']);
   assert.deepEqual(viewsOf({ project: 'P', views: ['lists', 'board'] }), ['lists', 'board']);
-  assert.deepEqual(viewsOf(null), ['board', 'lists', 'docs', 'files']);
+  assert.deepEqual(viewsOf(null), ['board', 'lists', 'playtest', 'docs', 'files']);
 });
 
 test('refs: section es opcional (referencia al documento entero), doc no (12.1)', () => {

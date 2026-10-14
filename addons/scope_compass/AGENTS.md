@@ -117,6 +117,24 @@ scompass item task assets 3 --milestone m06         # pasa el ítem a una tarea 
 - Tildar un ítem que se repite no lo deja tildado: su `due` avanza un período desde la fecha límite (31/01 → 28/02). No se destilda; si hace falta, cambiale la fecha con `item set --due`.
 - Algo con etapas o pasos va como tarea en un hito; algo que solo se tilda va en una lista. Si un ítem crece, pasalo a tarea con `item task`.
 
+## Playtest
+
+Una sesión de playtest (`compass/playtests/<id>.json`) junta tareas ya creadas en el orden en que se van a probar, para ordenar lo que está en Revisión. Cada ítem es `{ task, result?, note? }`: `task` es el id de la tarea, `result` `pass` (anda) o `fail` (falla; sin `result`, todavía no se probó) y `note` lo que se vio al probarla. La sesión no cambia el estado de las tareas: eso se hace aparte, con `move`.
+
+```sh
+scompass playtest                                   # sesiones, con cuántas tareas faltan probar
+scompass playtest show build-0-3 --json             # { "id", "etag", "title", "items": [ { "task", "result"?, "note"? } ] }
+scompass playtest new "Build 0.3" --review          # el id sale del título; --review la carga con las tareas en Revisión
+scompass playtest add build-0-3 m5-02 m5-07 --at 1  # agrega tareas (desde la posición 1); las que ya están no se repiten
+scompass playtest add build-0-3 --review --milestone m05   # suma las de Revisión de ese hito
+scompass playtest move build-0-3 m5-07 3            # la lleva a la posición 3 (por id o por número desde 1)
+scompass playtest fail build-0-3 2 --note "Se traba al saltar"
+scompass playtest pass build-0-3 m5-02              # reset la vuelve a "sin probar"; drop la saca de la sesión
+scompass playtest rm build-0-3                      # borra la sesión; las tareas no se tocan
+```
+
+- Si una prueba falla, dejá en `note` lo que se vio y, si hay que arreglarla, volvé la tarea a `doing`; si anda, pasala a `done`.
+
 ## Documentos y referencias
 
 Los documentos citables están en `compass/config.json` › `docs` (alias y ruta, o un patrón como `docs/**/*.md`). Se declaran con `doc add`, no editando la config: tiene que ser un `.md` dentro del proyecto que git no ignore (o un patrón que termine en `.md`); nada con `..`, llaves, rutas absolutas ni enlaces simbólicos que lleven afuera. Un archivo de un patrón toma el alias del patrón más su ruta bajo la carpeta del patrón, sin `.md`: `docs/notas/arte.md` es `docs/notas/arte`. Una referencia apunta a una sección por su id estable (`<!-- id: … -->` debajo del título), o al documento entero si va sin `#<id>`. En la descripción, notas, prueba y pasos, `[[alias#id]]` enlaza una sección y `[[alias]]` el documento.
@@ -153,6 +171,6 @@ scompass home               # levanta el Inicio (uno por usuario): GET /api/toda
 
 - `scompass --help`: todos los comandos. Un proyecto nuevo se crea con `scompass init --template juego|personal|vacio`.
 - `compass/README.md`: formato de los archivos y manejo a mano con git.
-- `compass/schema/`: JSON Schema de tareas, hitos, listas y `config.json` (`views` elige las pestañas de la web: `board`, `lists`, `docs`).
+- `compass/schema/`: JSON Schema de tareas, hitos, listas, sesiones de playtest y `config.json` (`views` elige las pestañas de la web: `board`, `lists`, `playtest`, `docs`, `files`).
 - Ajustes de la web (el engranaje del tablero y del Inicio): preferencias de quien mira, guardadas en su navegador y no en `compass/`. Por ahora, los bordes de fantasía: marcos de pixel art en botones, tarjetas y paneles, siempre con el tema oscuro.
 - `scompass update`: pone al día `compass/schema/`, esta guía y `compass/.gitattributes` (LF también en Windows) cuando Scope Compass se actualizó (`--check` solo avisa). El dock de Godot lo ofrece con el botón "Actualizar", y la bandeja del hub con "Actualizar compass/".

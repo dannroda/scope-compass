@@ -39,8 +39,9 @@ for (const [name, dir] of [['Scope Compass', join(REPO, 'compass')], ['Project E
     const expected = await python(dir, board, name);
     if (expected === null) return t.skip('sin python3');
     // El prototipo de Python es anterior a los vínculos (D22), las listas (D25), las fechas (D26), a etiquetas, prioridad y
-    // responsable (D32), a los archivos de la tarea (15.1), a la descripción (D37), a done_at (18.1) y al tamaño (18.3): la paridad se mide sin ellos.
-    const noLinks = { ...all, lists: [], tasks: [...all.tasks].map(([id, { links, due, tags, priority, assignee, description, done_at, size, files, ...doc }]) => [id, doc]) };
+    // responsable (D32), a los archivos de la tarea (15.1), a la descripción (D37), a done_at (18.1), al tamaño (18.3), a las
+    // capturas (D38) y al playtest (D39): la paridad se mide sin ellos.
+    const noLinks = { ...all, lists: [], playtests: [], tasks: [...all.tasks].map(([id, { links, due, tags, priority, assignee, description, done_at, size, files, images, ...doc }]) => [id, doc]) };
     assert.equal(renderMarkdown(noLinks, { title: name, board, date: dateOf(expected) }), expected);
   });
 }

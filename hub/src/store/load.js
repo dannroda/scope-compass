@@ -7,7 +7,7 @@ import { parseDoc } from '../schema.js';
 // Ruta relativa al proyecto, siempre con "/" (también en Windows), como en git.
 const rel = (compassDir, path) => relative(dirname(compassDir), path).split(sep).join('/');
 
-export const COLLECTIONS = { milestones: 'milestone', tasks: 'task', lists: 'list' };
+export const COLLECTIONS = { milestones: 'milestone', tasks: 'task', lists: 'list', playtests: 'playtest' };
 
 export async function loadCollection(compassDir, collection, validators) {
   const dir = join(compassDir, collection);
@@ -26,7 +26,7 @@ export async function loadCollection(compassDir, collection, validators) {
 }
 
 export async function loadCompass(compassDir, validators) {
-  const out = { config: null, milestones: new Map(), tasks: new Map(), lists: new Map(), warnings: [] };
+  const out = { config: null, milestones: new Map(), tasks: new Map(), lists: new Map(), playtests: new Map(), warnings: [] };
   const cfgPath = join(compassDir, 'config.json');
   const cfg = await readFile(cfgPath, 'utf8').catch(() => null);
   if (cfg === null) {

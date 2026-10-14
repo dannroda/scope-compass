@@ -27,7 +27,7 @@ import { imageFile, repoFile } from './files-api.js';
 import { dropImage, IMAGE_EXT, importImage, insideProject, isImagePath } from './images.js';
 import { taskHistory } from './history.js';
 import { forgetProject, projectsFile, projectsStatus, pruneTempProjects, recordProject, ProjectsError } from './projects.js';
-import { listLists, listMilestones, listTasks } from './views.js';
+import { listLists, listMilestones, listPlaytests, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
 import { dueState, EVERY, isValidDue, localDay, localStamp, milestoneDueState, showDue } from './dates.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
@@ -98,6 +98,21 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   item clear <lista>                        quita los ítems tildados
   item task <lista> <n> --milestone m00 [--code 0.12]
                                             pasa el ítem a una tarea nueva y lo deja enlazado
+  playtest                                  sesiones de playtest, con cuántas tareas faltan probar
+  playtest show <sesión>                    una sesión, con las tareas numeradas en el orden de prueba
+  playtest new "<título>" [--review] [--milestone m00]
+                                            crea una sesión (el id sale del título); --review la carga con las
+                                            tareas en Revisión (de ese hito, con --milestone)
+  playtest set <sesión> --title "…"          le cambia el título
+  playtest rm <sesión>                      borra la sesión (las tareas no se tocan)
+  playtest add <sesión> <tarea>… [--at n] [--review] [--milestone m00]
+                                            agrega tareas ya creadas al final (o desde la posición n); las que ya
+                                            están no se repiten; --review suma las que están en Revisión
+  playtest move <sesión> <n|tarea> <pos>    la lleva a la posición pos (desde 1)
+  playtest drop <sesión> <n|tarea>          la saca de la sesión
+  playtest pass|fail <sesión> <n|tarea> [--note "…"]
+                                            anda / falla, con lo que se vio (--note "" quita la nota)
+  playtest reset <sesión> <n|tarea>         vuelve a "sin probar"
   doc list                                  documentos de config.json con su índice de secciones
   doc add <alias> <ruta|patrón>             declara un documento (un archivo, o un patrón como "docs/**/*.md")
   doc rm <alias>                            deja de declararlo (el archivo no se toca)
@@ -146,6 +161,7 @@ const OPTIONS = {
   port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, lan: { type: 'boolean' }, force: { type: 'boolean' }, log: { type: 'string' },
   q: { type: 'string' }, blocked: { type: 'boolean' }, unblocked: { type: 'boolean' }, 'pending-steps': { type: 'boolean' }, 'with-refs': { type: 'boolean' },
   tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, size: { type: 'string' }, assignee: { type: 'string' },
+  at: { type: 'string' }, review: { type: 'boolean' }, note: { type: 'string' },
   title: { type: 'string' }, description: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
@@ -1120,6 +1136,102 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const t = await store.create('tasks', { milestone, title: it.text, code: o.code ?? '', status: 'todo', checklist: [], test: '', notes: '', refs: [] });
       const r = await store.patch('lists', id, { items: items.with(n - 1, { ...it, task: t.id }) }, { ifMatch: o.etag ?? cur.etag });
       return written({ id: r.id, etag: r.etag, ...r.doc, task: { id: t.id, etag: t.etag, ...t.doc } }, `${id}: ítem ${n} → tarea ${t.id}`);
+    },
+
+    // Sesiones de playtest (D39): tareas ya creadas en el orden en que se prueban, con resultado y nota.
+    async playtest() {
+      const sub = rest[0] ?? 'list';
+      const RESULT = { pass: '✓', fail: '✗' };
+      const show = (p, tasks) => {
+        print(`${p.doc.title}  [${p.id}]`);
+        if (!p.doc.items.length) print('  (vacía)');
+        p.doc.items.forEach((x, i) => {
+          const t = tasks.find((y) => y.id === x.task);
+          print(`  ${String(i + 1).padStart(2)}. [${RESULT[x.result] ?? ' '}] ${taskLabel(tasks, x.task)}${t ? ` · ${STATUS[t.status]}` : ''}`);
+          if (x.note) print(`        ${x.note.replace(/\n/g, '\n        ')}`);
+        });
+      };
+      // Las tareas en Revisión (de un hito, con --milestone), en el orden de `scompass list`.
+      const inReview = async () => listTasks(await store.loadAll(), { milestone: o.milestone, status: 'review' }).map((t) => t.id);
+      const left = (p) => p.items.filter((x) => !x.result).length;
+      if (sub === 'list') {
+        const { items, warnings } = await store.list('playtests');
+        showWarnings(warnings);
+        const playtests = listPlaytests(items.map((p) => [p.id, p.doc]));
+        if (o.json) return done({ playtests, warnings });
+        if (!playtests.length) print('Sin sesiones de playtest: scompass playtest new "<título>" crea una.');
+        for (const p of playtests) {
+          const fail = p.items.filter((x) => x.result === 'fail').length;
+          const state = !p.items.length ? 'vacía' : left(p) ? `${left(p)} de ${p.items.length} sin probar` : 'todo probado';
+          print(`  ${p.id.padEnd(20)} ${p.title}  ${state}${fail ? ` · ${fail} ${fail === 1 ? 'falla' : 'fallan'}` : ''}`);
+        }
+        return 0;
+      }
+      if (sub === 'new') {
+        const title = need(rest[1], 'el título');
+        if (o.milestone && !o.review) throw new UsageError('--milestone va con --review');
+        const { items } = await store.list('playtests');
+        const id = freeId(slugify(title, 'playtest'), items.map((p) => p.id));
+        const order = Math.max(0, ...items.map((p) => p.doc.order ?? 0)) + 1;
+        const tasks = o.review ? await inReview() : [];
+        const r = await store.create('playtests', { title, order, items: tasks.map((task) => ({ task })) }, id);
+        return written({ id: r.id, etag: r.etag, ...r.doc }, `Creada la sesión ${r.id}: ${title}${tasks.length ? ` (${tasks.length} ${tasks.length === 1 ? 'tarea' : 'tareas'})` : ''}`);
+      }
+      const id = need(rest[1], 'la sesión');
+      if (sub === 'set') {
+        const r = await store.patch('playtests', id, { title: need(o.title, '--title') }, ifMatch);
+        return written({ id: r.id, etag: r.etag, ...r.doc }, `Guardada la sesión ${id}`);
+      }
+      if (sub === 'rm') {
+        await store.delete('playtests', id, ifMatch);
+        return written({ id }, `Borrada la sesión ${id}`);
+      }
+      if (!['show', 'add', 'move', 'drop', 'pass', 'fail', 'reset'].includes(sub)) {
+        throw new UsageError(`subcomando desconocido: playtest ${sub} (show, new, set, rm, add, move, drop, pass, fail, reset)`);
+      }
+      const cur = await store.get('playtests', id);
+      if (sub === 'show') {
+        if (o.json) return done({ id: cur.id, etag: cur.etag, ...cur.doc });
+        show(cur, listTasks(await store.loadAll()));
+        return 0;
+      }
+      const items = cur.doc.items;
+      const save = async (next, msg) => {
+        const r = await store.patch('playtests', id, { items: next }, { ifMatch: o.etag ?? cur.etag });
+        return written({ id: r.id, etag: r.etag, ...r.doc }, msg);
+      };
+      // Posición en la sesión (desde 1), o el id de una tarea que está en ella.
+      const pos = (arg, n = items.length) => {
+        const k = Number(arg);
+        if (Number.isInteger(k) && String(k) === String(arg).trim() && k >= 1 && k <= n) return k;
+        const i = items.findIndex((x) => x.task === arg);
+        if (i < 0) throw new StoreError('invalid_argument', `${arg ?? ''} no está en la sesión (tiene ${items.length} ${items.length === 1 ? 'tarea' : 'tareas'})`);
+        return i + 1;
+      };
+      if (sub === 'add') {
+        const asked = rest.slice(2);
+        if (!asked.length && !o.review) throw new UsageError('falta alguna tarea (o --review)');
+        if (o.milestone && !o.review) throw new UsageError('--milestone va con --review');
+        for (const t of asked) await store.get('tasks', t);
+        const have = new Set(items.map((x) => x.task));
+        const fresh = [...new Set([...asked, ...(o.review ? await inReview() : [])])].filter((t) => !have.has(t));
+        const at = o.at === undefined ? items.length + 1 : Number(o.at);
+        if (!Number.isInteger(at) || at < 1 || at > items.length + 1) throw new StoreError('invalid_argument', `posición inválida: ${o.at} (de 1 a ${items.length + 1})`);
+        const msg = fresh.length ? `${id}: ${fresh.length === 1 ? `${fresh[0]} agregada` : `${fresh.length} tareas agregadas`} desde la posición ${at}` : `${id}: nada nuevo para agregar`;
+        return save(items.toSpliced(at - 1, 0, ...fresh.map((task) => ({ task }))), msg);
+      }
+      const n = pos(rest[2]);
+      const it = items[n - 1];
+      if (sub === 'move') {
+        const to = Number(need(rest[3], 'la posición'));
+        if (!Number.isInteger(to) || to < 1 || to > items.length) throw new StoreError('invalid_argument', `posición inválida: ${rest[3]} (de 1 a ${items.length})`);
+        return save(items.toSpliced(n - 1, 1).toSpliced(to - 1, 0, it), `${id}: ${it.task} en la posición ${to}`);
+      }
+      if (sub === 'drop') return save(items.toSpliced(n - 1, 1), `${id}: ${it.task} fuera de la sesión`);
+      const { result: _r, note: _n, ...base } = it;
+      const note = o.note === undefined ? it.note : o.note.trim() ? o.note : undefined;
+      if (sub === 'reset') return save(items.with(n - 1, { ...base, ...(note ? { note } : {}) }), `${id}: ${it.task} sin probar`);
+      return save(items.with(n - 1, { ...base, result: sub, ...(note ? { note } : {}) }), `${id}: ${it.task} ${sub === 'pass' ? 'anda ✓' : 'falla ✗'}`);
     },
 
     async milestone() {

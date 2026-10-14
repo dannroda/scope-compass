@@ -9,7 +9,7 @@ import { etagOf } from './store/json-files.js';
 import { flat } from './views.js';
 import { watchTree } from './watch-tree.js';
 
-const DOC = /^(milestones|tasks|lists)\/([a-z0-9][a-z0-9_-]{0,63})\.json$/;
+const DOC = /^(milestones|tasks|lists|playtests)\/([a-z0-9][a-z0-9_-]{0,63})\.json$/;
 const INVALID = Symbol('invalid');
 
 export function createWatcher(compassDir, { validators, emit, debounceMs = 50 }) {

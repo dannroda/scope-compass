@@ -2,7 +2,7 @@
 // ETag como cabecera HTTP; en escrituras, If-Match exige esa versión e If-None-Match: * exige que no exista.
 import { exportMarkdown } from './export-md.js';
 import { StoreError } from './store/json-files.js';
-import { flat, listLists, listMilestones, listTasks, STATUSES } from './views.js';
+import { flat, listLists, listMilestones, listPlaytests, listTasks, STATUSES } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
 import { dropImage, MAX_IMAGE, saveImage } from './images.js';
 import { taskHistory } from './history.js';
@@ -178,6 +178,41 @@ export function registerApi(app, { store, projectDir, publish }) {
   app.delete('/api/lists/:id', async (req, reply) => {
     await store.delete('lists', req.params.id, preconditions(req));
     publish.delete('lists', req.params.id);
+    return reply.code(204).send();
+  });
+
+  // Sesiones de playtest (D39): como las listas, el id sale del título. Los ítems (tareas en orden, resultado y nota)
+  // se escriben enteros con PATCH { items }, con If-Match.
+  app.get('/api/playtests', async () => {
+    const { items, warnings } = await store.list('playtests');
+    return { playtests: listPlaytests(items.map((p) => [p.id, p.doc])), warnings };
+  });
+
+  app.get('/api/playtests/:id', async (req, reply) => send(reply, await store.get('playtests', req.params.id)));
+
+  // { title, tasks? }: tasks, ids de tareas que ya existen, para arrancarla cargada (sin repetir).
+  app.post('/api/playtests', async (req, reply) => {
+    const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
+    if (!title) throw new StoreError('invalid_argument', 'falta el título');
+    const tasks = req.body?.tasks ?? [];
+    if (!Array.isArray(tasks) || tasks.some((x) => typeof x !== 'string')) throw new StoreError('invalid_argument', 'tasks tiene que ser una lista de ids');
+    for (const t of tasks) await store.get('tasks', t);
+    const { items } = await store.list('playtests');
+    const id = freeId(slugify(title, 'playtest'), items.map((p) => p.id));
+    const order = Math.max(0, ...items.map((p) => p.doc.order ?? 0)) + 1;
+    const r = wrote('playtests', await store.create('playtests', { title, order, items: [...new Set(tasks)].map((task) => ({ task })) }, id));
+    return send(reply.header('location', `/api/playtests/${r.id}`), r, 201);
+  });
+
+  app.put('/api/playtests/:id', async (req, reply) =>
+    send(reply, wrote('playtests', await store.put('playtests', req.params.id, body(req), preconditions(req)))));
+
+  app.patch('/api/playtests/:id', async (req, reply) =>
+    send(reply, wrote('playtests', await store.patch('playtests', req.params.id, body(req), preconditions(req)))));
+
+  app.delete('/api/playtests/:id', async (req, reply) => {
+    await store.delete('playtests', req.params.id, preconditions(req));
+    publish.delete('playtests', req.params.id);
     return reply.code(204).send();
   });
 

@@ -25,8 +25,8 @@ const today = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-// milestones / tasks / lists: Map o iterable de [id, doc]. board: URL del artifact si todavía es la fuente de verdad.
-export function renderMarkdown({ milestones, tasks, lists = [] }, { title, board, date = today() }) {
+// milestones / tasks / lists / playtests: Map o iterable de [id, doc]. board: URL del artifact si todavía es la fuente de verdad.
+export function renderMarkdown({ milestones, tasks, lists = [], playtests = [] }, { title, board, date = today() }) {
   const ts = [...tasks].map(([id, t]) => ({ id, ...t }));
   const name = (id) => { const t = ts.find((x) => x.id === id); return t ? [t.code ?? '', line(t.title)].filter(Boolean).join(' ') : `${id} (no existe)`; };
   const L = [`# Tareas — ${title}`, '',
@@ -74,13 +74,26 @@ export function renderMarkdown({ milestones, tasks, lists = [] }, { title, board
     L.push(...items.map((x) => `- [${x.done ? 'x' : ' '}] ${line(x.text)}` + (x.due ? ` · vence ${x.due.replace('T', ' ')}` : '') + (x.repeat ? ` · se repite ${EVERY[x.repeat.every]}` : '') + (x.task ? ` · → tarea ${ts.find((t) => t.id === x.task)?.code || x.task}` : '')));
     if (items.length) L.push('');
   }
+  // Sesiones de playtest (D39), al final: las tareas en el orden de prueba, con su estado y cómo salieron.
+  const ps = [...playtests].sort(([ia, a], [ib, b]) => cmp(a.order ?? 0, b.order ?? 0) || cmp(ia, ib));
+  if (ps.length) L.push('## Playtest', '');
+  for (const [, p] of ps) {
+    const items = p.items ?? [];
+    L.push(`### ${line(p.title)}` + (items.length ? `  (${items.filter((x) => x.result).length}/${items.length} probadas)` : ''), '');
+    L.push(...items.map((x, i) => {
+      const t = ts.find((y) => y.id === x.task);
+      return `${i + 1}. [${x.result === 'pass' ? 'x' : ' '}] ${name(x.task)}` + (t ? ` · ${ST[t.status ?? 'todo'] ?? t.status}` : '') +
+        (x.result === 'fail' ? ' · **falla**' : x.result === 'pass' ? ' · anda' : '') + (x.note ? ` — ${line(x.note)}` : '');
+    }));
+    if (items.length) L.push('');
+  }
   return L.join('\n').replace(/\s+$/, '') + '\n';
 }
 
 // Escribe el export de un proyecto. out: ruta absoluta o relativa al proyecto (scompass export --out, la elige quien
 // la escribe). Sin out, config.export_md, que tiene que ser un .md dentro del proyecto (19.2): config.json viene con
 // el repo, y un export a ~/.bashrc sería escribir donde nadie lo pidió.
-export async function exportMarkdown(projectDir, { config, milestones, tasks, lists }, { out, date } = {}) {
+export async function exportMarkdown(projectDir, { config, milestones, tasks, lists, playtests }, { out, date } = {}) {
   let path;
   if (out !== undefined) path = resolve(projectDir, out);
   else {
@@ -88,7 +101,7 @@ export async function exportMarkdown(projectDir, { config, milestones, tasks, li
     if (!rel || !rel.endsWith('.md') || rel.includes('*')) throw new StoreError('invalid_argument', `export_md tiene que ser un .md dentro del proyecto: ${config.export_md}`);
     path = join(projectDir, rel);
   }
-  const text = renderMarkdown({ milestones, tasks, lists }, { title: config?.project ?? 'Proyecto', board: config?.board_url, date });
+  const text = renderMarkdown({ milestones, tasks, lists, playtests }, { title: config?.project ?? 'Proyecto', board: config?.board_url, date });
   await mkdir(dirname(path), { recursive: true });
   if (out === undefined && !(await realInside(projectDir, path))) throw new StoreError('invalid_argument', `export_md sale del proyecto por un enlace simbólico: ${config.export_md}`);
   await writeAtomic(path, text);

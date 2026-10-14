@@ -6,8 +6,9 @@ Estos archivos **son** las tareas del proyecto, en el formato de [Scope Compass]
 - `tasks/<id>.json`: una tarea. El nombre del archivo es su id.
 - `images/`: capturas de las tareas que se pegaron en la web o se agregaron con `scompass image add` desde fuera del proyecto. Cada tarea las cita en `images`.
 - `lists/<id>.json`: una lista (pendientes, compras…), con sus ítems `{ text, done, due? }` adentro. Tildar uno es cambiar `"done"` a `true`.
+- `playtests/<id>.json`: una sesión de playtest: tareas en el orden de prueba, `{ task, result?, note? }`, con `result` `"pass"` o `"fail"`.
 - `schema/`: JSON Schema de cada tipo y de `config.json`, para validar una edición a mano. Es una copia del de Scope Compass: `scompass update` la pone al día.
-- `config.json`: nombre del proyecto, documentos referenciables, export markdown, puerto del hub y `views` (las pestañas de la web en orden, la primera es la que abre: `board`, `lists`, `docs`).
+- `config.json`: nombre del proyecto, documentos referenciables, export markdown, puerto del hub y `views` (las pestañas de la web en orden, la primera es la que abre: `board`, `lists`, `playtest`, `docs`, `files`).
 - `.gdignore`: hace que Godot ignore esta carpeta.
 - `.gitattributes`: estos archivos siempre con LF, también en Windows (`scompass update` lo pone al día).
 - `AGENTS.md`: guía del tablero para agentes de IA (se pone al día con `scompass update`).
