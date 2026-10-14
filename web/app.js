@@ -18,7 +18,9 @@
     // Pasos: detalles desplegados y el paso en edición ("tarea:índice").
     stepsOpen: new Set(), editStep: null,
     // Listas (D25): las del proyecto, la abierta, el ítem en edición ("lista:n") y las pestañas de config.views.
-    lists: [], list: '', editItem: null, views: ['board', 'lists', 'docs', 'files'], viewsApplied: false,
+    lists: [], list: '', editItem: null, views: ['board', 'lists', 'playtest', 'docs', 'files'], viewsApplied: false,
+    // Playtest (D39): las sesiones, la abierta y lo que se busca para agregarle.
+    playtests: [], playtest: '', ptQ: '',
     // Archivos del repo (M14): lo de /api/files, el filtro, Solo con cambios, el archivo abierto, sus carpetas abiertas
     // y si se ven sus cambios en lugar del archivo.
     filesData: null, fileQ: '', filesChanged: false, file: '', fileShown: null, filesOpen: new Set(), fileDiff: false,
@@ -91,7 +93,11 @@
     listPatch: (id, patch, etag) => call('PATCH', '/api/lists/' + encodeURIComponent(id), patch, etag),
     listDelete: (id, etag) => call('DELETE', '/api/lists/' + encodeURIComponent(id), undefined, etag),
     listCheck: (id, n, etag) => call('POST', '/api/lists/' + encodeURIComponent(id) + '/check', { n }, etag),
-    listTask: (id, n, milestone, etag) => call('POST', '/api/lists/' + encodeURIComponent(id) + '/task', { n, milestone }, etag)
+    listTask: (id, n, milestone, etag) => call('POST', '/api/lists/' + encodeURIComponent(id) + '/task', { n, milestone }, etag),
+    playtests: () => call('GET', '/api/playtests'),
+    playtestCreate: (title, tasks) => call('POST', '/api/playtests', { title, tasks }),
+    playtestPatch: (id, patch, etag) => call('PATCH', '/api/playtests/' + encodeURIComponent(id), patch, etag),
+    playtestDelete: (id, etag) => call('DELETE', '/api/playtests/' + encodeURIComponent(id), undefined, etag)
   };
 
   function pref(k, v) {
@@ -183,6 +189,7 @@
   // Aplica al estado un documento que devolvió el hub (o lo quita si doc es null).
   function apply(collection, id, doc) {
     if (collection === 'lists') { applyList(id, doc); return; }
+    if (collection === 'playtests') { applyPlaytest(id, doc); return; }
     // Otras colecciones que esta versión no conoce: no se mezclan con las tareas.
     if (collection !== 'milestones' && collection !== 'tasks') return;
     const list = collection === 'milestones' ? S.milestones : S.tasks;
@@ -1227,6 +1234,8 @@
     }
     const l = /^#lists(?:\/([^/]+))?$/.exec(location.hash);
     if (l) { S.view = 'lists'; S.openId = null; S.confirmDelete = false; if (l[1]) S.list = decodeURIComponent(l[1]); return; }
+    const pt = /^#playtest(?:\/([^/]+))?$/.exec(location.hash);
+    if (pt) { S.view = 'playtest'; S.openId = null; S.confirmDelete = false; if (pt[1]) S.playtest = decodeURIComponent(pt[1]); return; }
     const t = TASK_HASH.exec(location.hash);
     if (t) { S.view = 'board'; S.openId = decodeURIComponent(t[1]); return; }
     const m = /^#docs(?:\/([^/]+)(?:\/([^/]+))?)?$/.exec(location.hash);
@@ -1978,6 +1987,180 @@
     });
   }
 
+  // Vista Playtest (D39): sesiones con tareas ya creadas en el orden en que se prueban. Cada una se marca anda o falla,
+  // con una nota, y desde ahí se pasa la tarea a Hecho o se vuelve a En curso. La sesión se escribe entera (PATCH
+  // items) con su etag, en fila como las listas.
+  const RESULTS = [['pass', '✓ Anda'], ['fail', '✗ Falla']];
+  function applyPlaytest(id, doc) {
+    const i = S.playtests.findIndex((x) => x.id === id);
+    if (doc === null) { if (i >= 0) S.playtests.splice(i, 1); }
+    else if (i >= 0) S.playtests[i] = doc;
+    else S.playtests.push(doc);
+    S.playtests.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.id.localeCompare(b.id));
+    render();
+  }
+  const ptQueues = new Map();
+  function ptWrite(id, fn, okMsg) {
+    const run = () => write(async () => {
+      const p = S.playtests.find((x) => x.id === id);
+      if (!p) return;
+      try {
+        const r = await fn(p);
+        if (r?.id) applyPlaytest(r.id, r);
+        if (okMsg) toast(okMsg);
+      } catch (e) {
+        if (e.code === 'conflict' && e.current) { applyPlaytest(e.current.id, { id: e.current.id, etag: e.current.etag, ...e.current.doc }); toast('La sesión cambió en otro lado; se actualizó. Probá de nuevo.'); return; }
+        throw e;
+      }
+    });
+    const next = (ptQueues.get(id) || Promise.resolve()).then(run);
+    ptQueues.set(id, next);
+    next.finally(() => { if (ptQueues.get(id) === next) ptQueues.delete(id); });
+    return next;
+  }
+  // Cambia los ítems de la sesión sobre su versión más reciente: fn(items) devuelve los nuevos (o null si no hay cambio).
+  const ptItems = (id, fn, okMsg) => ptWrite(id, (cur) => { const items = fn(cur.items); return items ? api.playtestPatch(cur.id, { items }, cur.etag) : null; }, okMsg);
+  const ptLeft = (p) => p.items.filter((x) => !x.result).length;
+  const inReview = () => S.tasks.filter((t) => t.status === 'review').sort(sortTasks);
+
+  function renderPlaytest() {
+    const box = document.getElementById('playtest');
+    if (S.view !== 'playtest') { box.replaceChildren(); return; }
+    // Como en Listas: lo que se está escribiendo sobrevive al re-armado, con el foco y el cursor.
+    const same = box.dataset.playtest === S.playtest;
+    const kept = same ? [...box.querySelectorAll('[data-keep]')].map((el) => [el.id, el.value]) : [];
+    const focus = same && box.contains(document.activeElement) ? { id: document.activeElement.id, start: document.activeElement.selectionStart, end: document.activeElement.selectionEnd } : null;
+    buildPlaytest(box);
+    for (const [id, v] of kept) { const el = id && document.getElementById(id); if (el && box.contains(el)) el.value = v; }
+    const f = focus?.id && document.getElementById(focus.id);
+    if (f && box.contains(f)) { f.focus(); try { if (focus.start != null) f.setSelectionRange(focus.start, focus.end); } catch (e) { /* select */ } }
+  }
+
+  function buildPlaytest(box) {
+    const p = S.playtests.find((x) => x.id === S.playtest) || S.playtests[0];
+    if (p) S.playtest = p.id;
+    box.dataset.playtest = S.playtest;
+    const side = h('nav', { class: 'list-side', 'aria-label': 'Sesiones de playtest' },
+      S.playtests.map((x) => h('a', { href: '#playtest/' + encodeURIComponent(x.id), class: 'list-link', 'aria-current': x.id === S.playtest ? 'page' : null },
+        h('span', { class: 't' }, x.title), h('span', { class: 'n', title: 'Sin probar' }, ptLeft(x) || '✓'))),
+      h('form', { class: 'list-new', onsubmit: (e) => {
+        e.preventDefault();
+        const input = e.target.querySelector('input');
+        const title = input.value.trim();
+        if (!title) return;
+        input.value = '';
+        write(async () => { const r = await api.playtestCreate(title); applyPlaytest(r.id, r); location.hash = '#playtest/' + encodeURIComponent(r.id); }, 'Sesión creada');
+      } }, h('label', { for: 'pt-new', class: 'sr' }, 'Nueva sesión'), h('input', { type: 'text', id: 'pt-new', placeholder: '+ Nueva sesión', autocomplete: 'off', 'data-keep': '1' })));
+    if (!p) {
+      const n = inReview().length;
+      box.replaceChildren(h('div', { class: 'lists-grid' }, side, h('div', { class: 'notice' },
+        'Todavía no hay sesiones de playtest. Creá una con «+ Nueva sesión» y cargale las tareas en el orden en que las vas a probar.',
+        n ? h('p', null, h('button', { class: 'btn primary', type: 'button', onclick: () => write(async () => {
+          const r = await api.playtestCreate('Revisión', inReview().map((t) => t.id)); applyPlaytest(r.id, r); location.hash = '#playtest/' + encodeURIComponent(r.id);
+        }, 'Sesión creada') }, `Crear una con las ${n} en Revisión`)) : null)));
+      return;
+    }
+    box.replaceChildren(h('div', { class: 'lists-grid' }, side, playtestPanel(p)));
+  }
+
+  function playtestPanel(p) {
+    const tested = p.items.length - ptLeft(p);
+    const fails = p.items.filter((x) => x.result === 'fail').length;
+    const have = new Set(p.items.map((x) => x.task));
+    const review = inReview().filter((t) => !have.has(t.id));
+    return h('section', { class: 'list-panel pt-panel', 'aria-label': p.title },
+      h('div', { class: 'list-head' },
+        h('h2', null, p.title),
+        h('span', { class: 'muted small' }, p.items.length ? `${tested} de ${p.items.length} probadas` + (fails ? ` · ${fails} ${fails === 1 ? 'falla' : 'fallan'}` : '') : 'vacía'),
+        h('span', { class: 'spacer' }),
+        tested ? h('button', { class: 'btn ghost small', type: 'button', title: 'Vuelve todas a «sin probar», para otra pasada', onclick: () => {
+          if (confirm(`¿Volver las ${tested} probadas a «sin probar»? Las notas quedan.`)) ptItems(p.id, (items) => items.map(({ result, ...x }) => x), 'Sesión reiniciada');
+        } }, 'Reiniciar') : null,
+        h('button', { class: 'btn ghost small', type: 'button', onclick: () => {
+          const title = prompt('Nuevo nombre de la sesión', p.title);
+          if (title && title.trim() && title.trim() !== p.title) ptWrite(p.id, (cur) => api.playtestPatch(cur.id, { title: title.trim() }, cur.etag));
+        } }, 'Renombrar'),
+        h('button', { class: 'btn ghost small danger', type: 'button', onclick: () => {
+          if (!confirm(`¿Borrar la sesión "${p.title}"? Las tareas no se tocan. Se puede recuperar con git.`)) return;
+          write(async () => { await api.playtestDelete(p.id, p.etag); applyPlaytest(p.id, null); location.hash = '#playtest'; }, 'Sesión borrada');
+        } }, 'Borrar')),
+      ptSearch(p, have, review),
+      p.items.length ? h('ol', { class: 'items pt-items' }, p.items.map((x, i) => ptRow(p, x, i + 1)))
+        : h('p', { class: 'muted' }, 'Sin tareas. Buscalas arriba, o cargá las que están en Revisión.'));
+  }
+
+  // Agregar tareas: buscar por título, código o id (las de Revisión primero), o todas las de Revisión de una vez.
+  function ptSearch(p, have, review) {
+    const norm = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const words = norm(S.ptQ).split(/\s+/).filter(Boolean);
+    const rank = (t) => ['review', 'doing', 'paused', 'todo', 'done'].indexOf(t.status);
+    const matches = words.length ? S.tasks.filter((t) => !have.has(t.id) && words.every((w) => norm(t.code + ' ' + t.title + ' ' + t.id).includes(w)))
+      .sort((a, b) => rank(a) - rank(b) || sortTasks(a, b)).slice(0, 8) : [];
+    const add = (ids, msg) => { S.ptQ = ''; ptItems(p.id, (items) => { const in_ = new Set(items.map((x) => x.task)); const fresh = ids.filter((id) => !in_.has(id)); return fresh.length ? [...items, ...fresh.map((task) => ({ task }))] : null; }, msg); };
+    return h('div', { class: 'ref-search pt-add', onkeydown: searchKeys },
+      h('div', { class: 'item-add' },
+        h('label', { for: 'pt-q', class: 'sr' }, 'Agregar tarea a ' + p.title),
+        h('input', { type: 'text', id: 'pt-q', placeholder: 'Agregar tarea: buscar por título o código', autocomplete: 'off', value: S.ptQ, 'data-orig': S.ptQ,
+          oninput: (e) => { S.ptQ = e.target.value; renderPlaytest(); } }),
+        review.length ? h('button', { class: 'btn', type: 'button', title: 'Agrega al final las tareas en Revisión que todavía no están, en el orden del tablero',
+          onclick: () => add(review.map((t) => t.id), review.length === 1 ? 'Agregada 1 tarea' : `Agregadas ${review.length} tareas`) }, `+ Las de Revisión (${review.length})`) : null),
+      matches.length ? h('ul', { class: 'ref-matches' }, matches.map((t) => {
+        const s = STATUSES.find((x) => x.id === t.status) || STATUSES[0];
+        return h('li', null, h('button', { type: 'button', onclick: () => add([t.id]) },
+          h('span', { class: 'dot', style: 'background:' + s.color, title: s.label }), t.code ? h('span', { class: 'code' }, t.code) : null, rich(t.title, true),
+          h('span', { class: 'ref-id' }, s.label + ' · ' + t.id)));
+      })) : null,
+      words.length && !matches.length ? h('p', { class: 'muted small' }, 'Ninguna tarea coincide (o ya están en la sesión).') : null);
+  }
+
+  function ptRow(p, x, n) {
+    const t = S.tasks.find((y) => y.id === x.task);
+    const s = t && (STATUSES.find((y) => y.id === t.status) || STATUSES[0]);
+    const last = p.items.length;
+    const move = (to) => ptItems(p.id, (items) => {
+      const from = items.findIndex((y) => y.task === x.task);
+      if (from < 0 || to < 0 || to >= items.length || from === to) return null;
+      const next = [...items]; const [it] = next.splice(from, 1); next.splice(to, 0, it); return next;
+    });
+    const setItem = (fn) => ptItems(p.id, (items) => { const i = items.findIndex((y) => y.task === x.task); return i < 0 ? null : items.with(i, fn(items[i])); });
+    const setResult = (r) => setItem(({ result, ...rest }) => (x.result === r ? rest : { ...rest, result: r }));
+    // La consecuencia en el tablero se ofrece, no se hace sola: anda → Hecho; falla → de vuelta a En curso.
+    const follow = !t ? null : x.result === 'pass' && t.status !== 'done' ? ['done', 'Pasar a Hecho'] : x.result === 'fail' && (t.status === 'review' || t.status === 'done') ? ['doing', 'Volver a En curso'] : null;
+    const noteId = 'pt-note-' + x.task;
+    return h('li', { class: 'item pt-item' + (x.result ? ' ' + x.result : ''), draggable: 'true', 'data-task': x.task,
+      ondragstart: (e) => { e.dataTransfer.setData('text/x-pt', x.task); e.dataTransfer.effectAllowed = 'move'; },
+      ondragover: (e) => { if ([...e.dataTransfer.types].includes('text/x-pt')) { e.preventDefault(); e.currentTarget.classList.add('drop-before'); } },
+      ondragleave: (e) => e.currentTarget.classList.remove('drop-before'),
+      ondrop: (e) => {
+        e.preventDefault(); e.currentTarget.classList.remove('drop-before');
+        const id = e.dataTransfer.getData('text/x-pt');
+        if (!id || id === x.task) return;
+        // Soltar antes de esta fila.
+        ptItems(p.id, (items) => {
+          const from = items.findIndex((y) => y.task === id);
+          if (from < 0) return null;
+          const next = [...items]; const [it] = next.splice(from, 1);
+          next.splice(next.findIndex((y) => y.task === x.task), 0, it); return next;
+        });
+      } },
+      h('span', { class: 'pt-n', 'aria-hidden': 'true' }, n),
+      t ? h('a', { href: '#task/' + encodeURIComponent(t.id), class: 'text pt-task', onclick: (e) => { e.preventDefault(); goToTask(t.id); } },
+        h('span', { class: 'dot', style: 'background:' + s.color }), t.code ? h('span', { class: 'code' }, t.code) : null, rich(t.title, true))
+        : h('span', { class: 'text muted' }, x.task + ' (la tarea ya no existe)'),
+      t ? h('span', { class: 'pt-status', style: 'color:' + s.color }, s.label) : null,
+      h('span', { class: 'pt-result', role: 'group', 'aria-label': 'Resultado' }, RESULTS.map(([r, label]) =>
+        h('button', { class: 'btn small ' + r, type: 'button', 'aria-pressed': x.result === r ? 'true' : 'false', onclick: () => setResult(r) }, label))),
+      follow ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => updateTask(t.id, { status: follow[0] }) }, follow[1]) : null,
+      h('span', { class: 'acts' },
+        h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Subir', disabled: n === 1, onclick: () => move(n - 2) }, '↑'),
+        h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Bajar', disabled: n === last, onclick: () => move(n) }, '↓'),
+        h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Sacar de la sesión', onclick: () => ptItems(p.id, (items) => items.filter((y) => y.task !== x.task)) }, '×')),
+      h('label', { for: noteId, class: 'sr' }, 'Nota de la prueba'),
+      h('input', { type: 'text', id: noteId, class: 'pt-note', placeholder: 'Qué se vio al probarla…', value: x.note ?? '', autocomplete: 'off', 'data-keep': '1',
+        onchange: (e) => { const v = e.target.value.trim(); setItem(({ note, ...rest }) => (v ? { ...rest, note: v } : rest)); },
+        onkeydown: (e) => { if (e.key === 'Enter') e.target.blur(); } }));
+  }
+
   async function copy(text) {
     try { await navigator.clipboard.writeText(text); toast('Copiado: ' + text); } catch (e) { toast(text); }
   }
@@ -1994,7 +2177,7 @@
 
   function render() {
     renderGit();
-    renderMiles(); renderFilters(); renderSummary(); renderWarnings(); renderBoard(); renderTaskList(); renderDetail(); renderDocs(); renderFiles(); renderLists(); renderConn();
+    renderMiles(); renderFilters(); renderSummary(); renderWarnings(); renderBoard(); renderTaskList(); renderDetail(); renderDocs(); renderFiles(); renderLists(); renderPlaytest(); renderConn();
     // La vista se aplica al final: renderSummary muestra su caja por su cuenta.
     const boardView = S.view === 'board';
     for (const id of ['miles', 'filters', 'summary', 'new-btn']) document.getElementById(id).hidden = !boardView;
@@ -2004,9 +2187,10 @@
     document.getElementById('docs').hidden = S.view !== 'docs';
     document.getElementById('files').hidden = S.view !== 'files';
     document.getElementById('lists').hidden = S.view !== 'lists';
+    document.getElementById('playtest').hidden = S.view !== 'playtest';
     // Pestañas en el orden de config.views; las que no están se esconden (la del tablero, si es la actual, no).
     const nav = document.querySelector('nav.views');
-    for (const v of ['board', 'lists', 'docs', 'files']) {
+    for (const v of ['board', 'lists', 'playtest', 'docs', 'files']) {
       const tab = document.getElementById('tab-' + v);
       tab.setAttribute('aria-current', S.view === v ? 'page' : 'false');
       tab.hidden = !S.views.includes(v) && S.view !== v;
@@ -2139,12 +2323,13 @@
     do {
       eventsDuringLoad = false;
       try {
-        const [config, m, t, d, l] = await Promise.all([api.config(), api.milestones(), api.tasks(), api.docs().catch(() => ({ docs: [] })),
-          // Un hub de antes de las listas no tiene /api/lists.
-          api.lists().catch(() => ({ lists: [], warnings: [] }))]);
+        const [config, m, t, d, l, p] = await Promise.all([api.config(), api.milestones(), api.tasks(), api.docs().catch(() => ({ docs: [] })),
+          // Un hub de antes de las listas (o del playtest) no tiene /api/lists (/api/playtests).
+          api.lists().catch(() => ({ lists: [], warnings: [] })), api.playtests().catch(() => ({ playtests: [], warnings: [] }))]);
         S.git = await api.git().catch(() => null);
         S.lists = l.lists;
-        S.views = Array.isArray(config.views) && config.views.length ? config.views : ['board', 'lists', 'docs', 'files'];
+        S.playtests = p.playtests;
+        S.views = Array.isArray(config.views) && config.views.length ? config.views : ['board', 'lists', 'playtest', 'docs', 'files'];
         S.docs = d.docs;
         S.docEntries = config.docs ?? [];
         S.descTemplates = config.description_templates ?? {};
@@ -2154,7 +2339,7 @@
         S.milestones = m.milestones;
         S.tasks = t.tasks;
         S.warnings = [];
-        for (const w of [...m.warnings, ...t.warnings, ...l.warnings]) setWarning(w);
+        for (const w of [...m.warnings, ...t.warnings, ...l.warnings, ...p.warnings]) setWarning(w);
         S.offline = false;
       } catch (e) {
         S.offline = true;
