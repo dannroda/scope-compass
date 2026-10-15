@@ -171,6 +171,7 @@ test('export: Pausado como estado; sin sesiones no cambia nada; con sesiones, un
   const opts = { title: 'P', date: '2026-01-01' };
   assert.match(renderMarkdown(base, opts), /### 0\.1 T · Pausado/);
   assert.equal(renderMarkdown({ ...base, playtests: [] }, opts), renderMarkdown(base, opts));
-  const md = renderMarkdown({ ...base, playtests: [['b', { title: 'Build', order: 1, items: [{ task: 't1', result: 'fail', note: 'se\ntraba' }, { task: 'zz' }] }]] }, opts);
-  assert.ok(md.endsWith('## Playtest\n\n### Build  (1/2 probadas)\n\n1. [ ] 0.1 T · Pausado · **falla** — se traba\n2. [ ] zz (no existe)\n'), md);
+  const md = renderMarkdown({ ...base, playtests: [['b', { title: 'Build', order: 1, items: [{ task: 't1', result: 'fail', note: 'se traba\n# en la cueva' }, { task: 'zz' }] }]] }, opts);
+  // Una nota de varios renglones sigue sangrada debajo del ítem (y un # no se vuelve encabezado).
+  assert.ok(md.endsWith('## Playtest\n\n### Build  (1/2 probadas)\n\n1. [ ] 0.1 T · Pausado · **falla** — se traba\n   \\# en la cueva\n2. [ ] zz (no existe)\n'), md);
 });

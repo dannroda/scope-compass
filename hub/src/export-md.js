@@ -83,7 +83,9 @@ export function renderMarkdown({ milestones, tasks, lists = [], playtests = [] }
     L.push(...items.map((x, i) => {
       const t = ts.find((y) => y.id === x.task);
       return `${i + 1}. [${x.result === 'pass' ? 'x' : ' '}] ${name(x.task)}` + (t ? ` · ${ST[t.status ?? 'todo'] ?? t.status}` : '') +
-        (x.result === 'fail' ? ' · **falla**' : x.result === 'pass' ? ' · anda' : '') + (x.note ? ` — ${line(x.note)}` : '');
+        (x.result === 'fail' ? ' · **falla**' : x.result === 'pass' ? ' · anda' : '') +
+        // Una nota de varios renglones sigue sangrada debajo, como continuación del ítem.
+        (x.note ? ' — ' + block(x.note).split('\n').map((l, k) => (k && l ? '   ' + l : l)).join('\n') : '');
     }));
     if (items.length) L.push('');
   }

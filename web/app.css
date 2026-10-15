@@ -418,19 +418,59 @@ ul.items > .item:first-child { border-top: 0; }
 ol.items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 ol.items > .item:first-child { border-top: 0; }
 .pt-add .item-add input[type="text"] { border: 1px solid var(--line); background: var(--bg); }
-.pt-item .pt-n { font-family: var(--font-mono); font-size: 13px; color: var(--muted); min-width: 2ch; text-align: right; cursor: grab; font-variant-numeric: tabular-nums; }
-.pt-item .pt-task { display: inline-flex; align-items: baseline; gap: 6px; color: var(--fg); text-decoration: none; }
-.pt-item .pt-task:hover { text-decoration: underline; }
-.pt-task .dot, .pt-add .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; align-self: center; }
-.pt-task .code, .pt-add .code { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.pt-panel { container-type: inline-size; }
+/* Una fila: arriba la posición, el punto, el código y el título (alineados a la primera línea) y a la derecha lo que se
+   hace con ella; abajo, la nota a lo ancho. Angosta, los botones van en su renglón, debajo del título. */
+.item.pt-item { display: grid; grid-template-columns: 2.5ch minmax(0, 1fr) auto; grid-template-areas: "n task side" ". note note"; align-items: baseline; gap: 4px 10px; padding: 8px 4px; }
+@container (max-width: 620px) {
+  .item.pt-item { grid-template-columns: 2.5ch minmax(0, 1fr); grid-template-areas: "n task" ". side" ". note"; }
+}
+.pt-item .pt-n { grid-area: n; font-family: var(--font-mono); font-size: 13px; color: var(--muted); text-align: right; cursor: grab; font-variant-numeric: tabular-nums; }
+.pt-item .pt-task { grid-area: task; display: flex; align-items: baseline; gap: 6px; min-width: 0; color: var(--fg); text-decoration: none; }
+.pt-item .pt-task:hover .pt-title { text-decoration: underline; }
+.pt-title { min-width: 0; overflow-wrap: anywhere; }
+/* El punto, a la altura de la primera línea (un elemento vacío apoya su borde de abajo en la línea base). */
+.pt-task .dot, .pt-add .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.pt-add .dot { align-self: center; }
+.pt-task .code, .pt-add .code { font-family: var(--font-mono); font-size: 13px; color: var(--muted); white-space: nowrap; overflow-wrap: normal; flex: none; }
+.pt-item .pt-side { grid-area: side; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
 .pt-item .pt-status { font-size: 13px; font-weight: 700; white-space: nowrap; }
 .pt-result { display: inline-flex; gap: 4px; }
 .pt-result .btn[aria-pressed="true"].pass { color: var(--s-done); border-color: var(--s-done); font-weight: 700; }
 .pt-result .btn[aria-pressed="true"].fail { color: var(--danger); border-color: var(--danger); font-weight: 700; }
 .pt-item.pass .pt-task { color: var(--muted); }
-.pt-item .pt-note { flex: 1 1 100%; margin-left: calc(2ch + 10px); min-width: 0; border: 1px solid transparent; background: transparent; border-radius: 6px; padding: 4px 8px; font-size: 14px; color: var(--muted); }
+.pt-item .pt-note { grid-area: note; min-width: 0; border: 1px solid transparent; background: transparent; border-radius: 6px; padding: 4px 8px; font-size: 14px; color: var(--muted); }
 .pt-item .pt-note:hover, .pt-item .pt-note:focus { border-color: var(--line); background: var(--bg); color: var(--fg); }
 .pt-item.fail .pt-note:not(:placeholder-shown) { color: var(--danger); }
+.pt-item[aria-current="true"] { background: var(--accent-soft); border-radius: 8px; }
+/* Vista dividida (escritorio): la sesión a la izquierda y la tarea a la derecha, con el panel siempre a la vista (sin tarea,
+   .pt-empty). En Playtest el panel se limita para dejarle a la sesión unos 560 px, y vuelve al ancho elegido en las otras
+   vistas. En el teléfono el detalle ocupa toda la pantalla, como siempre. Angosta, la barra de sesiones va arriba. */
+#playtest { container-type: inline-size; }
+@media (min-width: 900px) {
+  body:has(#playtest:not([hidden])) { --pt-detail-w: max(360px, min(var(--detail-w, 460px), 100vw - 600px)); }
+  body:has(#playtest:not([hidden])) .wrap { max-width: none; margin-right: var(--pt-detail-w); }
+  body:has(#playtest:not([hidden])) .detail { width: var(--pt-detail-w); box-shadow: none; }
+}
+.pt-empty { position: fixed; top: 0; right: 0; bottom: 0; width: var(--pt-detail-w, 460px); background: var(--surface); border-left: 1px solid var(--line); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 9; }
+.pt-empty[hidden] { display: none; }
+.pt-empty-body { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; color: var(--muted); }
+.pt-nav { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; white-space: nowrap; }
+.pt-nav .btn { white-space: nowrap; }
+@container (max-width: 900px) {
+  #playtest .lists-grid { grid-template-columns: minmax(0, 1fr); }
+  #playtest .list-side { position: static; flex-direction: row; flex-wrap: wrap; }
+  #playtest .list-link { flex: 1 1 140px; border: 1px solid var(--line); }
+  #playtest .list-new { flex-basis: 100%; }
+}
+/* Resultado y nota en el detalle de una tarea abierta desde Playtest. */
+.pt-detail { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.pt-detail-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 8px; }
+.pt-detail-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pt-detail .pt-note { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 6px 10px; min-height: 72px; }
+/* La nota crece con el texto (field-sizing) y se puede agrandar arrastrando la esquina. */
+textarea.pt-note { display: block; width: 100%; font: inherit; line-height: 1.4; field-sizing: content; resize: vertical; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pt-item textarea.pt-note { width: 100%; min-height: 30px; }
 /* Fecha límite de una tarea (8.13). */
 .duemark { align-self: flex-start; font-family: var(--font-mono); font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; }
 .duemark.bad { color: var(--danger); border-color: var(--danger); }
@@ -615,7 +655,7 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
 /* Dorado con esquinas: el resumen y las fichas (proyecto en el Inicio, documento o archivo). */
 .fantasy :is(section.summary, .proj, .doc-card) { border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/item_get.png) 32 fill / 32px stretch; padding: 18px 28px; }
 /* Dorado doble: el detalle y los diálogos. */
-.fantasy :is(.detail, dialog.pick) { border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/menu_frame.png) 32 fill / 32px stretch; }
+.fantasy :is(.detail, dialog.pick, .pt-empty) { border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/menu_frame.png) 32 fill / 32px stretch; }
 .fantasy .detail { padding: calc(30px + env(safe-area-inset-top, 0px)) 32px calc(32px + env(safe-area-inset-bottom, 0px)); }
 .fantasy dialog.pick { padding: 30px 32px; }
 /* Piedra: avisos, índices laterales y bloques de código. */

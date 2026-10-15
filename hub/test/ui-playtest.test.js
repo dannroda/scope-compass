@@ -76,9 +76,15 @@ test('sin sesiones, crea una con las de Revisión; agregar, reordenar, anda/fall
   // Falla con nota; anda y la pasa a Hecho desde la sesión.
   await page.click('.pt-item[data-task="m1-04"] .pt-result button.fail');
   await until(async () => (await session('revision')).items[1].result === 'fail');
-  await page.fill('#pt-note-m1-04', 'se traba al saltar');
-  await page.press('#pt-note-m1-04', 'Enter');
-  await until(async () => (await session('revision')).items[1].note === 'se traba al saltar');
+  // La nota admite varios renglones (Enter es salto de línea) y se guarda al salir del campo.
+  await page.click('#pt-note-m1-04');
+  await page.keyboard.type('se traba al saltar');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('en la cueva');
+  const h1 = await page.locator('#pt-note-m1-04').evaluate((e) => e.offsetHeight);
+  await page.locator('#pt-note-m1-04').blur();
+  await until(async () => (await session('revision')).items[1].note === 'se traba al saltar\nen la cueva');
+  assert.ok(h1 > 40, `el campo creció con el segundo renglón (${h1} px)`);
   await page.waitForSelector('.pt-item[data-task="m1-04"] button:has-text("Volver a En curso")');
   await page.click('.pt-item[data-task="m1-05"] .pt-result button.pass');
   await page.click('.pt-item[data-task="m1-05"] button:has-text("Pasar a Hecho")');
@@ -93,18 +99,61 @@ test('sin sesiones, crea una con las de Revisión; agregar, reordenar, anda/fall
 
 test('abrir una tarea desde Playtest (o Listas) la abre encima, sin pasar al tablero; Cerrar y atrás vuelven ahí', async () => {
   await store.put('playtests', 'build', { title: 'Build', order: 1, items: [{ task: 'm1-04' }, { task: 'm1-05' }] }, { ifMatch: null });
+  await store.patch('tasks', 'm1-05', { code: '11.145', title: 'Un título bien largo que no entra en un renglón cuando la sesión queda angosta al lado del panel' });
   const page = await open('#playtest/build');
+  // Vista dividida: sin tarea abierta, el panel derecho invita a abrir la primera sin probar.
+  await page.waitForSelector('#pt-empty:not([hidden])');
+  await page.click('#pt-empty button:has-text("Abrir la primera sin probar")');
+  await page.waitForFunction(() => document.getElementById('detail').dataset.task === 'm1-04' && !document.getElementById('detail').hidden);
+  assert.equal(await page.isHidden('#pt-empty'), true);
+  // Siguiente recorre la sesión; un clic en la sesión no cierra el panel.
+  await page.click('#detail .pt-detail button:has-text("Siguiente")');
+  await page.waitForFunction(() => document.getElementById('detail').dataset.task === 'm1-05');
+  await page.click('.pt-panel h2');
+  await page.waitForTimeout(150);
+  assert.equal(await page.isVisible('#detail'), true, 'el panel sigue abierto');
+  await page.click('#detail .pt-detail button[aria-label="Anterior de la sesión"]');
+  await page.waitForFunction(() => document.getElementById('detail').dataset.task === 'm1-04');
   await page.click('.pt-item[data-task="m1-04"] .pt-task');
   await page.waitForFunction(() => document.getElementById('detail').dataset.task === 'm1-04' && !document.getElementById('detail').hidden);
   assert.equal(new URL(page.url()).hash, '#task/m1-04');
   assert.equal(await page.isVisible('#playtest .pt-panel'), true, 'la sesión sigue a la vista');
   assert.equal(await page.isVisible('#board'), false);
+  // La sesión se achica al lado del panel: Anda/Falla y la nota de la fila no quedan tapados, y la fila abierta se marca.
+  const detailLeft = await page.locator('#detail').evaluate((e) => e.getBoundingClientRect().left);
+  for (const sel of ['.pt-item[data-task="m1-04"] .pt-result button.fail', '#pt-note-m1-04']) {
+    const r = await page.locator(sel).evaluate((e) => e.getBoundingClientRect().right);
+    assert.ok(r <= detailLeft, `${sel} visible (${r} <= ${detailLeft})`);
+  }
+  assert.equal(await page.getAttribute('.pt-item[data-task="m1-04"]', 'aria-current'), 'true');
+  // En el detalle, el resultado y la nota de la sesión.
+  await page.click('#detail .pt-detail button.fail');
+  await until(async () => (await session('build')).items[0].result === 'fail');
+  await page.fill('#d-ptnote', 'no abre la puerta');
+  await page.press('#d-ptnote', 'Control+Enter');
+  await until(async () => (await session('build')).items[0].note === 'no abre la puerta');
+  await page.waitForFunction(() => document.getElementById('pt-note-m1-04').value === 'no abre la puerta');
+  await page.waitForSelector('#detail .pt-detail button:has-text("Volver a En curso")');
+  if (process.env.SCOMPASS_SHOTS) await page.screenshot({ path: join(process.env.SCOMPASS_SHOTS, 'playtest-detail.png') });
+
+  // Con el panel muy ancho, en Playtest se limita: la sesión no se aplasta y los botones de la fila no quedan debajo.
+  await page.evaluate(() => document.documentElement.style.setProperty('--detail-w', '1000px'));
+  const w = await page.locator('#playtest .pt-panel').evaluate((e) => e.getBoundingClientRect().width);
+  assert.ok(w >= 500, `ancho de la sesión: ${w}`);
+  const left = await page.locator('#detail').evaluate((e) => e.getBoundingClientRect().left);
+  // Angosta, se parte el título, no el código (antes salía un dígito por renglón).
+  assert.ok(await page.locator('.pt-item[data-task="m1-05"] .pt-task .code').evaluate((e) => e.getBoundingClientRect().height) < 24, 'el código en un renglón');
+  assert.ok(await page.locator('.pt-item[data-task="m1-05"] .pt-result button.fail').evaluate((e) => e.getBoundingClientRect().right) <= left, 'Falla de la fila a la vista');
+  assert.ok(await page.locator('.pt-item[data-task="m1-04"] .pt-task').evaluate((e) => e.getBoundingClientRect().height) < 40, 'el título en un renglón');
+  if (process.env.SCOMPASS_SHOTS) await page.screenshot({ path: join(process.env.SCOMPASS_SHOTS, 'playtest-wide.png') });
+  await page.evaluate(() => document.documentElement.style.removeProperty('--detail-w'));
   // Otra tarea de la sesión reemplaza la abierta; Cerrar vuelve a la sesión.
   await page.click('.pt-item[data-task="m1-05"] .pt-task');
   await page.waitForFunction(() => document.getElementById('detail').dataset.task === 'm1-05');
   await page.click('#detail .close');
   await page.waitForFunction(() => document.getElementById('detail').hidden && location.hash === '#playtest/build');
   assert.equal(await page.isVisible('#playtest .pt-panel'), true);
+  await page.waitForSelector('#pt-empty:not([hidden])');
   // Atrás también.
   await page.click('.pt-item[data-task="m1-04"] .pt-task');
   await page.waitForFunction(() => location.hash === '#task/m1-04');

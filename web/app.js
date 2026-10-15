@@ -787,7 +787,7 @@
 
   // Campos editables del detalle. Cada uno guarda en data-orig el valor con el que se dibujó:
   // si el usuario lo cambió y todavía no lo guardó, el valor escrito se conserva al redibujar.
-  const EDITABLE = ['d-title', 'd-assignee', 'd-tag', 'd-addcl', 'd-refq', 'd-linkq', 'd-step-text', 'd-step-detail', 'd-description', 'd-test', 'd-notes'];
+  const EDITABLE = ['d-title', 'd-assignee', 'd-tag', 'd-addcl', 'd-refq', 'd-linkq', 'd-step-text', 'd-step-detail', 'd-description', 'd-test', 'd-notes', 'd-ptnote'];
   function captureEdits(box) {
     const active = box.contains(document.activeElement) ? document.activeElement : null;
     const dirty = {};
@@ -922,6 +922,7 @@
             S.milestones.map((x) => h('option', { value: x.id, selected: x.id === t.milestone }, x.code + ' · ' + x.title)))),
         dueField(t),
         metaFields(t)),
+      ptDetail(t) ?? '',
       h('div', { class: 'seg', role: 'group', 'aria-label': 'Estado' }, STATUSES.map((s) =>
         h('button', { type: 'button', 'aria-pressed': (t.status || 'todo') === s.id ? 'true' : 'false', onclick: () => setStatus(t.id, s.id) }, s.label))),
       // Qué hay que hacer y por qué (D37), antes de los pasos. Vacía, el campo se quita.
@@ -2023,14 +2024,66 @@
   // Cambia los ítems de la sesión sobre su versión más reciente: fn(items) devuelve los nuevos (o null si no hay cambio).
   const ptItems = (id, fn, okMsg) => ptWrite(id, (cur) => { const items = fn(cur.items); return items ? api.playtestPatch(cur.id, { items }, cur.etag) : null; }, okMsg);
   const ptLeft = (p) => p.items.filter((x) => !x.result).length;
+  // Vista dividida (escritorio): la sesión a la izquierda y la tarea a la derecha, con el panel siempre a la vista.
+  const SPLIT = matchMedia('(min-width: 900px)');
+  SPLIT.addEventListener('change', () => render());
+  const ptSplit = () => S.view === 'playtest' && SPLIT.matches;
+  // Resultado y nota de una tarea de la sesión, sobre la versión más reciente (los usan la fila y el detalle).
+  const ptSetItem = (pid, task, fn) => ptItems(pid, (items) => { const i = items.findIndex((y) => y.task === task); return i < 0 ? null : items.with(i, fn(items[i])); });
+  // Otro clic en el mismo resultado lo quita.
+  const ptSetResult = (pid, task, r) => ptSetItem(pid, task, ({ result, ...rest }) => (result === r ? rest : { ...rest, result: r }));
+  // La nota admite varios renglones: Enter hace un salto de línea; se guarda al salir del campo, o con Ctrl/⌘+Enter.
+  const ptSetNote = (pid, task, v) => ptSetItem(pid, task, ({ note, ...rest }) => (v.trim() ? { ...rest, note: v.trim() } : rest));
+  const ptNoteKeys = (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); e.target.blur(); } };
+  const ptResultButtons = (pid, x) => h('span', { class: 'pt-result', role: 'group', 'aria-label': 'Resultado' }, RESULTS.map(([r, label]) =>
+    h('button', { class: 'btn small ' + r, type: 'button', 'aria-pressed': x.result === r ? 'true' : 'false', onclick: () => ptSetResult(pid, x.task, r) }, label)));
+  // Lo que conviene hacer con la tarea según cómo salió: anda → Hecho; falla → de vuelta a En curso. Se ofrece, no se hace solo.
+  const ptFollow = (t, x) => (!t ? null : x.result === 'pass' && t.status !== 'done' ? ['done', 'Pasar a Hecho'] : x.result === 'fail' && (t.status === 'review' || t.status === 'done') ? ['doing', 'Volver a En curso'] : null);
+  // En el detalle de una tarea abierta desde Playtest: su resultado y su nota en la sesión, sin volver a la lista.
+  function ptDetail(t) {
+    if (S.view !== 'playtest') return null;
+    const p = S.playtests.find((x) => x.id === S.playtest);
+    const n = p ? p.items.findIndex((x) => x.task === t.id) : -1;
+    if (n < 0) return null;
+    const x = p.items[n];
+    const follow = ptFollow(t, x);
+    // Recorrer la sesión en orden sin volver a la lista.
+    const step = (d) => { const y = p.items[n + d]; return y && S.tasks.some((z) => z.id === y.task) ? y.task : null; };
+    const [prev, next] = [step(-1), step(1)];
+    return h('section', { class: 'pt-detail', 'aria-label': 'Playtest' },
+      h('div', { class: 'pt-detail-head' }, h('span', { class: 'label' }, 'Playtest · ' + p.title),
+        h('span', { class: 'pt-nav' },
+          h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Anterior de la sesión', disabled: !prev, onclick: () => goToTask(prev) }, '←'),
+          h('span', { class: 'muted small' }, (n + 1) + ' de ' + p.items.length),
+          h('button', { class: 'btn ghost small', type: 'button', disabled: !next, onclick: () => goToTask(next) }, 'Siguiente →'))),
+      h('div', { class: 'pt-detail-row' }, ptResultButtons(p.id, x),
+        follow ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => updateTask(t.id, { status: follow[0] }) }, follow[1]) : null),
+      h('label', { for: 'd-ptnote', class: 'sr' }, 'Nota de la prueba'),
+      h('textarea', { id: 'd-ptnote', class: 'pt-note', placeholder: 'Qué se vio al probarla…', 'data-orig': x.note ?? '', rows: 3,
+        onchange: (e) => ptSetNote(p.id, t.id, e.target.value), onkeydown: ptNoteKeys }, x.note ?? ''));
+  }
   const inReview = () => S.tasks.filter((t) => t.status === 'review').sort(sortTasks);
 
+  // El panel derecho de la vista dividida sin una tarea abierta: qué hacer, y abrir la primera sin probar.
+  function renderPtEmpty() {
+    const el = document.getElementById('pt-empty');
+    const p = S.playtests.find((x) => x.id === S.playtest);
+    el.hidden = !ptSplit() || !!S.openId || !p;
+    if (el.hidden) { el.replaceChildren(); return; }
+    const first = p.items.find((x) => !x.result && S.tasks.some((t) => t.id === x.task));
+    el.replaceChildren(h('div', { class: 'pt-empty-body' },
+      h('p', null, p.items.length ? 'Elegí una tarea de la sesión para verla acá.' : 'Agregá tareas a la sesión y elegí una para verla acá.'),
+      first ? h('button', { class: 'btn primary', type: 'button', onclick: () => goToTask(first.task) }, 'Abrir la primera sin probar') : null));
+  }
+
   function renderPlaytest() {
+    renderPtEmpty();
     const box = document.getElementById('playtest');
     if (S.view !== 'playtest') { box.replaceChildren(); return; }
-    // Como en Listas: lo que se está escribiendo sobrevive al re-armado, con el foco y el cursor.
+    // Como en Listas: lo que se está escribiendo sobrevive al re-armado, con el foco y el cursor. Una nota (data-orig)
+    // solo si tiene cambios sin guardar: si no, vale la de la sesión (puede haber cambiado en el detalle u otra pestaña).
     const same = box.dataset.playtest === S.playtest;
-    const kept = same ? [...box.querySelectorAll('[data-keep]')].map((el) => [el.id, el.value]) : [];
+    const kept = same ? [...box.querySelectorAll('[data-keep], [data-orig]')].filter((el) => !('orig' in el.dataset) || el.value !== el.dataset.orig).map((el) => [el.id, el.value]) : [];
     const focus = same && box.contains(document.activeElement) ? { id: document.activeElement.id, start: document.activeElement.selectionStart, end: document.activeElement.selectionEnd } : null;
     buildPlaytest(box);
     for (const [id, v] of kept) { const el = id && document.getElementById(id); if (el && box.contains(el)) el.value = v; }
@@ -2124,12 +2177,9 @@
       if (from < 0 || to < 0 || to >= items.length || from === to) return null;
       const next = [...items]; const [it] = next.splice(from, 1); next.splice(to, 0, it); return next;
     });
-    const setItem = (fn) => ptItems(p.id, (items) => { const i = items.findIndex((y) => y.task === x.task); return i < 0 ? null : items.with(i, fn(items[i])); });
-    const setResult = (r) => setItem(({ result, ...rest }) => (x.result === r ? rest : { ...rest, result: r }));
-    // La consecuencia en el tablero se ofrece, no se hace sola: anda → Hecho; falla → de vuelta a En curso.
-    const follow = !t ? null : x.result === 'pass' && t.status !== 'done' ? ['done', 'Pasar a Hecho'] : x.result === 'fail' && (t.status === 'review' || t.status === 'done') ? ['doing', 'Volver a En curso'] : null;
+    const follow = ptFollow(t, x);
     const noteId = 'pt-note-' + x.task;
-    return h('li', { class: 'item pt-item' + (x.result ? ' ' + x.result : ''), draggable: 'true', 'data-task': x.task,
+    return h('li', { class: 'item pt-item' + (x.result ? ' ' + x.result : ''), draggable: 'true', 'data-task': x.task, 'aria-current': S.openId === x.task ? 'true' : null,
       ondragstart: (e) => { e.dataTransfer.setData('text/x-pt', x.task); e.dataTransfer.effectAllowed = 'move'; },
       ondragover: (e) => { if ([...e.dataTransfer.types].includes('text/x-pt')) { e.preventDefault(); e.currentTarget.classList.add('drop-before'); } },
       ondragleave: (e) => e.currentTarget.classList.remove('drop-before'),
@@ -2147,20 +2197,20 @@
       } },
       h('span', { class: 'pt-n', 'aria-hidden': 'true' }, n),
       t ? h('a', { href: '#task/' + encodeURIComponent(t.id), class: 'text pt-task', onclick: (e) => { e.preventDefault(); goToTask(t.id); } },
-        h('span', { class: 'dot', style: 'background:' + s.color }), t.code ? h('span', { class: 'code' }, t.code) : null, rich(t.title, true))
-        : h('span', { class: 'text muted' }, x.task + ' (la tarea ya no existe)'),
-      t ? h('span', { class: 'pt-status', style: 'color:' + s.color }, s.label) : null,
-      h('span', { class: 'pt-result', role: 'group', 'aria-label': 'Resultado' }, RESULTS.map(([r, label]) =>
-        h('button', { class: 'btn small ' + r, type: 'button', 'aria-pressed': x.result === r ? 'true' : 'false', onclick: () => setResult(r) }, label))),
-      follow ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => updateTask(t.id, { status: follow[0] }) }, follow[1]) : null,
-      h('span', { class: 'acts' },
-        h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Subir', disabled: n === 1, onclick: () => move(n - 2) }, '↑'),
-        h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Bajar', disabled: n === last, onclick: () => move(n) }, '↓'),
-        h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Sacar de la sesión', onclick: () => ptItems(p.id, (items) => items.filter((y) => y.task !== x.task)) }, '×')),
+        h('span', { class: 'dot', style: 'background:' + s.color }), t.code ? h('span', { class: 'code' }, t.code) : null, h('span', { class: 'pt-title' }, rich(t.title, true)))
+        : h('span', { class: 'text pt-task muted' }, x.task + ' (la tarea ya no existe)'),
+      // Lo que se hace con la fila, en un bloque: a la derecha del título, o debajo si la sesión es angosta.
+      h('span', { class: 'pt-side' },
+        t ? h('span', { class: 'pt-status', style: 'color:' + s.color }, s.label) : null,
+        ptResultButtons(p.id, x),
+        follow ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => updateTask(t.id, { status: follow[0] }) }, follow[1]) : null,
+        h('span', { class: 'acts' },
+          h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Subir', disabled: n === 1, onclick: () => move(n - 2) }, '↑'),
+          h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Bajar', disabled: n === last, onclick: () => move(n) }, '↓'),
+          h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Sacar de la sesión', onclick: () => ptItems(p.id, (items) => items.filter((y) => y.task !== x.task)) }, '×'))),
       h('label', { for: noteId, class: 'sr' }, 'Nota de la prueba'),
-      h('input', { type: 'text', id: noteId, class: 'pt-note', placeholder: 'Qué se vio al probarla…', value: x.note ?? '', autocomplete: 'off', 'data-keep': '1',
-        onchange: (e) => { const v = e.target.value.trim(); setItem(({ note, ...rest }) => (v ? { ...rest, note: v } : rest)); },
-        onkeydown: (e) => { if (e.key === 'Enter') e.target.blur(); } }));
+      h('textarea', { id: noteId, class: 'pt-note', placeholder: 'Qué se vio al probarla…', 'data-orig': x.note ?? '', rows: 1,
+        onchange: (e) => ptSetNote(p.id, x.task, e.target.value), onkeydown: ptNoteKeys }, x.note ?? ''));
   }
 
   async function copy(text) {
@@ -2230,7 +2280,8 @@
   // dónde empezó: arrastrar una selección desde las notas hasta afuera no lo cierra, y un botón del detalle que se
   // redibuja (y queda fuera del documento) tampoco.
   let openAtDown = null;
-  document.addEventListener('pointerdown', (e) => { openAtDown = S.openId && !e.target.closest('#detail, dialog.lightbox') ? S.openId : null; });
+  // En la vista dividida de Playtest el detalle es un panel fijo: un clic en la sesión no lo cierra.
+  document.addEventListener('pointerdown', (e) => { openAtDown = S.openId && !ptSplit() && !e.target.closest('#detail, dialog.lightbox') ? S.openId : null; });
   // Pegar o soltar una imagen con la tarea abierta la agrega como captura (18.4).
   document.addEventListener('paste', (e) => {
     const files = [...(e.clipboardData?.files ?? [])];
