@@ -29,6 +29,7 @@ import { taskHistory } from './history.js';
 import { forgetProject, projectsFile, projectsStatus, pruneTempProjects, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listPlaytests, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
+import { migrateSessions, nextPlaytest, sessionState } from './playtests.js';
 import { dueState, EVERY, isValidDue, localDay, localStamp, milestoneDueState, showDue } from './dates.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
 import { descriptionTemplate, DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, SIZES, splitList } from './filters.js';
@@ -111,8 +112,11 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   playtest move <sesión> <n|tarea> <pos>    la lleva a la posición pos (desde 1)
   playtest drop <sesión> <n|tarea>          la saca de la sesión
   playtest pass|fail <sesión> <n|tarea> [--note "…"]
-                                            anda / falla, con lo que se vio (--note "" quita la nota)
-  playtest reset <sesión> <n|tarea>         vuelve a "sin probar"
+                                            anda / falla, con lo que se vio (--note "" quita la nota); se guarda en
+                                            la tarea, así se ve igual en todas las sesiones que la tienen
+  playtest reset <sesión> <n|tarea>         vuelve a "sin probar" (la nota queda)
+  playtest migrate                          pasa las sesiones del formato anterior (resultado y nota en la sesión)
+                                            a las tareas
   doc list                                  documentos de config.json con su índice de secciones
   doc add <alias> <ruta|patrón>             declara un documento (un archivo, o un patrón como "docs/**/*.md")
   doc rm <alias>                            deja de declararlo (el archivo no se toca)
@@ -1141,28 +1145,37 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     // Sesiones de playtest (D39): tareas ya creadas en el orden en que se prueban, con resultado y nota.
     async playtest() {
       const sub = rest[0] ?? 'list';
+      // Cómo salió cada prueba vive en la tarea (D40): la misma en todas las sesiones que la tienen.
       const RESULT = { pass: '✓', fail: '✗' };
       const show = (p, tasks) => {
         print(`${p.doc.title}  [${p.id}]`);
         if (!p.doc.items.length) print('  (vacía)');
         p.doc.items.forEach((x, i) => {
           const t = tasks.find((y) => y.id === x.task);
-          print(`  ${String(i + 1).padStart(2)}. [${RESULT[x.result] ?? ' '}] ${taskLabel(tasks, x.task)}${t ? ` · ${STATUS[t.status]}` : ''}`);
-          if (x.note) print(`        ${x.note.replace(/\n/g, '\n        ')}`);
+          print(`  ${String(i + 1).padStart(2)}. [${RESULT[t?.playtest?.result] ?? ' '}] ${taskLabel(tasks, x.task)}${t ? ` · ${STATUS[t.status]}` : ''}`);
+          if (t?.playtest?.note) print(`        ${t.playtest.note.replace(/\n/g, '\n        ')}`);
         });
       };
       // Las tareas en Revisión (de un hito, con --milestone), en el orden de `scompass list`.
       const inReview = async () => listTasks(await store.loadAll(), { milestone: o.milestone, status: 'review' }).map((t) => t.id);
-      const left = (p) => p.items.filter((x) => !x.result).length;
+      if (sub === 'migrate') {
+        const r = await migrateSessions(compass, store, validators);
+        const lines = [r.sessions.length ? `Sesiones pasadas al formato nuevo: ${r.sessions.join(', ')}` : 'No hay sesiones del formato anterior.'];
+        for (const t of r.tasks) lines.push(`  ${t.id}: ${t.playtest.result === 'pass' ? 'anda' : t.playtest.result === 'fail' ? 'falla' : 'sin probar'}${t.playtest.note ? ' · ' + t.playtest.note.split('\n')[0] : ''}`);
+        if (r.missing.length) lines.push(`Tareas que ya no existen (su resultado se descartó): ${r.missing.join(', ')}`);
+        return written(r, lines.join('\n'));
+      }
       if (sub === 'list') {
         const { items, warnings } = await store.list('playtests');
         showWarnings(warnings);
+        if (warnings.some((w) => w.path.startsWith('compass/playtests/') && /\((result|note)\)/.test(w.message))) warn('aviso: hay sesiones del formato anterior (result y note en la sesión): scompass playtest migrate las pasa a las tareas');
         const playtests = listPlaytests(items.map((p) => [p.id, p.doc]));
         if (o.json) return done({ playtests, warnings });
         if (!playtests.length) print('Sin sesiones de playtest: scompass playtest new "<título>" crea una.');
+        const tasks = (await store.loadAll()).tasks;
         for (const p of playtests) {
-          const fail = p.items.filter((x) => x.result === 'fail').length;
-          const state = !p.items.length ? 'vacía' : left(p) ? `${left(p)} de ${p.items.length} sin probar` : 'todo probado';
+          const { left, fail } = sessionState(p, tasks);
+          const state = !p.items.length ? 'vacía' : left ? `${left} de ${p.items.length} sin probar` : 'todo probado';
           print(`  ${p.id.padEnd(20)} ${p.title}  ${state}${fail ? ` · ${fail} ${fail === 1 ? 'falla' : 'fallan'}` : ''}`);
         }
         return 0;
@@ -1187,7 +1200,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         return written({ id }, `Borrada la sesión ${id}`);
       }
       if (!['show', 'add', 'move', 'drop', 'pass', 'fail', 'reset'].includes(sub)) {
-        throw new UsageError(`subcomando desconocido: playtest ${sub} (show, new, set, rm, add, move, drop, pass, fail, reset)`);
+        throw new UsageError(`subcomando desconocido: playtest ${sub} (show, new, set, rm, add, move, drop, pass, fail, reset, migrate)`);
       }
       const cur = await store.get('playtests', id);
       if (sub === 'show') {
@@ -1228,10 +1241,11 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         return save(items.toSpliced(n - 1, 1).toSpliced(to - 1, 0, it), `${id}: ${it.task} en la posición ${to}`);
       }
       if (sub === 'drop') return save(items.toSpliced(n - 1, 1), `${id}: ${it.task} fuera de la sesión`);
-      const { result: _r, note: _n, ...base } = it;
-      const note = o.note === undefined ? it.note : o.note.trim() ? o.note : undefined;
-      if (sub === 'reset') return save(items.with(n - 1, { ...base, ...(note ? { note } : {}) }), `${id}: ${it.task} sin probar`);
-      return save(items.with(n - 1, { ...base, result: sub, ...(note ? { note } : {}) }), `${id}: ${it.task} ${sub === 'pass' ? 'anda ✓' : 'falla ✗'}`);
+      // pass, fail y reset escriben en la tarea, no en la sesión: se ve igual en todas las que la tienen.
+      const t = await store.get('tasks', it.task);
+      const playtest = nextPlaytest(t.doc.playtest, { result: sub === 'reset' ? null : sub, note: o.note });
+      const r = await store.patch('tasks', it.task, { playtest }, ifMatch);
+      return written({ id: r.id, etag: r.etag, ...r.doc }, `${it.task} ${sub === 'reset' ? 'sin probar' : sub === 'pass' ? 'anda ✓' : 'falla ✗'}`);
     },
 
     async milestone() {

@@ -8,7 +8,8 @@ const STATUS = { todo: 'Pendiente', paused: 'Pausado', doing: 'En curso', review
 const PRIORITY = { high: 'alta', medium: 'media', low: 'baja' };
 const LABEL = { title: 'Título', status: 'Estado', milestone: 'Hito', code: 'Código', due: 'Vence', priority: 'Prioridad', size: 'Tamaño',
   assignee: 'Responsable', description: 'Descripción', notes: 'Notas', test: 'Cómo probarlo', checklist: 'Pasos', tags: 'Etiquetas',
-  refs: 'Referencias', files: 'Archivos', images: 'Capturas', links: 'Vínculos' };
+  refs: 'Referencias', files: 'Archivos', images: 'Capturas', links: 'Vínculos', playtest: 'Playtest' };
+const RESULT = { pass: 'anda', fail: 'falla' };
 // Lo que cambia solo, o que ya cuenta otro campo: no es historia.
 const SKIP = new Set(['updated_at', 'created_at', 'done_at', 'order']);
 // Textos largos: solo si se agregaron, se quitaron o se editaron (con la concordancia de cada uno).
@@ -79,6 +80,13 @@ export function taskChanges(a, b) {
     const label = LABEL[field] ?? field;
     if (TEXTS[field]) out.push(`${label}: ${TEXTS[field][!x ? 0 : !y ? 1 : 2]}`);
     else if (field === 'checklist') out.push(`${label}: ${checklistChange(x, y)}`);
+    else if (field === 'playtest') {
+      // Resultado (sin probar, anda, falla) y la nota, como los textos largos.
+      const parts = [];
+      if (x?.result !== y?.result) parts.push(`${RESULT[x?.result] ?? 'sin probar'} → ${RESULT[y?.result] ?? 'sin probar'}`);
+      if (x?.note !== y?.note) parts.push('nota ' + (!x?.note ? 'agregada' : !y?.note ? 'quitada' : 'editada'));
+      out.push(`${label}: ${parts.join(', ')}`);
+    }
     else if (Array.isArray(x) || Array.isArray(y)) {
       const kx = (x ?? []).map((v) => key(field, v)), ky = (y ?? []).map((v) => key(field, v));
       const parts = [...ky.filter((v) => !kx.includes(v)).map((v) => '+' + v), ...kx.filter((v) => !ky.includes(v)).map((v) => '−' + v)];

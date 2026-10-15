@@ -20,6 +20,9 @@ test('taskChanges: un renglón por campo, con los pasos y las listas por element
     'Pasos: +«c», −«b», tildado «a»', 'Etiquetas: +audio −arte', 'Prioridad: — → alta'
   ]);
   assert.deepEqual(taskChanges({ description: 'x' }, {}), ['Descripción: quitada']);
+  assert.deepEqual(taskChanges({}, { playtest: { result: 'pass' } }), ['Playtest: sin probar → anda']);
+  assert.deepEqual(taskChanges({ playtest: { result: 'pass' } }, { playtest: { result: 'fail', note: 'x' } }), ['Playtest: anda → falla, nota agregada']);
+  assert.deepEqual(taskChanges({ playtest: { note: 'x' } }, { playtest: { note: 'y' } }), ['Playtest: nota editada']);
 });
 
 test('taskHistory y scompass history: commits del más nuevo al más viejo, lo sin commitear arriba; sin repo, nada', async () => {

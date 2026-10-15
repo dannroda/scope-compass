@@ -386,3 +386,17 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
 - **Descartado:**
   - Una etiqueta `playtest` con un número de orden: no da sesiones separadas ni resultado por prueba.
   - Pausado como etiqueta: no tendría columna ni entraría en los filtros por estado.
+
+## D40 · Playtest: cómo salió la prueba vive en la tarea, no en la sesión
+**2026-10-15 · vigente** · spec §28 · cambia D39 en un punto
+
+- **Qué:** el resultado (`pass`/`fail`) y la nota de una prueba van en la tarea, en `playtest: { result?, note? }`. Las sesiones de `compass/playtests/` quedan como `{ task }` en orden: solo ordenan.
+- **Por qué:** con el resultado en cada sesión, una tarea que está en dos (una sesión por zona y otra con todo lo de Revisión, por ejemplo) mostraba datos distintos en cada una: anda en una, falla con una nota en la otra. Lo que importa es cómo está la tarea, no en qué lista se marcó.
+- **Lo que cambia de D39:** D39 ponía `result` y `note` en la sesión. El orden sigue en la sesión, por la misma razón que daba D39: reordenar cambia un solo archivo.
+- **Cosas que siguen de esto:**
+  - *Reiniciar* una sesión quita el resultado de sus tareas, y eso se ve también en las otras sesiones que las tienen (lo avisa la confirmación). Las notas quedan.
+  - El historial de la tarea muestra los cambios de playtest (*Playtest: anda → falla, nota agregada*).
+- **Migración:** `scompass playtest migrate` pasa las sesiones del formato anterior a las tareas. Si una tarea estaba en varias, gana el resultado de la sesión más reciente (`updated_at`) que la probó, y las notas distintas se juntan, de la más vieja a la más nueva. Lo que la tarea ya tenía se respeta. Hasta migrarlas, esas sesiones no validan y la CLI avisa.
+- **Descartado:**
+  - Sincronizar el resultado entre las sesiones que tienen la tarea: varias copias del mismo dato que hay que mantener iguales.
+  - Un resultado por sesión con un "último resultado" calculado: dos fuentes para lo mismo, y la nota seguiría repartida.

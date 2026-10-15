@@ -1,5 +1,6 @@
-// Vista Playtest (D39) y columna Pausado: crear una sesión con las tareas en Revisión, buscar y agregar, reordenar,
-// marcar anda/falla con nota, pasar la tarea a Hecho desde ahí, y la columna Pausado al lado de Pendiente.
+// Vista Playtest (D39, D40) y columna Pausado: crear una sesión con las tareas en Revisión, buscar y agregar, reordenar,
+// marcar anda/falla con nota (en la tarea: igual en todas las sesiones), pasar la tarea a Hecho desde ahí, y la columna
+// Pausado al lado de Pendiente.
 import './isolate.js';
 import { test, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -75,7 +76,9 @@ test('sin sesiones, crea una con las de Revisión; agregar, reordenar, anda/fall
 
   // Falla con nota; anda y la pasa a Hecho desde la sesión.
   await page.click('.pt-item[data-task="m1-04"] .pt-result button.fail');
-  await until(async () => (await session('revision')).items[1].result === 'fail');
+  await until(async () => (await task('m1-04')).playtest?.result === 'fail');
+  // Vive en la tarea (D40): la sesión solo ordena.
+  assert.deepEqual((await session('revision')).items[1], { task: 'm1-04' });
   // La nota admite varios renglones (Enter es salto de línea) y se guarda al salir del campo.
   await page.click('#pt-note-m1-04');
   await page.keyboard.type('se traba al saltar');
@@ -83,7 +86,7 @@ test('sin sesiones, crea una con las de Revisión; agregar, reordenar, anda/fall
   await page.keyboard.type('en la cueva');
   const h1 = await page.locator('#pt-note-m1-04').evaluate((e) => e.offsetHeight);
   await page.locator('#pt-note-m1-04').blur();
-  await until(async () => (await session('revision')).items[1].note === 'se traba al saltar\nen la cueva');
+  await until(async () => (await task('m1-04')).playtest?.note === 'se traba al saltar\nen la cueva');
   assert.ok(h1 > 40, `el campo creció con el segundo renglón (${h1} px)`);
   await page.waitForSelector('.pt-item[data-task="m1-04"] button:has-text("Volver a En curso")');
   await page.click('.pt-item[data-task="m1-05"] .pt-result button.pass');
@@ -94,7 +97,7 @@ test('sin sesiones, crea una con las de Revisión; agregar, reordenar, anda/fall
 
   // Volver a marcar el mismo resultado lo quita.
   await page.click('.pt-item[data-task="m1-05"] .pt-result button.pass');
-  await until(async () => !(await session('revision')).items[2].result);
+  await until(async () => !(await task('m1-05')).playtest);
 });
 
 test('abrir una tarea desde Playtest (o Listas) la abre encima, sin pasar al tablero; Cerrar y atrás vuelven ahí', async () => {
@@ -128,10 +131,10 @@ test('abrir una tarea desde Playtest (o Listas) la abre encima, sin pasar al tab
   assert.equal(await page.getAttribute('.pt-item[data-task="m1-04"]', 'aria-current'), 'true');
   // En el detalle, el resultado y la nota de la sesión.
   await page.click('#detail .pt-detail button.fail');
-  await until(async () => (await session('build')).items[0].result === 'fail');
+  await until(async () => (await task('m1-04')).playtest?.result === 'fail');
   await page.fill('#d-ptnote', 'no abre la puerta');
   await page.press('#d-ptnote', 'Control+Enter');
-  await until(async () => (await session('build')).items[0].note === 'no abre la puerta');
+  await until(async () => (await task('m1-04')).playtest?.note === 'no abre la puerta');
   await page.waitForFunction(() => document.getElementById('pt-note-m1-04').value === 'no abre la puerta');
   await page.waitForSelector('#detail .pt-detail button:has-text("Volver a En curso")');
   if (process.env.SCOMPASS_SHOTS) await page.screenshot({ path: join(process.env.SCOMPASS_SHOTS, 'playtest-detail.png') });
@@ -159,6 +162,27 @@ test('abrir una tarea desde Playtest (o Listas) la abre encima, sin pasar al tab
   await page.waitForFunction(() => location.hash === '#task/m1-04');
   await page.goBack();
   await page.waitForFunction(() => document.getElementById('detail').hidden && location.hash === '#playtest/build');
+});
+
+test('una tarea en dos sesiones muestra lo mismo en las dos; Reiniciar la vuelve a «sin probar» en ambas', async () => {
+  await store.put('playtests', 'a', { title: 'A', order: 1, items: [{ task: 'm1-04' }, { task: 'm1-05' }] }, { ifMatch: null });
+  await store.put('playtests', 'b', { title: 'B', order: 2, items: [{ task: 'm1-04' }] }, { ifMatch: null });
+  const page = await open('#playtest/a');
+  await page.click('.pt-item[data-task="m1-04"] .pt-result button.fail');
+  await page.fill('#pt-note-m1-04', 'no salta');
+  await page.locator('#pt-note-m1-04').blur();
+  await until(async () => (await task('m1-04')).playtest?.note === 'no salta');
+  await page.click('.list-link:has-text("B")');
+  await page.waitForSelector('.pt-panel h2:text-is("B")');
+  await page.waitForSelector('.pt-item.fail[data-task="m1-04"] .pt-result button.fail[aria-pressed="true"]');
+  assert.equal(await page.inputValue('#pt-note-m1-04'), 'no salta');
+  await page.waitForSelector('.pt-panel .muted:has-text("1 de 1 probadas · 1 falla")');
+  page.on('dialog', (d) => d.accept());
+  await page.click('.pt-panel button:has-text("Reiniciar")');
+  await until(async () => (await task('m1-04')).playtest?.result === undefined);
+  assert.deepEqual((await task('m1-04')).playtest, { note: 'no salta' }, 'la nota queda');
+  await page.click('.list-link:has-text("A")');
+  await page.waitForSelector('.pt-item[data-task="m1-04"]:not(.fail) .pt-result button.fail[aria-pressed="false"]');
 });
 
 test('una sesión creada por la CLI (otro proceso) aparece sola, y su tarea borrada se avisa', async () => {

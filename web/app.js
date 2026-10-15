@@ -2023,30 +2023,41 @@
   }
   // Cambia los ítems de la sesión sobre su versión más reciente: fn(items) devuelve los nuevos (o null si no hay cambio).
   const ptItems = (id, fn, okMsg) => ptWrite(id, (cur) => { const items = fn(cur.items); return items ? api.playtestPatch(cur.id, { items }, cur.etag) : null; }, okMsg);
-  const ptLeft = (p) => p.items.filter((x) => !x.result).length;
+  // Cómo salió la prueba vive en la tarea (D40): la misma en todas las sesiones que la tienen.
+  const ptOf = (id) => S.tasks.find((t) => t.id === id)?.playtest ?? {};
+  const ptLeft = (p) => p.items.filter((x) => !ptOf(x.task).result).length;
   // Vista dividida (escritorio): la sesión a la izquierda y la tarea a la derecha, con el panel siempre a la vista.
   const SPLIT = matchMedia('(min-width: 900px)');
   SPLIT.addEventListener('change', () => render());
   const ptSplit = () => S.view === 'playtest' && SPLIT.matches;
-  // Resultado y nota de una tarea de la sesión, sobre la versión más reciente (los usan la fila y el detalle).
-  const ptSetItem = (pid, task, fn) => ptItems(pid, (items) => { const i = items.findIndex((y) => y.task === task); return i < 0 ? null : items.with(i, fn(items[i])); });
+  // El playtest nuevo de la tarea (las reglas de hub/src/playtests.js): undefined no cambia, null o "" quita; sin nada, null.
+  function nextPt(cur, change) {
+    const out = { ...(cur || {}) };
+    for (const [k, v] of Object.entries(change)) {
+      if (v === undefined) continue;
+      if (v === null || !String(v).trim()) delete out[k];
+      else out[k] = k === 'note' ? v.trim() : v;
+    }
+    return Object.keys(out).length ? out : null;
+  }
+  // Resultado y nota se escriben en la tarea, sobre su versión más reciente (los usan la fila y el detalle).
   // Otro clic en el mismo resultado lo quita.
-  const ptSetResult = (pid, task, r) => ptSetItem(pid, task, ({ result, ...rest }) => (result === r ? rest : { ...rest, result: r }));
+  const ptSetResult = (id, r) => updateTask(id, (t) => ({ playtest: nextPt(t.playtest, { result: t.playtest?.result === r ? null : r }) }));
   // La nota admite varios renglones: Enter hace un salto de línea; se guarda al salir del campo, o con Ctrl/⌘+Enter.
-  const ptSetNote = (pid, task, v) => ptSetItem(pid, task, ({ note, ...rest }) => (v.trim() ? { ...rest, note: v.trim() } : rest));
+  const ptSetNote = (id, v) => updateTask(id, (t) => ((t.playtest?.note ?? '') === v.trim() ? null : { playtest: nextPt(t.playtest, { note: v }) }));
   const ptNoteKeys = (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); e.target.blur(); } };
-  const ptResultButtons = (pid, x) => h('span', { class: 'pt-result', role: 'group', 'aria-label': 'Resultado' }, RESULTS.map(([r, label]) =>
-    h('button', { class: 'btn small ' + r, type: 'button', 'aria-pressed': x.result === r ? 'true' : 'false', onclick: () => ptSetResult(pid, x.task, r) }, label)));
+  const ptResultButtons = (t) => h('span', { class: 'pt-result', role: 'group', 'aria-label': 'Resultado' }, RESULTS.map(([r, label]) =>
+    h('button', { class: 'btn small ' + r, type: 'button', 'aria-pressed': t.playtest?.result === r ? 'true' : 'false', onclick: () => ptSetResult(t.id, r) }, label)));
   // Lo que conviene hacer con la tarea según cómo salió: anda → Hecho; falla → de vuelta a En curso. Se ofrece, no se hace solo.
-  const ptFollow = (t, x) => (!t ? null : x.result === 'pass' && t.status !== 'done' ? ['done', 'Pasar a Hecho'] : x.result === 'fail' && (t.status === 'review' || t.status === 'done') ? ['doing', 'Volver a En curso'] : null);
-  // En el detalle de una tarea abierta desde Playtest: su resultado y su nota en la sesión, sin volver a la lista.
+  const ptFollow = (t) => { const r = t?.playtest?.result; return !t ? null : r === 'pass' && t.status !== 'done' ? ['done', 'Pasar a Hecho'] : r === 'fail' && (t.status === 'review' || t.status === 'done') ? ['doing', 'Volver a En curso'] : null; };
+  // En el detalle de una tarea abierta desde Playtest: su resultado y su nota (de la tarea), sin volver a la lista.
   function ptDetail(t) {
     if (S.view !== 'playtest') return null;
     const p = S.playtests.find((x) => x.id === S.playtest);
     const n = p ? p.items.findIndex((x) => x.task === t.id) : -1;
     if (n < 0) return null;
-    const x = p.items[n];
-    const follow = ptFollow(t, x);
+    const follow = ptFollow(t);
+    const note = t.playtest?.note ?? '';
     // Recorrer la sesión en orden sin volver a la lista.
     const step = (d) => { const y = p.items[n + d]; return y && S.tasks.some((z) => z.id === y.task) ? y.task : null; };
     const [prev, next] = [step(-1), step(1)];
@@ -2056,11 +2067,11 @@
           h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Anterior de la sesión', disabled: !prev, onclick: () => goToTask(prev) }, '←'),
           h('span', { class: 'muted small' }, (n + 1) + ' de ' + p.items.length),
           h('button', { class: 'btn ghost small', type: 'button', disabled: !next, onclick: () => goToTask(next) }, 'Siguiente →'))),
-      h('div', { class: 'pt-detail-row' }, ptResultButtons(p.id, x),
+      h('div', { class: 'pt-detail-row' }, ptResultButtons(t),
         follow ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => updateTask(t.id, { status: follow[0] }) }, follow[1]) : null),
       h('label', { for: 'd-ptnote', class: 'sr' }, 'Nota de la prueba'),
-      h('textarea', { id: 'd-ptnote', class: 'pt-note', placeholder: 'Qué se vio al probarla…', 'data-orig': x.note ?? '', rows: 3,
-        onchange: (e) => ptSetNote(p.id, t.id, e.target.value), onkeydown: ptNoteKeys }, x.note ?? ''));
+      h('textarea', { id: 'd-ptnote', class: 'pt-note', placeholder: 'Qué se vio al probarla…', 'data-orig': note, rows: 3,
+        onchange: (e) => ptSetNote(t.id, e.target.value), onkeydown: ptNoteKeys }, note));
   }
   const inReview = () => S.tasks.filter((t) => t.status === 'review').sort(sortTasks);
 
@@ -2070,7 +2081,7 @@
     const p = S.playtests.find((x) => x.id === S.playtest);
     el.hidden = !ptSplit() || !!S.openId || !p;
     if (el.hidden) { el.replaceChildren(); return; }
-    const first = p.items.find((x) => !x.result && S.tasks.some((t) => t.id === x.task));
+    const first = p.items.find((x) => !ptOf(x.task).result && S.tasks.some((t) => t.id === x.task));
     el.replaceChildren(h('div', { class: 'pt-empty-body' },
       h('p', null, p.items.length ? 'Elegí una tarea de la sesión para verla acá.' : 'Agregá tareas a la sesión y elegí una para verla acá.'),
       first ? h('button', { class: 'btn primary', type: 'button', onclick: () => goToTask(first.task) }, 'Abrir la primera sin probar') : null));
@@ -2120,7 +2131,7 @@
 
   function playtestPanel(p) {
     const tested = p.items.length - ptLeft(p);
-    const fails = p.items.filter((x) => x.result === 'fail').length;
+    const fails = p.items.filter((x) => ptOf(x.task).result === 'fail').length;
     const have = new Set(p.items.map((x) => x.task));
     const review = inReview().filter((t) => !have.has(t.id));
     return h('section', { class: 'list-panel pt-panel', 'aria-label': p.title },
@@ -2129,7 +2140,10 @@
         h('span', { class: 'muted small' }, p.items.length ? `${tested} de ${p.items.length} probadas` + (fails ? ` · ${fails} ${fails === 1 ? 'falla' : 'fallan'}` : '') : 'vacía'),
         h('span', { class: 'spacer' }),
         tested ? h('button', { class: 'btn ghost small', type: 'button', title: 'Vuelve todas a «sin probar», para otra pasada', onclick: () => {
-          if (confirm(`¿Volver las ${tested} probadas a «sin probar»? Las notas quedan.`)) ptItems(p.id, (items) => items.map(({ result, ...x }) => x), 'Sesión reiniciada');
+          // Quita el resultado de cada tarea de la sesión: también deja de verse en las otras sesiones que la tienen.
+          if (!confirm(`¿Volver las ${tested} probadas a «sin probar»? Las notas quedan, y el cambio se ve en todas las sesiones que tienen esas tareas.`)) return;
+          Promise.all(p.items.map((x) => updateTask(x.task, (t) => (t.playtest?.result ? { playtest: nextPt(t.playtest, { result: null }) } : null))))
+            .then(() => toast('Sesión reiniciada'));
         } }, 'Reiniciar') : null,
         h('button', { class: 'btn ghost small', type: 'button', onclick: () => {
           const title = prompt('Nuevo nombre de la sesión', p.title);
@@ -2177,9 +2191,10 @@
       if (from < 0 || to < 0 || to >= items.length || from === to) return null;
       const next = [...items]; const [it] = next.splice(from, 1); next.splice(to, 0, it); return next;
     });
-    const follow = ptFollow(t, x);
+    const follow = ptFollow(t);
+    const res = t?.playtest ?? {};
     const noteId = 'pt-note-' + x.task;
-    return h('li', { class: 'item pt-item' + (x.result ? ' ' + x.result : ''), draggable: 'true', 'data-task': x.task, 'aria-current': S.openId === x.task ? 'true' : null,
+    return h('li', { class: 'item pt-item' + (res.result ? ' ' + res.result : ''), draggable: 'true', 'data-task': x.task, 'aria-current': S.openId === x.task ? 'true' : null,
       ondragstart: (e) => { e.dataTransfer.setData('text/x-pt', x.task); e.dataTransfer.effectAllowed = 'move'; },
       ondragover: (e) => { if ([...e.dataTransfer.types].includes('text/x-pt')) { e.preventDefault(); e.currentTarget.classList.add('drop-before'); } },
       ondragleave: (e) => e.currentTarget.classList.remove('drop-before'),
@@ -2202,15 +2217,15 @@
       // Lo que se hace con la fila, en un bloque: a la derecha del título, o debajo si la sesión es angosta.
       h('span', { class: 'pt-side' },
         t ? h('span', { class: 'pt-status', style: 'color:' + s.color }, s.label) : null,
-        ptResultButtons(p.id, x),
+        t ? ptResultButtons(t) : null,
         follow ? h('button', { class: 'btn ghost small', type: 'button', onclick: () => updateTask(t.id, { status: follow[0] }) }, follow[1]) : null,
         h('span', { class: 'acts' },
           h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Subir', disabled: n === 1, onclick: () => move(n - 2) }, '↑'),
           h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Bajar', disabled: n === last, onclick: () => move(n) }, '↓'),
           h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Sacar de la sesión', onclick: () => ptItems(p.id, (items) => items.filter((y) => y.task !== x.task)) }, '×'))),
-      h('label', { for: noteId, class: 'sr' }, 'Nota de la prueba'),
-      h('textarea', { id: noteId, class: 'pt-note', placeholder: 'Qué se vio al probarla…', 'data-orig': x.note ?? '', rows: 1,
-        onchange: (e) => ptSetNote(p.id, x.task, e.target.value), onkeydown: ptNoteKeys }, x.note ?? ''));
+      t ? h('label', { for: noteId, class: 'sr' }, 'Nota de la prueba') : null,
+      t ? h('textarea', { id: noteId, class: 'pt-note', placeholder: 'Qué se vio al probarla…', 'data-orig': res.note ?? '', rows: 1,
+        onchange: (e) => ptSetNote(t.id, e.target.value), onkeydown: ptNoteKeys }, res.note ?? '') : null);
   }
 
   async function copy(text) {

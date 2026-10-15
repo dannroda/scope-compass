@@ -1,4 +1,5 @@
-// Sesiones de playtest y estado Pausado (M20, D39): schema, CLI con y sin hub, API, watcher y export markdown.
+// Sesiones de playtest y estado Pausado (M20, D39, D40): schema, CLI con y sin hub, API, watcher, export markdown y la
+// migración del formato anterior (resultado y nota en la sesión) a las tareas.
 import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -51,13 +52,19 @@ async function cli(cwd, argv) {
   return { code, out, err };
 }
 const session = async (p, id) => JSON.parse(await readFile(join(p, 'compass', 'playtests', `${id}.json`), 'utf8'));
+const task = async (p, id) => JSON.parse(await readFile(join(p, 'compass', 'tasks', `${id}.json`), 'utf8'));
 
-test('schema: estado paused; sesión válida y errores comunes', () => {
-  const task = { milestone: 'm00', title: 'T', status: 'paused' };
-  assert.equal(parseDoc(JSON.stringify(task), 'task', V).ok, true);
-  const ok = { title: 'Build 0.3', order: 1, items: [{ task: 'm1-04' }, { task: 'm1-05', result: 'fail', note: 'se traba' }] };
+test('schema: estado paused; playtest de la tarea; sesión válida y errores comunes', () => {
+  const t = { milestone: 'm00', title: 'T', status: 'paused' };
+  assert.equal(parseDoc(JSON.stringify(t), 'task', V).ok, true);
+  assert.equal(parseDoc(JSON.stringify({ ...t, playtest: { result: 'fail', note: 'se traba' } }), 'task', V).ok, true);
+  for (const playtest of [{}, { result: 'meh' }, { note: '' }, { result: 'pass', extra: 1 }]) {
+    assert.equal(parseDoc(JSON.stringify({ ...t, playtest }), 'task', V).ok, false, JSON.stringify(playtest));
+  }
+  const ok = { title: 'Build 0.3', order: 1, items: [{ task: 'm1-04' }, { task: 'm1-05' }] };
   assert.equal(parseDoc(JSON.stringify(ok), 'playtest', V).ok, true);
-  for (const bad of [{ ...ok, items: [{ task: 'm1-04', result: 'meh' }] }, { ...ok, items: [{ result: 'pass' }] }, { ...ok, items: [{ task: 'm1-04', note: '' }] }, { title: 'X', order: 1 }]) {
+  // El resultado ya no va en la sesión (D40).
+  for (const bad of [{ ...ok, items: [{ task: 'm1-04', result: 'pass' }] }, { ...ok, items: [{ task: 'm1-04', note: 'x' }] }, { ...ok, items: [{}] }, { title: 'X', order: 1 }]) {
     assert.equal(parseDoc(JSON.stringify(bad), 'playtest', V).ok, false, JSON.stringify(bad));
   }
 });
@@ -83,19 +90,31 @@ test('CLI sin hub: Pausado, crear con --review, agregar, mover, anda/falla con n
   assert.deepEqual((await session(disk, 'build-0-3')).items.map((x) => x.task), ['m1-04', 'm1-05', 'm1-07']);
   assert.equal((await c('playtest', 'fail', 'build-0-3', '1', '--note', 'se traba al saltar')).code, 0);
   assert.equal((await c('playtest', 'pass', 'build-0-3', 'm1-05')).code, 0);
+  // Se guarda en la tarea; la sesión solo ordena.
+  assert.deepEqual((await task(disk, 'm1-04')).playtest, { result: 'fail', note: 'se traba al saltar' });
+  assert.deepEqual((await task(disk, 'm1-05')).playtest, { result: 'pass' });
   let s = await session(disk, 'build-0-3');
-  assert.deepEqual(s.items.slice(0, 2), [{ task: 'm1-04', result: 'fail', note: 'se traba al saltar' }, { task: 'm1-05', result: 'pass' }]);
+  assert.deepEqual(s.items, [{ task: 'm1-04' }, { task: 'm1-05' }, { task: 'm1-07' }]);
 
   const shown = await c('playtest', 'show', 'build-0-3');
   assert.match(shown.out, /1\. \[✗\] m1-04 \(1\.4 CLI básica\) · Revisión\n {8}se traba al saltar/);
   assert.match(shown.out, /2\. \[✓\] m1-05/);
   assert.match((await c('playtest')).out, /build-0-3 +Build 0\.3 {2}1 de 3 sin probar · 1 falla/);
+  // Otra sesión con la misma tarea ve lo mismo.
+  assert.equal((await c('playtest', 'new', 'Otra pasada')).code, 0);
+  assert.equal((await c('playtest', 'add', 'otra-pasada', 'm1-04')).code, 0);
+  assert.match((await c('playtest', 'show', 'otra-pasada')).out, /1\. \[✗\] m1-04 .*\n {8}se traba al saltar/);
+  assert.equal((await c('playtest', 'rm', 'otra-pasada')).code, 0);
 
   // reset conserva la nota; pass con --note "" la quita.
   assert.equal((await c('playtest', 'reset', 'build-0-3', '1')).code, 0);
-  assert.deepEqual((await session(disk, 'build-0-3')).items[0], { task: 'm1-04', note: 'se traba al saltar' });
+  assert.deepEqual((await task(disk, 'm1-04')).playtest, { note: 'se traba al saltar' });
   assert.equal((await c('playtest', 'pass', 'build-0-3', '1', '--note', '')).code, 0);
-  assert.deepEqual((await session(disk, 'build-0-3')).items[0], { task: 'm1-04', result: 'pass' });
+  assert.deepEqual((await task(disk, 'm1-04')).playtest, { result: 'pass' });
+  // Sin resultado ni nota, el campo se va.
+  assert.equal((await c('playtest', 'reset', 'build-0-3', '1')).code, 0);
+  assert.equal((await task(disk, 'm1-04')).playtest, undefined);
+  assert.equal((await c('playtest', 'pass', 'build-0-3', '1')).code, 0);
 
   assert.equal((await c('playtest', 'drop', 'build-0-3', 'm1-05')).code, 0);
   s = await session(disk, 'build-0-3');
@@ -117,10 +136,13 @@ test('CLI con hub: las sesiones pasan por la API, se publican y quedan igual que
     assert.equal((await c('playtest', 'fail', 'build-0-3', 'm1-07', '--note', 'no carga')).code, 0);
   }
   const ups = events.filter((e) => e.type === 'upsert' && e.collection === 'playtests');
-  assert.equal(ups.length, 3);
-  assert.deepEqual(ups.at(-1).doc.items[1], { task: 'm1-07', result: 'fail', note: 'no carga' });
-  const [a, b] = await Promise.all([hubDir, disk].map((p) => readFile(join(p, 'compass', 'playtests', 'build-0-3.json'), 'utf8')));
-  assert.equal(a, b);
+  assert.equal(ups.length, 2);
+  assert.deepEqual(ups.at(-1).doc.items[1], { task: 'm1-07' });
+  assert.deepEqual(events.filter((e) => e.type === 'upsert' && e.collection === 'tasks' && e.id === 'm1-07').at(-1).doc.playtest, { result: 'fail', note: 'no carga' });
+  for (const f of ['playtests/build-0-3.json', 'tasks/m1-07.json']) {
+    const [a, b] = await Promise.all([hubDir, disk].map((p) => readFile(join(p, 'compass', f), 'utf8')));
+    assert.equal(a, b, f);
+  }
   assert.equal((await cli(hubDir, ['playtest', 'rm', 'build-0-3'])).code, 0);
   assert.ok(events.some((e) => e.type === 'delete' && e.collection === 'playtests' && e.id === 'build-0-3'));
 });
@@ -137,10 +159,14 @@ test('API: crear con tareas, id del título, tarea inexistente, PATCH con etag y
   assert.equal((await post({ title: 'X', tasks: ['zz-99'] })).status, 404);
   assert.equal((await post({ title: ' ' })).status, 400);
   const patch = (etag, body) => fetch(`${base}/revision`, { method: 'PATCH', headers: { 'content-type': 'application/json', 'if-match': `"${etag}"` }, body: JSON.stringify(body) });
-  r = await patch(first.etag, { items: [{ task: 'm1-04', result: 'pass' }, { task: 'm1-05' }] });
+  r = await patch(first.etag, { items: [{ task: 'm1-04' }, { task: 'm1-05' }] });
   assert.equal(r.status, 200);
   assert.equal((await patch(first.etag, { items: [] })).status, 409, 'etag viejo');
-  assert.equal((await patch((await r.json()).etag, { items: [{ task: 'm1-04', result: 'ok' }] })).status, 400);
+  assert.equal((await patch((await r.json()).etag, { items: [{ task: 'm1-04', result: 'pass' }] })).status, 400, 'el resultado va en la tarea');
+  // En la tarea: PATCH { playtest }, y null lo quita.
+  const tpatch = (body) => fetch(`http://127.0.0.1:${port}/api/tasks/m1-04`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  assert.deepEqual((await (await tpatch({ playtest: { result: 'pass', note: 'ok' } })).json()).playtest, { result: 'pass', note: 'ok' });
+  assert.equal((await (await tpatch({ playtest: null })).json()).playtest, undefined);
   const all = await (await fetch(base)).json();
   assert.deepEqual(all.playtests.map((p) => p.id), ['revision', 'revision-2']);
   assert.equal((await fetch(`${base}/revision-2`, { method: 'DELETE' })).status, 204);
@@ -171,7 +197,32 @@ test('export: Pausado como estado; sin sesiones no cambia nada; con sesiones, un
   const opts = { title: 'P', date: '2026-01-01' };
   assert.match(renderMarkdown(base, opts), /### 0\.1 T · Pausado/);
   assert.equal(renderMarkdown({ ...base, playtests: [] }, opts), renderMarkdown(base, opts));
-  const md = renderMarkdown({ ...base, playtests: [['b', { title: 'Build', order: 1, items: [{ task: 't1', result: 'fail', note: 'se traba\n# en la cueva' }, { task: 'zz' }] }]] }, opts);
+  const tasks = [['t1', { ...base.tasks[0][1], playtest: { result: 'fail', note: 'se traba\n# en la cueva' } }]];
+  const md = renderMarkdown({ ...base, tasks, playtests: [['b', { title: 'Build', order: 1, items: [{ task: 't1' }, { task: 'zz' }] }]] }, opts);
   // Una nota de varios renglones sigue sangrada debajo del ítem (y un # no se vuelve encabezado).
   assert.ok(md.endsWith('## Playtest\n\n### Build  (1/2 probadas)\n\n1. [ ] 0.1 T · Pausado · **falla** — se traba\n   \\# en la cueva\n2. [ ] zz (no existe)\n'), md);
+});
+
+test('migrate: del formato anterior a las tareas; gana la sesión más reciente y las notas se juntan', async () => {
+  const dir = join(disk, 'compass', 'playtests');
+  await mkdir(dir, { recursive: true });
+  const old = (title, updated_at, items) => writeFile(join(dir, `${title}.json`), canonical({ title, order: 1, items, created_at: updated_at, updated_at }));
+  await old('vieja', '2026-10-01T10:00:00.000Z', [{ task: 'm1-04', result: 'pass', note: 'anda bien' }, { task: 'm1-05', result: 'pass' }, { task: 'zz-99', result: 'fail' }]);
+  await old('nueva', '2026-10-03T10:00:00.000Z', [{ task: 'm1-04', result: 'fail', note: 'en la cueva falla' }, { task: 'm1-05' }, { task: 'm1-07', note: 'sin probar todavía' }]);
+  // Lo que la tarea ya tenía se respeta.
+  await createJsonFilesStore(join(disk, 'compass'), { validators: V }).patch('tasks', 'm1-07', { playtest: { result: 'pass' } });
+  const listed = await cli(disk, ['playtest']);
+  assert.match(listed.err, /scompass playtest migrate/);
+
+  const r = await cli(disk, ['playtest', 'migrate']);
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /Sesiones pasadas al formato nuevo: vieja, nueva/);
+  assert.match(r.out, /ya no existen .*zz-99/);
+  assert.deepEqual((await task(disk, 'm1-04')).playtest, { result: 'fail', note: 'anda bien\nen la cueva falla' });
+  assert.deepEqual((await task(disk, 'm1-05')).playtest, { result: 'pass' }, 'la nueva no la probó: queda la vieja');
+  assert.deepEqual((await task(disk, 'm1-07')).playtest, { result: 'pass', note: 'sin probar todavía' });
+  assert.deepEqual((await session(disk, 'nueva')).items, [{ task: 'm1-04' }, { task: 'm1-05' }, { task: 'm1-07' }]);
+  assert.equal((await session(disk, 'nueva')).updated_at, '2026-10-03T10:00:00.000Z');
+  assert.doesNotMatch((await cli(disk, ['playtest'])).err, /aviso/);
+  assert.match((await cli(disk, ['playtest', 'migrate'])).out, /No hay sesiones del formato anterior/);
 });

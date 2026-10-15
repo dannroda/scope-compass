@@ -74,18 +74,19 @@ export function renderMarkdown({ milestones, tasks, lists = [], playtests = [] }
     L.push(...items.map((x) => `- [${x.done ? 'x' : ' '}] ${line(x.text)}` + (x.due ? ` · vence ${x.due.replace('T', ' ')}` : '') + (x.repeat ? ` · se repite ${EVERY[x.repeat.every]}` : '') + (x.task ? ` · → tarea ${ts.find((t) => t.id === x.task)?.code || x.task}` : '')));
     if (items.length) L.push('');
   }
-  // Sesiones de playtest (D39), al final: las tareas en el orden de prueba, con su estado y cómo salieron.
+  // Sesiones de playtest (D39), al final: las tareas en el orden de prueba, con su estado y cómo salieron (eso vive
+  // en la tarea, D40: es lo mismo en todas las sesiones que la tienen).
   const ps = [...playtests].sort(([ia, a], [ib, b]) => cmp(a.order ?? 0, b.order ?? 0) || cmp(ia, ib));
   if (ps.length) L.push('## Playtest', '');
   for (const [, p] of ps) {
-    const items = p.items ?? [];
-    L.push(`### ${line(p.title)}` + (items.length ? `  (${items.filter((x) => x.result).length}/${items.length} probadas)` : ''), '');
-    L.push(...items.map((x, i) => {
-      const t = ts.find((y) => y.id === x.task);
-      return `${i + 1}. [${x.result === 'pass' ? 'x' : ' '}] ${name(x.task)}` + (t ? ` · ${ST[t.status ?? 'todo'] ?? t.status}` : '') +
-        (x.result === 'fail' ? ' · **falla**' : x.result === 'pass' ? ' · anda' : '') +
+    const items = (p.items ?? []).map((x) => ({ x, t: ts.find((y) => y.id === x.task) }));
+    L.push(`### ${line(p.title)}` + (items.length ? `  (${items.filter(({ t }) => t?.playtest?.result).length}/${items.length} probadas)` : ''), '');
+    L.push(...items.map(({ x, t }, i) => {
+      const { result, note } = t?.playtest ?? {};
+      return `${i + 1}. [${result === 'pass' ? 'x' : ' '}] ${name(x.task)}` + (t ? ` · ${ST[t.status ?? 'todo'] ?? t.status}` : '') +
+        (result === 'fail' ? ' · **falla**' : result === 'pass' ? ' · anda' : '') +
         // Una nota de varios renglones sigue sangrada debajo, como continuación del ítem.
-        (x.note ? ' — ' + block(x.note).split('\n').map((l, k) => (k && l ? '   ' + l : l)).join('\n') : '');
+        (note ? ' — ' + block(note).split('\n').map((l, k) => (k && l ? '   ' + l : l)).join('\n') : '');
     }));
     if (items.length) L.push('');
   }

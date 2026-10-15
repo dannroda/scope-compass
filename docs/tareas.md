@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-10-13
+> Generado: 2026-10-15
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -2322,7 +2322,7 @@ Pedido del usuario (2026-10-11): después de ver los mockups con los marcos de P
 
 **Referencias:** `docs/spec.md#auditoria`
 
-## M20 — Playtest y Pausado  (0/5)
+## M20 — Playtest y Pausado  (0/7)
 
 Ordenar lo que está en Revisión: sesiones de playtest con tareas ya creadas en un orden de prueba, y un estado Pausado para lo que se dejó de lado sin terminar.
 
@@ -2369,3 +2369,31 @@ Pedido: un clic en una tarea desde Listas, Playtest, Documentos o Archivos la ab
 **Prueba:** ui-playtest.test.js (abrir desde Playtest, Cerrar y atrás), ui-docs.test.js (backlinks)
 
 **Notas:** readHash toma la vista de history.state.taskFrom; closeTask vuelve atrás siempre que haya taskFrom. En el teléfono la barra fija de Documentos se esconde con el detalle abierto.
+
+### 20.6 Vista dividida en Playtest · Revisión
+
+Pedido: al abrir una tarea desde Playtest, el panel tapaba Anda/Falla y la nota; después: que Playtest sea una vista dividida.
+
+- [x] Nota de varios renglones
+  Pedido: el campo de qué se vio tiene que poder agrandarse y aceptar varias líneas. Textarea con field-sizing: content y resize vertical, en la fila y en el detalle; Enter es salto de línea, se guarda al salir (onchange) o con Ctrl/⌘+Enter. El export sangra los renglones siguientes debajo del ítem (block() escapa #).
+- [x] Código de la tarea en un renglón
+  En una fila angosta el código (11.145) salía un dígito por renglón: heredaba overflow-wrap: anywhere del título. .pt-task .code va con white-space: nowrap y flex: none; se parte el título.
+- [x] Fila de la sesión en grilla
+  Con títulos de dos renglones, la posición y el punto quedaban centrados entre renglones y ↑ ↓ × caían solos a otro renglón. La fila es una grilla: posición, punto, código y título alineados a la primera línea (el título en .pt-title, sangrado bajo sí mismo), .pt-side con estado, resultado y flechas a la derecha, y la nota a lo ancho debajo. .pt-panel es container: con menos de 620 px los botones van en su renglón; #playtest pasa la barra de sesiones arriba desde 900 px.
+
+**Prueba:** ui-playtest.test.js: botones y nota de la fila a la izquierda del panel; Falla y nota desde el detalle llegan a la sesión y a la fila
+
+**Notas:** En escritorio (≥900 px, matchMedia SPLIT) Playtest es vista dividida: .wrap toma margin-right = --pt-detail-w = max(360px, min(--detail-w, 100vw − 600px)), así la sesión no baja de ~560 px (con un panel agrandado a ~1000 px quedaba de ~50 px y el texto en columna). Sin tarea abierta, #pt-empty ocupa el panel con Abrir la primera sin probar. Un clic en la sesión no cierra el detalle. ptDetail() pone ← Siguiente →, resultado, seguimiento y nota arriba en el detalle. #playtest es container: angosta, la barra de sesiones va arriba. La nota de la fila se conserva al re-armar solo si tiene cambios sin guardar (data-orig): con data-keep pisaba la nota escrita en el detalle.
+
+### 20.7 Resultado del playtest en la tarea · Revisión
+
+Pedido: una tarea que está en varias sesiones mostraba en cada una un resultado y una nota distintos (m11-130 anda en una y falla con nota en otra). Decidido: resultado y nota viven en la tarea (D40).
+
+- [x] Modelo: playtest en la tarea; sesión solo { task }
+- [x] CLI, API, export e historial
+- [x] Web: fila, detalle, contadores y Reiniciar
+- [x] scompass playtest migrate
+
+**Prueba:** playtest.test.js (schema, misma tarea en dos sesiones por CLI, reset sin nada quita el campo, migrate con dos sesiones y una tarea borrada), ui-playtest.test.js (dos sesiones muestran lo mismo; Reiniciar en una se ve en la otra), history.test.js
+
+**Notas:** La tarea lleva playtest: { result?, note? } (minProperties 1; sin nada, el campo se va). La sesión queda { task } en orden. hub/src/playtests.js: sessionState (cuántas faltan y fallan), nextPlaytest (undefined no cambia, null o "" quita) y migrateSessions (lee las sesiones crudas, ordena por updated_at, la más reciente que la probó gana el resultado, notas distintas se juntan de la vieja a la nueva, respeta lo que la tarea ya tenía; reescribe las sesiones directo con writeAtomic porque el store no pisa inválidas). La CLI avisa en playtest list si ve sesiones del formato anterior. Web: ptOf, ptSetResult y ptSetNote van por updateTask; Reiniciar quita result de cada tarea de la sesión (se ve en las otras). El historial muestra Playtest: anda → falla, nota agregada.

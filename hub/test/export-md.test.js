@@ -41,7 +41,7 @@ for (const [name, dir] of [['Scope Compass', join(REPO, 'compass')], ['Project E
     // El prototipo de Python es anterior a los vínculos (D22), las listas (D25), las fechas (D26), a etiquetas, prioridad y
     // responsable (D32), a los archivos de la tarea (15.1), a la descripción (D37), a done_at (18.1), al tamaño (18.3), a las
     // capturas (D38) y al playtest (D39): la paridad se mide sin ellos.
-    const noLinks = { ...all, lists: [], playtests: [], tasks: [...all.tasks].map(([id, { links, due, tags, priority, assignee, description, done_at, size, files, images, ...doc }]) => [id, doc]) };
+    const noLinks = { ...all, lists: [], playtests: [], tasks: [...all.tasks].map(([id, { links, due, tags, priority, assignee, description, done_at, size, files, images, playtest, ...doc }]) => [id, doc]) };
     assert.equal(renderMarkdown(noLinks, { title: name, board, date: dateOf(expected) }), expected);
   });
 }
