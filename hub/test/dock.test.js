@@ -262,7 +262,7 @@ test('compass/ con el schema viejo: el dock avisa y "Actualizar" corre scompass 
   assert.equal(await readFile(schema, 'utf8'), await readFile(join(REPO, 'schema', 'task.schema.json'), 'utf8'));
 });
 
-test('con el Inicio corriendo, "Iniciar hub" se conecta al Inicio (sin levantar otro proceso) y escribe por ahí', { skip }, async () => {
+test('con el Inicio corriendo, el dock se conecta solo al Inicio (sin levantar otro proceso ni apretar "Iniciar hub") y escribe por ahí', { skip }, async () => {
   const bin = join(REPO, 'hub', 'bin', 'scompass.js');
   execFileSync(process.execPath, [bin, 'home', 'add', dir], { env: process.env });
   const home = spawn(process.execPath, [bin, 'home', '--port', '0', '--json'], { env: process.env });

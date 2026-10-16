@@ -2409,9 +2409,13 @@ Que el dock de Godot se conecte solo al Inicio, que sus tests no se salteen en s
 - Desde el dock se carga un bug con la plantilla y una captura del juego o del editor.
 - El dock filtra la lista por texto.
 
-### 21.1 Conectarse solo al Inicio · Pendiente
+### 21.1 Conectarse solo al Inicio · Revisión
 
 Si el Inicio corre pero todavía no sirve el proyecto, el dock dice 'No hay hub en 127.0.0.1:<puerto> (no responde)' hasta apretar Iniciar hub. Al abrir y en Reintentar, pedirle al Inicio que active el proyecto (POST /api/projects/activate) antes de rendirse.
+
+**Prueba:** dock.test.js: con el Inicio corriendo, el dock se conecta solo (start_hub_home), 39/39.
+
+**Notas:** _try_hub (al abrir, Reintentar y el sondeo cada 3 s sin hub): si detect() no encuentra hub y el registro tiene el Inicio, POST /api/projects/activate (1 s de timeout) y detect() de nuevo. Si el Inicio responde con error, ese puerto no se vuelve a pedir hasta Reintentar; si no responde (arrancando, entrada vieja), se prueba en el próximo sondeo. Sin compass/ no se pide. Comprobado contra el Inicio real con Project Epiphany: conectado en /p/project-epiphany, sin aviso.
 
 ### 21.2 Tests del dock sin saltearse en silencio · Revisión
 

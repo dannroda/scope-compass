@@ -118,6 +118,8 @@ var footer_label: Label
 var footer_right: Label
 var restart_button: Button
 var _poll: Timer
+## Puerto del Inicio que se negó a servir el proyecto (21.1): el sondeo no le vuelve a pedir; -1 si ninguno.
+var _home_refused := -1
 ## El scompass que corre en otro hilo: al cerrar el dock se espera (si el editor sale antes, el hilo sigue y Godot se cae).
 var _thread: Thread = null
 var _notice_timer: Timer
@@ -181,14 +183,27 @@ func reload() -> void:
 
 func _on_retry() -> void:
 	client.reset()
+	_home_refused = -1
 	await reload()
 	await _try_hub()
 	_render()
 
 
+## Busca el hub y, si no lo hay pero el Inicio corre, le pide que sirva el proyecto (21.1): el Inicio lo hace al
+## primer pedido (D29) y, sin esto, el dock decía "No hay hub" hasta apretar Iniciar hub.
 func _try_hub() -> void:
-	if not online:
+	if online or await client.detect():
+		return
+	var home := client.home_port()
+	if home <= 0 or home == _home_refused or not has_compass():
+		return
+	var r := await client.request_url("POST", "http://%s:%d/api/projects/activate" % [client.HOST, home], { "path": project_root }, [], 1.0)
+	if r.code == 200:
 		await client.detect()
+	elif r.code != 0:
+		# El Inicio respondió que no: no se insiste en cada sondeo (Reintentar vuelve a probar). Si no respondió,
+		# puede estar arrancando o ser una entrada vieja del registro: se prueba de nuevo en el próximo.
+		_home_refused = home
 
 
 # --- Hub ---------------------------------------------------------------------------------------
