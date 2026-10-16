@@ -12,8 +12,16 @@ import { canonical } from '../src/store/canonical.js';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const FIXTURE = join(REPO, 'hub', 'test', 'fixtures', 'compass');
-const hasGodot = (() => { try { execFileSync('godot', ['--version'], { stdio: 'ignore' }); return true; } catch { return false; } })();
-const skip = !hasGodot && 'sin godot en el PATH';
+// El binario: GODOT, o godot en el PATH. Sin ninguno, los tests se saltean; si está pero no arranca (por ejemplo,
+// el wrapper de godot-manager con una .godot-version que ya no está instalada) fallan con el motivo, en vez de
+// saltearse en silencio como si no hubiera Godot.
+const GODOT = process.env.GODOT || 'godot';
+const godotError = (() => {
+  try { execFileSync(GODOT, ['--version'], { stdio: 'pipe' }); return null; }
+  catch (e) { return e.code === 'ENOENT' ? 'missing' : String(e.stderr || e.stdout || e.message).trim(); }
+})();
+const hasGodot = godotError === null;
+const skip = godotError === 'missing' && `sin Godot: ${GODOT} no está (poné GODOT=<binario> o godot en el PATH)`;
 let dir;
 // Registro, config y datos propios aunque se corra sin npm test: con el registro real, el Inicio del usuario
 // serviría los proyectos temporales (y los anotaría en su projects.json). Godot y scompass heredan process.env.
@@ -26,10 +34,16 @@ after(() => rmSync(ISOLATED, { recursive: true, force: true, maxRetries: 10 }));
 // carga la documentación deja diferido EditorHelp::load_script_doc_cache, que corre con el EditorNode ya borrado
 // ("Parameter "singleton" is null" en is_cmdline_mode). Es del motor, de tiempos, y la importación ya terminó.
 before(() => {
-  if (!hasGodot) return;
+  if (godotError === 'missing') return;
+  if (!hasGodot) throw new Error(`${GODOT} --version falló:\n${godotError}`);
   for (let i = 0; ; i++) {
-    try { execFileSync('godot', ['--headless', '--path', REPO, '--import'], { stdio: 'pipe', timeout: 120000, maxBuffer: 16 << 20 }); return; }
-    catch (e) { if (i === 0) continue; throw new Error(`godot --import falló (${e.signal ?? e.status ?? e.code}):\n${String(e.stdout ?? '').split('\n').slice(-20).join('\n')}\n${String(e.stderr ?? '').slice(-3000)}`); }
+    try { execFileSync(GODOT, ['--headless', '--path', REPO, '--import'], { stdio: 'pipe', timeout: 120000, maxBuffer: 16 << 20 }); return; }
+    catch (e) {
+      if (i === 0) continue;
+      // 4.8-beta1 se cuelga en --import con un .godot/editor/editor_layout.cfg guardado por una versión anterior.
+      const hint = /Message queue out of memory/.test(String(e.stdout) + String(e.stderr)) ? '\nProbá moviendo .godot/editor/editor_layout.cfg (layout de otra versión de Godot).' : '';
+      throw new Error(`godot --import falló (${e.signal ?? e.status ?? e.code}):${hint}\n${String(e.stdout ?? '').split('\n').slice(-20).join('\n')}\n${String(e.stderr ?? '').slice(-3000)}`);
+    }
   }
 });
 
@@ -48,7 +62,7 @@ async function setTask(id, changes) {
 
 function godot(...args) {
   return new Promise((resolve) => {
-    execFile('godot', ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--', ...args],
+    execFile(GODOT, ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--', ...args],
       { timeout: 60000 }, (err, stdout, stderr) => resolve({ code: err ? err.code ?? 1 : 0, out: stdout + stderr }));
   });
 }
@@ -100,7 +114,7 @@ async function startHub(port = 0) {
 // Godot en vivo: llama a onLine(línea) por cada línea de stdout; resuelve con { code, out } al terminar.
 function godotLive(args, onLine = () => {}) {
   return new Promise((resolve) => {
-    const p = spawn('godot', ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--', ...args]);
+    const p = spawn(GODOT, ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--', ...args]);
     let out = '', buf = '';
     const t = setTimeout(() => p.kill('SIGKILL'), 60000);
     const feed = (d) => {
@@ -281,7 +295,7 @@ test('si matan a Godot con kill -9, el hub que abrió el dock se cierra solo', {
   const cfgPath = join(dir, 'compass', 'config.json');
   await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), port }));
   let hubPid = 0;
-  const p = spawn('godot', ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--',
+  const p = spawn(GODOT, ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--',
     'start_hub_and_hang', dir, join(REPO, 'hub', 'bin', 'scompass.js')]);
   try {
     await new Promise((resolve, reject) => {
@@ -315,7 +329,7 @@ test('modo "mantener": el hub sigue al cerrar el editor', { skip }, async () => 
     const env = { ...process.env };
     delete env.DBUS_SESSION_BUS_ADDRESS;
     const r = await new Promise((resolve) => {
-      const p = spawn('godot', ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--',
+      const p = spawn(GODOT, ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--',
         'start_hub_keep', dir, join(REPO, 'hub', 'bin', 'scompass.js')], { env });
       let out = '';
       p.stdout.on('data', (d) => { out += d; });
@@ -406,7 +420,7 @@ test('dock: "Reiniciar hub" vuelve a conectar, y el hub nuevo se cierra con el d
   let pids = [];
   try {
     const r = await new Promise((resolve) => {
-      const p = spawn('godot', ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--', 'restart_hub', dir, join(REPO, 'hub', 'bin', 'scompass.js')], { env });
+      const p = spawn(GODOT, ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--', 'restart_hub', dir, join(REPO, 'hub', 'bin', 'scompass.js')], { env });
       let out = '';
       p.stdout.on('data', (d) => { out += d; }); p.stderr.on('data', (d) => { out += d; });
       p.on('exit', (code) => resolve({ code, out }));

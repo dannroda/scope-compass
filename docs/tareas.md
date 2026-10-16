@@ -2413,9 +2413,13 @@ Que el dock de Godot se conecte solo al Inicio, que sus tests no se salteen en s
 
 Si el Inicio corre pero todavía no sirve el proyecto, el dock dice 'No hay hub en 127.0.0.1:<puerto> (no responde)' hasta apretar Iniciar hub. Al abrir y en Reintentar, pedirle al Inicio que active el proyecto (POST /api/projects/activate) antes de rendirse.
 
-### 21.2 Tests del dock sin saltearse en silencio · En curso
+### 21.2 Tests del dock sin saltearse en silencio · Revisión
 
-dock.test.js saltea los 39 tests si no hay 'godot' en el PATH. Buscarlo también por la variable GODOT y nombres habituales del binario 4.8, y avisar claro cuando no está.
+dock.test.js salteaba los 39 tests cuando 'godot --version' fallaba, como si no hubiera Godot: el wrapper de godot-manager corría la versión de .godot-version (4.8-dev6), que ya no estaba instalada. Usar GODOT si está, saltear solo si no hay binario y, si lo hay pero no arranca, fallar con el motivo.
+
+**Prueba:** GODOT=/nope saltea con el motivo; GODOT=/bin/false falla con '--version falló'; con 4.8-beta1, 39/39.
+
+**Notas:** La causa no era el PATH: .godot-version pedía 4.8-dev6, desinstalada; pasa a 4.8-beta1. Con beta1, godot --import se colgaba (Message queue out of memory, millones de 'Object was deleted while awaiting a callback') por .godot/editor/editor_layout.cfg guardado por una versión anterior; no es el addon (pasa con el plugin vacío o desactivado). Es estado local: se movió y Godot lo vuelve a crear. El test sugiere eso si ve ese error. 39/39 con 4.8-beta1.
 
 ### 21.3 Resultado del playtest en el dock · Pendiente
 
