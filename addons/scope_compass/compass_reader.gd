@@ -93,6 +93,8 @@ static func _check(doc: Dictionary, kind: String) -> String:
 				for x in v:
 					if typeof(x) != want:
 						return "%s tiene un elemento con otra forma" % k
+			if doc.has("playtest") and typeof(doc.playtest) != TYPE_DICTIONARY:
+				return "playtest no es un objeto"
 			for c in doc.get("checklist", []):
 				if typeof(c.get("text")) != TYPE_STRING:
 					return "un paso sin texto"

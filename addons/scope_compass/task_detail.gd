@@ -14,6 +14,10 @@ const BLOCKED_COLOR := Color("#e8806e")
 const OVERDUE_COLOR := Color("#e8806e")
 const TODAY_COLOR := Color("#e0a95a")
 const MUTED_COLOR := Color("#a69d8c")
+## Resultado del playtest (D40): anda (el verde de Hecho) y falla (el rojo de bloqueada).
+const PASS_COLOR := Color("#6fbf94")
+const FAIL_COLOR := Color("#e8806e")
+const RESULTS := [["pass", "✓ Anda"], ["fail", "✗ Falla"]]
 const PRIORITIES := { "high": "Alta", "medium": "Media", "low": "Baja" }
 const LINK_KINDS := [["blocked_by", "Bloqueada por"], ["blocks", "Bloquea a"], ["related", "Relacionada con"]]
 
@@ -33,6 +37,10 @@ var description_label: Label
 ## Capturas de la tarea (18.4): miniaturas; un clic abre la imagen con el visor del sistema.
 var images_box: HFlowContainer
 var status_select: OptionButton
+## Cómo salió la prueba (21.3): Anda / Falla (con hub, otro clic en el mismo lo quita) y la nota, de solo lectura.
+var playtest_box: VBoxContainer
+var result_buttons := {}
+var playtest_note: Label
 var steps_box: VBoxContainer
 ## Vínculos con otras tareas (solo lectura: se editan en la web o con `scompass link`).
 var links_box: VBoxContainer
@@ -67,7 +75,7 @@ func _init(v: Control) -> void:
 	web_button.pressed.connect(func(): OS.shell_open(view.web_url("#task/" + view.selected_task.uri_encode())))
 	trow.add_child(web_button)
 	hint = _wrapping_label()
-	hint.text = "Acá se cambian el estado y los pasos; lo demás, en el navegador (↗)."
+	hint.text = "Acá se cambian el estado, los pasos y el resultado del playtest; lo demás, en el navegador (↗)."
 	hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.45))
 	hint.add_theme_font_size_override("font_size", 11)
 	box.add_child(hint)
@@ -87,6 +95,24 @@ func _init(v: Control) -> void:
 		status_select.set_item_metadata(status_select.item_count - 1, s.id)
 	status_select.item_selected.connect(func(i): if view.selected_task != "": view.update_task(view.selected_task, { "status": status_select.get_item_metadata(i) }))
 	srow.add_child(status_select)
+	playtest_box = VBoxContainer.new()
+	box.add_child(playtest_box)
+	var prow := HBoxContainer.new()
+	playtest_box.add_child(prow)
+	var plabel := Label.new()
+	plabel.text = "Playtest"
+	prow.add_child(plabel)
+	for r in RESULTS:
+		var b := Button.new()
+		b.text = r[1]
+		b.toggle_mode = true
+		b.tooltip_text = "Otro clic lo vuelve a sin probar"
+		b.add_theme_color_override("font_pressed_color", PASS_COLOR if r[0] == "pass" else FAIL_COLOR)
+		b.pressed.connect(set_result.bind(r[0]))
+		prow.add_child(b)
+		result_buttons[r[0]] = b
+	playtest_note = _wrapping_label()
+	playtest_box.add_child(playtest_note)
 	description_label = _wrapping_label()
 	box.add_child(description_label)
 	images_box = HFlowContainer.new()
@@ -172,6 +198,7 @@ func render() -> void:
 		if status_select.get_item_metadata(i) == t.status:
 			status_select.select(i)
 	status_select.disabled = not online
+	_render_playtest(t)
 	var description := str(t.get("description", ""))
 	description_label.visible = description != ""
 	description_label.text = description.replace("`", "")
@@ -180,6 +207,31 @@ func render() -> void:
 	_render_links(t)
 	_render_refs(t)
 	_render_files(t)
+
+
+# --- Playtest (D40, 21.3) -------------------------------------------------------------------------
+
+## Se ve si la tarea ya se probó o está en Revisión (la que toca probar); el resto no lo necesita.
+func _render_playtest(t: Dictionary) -> void:
+	var pt := Board.playtest_of(t)
+	playtest_box.visible = not pt.is_empty() or t.status == "review"
+	for r in result_buttons:
+		var b: Button = result_buttons[r]
+		b.set_pressed_no_signal(pt.get("result") == r)
+		b.disabled = not view.online
+	var note := str(pt.get("note", ""))
+	playtest_note.visible = note != ""
+	playtest_note.text = note
+	playtest_note.add_theme_color_override("font_color", FAIL_COLOR if pt.get("result") == "fail" else MUTED_COLOR)
+
+
+## Anda o Falla en la tarea abierta, sobre su versión más reciente; otro clic en el mismo lo quita (como la web).
+func set_result(result: String) -> void:
+	var id: String = view.selected_task
+	if id == "":
+		return
+	view.update_task(id, func(cur): return { "playtest": Board.next_playtest(cur.get("playtest"),
+		{ "result": null if Board.playtest_of(cur).get("result") == result else result }) })
 
 
 # --- Pasos ---------------------------------------------------------------------------------------

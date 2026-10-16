@@ -2435,9 +2435,13 @@ dock.test.js salteaba los 39 tests cuando 'godot --version' fallaba, como si no 
 
 **Notas:** La causa no era el PATH: .godot-version pedía 4.8-dev6, desinstalada; pasa a 4.8-beta1. Con beta1, godot --import se colgaba (Message queue out of memory, millones de 'Object was deleted while awaiting a callback') por .godot/editor/editor_layout.cfg guardado por una versión anterior; no es el addon (pasa con el plugin vacío o desactivado). Es estado local: se movió y Godot lo vuelve a crear. El test sugiere eso si ve ese error. 39/39 con 4.8-beta1.
 
-### 21.3 Resultado del playtest en el dock · Pendiente
+### 21.3 Resultado del playtest en el dock · En curso
 
 El resultado vive en la tarea (D40): mostrar Anda / Falla y la nota en el detalle, y una marca en la lista. Las sesiones siguen fuera del dock.
+
+**Prueba:** dock.test.js: 21.3 sin hub (marca, detalle, nota, deshabilitado) y con hub (Anda, otro clic lo quita, sin nada se borra playtest).
+
+**Notas:** Lista: ✓/✗ delante del código y el resultado y la nota en el tooltip. Detalle (task_detail.gd): fila Playtest con ✓ Anda / ✗ Falla y la nota debajo (roja si falla), visible si la tarea tiene playtest o está en Revisión. Con hub los botones escriben playtest.result con update_task sobre la versión más reciente (Board.next_playtest, las reglas de la web: otro clic lo quita; sin nada, playtest se borra). La nota es de solo lectura en el dock. Sin hub, compass_reader avisa un playtest que no sea objeto.
 
 ### 21.4 Cargar un bug con captura desde el dock · Pendiente
 

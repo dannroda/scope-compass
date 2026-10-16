@@ -794,7 +794,10 @@ func _build_tree() -> void:
 			var code := str(t.get("code", ""))
 			# Como la tarjeta de la web: la prioridad solo si es alta, el responsable y las etiquetas.
 			var marks := ([TaskDetail.PRIORITIES.high] if t.get("priority") == "high" else []) + TaskDetail.who_and_tags(t)
-			it.set_text(0, ((code + "  " if code != "" else "") + str(t.title)).replace("`", "") + "".join(marks.map(func(m): return " · " + m)))
+			# Cómo salió el playtest (21.3): ✓ anda, ✗ falla; sin marca, sin probar.
+			var pt := Board.playtest_of(t)
+			var mark: String = { "pass": "✓ ", "fail": "✗ " }.get(pt.get("result"), "")
+			it.set_text(0, mark + ((code + "  " if code != "" else "") + str(t.title)).replace("`", "") + "".join(marks.map(func(m): return " · " + m)))
 			var st := Board.steps(t)
 			var col1 := "%d/%d" % st if st[1] > 0 else ""
 			var ds := Board.due_state(t)
@@ -807,11 +810,14 @@ func _build_tree() -> void:
 			elif ds == "today":
 				it.set_custom_color(1, TODAY_COLOR)
 			it.set_metadata(0, t.id)
-			it.set_tooltip_text(0, str(t.title))
+			var tip := str(t.title)
+			if not pt.is_empty():
+				tip += "\nPlaytest: %s%s" % [{ "pass": "anda", "fail": "falla" }.get(pt.get("result"), "sin probar"), (" · " + str(pt.note)) if pt.has("note") else ""]
+			it.set_tooltip_text(0, tip)
 			var blockers := board.open_blockers(t.id)
 			if not blockers.is_empty():
 				it.set_custom_color(0, BLOCKED_COLOR)
-				it.set_tooltip_text(0, "%s\nBloqueada por: %s" % [t.title, "; ".join(blockers.map(board.task_name))])
+				it.set_tooltip_text(0, "%s\nBloqueada por: %s" % [tip, "; ".join(blockers.map(board.task_name))])
 			if t.id == selected_task:
 				it.select(0)
 

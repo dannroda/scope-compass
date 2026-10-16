@@ -1160,3 +1160,13 @@ Para ordenar lo que está en Revisión y armar un orden de prueba (D39).
 Tests: `playtest.test.js` (schema, CLI con y sin hub, API, watcher, export, migración), `ui-playtest.test.js` (columna Pausado, pestaña Playtest, tarea abierta encima de la vista), `ui.test.js` (atajos 1–5), `ui-docs.test.js` y `dock.test.js`.
 
 Quedaron fuera, a propósito: sesiones en el dock de Godot y en el Inicio, y que *Anda* mueva la tarea a Hecho sola (una sesión se puede repasar varias veces; el estado de la tarea lo decide quien prueba).
+
+## 29. Dock al día (M21)
+<!-- id: dock-al-dia -->
+
+Que el dock de Godot se conecte solo al Inicio, que sus tests no se salteen en silencio y que sirva durante el playtest.
+
+- **Conectarse solo al Inicio (21.1):** ver §17 (*CLI y dock*).
+- **Tests que no se saltean en silencio (21.2):** `dock.test.js` toma Godot de `GODOT` o del PATH y solo se saltea si no hay ninguno; un Godot que no arranca falla con el motivo.
+- **Resultado del playtest (21.3, D40):** la lista marca ✓ (anda) o ✗ (falla) delante del código, y el tooltip dice el resultado y la nota. El detalle muestra *Playtest* con *✓ Anda* / *✗ Falla* y la nota debajo (en rojo si falla) cuando la tarea ya se probó o está en Revisión. Con hub, *Anda* / *Falla* escriben `playtest.result` en la tarea, sobre su versión más reciente, como la web: otro clic en el mismo lo quita y, sin resultado ni nota, el campo se borra. La nota se escribe en la web o con la CLI. Las sesiones siguen fuera del dock.
+- **Tres scripts (21.6):** `dock_view.gd` (la conexión con el hub, la lista y las escrituras), `task_detail.gd` (el detalle de la tarea abierta) y `hub_process.gd` (buscar y correr scompass; lanzar, vigilar y cerrar el hub).

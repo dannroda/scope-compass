@@ -560,3 +560,20 @@ test('con hub: el dock muestra las tareas del script abierto y vincula el abiert
   expectOk(r, 'editing');
   assert.deepEqual((await task('m1-05')).files, ['src/player.gd']);
 });
+
+test('21.3: dock sin hub: la lista marca anda / falla y el detalle muestra el resultado y la nota del playtest', { skip }, async () => {
+  await setTask('m1-05', { playtest: { result: 'fail', note: 'Se traba\nal saltar' } });
+  await setTask('m1-04', { playtest: { result: 'pass' } });
+  expectOk(await godot('playtest', dir, 'm1-05', 'm1-04', 'm1-03'), 'playtest');
+});
+
+test('21.3: con hub: Anda / Falla del dock escriben en la tarea, conservan la nota y otro clic lo quita', { skip }, async () => {
+  await setTask('m1-05', { playtest: { result: 'fail', note: 'Se traba' } });
+  await setTask('m1-04', { playtest: { result: 'pass' } });
+  const hub = await startHub();
+  const r = await godotLive(['playtest_online', dir, 'm1-05', 'm1-04']);
+  await hub.app.close();
+  expectOk(r, 'playtest_online');
+  assert.deepEqual((await task('m1-05')).playtest, { note: 'Se traba' });
+  assert.equal((await task('m1-04')).playtest, undefined);
+});

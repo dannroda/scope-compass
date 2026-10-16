@@ -137,6 +137,7 @@ scompass playtest migrate                           # sesiones viejas (result y 
 
 - Si `playtest` avisa de sesiones del formato anterior, corré `scompass playtest migrate`: si una tarea estaba en varias, gana el resultado de la sesión más reciente que la probó y las notas distintas se juntan.
 - Si una prueba falla, dejá en `note` lo que se vio y, si hay que arreglarla, volvé la tarea a `doing`; si anda, pasala a `done`.
+- El dock de Godot marca ✓ / ✗ en la lista y muestra el resultado y la nota en el detalle; con hub, *Anda* / *Falla* se cambian ahí también.
 
 ## Documentos y referencias
 

@@ -725,3 +725,44 @@ func test_narrow(a: Array) -> void:
 	w = v.get_combined_minimum_size().x
 	if not _check(c, w <= 300, "con hub pide %d px" % w): return
 	_check(c, v.detail.web_button.visible and v.web_url("#task/" + a[1]).ends_with("/#task/" + a[1]), "falta abrir la tarea en el navegador")
+
+
+# 21.3: el resultado del playtest vive en la tarea (D40). La lista marca ✓ anda / ✗ falla; el detalle muestra Anda /
+# Falla y la nota si la tarea se probó o está en Revisión. Sin hub, de solo lectura.
+func test_playtest(a: Array) -> void:
+	var c := "playtest"
+	var v := await _view(a[0])
+	v.current_milestone = "m01"
+	_select(v, a[1])
+	var row: TreeItem = v.tree.get_selected()
+	if not _check(c, row != null and row.get_text(0).begins_with("✗ ") and row.get_tooltip_text(0).contains("Playtest: falla · Se traba"), "fila que falla: %s" % (row.get_text(0) if row else "sin fila")): return
+	var d = v.detail
+	if not _check(c, d.playtest_box.visible and d.result_buttons.fail.button_pressed and not d.result_buttons.pass.button_pressed, "detalle: falla marcada"): return
+	if not _check(c, d.result_buttons.fail.disabled, "sin hub los botones tendrían que estar deshabilitados"): return
+	if not _check(c, d.playtest_note.visible and d.playtest_note.text == "Se traba\nal saltar", "nota: " + d.playtest_note.text): return
+	_select(v, a[2])
+	row = v.tree.get_selected()
+	if not _check(c, row.get_text(0).begins_with("✓ ") and d.result_buttons.pass.button_pressed and not d.playtest_note.visible, "la que anda: " + row.get_text(0)): return
+	_select(v, a[3])
+	row = v.tree.get_selected()
+	_check(c, not d.playtest_box.visible and not row.get_text(0).begins_with("✓") and not row.get_text(0).begins_with("✗"), "sin probar y fuera de Revisión no muestra nada")
+
+
+# 21.3, con hub: Anda / Falla escriben en la tarea sin tocar la nota; otro clic en el mismo lo quita, y sin nada se
+# borra el campo playtest.
+func test_playtest_online(a: Array) -> void:
+	var c := "playtest_online"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	v.current_milestone = "m01"
+	_select(v, a[1])
+	var d = v.detail
+	if not _check(c, not d.result_buttons.pass.disabled, "con hub los botones tendrían que andar"): return
+	d.result_buttons.pass.pressed.emit()
+	if not _check(c, await _until(func(): return v._queues.is_empty() and Board.playtest_of(v.board.task(a[1])).get("result") == "pass"), "no pasó a anda"): return
+	if not _check(c, d.result_buttons.pass.button_pressed and not d.result_buttons.fail.button_pressed, "botones después de anda"): return
+	d.result_buttons.pass.pressed.emit()
+	if not _check(c, await _until(func(): return v._queues.is_empty() and not Board.playtest_of(v.board.task(a[1])).has("result")), "otro clic no lo quitó"): return
+	_select(v, a[2])
+	d.result_buttons.pass.pressed.emit()
+	_check(c, await _until(func(): return v._queues.is_empty() and not v.board.task(a[2]).has("playtest")), "sin resultado ni nota no se borró playtest")

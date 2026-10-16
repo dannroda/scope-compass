@@ -203,6 +203,25 @@ static func show_due(due: String) -> String:
 	return out + (" " + due.substr(11, 5) if due.length() > 10 else "")
 
 
+## Cómo salió la prueba de la tarea (D40): { result?, note? }, vacío si no se probó.
+static func playtest_of(t) -> Dictionary:
+	var p = t.get("playtest") if t is Dictionary else null
+	return p if p is Dictionary else {}
+
+
+## El playtest de la tarea con un cambio (las reglas de hub/src/playtests.js y de la web): null o "" quita el campo,
+## la nota va sin espacios de más; si no queda nada, null (se borra playtest).
+static func next_playtest(cur, change: Dictionary):
+	var out: Dictionary = cur.duplicate() if cur is Dictionary else {}
+	for k in change:
+		var v = change[k]
+		if v == null or str(v).strip_edges() == "":
+			out.erase(k)
+		else:
+			out[k] = str(v).strip_edges() if k == "note" else v
+	return null if out.is_empty() else out
+
+
 static func steps(t: Dictionary) -> Array:
 	var cl = t.get("checklist", [])
 	cl = cl if cl is Array else []
