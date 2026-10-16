@@ -1,0 +1,14 @@
+{
+  "checklist": [],
+  "code": "21.5",
+  "created_at": "2026-10-16T04:38:54.944Z",
+  "description": "Una caja de texto que filtra la lista por código, título o id, sin tildes, como scompass list --q.",
+  "milestone": "m21",
+  "notes": "",
+  "order": 5,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Buscar tareas en el dock",
+  "updated_at": "2026-10-16T04:38:54.944Z"
+}

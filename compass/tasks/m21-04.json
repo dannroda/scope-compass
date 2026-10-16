@@ -1,0 +1,14 @@
+{
+  "checklist": [],
+  "code": "21.4",
+  "created_at": "2026-10-16T04:38:53.818Z",
+  "description": "Nueva tarea con la etiqueta bug (y su plantilla de description_templates) y una captura del juego corriendo o del viewport del editor, guardada en compass/images/.",
+  "milestone": "m21",
+  "notes": "",
+  "order": 4,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Cargar un bug con captura desde el dock",
+  "updated_at": "2026-10-16T04:38:53.818Z"
+}

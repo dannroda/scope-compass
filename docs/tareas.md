@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-10-15
+> Generado: 2026-10-16
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -2397,3 +2397,38 @@ Pedido: una tarea que está en varias sesiones mostraba en cada una un resultado
 **Prueba:** playtest.test.js (schema, misma tarea en dos sesiones por CLI, reset sin nada quita el campo, migrate con dos sesiones y una tarea borrada), ui-playtest.test.js (dos sesiones muestran lo mismo; Reiniciar en una se ve en la otra), history.test.js
 
 **Notas:** La tarea lleva playtest: { result?, note? } (minProperties 1; sin nada, el campo se va). La sesión queda { task } en orden. hub/src/playtests.js: sessionState (cuántas faltan y fallan), nextPlaytest (undefined no cambia, null o "" quita) y migrateSessions (lee las sesiones crudas, ordena por updated_at, la más reciente que la probó gana el resultado, notas distintas se juntan de la vieja a la nueva, respeta lo que la tarea ya tenía; reescribe las sesiones directo con writeAtomic porque el store no pisa inválidas). La CLI avisa en playtest list si ve sesiones del formato anterior. Web: ptOf, ptSetResult y ptSetNote van por updateTask; Reiniciar quita result de cada tarea de la sesión (se ve en las otras). El historial muestra Playtest: anda → falla, nota agregada.
+
+## M21 — Dock al día  (0/6)
+
+Que el dock de Godot se conecte solo al Inicio, que sus tests no se salteen en silencio, y que sirva durante el playtest: ver el resultado de cada tarea, cargar bugs con captura desde el editor y buscar tareas.
+
+**Hecho cuando:**
+- Con el Inicio corriendo, el dock se conecta al abrir y en Reintentar sin apretar Iniciar hub.
+- dock.test.js encuentra Godot por GODOT o por los nombres habituales, y avisa claro si no lo encuentra.
+- El detalle del dock muestra el resultado y la nota del playtest, y la lista marca anda / falla.
+- Desde el dock se carga un bug con la plantilla y una captura del juego o del editor.
+- El dock filtra la lista por texto.
+
+### 21.1 Conectarse solo al Inicio · Pendiente
+
+Si el Inicio corre pero todavía no sirve el proyecto, el dock dice 'No hay hub en 127.0.0.1:<puerto> (no responde)' hasta apretar Iniciar hub. Al abrir y en Reintentar, pedirle al Inicio que active el proyecto (POST /api/projects/activate) antes de rendirse.
+
+### 21.2 Tests del dock sin saltearse en silencio · En curso
+
+dock.test.js saltea los 39 tests si no hay 'godot' en el PATH. Buscarlo también por la variable GODOT y nombres habituales del binario 4.8, y avisar claro cuando no está.
+
+### 21.3 Resultado del playtest en el dock · Pendiente
+
+El resultado vive en la tarea (D40): mostrar Anda / Falla y la nota en el detalle, y una marca en la lista. Las sesiones siguen fuera del dock.
+
+### 21.4 Cargar un bug con captura desde el dock · Pendiente
+
+Nueva tarea con la etiqueta bug (y su plantilla de description_templates) y una captura del juego corriendo o del viewport del editor, guardada en compass/images/.
+
+### 21.5 Buscar tareas en el dock · Pendiente
+
+Una caja de texto que filtra la lista por código, título o id, sin tildes, como scompass list --q.
+
+### 21.6 Partir dock_view.gd · Pendiente
+
+Tiene ~1600 líneas y mezcla la vida del hub, la lista, el detalle y las referencias. Separarlo en dos o tres scripts sin cambiar el comportamiento.
