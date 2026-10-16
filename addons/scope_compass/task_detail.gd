@@ -219,6 +219,11 @@ func _render_playtest(t: Dictionary) -> void:
 		var b: Button = result_buttons[r]
 		b.set_pressed_no_signal(pt.get("result") == r)
 		b.disabled = not view.online
+		# Deshabilitado (sin hub), el botón no se ve apretado: el color del texto dice cuál está marcado.
+		if pt.get("result") == r:
+			b.add_theme_color_override("font_disabled_color", PASS_COLOR if r == "pass" else FAIL_COLOR)
+		else:
+			b.remove_theme_color_override("font_disabled_color")
 	var note := str(pt.get("note", ""))
 	playtest_note.visible = note != ""
 	playtest_note.text = note
