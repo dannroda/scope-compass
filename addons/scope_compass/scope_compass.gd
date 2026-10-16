@@ -27,7 +27,7 @@ func _enter_tree() -> void:
 	_view.make_highlighter = func(lang: String):
 		if lang == "gdscript" and ClassDB.can_instantiate("GDScriptSyntaxHighlighter"):
 			return ClassDB.instantiate("GDScriptSyntaxHighlighter")
-		return DockView.basic_highlighter(lang)
+		return DockView.TaskDetail.basic_highlighter(lang)
 	# Como un doble clic en el FileSystem: el script en el editor de scripts, la escena en su pestaña, otro recurso en
 	# el inspector. Lo que Godot no abre como recurso (markdown y JSON, o lo que no ve) queda para la web.
 	_view.open_file = func(path: String) -> bool:

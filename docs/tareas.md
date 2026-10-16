@@ -2322,7 +2322,7 @@ Pedido del usuario (2026-10-11): después de ver los mockups con los marcos de P
 
 **Referencias:** `docs/spec.md#auditoria`
 
-## M20 — Playtest y Pausado  (0/7)
+## M20 — Playtest y Pausado  (5/7)
 
 Ordenar lo que está en Revisión: sesiones de playtest con tareas ya creadas en un orden de prueba, y un estado Pausado para lo que se dejó de lado sin terminar.
 
@@ -2330,7 +2330,9 @@ Ordenar lo que está en Revisión: sesiones de playtest con tareas ya creadas en
 - Una tarea puede estar en Pausado (paused), con su columna al lado de Pendiente en la web y en el dock.
 - Hay sesiones de playtest en compass/playtests/ con tareas en un orden, resultado (anda / falla) y nota por tarea, manejables desde la CLI, la API y la pestaña Playtest de la web.
 
-### 20.1 Estado Pausado · Revisión
+### 20.1 Estado Pausado · Hecho
+
+**Terminada:** 2026-10-16
 
 Un estado paused (Pausado) para tareas empezadas que se dejan de lado sin terminar: schema, CLI, API, export, Inicio, columna al lado de Pendiente en la web y en el dock.
 
@@ -2338,31 +2340,9 @@ Un estado paused (Pausado) para tareas empezadas que se dejan de lado sin termin
 
 **Notas:** Columna entre Pendiente y En curso; color --s-paused (#a99bd1 oscuro). En el dock va después de Pendiente en el árbol (su orden es doing, review, todo, paused, done). Atajos 1–5.
 
-### 20.2 Sesiones de playtest: datos, CLI y API · Revisión
+### 20.5 Tarea abierta encima de la vista desde la que se abre · Hecho
 
-Colección compass/playtests/<id>.json: sesiones con tareas ya creadas en un orden de prueba, con resultado (pass/fail) y nota por tarea. Schema, store, watcher, API, CLI scompass playtest y export.
-
-**Prueba:** hub/test/playtest.test.js
-
-**Notas:** Colección playtests con la forma de las listas; ítems { task, result?, note? }. CLI: scompass playtest (show/new/set/rm/add/move/drop/pass/fail/reset), por posición o por id. POST /api/playtests { title, tasks? }. Export: sección Playtest al final; la paridad con artifact_to_md.py se mide sin playtests (y sin images, que faltaba).
-
-### 20.3 Pestaña Playtest en la web · Revisión
-
-Vista Playtest (#playtest/<id>): crear sesiones, cargar tareas (una a una o todas las de Revisión), arrastrar para ordenar, marcar anda/falla con nota y pasar la tarea a Hecho o En curso.
-
-**Prueba:** hub/test/ui-playtest.test.js
-
-**Notas:** Reusa las clases de Listas (lists-grid, list-side, list-panel), así los bordes de fantasía aplican. Anda/Falla no mueve la tarea: ofrece Pasar a Hecho / Volver a En curso.
-
-### 20.4 Docs y tests de M20 · Revisión
-
-Spec, decisión, AGENTS.md (template, addon y compass/), README de compass y tests de lo nuevo.
-
-**Prueba:** npm test (404 pass) y dock.test.js con Godot
-
-**Notas:** spec §28, D39, AGENTS.md (template, addon y compass/), compass README.
-
-### 20.5 Tarea abierta encima de la vista desde la que se abre · Revisión
+**Terminada:** 2026-10-16
 
 Pedido: un clic en una tarea desde Listas, Playtest, Documentos o Archivos la abría pasando al tablero. Tiene que abrirse encima de esa vista, y Cerrar/atrás volver ahí.
 
@@ -2370,7 +2350,9 @@ Pedido: un clic en una tarea desde Listas, Playtest, Documentos o Archivos la ab
 
 **Notas:** readHash toma la vista de history.state.taskFrom; closeTask vuelve atrás siempre que haya taskFrom. En el teléfono la barra fija de Documentos se esconde con el detalle abierto.
 
-### 20.6 Vista dividida en Playtest · Revisión
+### 20.6 Vista dividida en Playtest · Hecho
+
+**Terminada:** 2026-10-16
 
 Pedido: al abrir una tarea desde Playtest, el panel tapaba Anda/Falla y la nota; después: que Playtest sea una vista dividida.
 
@@ -2384,6 +2366,34 @@ Pedido: al abrir una tarea desde Playtest, el panel tapaba Anda/Falla y la nota;
 **Prueba:** ui-playtest.test.js: botones y nota de la fila a la izquierda del panel; Falla y nota desde el detalle llegan a la sesión y a la fila
 
 **Notas:** En escritorio (≥900 px, matchMedia SPLIT) Playtest es vista dividida: .wrap toma margin-right = --pt-detail-w = max(360px, min(--detail-w, 100vw − 600px)), así la sesión no baja de ~560 px (con un panel agrandado a ~1000 px quedaba de ~50 px y el texto en columna). Sin tarea abierta, #pt-empty ocupa el panel con Abrir la primera sin probar. Un clic en la sesión no cierra el detalle. ptDetail() pone ← Siguiente →, resultado, seguimiento y nota arriba en el detalle. #playtest es container: angosta, la barra de sesiones va arriba. La nota de la fila se conserva al re-armar solo si tiene cambios sin guardar (data-orig): con data-keep pisaba la nota escrita en el detalle.
+
+### 20.3 Pestaña Playtest en la web · Hecho
+
+**Terminada:** 2026-10-16
+
+Vista Playtest (#playtest/<id>): crear sesiones, cargar tareas (una a una o todas las de Revisión), arrastrar para ordenar, marcar anda/falla con nota y pasar la tarea a Hecho o En curso.
+
+**Prueba:** hub/test/ui-playtest.test.js
+
+**Notas:** Reusa las clases de Listas (lists-grid, list-side, list-panel), así los bordes de fantasía aplican. Anda/Falla no mueve la tarea: ofrece Pasar a Hecho / Volver a En curso.
+
+### 20.2 Sesiones de playtest: datos, CLI y API · Hecho
+
+**Terminada:** 2026-10-16
+
+Colección compass/playtests/<id>.json: sesiones con tareas ya creadas en un orden de prueba, con resultado (pass/fail) y nota por tarea. Schema, store, watcher, API, CLI scompass playtest y export.
+
+**Prueba:** hub/test/playtest.test.js
+
+**Notas:** Colección playtests con la forma de las listas; ítems { task, result?, note? }. CLI: scompass playtest (show/new/set/rm/add/move/drop/pass/fail/reset), por posición o por id. POST /api/playtests { title, tasks? }. Export: sección Playtest al final; la paridad con artifact_to_md.py se mide sin playtests (y sin images, que faltaba).
+
+### 20.4 Docs y tests de M20 · Revisión
+
+Spec, decisión, AGENTS.md (template, addon y compass/), README de compass y tests de lo nuevo.
+
+**Prueba:** npm test (404 pass) y dock.test.js con Godot
+
+**Notas:** spec §28, D39, AGENTS.md (template, addon y compass/), compass README.
 
 ### 20.7 Resultado del playtest en la tarea · Revisión
 
@@ -2437,6 +2447,10 @@ Nueva tarea con la etiqueta bug (y su plantilla de description_templates) y una 
 
 Una caja de texto que filtra la lista por código, título o id, sin tildes, como scompass list --q.
 
-### 21.6 Partir dock_view.gd · Pendiente
+### 21.6 Partir dock_view.gd · Revisión
 
 Tiene ~1600 líneas y mezcla la vida del hub, la lista, el detalle y las referencias. Separarlo en dos o tres scripts sin cambiar el comportamiento.
+
+**Prueba:** dock.test.js 39/39 sin cambios de comportamiento; el editor sin ventana monta el plugin sin errores.
+
+**Notas:** dock_view.gd (~1150 líneas) queda con la vida del hub, la lista y las escrituras. task_detail.gd (ScrollContainer) arma y pinta el detalle: estado, pasos, capturas, vínculos, referencias y archivos; lo que necesita lo toma de view (board, online, update_task, web_url, icon_button, fold_icon, go_to_task). hub_process.gd (Node hijo) busca scompass, lo corre en otro hilo y lanza, cierra y vigila el hub (pid, kept). En los tests: v.detail.<caja>, v.hub.pid; DockView.TaskDetail.basic_highlighter en el plugin.

@@ -54,8 +54,8 @@ func test_offline(a: Array) -> void:
 	# Elegir otra tarea muestra su detalle, con el estado deshabilitado.
 	v.tree.get_root().get_child(0).get_child(0).select(0)
 	await process_frame
-	if not _check(c, v.detail.visible and v.status_select.disabled, "detalle visible y en solo lectura"): return
-	if not _check(c, v.steps_box.get_child_count() > 0 and v.step_checkbox(0).disabled, "pasos en solo lectura"): return
+	if not _check(c, v.detail.visible and v.detail.status_select.disabled, "detalle visible y en solo lectura"): return
+	if not _check(c, v.detail.steps_box.get_child_count() > 0 and v.detail.step_checkbox(0).disabled, "pasos en solo lectura"): return
 
 
 # Elegir un hito lo recuerda (preferencia del proyecto) y cambia la lista.
@@ -130,10 +130,10 @@ func _select(v, id: String) -> void:
 
 
 func _pick_status(v, status: String) -> void:
-	for i in v.status_select.item_count:
-		if v.status_select.get_item_metadata(i) == status:
-			v.status_select.select(i)
-			v.status_select.item_selected.emit(i)
+	for i in v.detail.status_select.item_count:
+		if v.detail.status_select.get_item_metadata(i) == status:
+			v.detail.status_select.select(i)
+			v.detail.status_select.item_selected.emit(i)
 
 
 # Mover desde el dock: se escribe por la API.
@@ -143,7 +143,7 @@ func test_online_move(a: Array) -> void:
 	if v == null: return
 	print("READY")
 	_select(v, a[1])
-	if not _check(c, not v.status_select.disabled, "estado deshabilitado con hub"): return
+	if not _check(c, not v.detail.status_select.disabled, "estado deshabilitado con hub"): return
 	_pick_status(v, a[2])
 	if not _check(c, await _until(func(): return v.board.task(a[1]).status == a[2] and v._queues.is_empty()), "no se aplicó el cambio"): return
 
@@ -179,10 +179,10 @@ func test_toggle_steps(a: Array) -> void:
 	var v = await _online_view(a[0], c)
 	if v == null: return
 	_select(v, a[1])
-	var n: int = v.steps_box.get_child_count()
+	var n: int = v.detail.steps_box.get_child_count()
 	if not _check(c, n >= 3, "pocos pasos"): return
 	for i in n:
-		var cb: CheckBox = v.step_checkbox(i)
+		var cb: CheckBox = v.detail.step_checkbox(i)
 		cb.button_pressed = not cb.button_pressed
 	if not _check(c, await _until(func(): return v._queues.is_empty()), "la fila no terminó"): return
 	if not _check(c, not v.notice.visible, "aviso inesperado: " + v.notice.text): return
@@ -239,7 +239,7 @@ func test_start_hub(a: Array) -> void:
 	if not _check(c, not v.online, "ya había hub"): return
 	if not _check(c, await v.start_hub(), "no arrancó: " + v.notice.text): return
 	if not _check(c, await _until(func(): return v.online and not v._loading and not v.banner.visible), "no pasó a edición"): return
-	var pid: int = v.hub_pid
+	var pid: int = v.hub.pid
 	print("PID ", pid)
 	v.stop_hub()
 	if not _check(c, await _until(func(): return not OS.is_process_running(pid), 5.0), "el hub sigue corriendo"): return
@@ -256,7 +256,7 @@ func test_start_hub_home(a: Array) -> void:
 	if not _check(c, await _until(func(): return v.online and not v._loading and not v.banner.visible), "no se conectó solo al Inicio: " + v.banner_title.text): return
 	if not _check(c, await v.start_hub(), "Iniciar hub con el Inicio ya conectado: " + v.notice.text): return
 	if not _check(c, v.client.base.begins_with("/p/") and v.client.port == v.client.home_port(), "base %s puerto %d" % [v.client.base, v.client.port]): return
-	if not _check(c, v.hub_pid == -1, "levantó un proceso propio: %d" % v.hub_pid): return
+	if not _check(c, v.hub.pid == -1, "levantó un proceso propio: %d" % v.hub.pid): return
 	# Una escritura del dock pasa por el Inicio.
 	var t = v.board.tasks[0]
 	var r = await v.client.request("PATCH", "/api/tasks/" + str(t.id), { "status": "review" }, ["If-Match: \"%s\"" % t.etag])
@@ -314,7 +314,7 @@ func test_start_hub_and_hang(a: Array) -> void:
 	var v := await _view(a[0])
 	v.scompass_setting = func(): return a[1]
 	if not _check(c, await v.start_hub(), "no arrancó: " + v.notice.text): return
-	print("PID ", v.hub_pid)
+	print("PID ", v.hub.pid)
 	print("READY")
 	await create_timer(30.0).timeout
 	_fail(c, "nadie mató a Godot")
@@ -327,8 +327,8 @@ func test_start_hub_keep(a: Array) -> void:
 	v.scompass_setting = func(): return a[1]
 	v.keep_hub_setting = func(): return true
 	if not _check(c, await v.start_hub(), "no arrancó: " + v.notice.text): return
-	if not _check(c, v.hub_kept, "no quedó en modo mantener"): return
-	var pid: int = v.hub_pid
+	if not _check(c, v.hub.kept, "no quedó en modo mantener"): return
+	var pid: int = v.hub.pid
 	v.stop_hub() # lo que hace el plugin al cerrar el editor
 	await create_timer(1.0).timeout
 	if not _check(c, OS.is_process_running(pid), "el dock lo cerró igual"): return
@@ -339,11 +339,11 @@ func test_start_hub_keep(a: Array) -> void:
 
 func _refs_check(v, a: Array, c: String, online: bool) -> void:
 	_select(v, a[1])
-	var head = v.refs_box.get_child(1) if v.refs_box.get_child_count() > 1 else null
+	var head = v.detail.refs_box.get_child(1) if v.detail.refs_box.get_child_count() > 1 else null
 	if not _check(c, head is HBoxContainer and head.get_child(0).text.contains("Ventanas de ataque"), "no está la referencia"): return
 	head.get_child(0).pressed.emit()
 	await process_frame
-	var box = v.refs_box.get_node_or_null("Section")
+	var box = v.detail.refs_box.get_node_or_null("Section")
 	if not _check(c, box is VBoxContainer, "no se desplegó la sección"): return
 	var code_of = func():
 		for ch in box.get_children():
@@ -362,15 +362,15 @@ func _refs_check(v, a: Array, c: String, online: bool) -> void:
 	if not _check(c, not ce.editable and ce.syntax_highlighter != null, "el CodeEdit tendría que ser de solo lectura y con resaltado"): return
 	if not _check(c, not text_of.call().contains("class_name"), "el código no tendría que estar también en el texto"): return
 	var broken := false
-	for ch in v.refs_box.get_children():
+	for ch in v.detail.refs_box.get_children():
 		if ch is Label and ch.text.contains("Referencia rota: gdd.md#borrada"):
 			broken = true
 	if not _check(c, broken, "falta el aviso de la referencia rota"): return
 	# Al documento entero (12.1): su título, sin desplegar, y rota si el documento no está.
-	var whole = v.refs_box.find_child("WholeDoc", true, false)
+	var whole = v.detail.refs_box.find_child("WholeDoc", true, false)
 	if not _check(c, whole is Label and whole.text == "▤ Juego", "falta la referencia al documento entero"): return
 	var whole_broken := false
-	for ch in v.refs_box.get_children():
+	for ch in v.detail.refs_box.get_children():
 		if ch is Label and ch.text.contains("Referencia rota: otro.md no está"):
 			whole_broken = true
 	_check(c, whole_broken, "falta el aviso del documento que no está")
@@ -402,15 +402,15 @@ func test_links(a: Array) -> void:
 	var c := "links"
 	var v := await _view(a[0])
 	_select(v, a[1])
-	if not _check(c, v.links_box.get_child_count() == 2, "vínculos en el detalle: %d" % v.links_box.get_child_count()): return
-	var link: Button = v.links_box.get_child(1)
+	if not _check(c, v.detail.links_box.get_child_count() == 2, "vínculos en el detalle: %d" % v.detail.links_box.get_child_count()): return
+	var link: Button = v.detail.links_box.get_child(1)
 	if not _check(c, link.text.begins_with("Bloqueada por: ") and link.text.ends_with(" · Revisión"), "texto: " + link.text): return
 	var item: TreeItem = v.tree.get_selected()
 	if not _check(c, item != null and item.get_tooltip_text(0).contains("Bloqueada por: "), "la lista no marca la tarea bloqueada"): return
 	link.pressed.emit()
 	await process_frame
 	if not _check(c, v.selected_task == a[2], "no fue a la otra tarea: " + v.selected_task): return
-	link = v.links_box.get_child(1)
+	link = v.detail.links_box.get_child(1)
 	if not _check(c, link.text.begins_with("Bloquea a: "), "texto del inverso: " + link.text): return
 
 
@@ -427,15 +427,15 @@ func test_due(a: Array) -> void:
 	var v := await _view(a[0])
 	v.current_milestone = "m01"
 	_select(v, a[1])
-	if not _check(c, v.detail_due.visible and v.detail_due.text == "Vencida · 01/01", "detalle vencida: " + v.detail_due.text): return
+	if not _check(c, v.detail.due_label.visible and v.detail.due_label.text == "Vencida · 01/01", "detalle vencida: " + v.detail.due_label.text): return
 	var row: TreeItem = v.tree.get_selected()
 	if not _check(c, row != null and row.get_text(1).begins_with("01/01") and row.get_custom_color(1) == v.OVERDUE_COLOR, "fila vencida: " + (row.get_text(1) if row else "sin fila")): return
 	_select(v, a[2])
-	if not _check(c, v.detail_due.text.begins_with("Vence hoy · "), "detalle de hoy: " + v.detail_due.text): return
+	if not _check(c, v.detail.due_label.text.begins_with("Vence hoy · "), "detalle de hoy: " + v.detail.due_label.text): return
 	_select(v, a[3])
-	if not _check(c, v.detail_due.text == "Vence 01/01", "una hecha no dice vencida: " + v.detail_due.text): return
+	if not _check(c, v.detail.due_label.text == "Vence 01/01", "una hecha no dice vencida: " + v.detail.due_label.text): return
 	_select(v, a[4])
-	if not _check(c, not v.detail_due.visible, "sin fecha no muestra nada"): return
+	if not _check(c, not v.detail.due_label.visible, "sin fecha no muestra nada"): return
 
 
 # Un paso con detalle: tocar el texto (o ▸) lo despliega; tocar el texto no tilda el paso.
@@ -443,26 +443,26 @@ func test_step_detail(a: Array) -> void:
 	var c := "step_detail"
 	var v := await _view(a[0])
 	_select(v, a[1])
-	var line: HBoxContainer = v.steps_box.get_child(0).get_child(0)
+	var line: HBoxContainer = v.detail.steps_box.get_child(0).get_child(0)
 	if not _check(c, line.get_child_count() == 3 and line.get_child(2).text == "▸", "falta el ▸ del detalle"): return
-	if not _check(c, v.steps_box.get_child(1).get_child(0).get_child_count() == 2, "un paso sin detalle no lleva ▸"): return
+	if not _check(c, v.detail.steps_box.get_child(1).get_child(0).get_child_count() == 2, "un paso sin detalle no lleva ▸"): return
 	# El cuadradito, centrado con la primera línea del texto (±2 px).
 	await process_frame
-	var cb: CheckBox = v.step_checkbox(0)
+	var cb: CheckBox = v.detail.step_checkbox(0)
 	var label: Button = line.get_child(1)
 	var sb := label.get_theme_stylebox("normal")
 	var line_mid := label.global_position.y + sb.get_margin(SIDE_TOP) + label.get_theme_font("font").get_height(label.get_theme_font_size("font_size")) / 2.0
 	var cb_mid := cb.global_position.y + cb.size.y / 2.0
 	if not _check(c, absf(cb_mid - line_mid) <= 2.0, "cuadradito desalineado: centro %.1f vs línea %.1f" % [cb_mid, line_mid]): return
-	var was: bool = v.step_checkbox(0).button_pressed
+	var was: bool = v.detail.step_checkbox(0).button_pressed
 	line.get_child(1).pressed.emit() # el texto
 	await process_frame
-	var row = v.steps_box.get_child(0)
+	var row = v.detail.steps_box.get_child(0)
 	if not _check(c, row.get_child_count() == 2 and row.get_child(1).get_child(0).text == a[2], "detalle: %s" % (row.get_child(1).get_child(0).text if row.get_child_count() == 2 else "no se desplegó")): return
-	if not _check(c, v.step_checkbox(0).button_pressed == was, "tocar el texto cambió el estado del paso"): return
-	v.steps_box.get_child(0).get_child(0).get_child(2).pressed.emit() # ▾ lo vuelve a plegar
+	if not _check(c, v.detail.step_checkbox(0).button_pressed == was, "tocar el texto cambió el estado del paso"): return
+	v.detail.steps_box.get_child(0).get_child(0).get_child(2).pressed.emit() # ▾ lo vuelve a plegar
 	await process_frame
-	_check(c, v.steps_box.get_child(0).get_child_count() == 1, "no se plegó")
+	_check(c, v.detail.steps_box.get_child(0).get_child_count() == 1, "no se plegó")
 
 
 # El bloque de tareas se pliega (el detalle toma todo el alto) y el divisor se recuerda.
@@ -498,13 +498,13 @@ func test_restart_hub(a: Array) -> void:
 	v.scompass_setting = func(): return a[1]
 	if not _check(c, await v.start_hub(), "no arrancó: " + v.notice.text): return
 	if not _check(c, await _until(func(): return v.online and not v._loading), "no se conectó"): return
-	var before: int = v.hub_pid
+	var before: int = v.hub.pid
 	if not _check(c, v.restart_button.visible, "falta el botón con hub"): return
 	if not _check(c, await v.restart_hub(), "no se reinició: " + v.notice.text): return
-	var after: int = v.hub_pid
+	var after: int = v.hub.pid
 	print("PIDS ", before, " ", after)
 	# OS.is_process_running solo conoce los hijos de Godot; el hub reiniciado es nieto (kill -0, o tasklist).
-	var alive := func(pid: int) -> bool: return DockView.pid_alive(pid)
+	var alive := func(pid: int) -> bool: return DockView.HubProcess.pid_alive(pid)
 	if not _check(c, after != before and alive.call(after), "PID nuevo inválido: %d → %d" % [before, after]): return
 	v.stop_hub()
 	if not _check(c, await _until(func(): return not alive.call(after), 5.0), "el hub nuevo no se cerró con el dock"): return
@@ -558,21 +558,21 @@ func test_props(a: Array) -> void:
 	var v := await _view(a[0])
 	v.current_milestone = "m01"
 	_select(v, a[1])
-	if not _check(c, v.detail_props.visible and v.detail_props.text == "Prioridad alta · Tamaño M · @ana · #arte #audio", "detalle: " + v.detail_props.text): return
-	if not _check(c, v.detail_description.visible and v.detail_description.text == "Qué hacer y por qué", "descripción: " + v.detail_description.text): return
-	var shots := v.images_box.get_children()
-	if not _check(c, v.images_box.visible and shots.size() == 2 and shots[0].texture_normal != null and shots[1] is Label and shots[1].text == "⚠ falta.png", "capturas (18.4): %d" % shots.size()): return
+	if not _check(c, v.detail.props_label.visible and v.detail.props_label.text == "Prioridad alta · Tamaño M · @ana · #arte #audio", "detalle: " + v.detail.props_label.text): return
+	if not _check(c, v.detail.description_label.visible and v.detail.description_label.text == "Qué hacer y por qué", "descripción: " + v.detail.description_label.text): return
+	var shots := v.detail.images_box.get_children()
+	if not _check(c, v.detail.images_box.visible and shots.size() == 2 and shots[0].texture_normal != null and shots[1] is Label and shots[1].text == "⚠ falta.png", "capturas (18.4): %d" % shots.size()): return
 	var ms_text := v.milestone_select.get_item_text(v.milestone_select.selected)
 	if not _check(c, ms_text.contains(" · atrasado "), "hito atrasado (18.2): " + ms_text): return
 	var row: TreeItem = v.tree.get_selected()
 	if not _check(c, row != null and row.get_text(0).ends_with(" · Alta · @ana · #arte #audio"), "fila: " + (row.get_text(0) if row else "sin fila")): return
 	_select(v, a[2])
 	row = v.tree.get_selected()
-	if not _check(c, v.detail_props.text == "Prioridad baja" and not row.get_text(0).contains("Baja"), "baja: %s / %s" % [v.detail_props.text, row.get_text(0)]): return
+	if not _check(c, v.detail.props_label.text == "Prioridad baja" and not row.get_text(0).contains("Baja"), "baja: %s / %s" % [v.detail.props_label.text, row.get_text(0)]): return
 	_select(v, a[3])
-	if not _check(c, not v.detail_props.visible, "sin nada no muestra nada: " + v.detail_props.text): return
-	if not _check(c, not v.detail_description.visible, "sin descripción no muestra nada: " + v.detail_description.text): return
-	if not _check(c, not v.images_box.visible, "sin capturas no muestra nada"): return
+	if not _check(c, not v.detail.props_label.visible, "sin nada no muestra nada: " + v.detail.props_label.text): return
+	if not _check(c, not v.detail.description_label.visible, "sin descripción no muestra nada: " + v.detail.description_label.text): return
+	if not _check(c, not v.detail.images_box.visible, "sin capturas no muestra nada"): return
 	if not _check(c, v.files_button.visible, "sin views falta el botón de Archivos"): return
 	v.board.config.views = ["board", "docs"]
 	v._render()
@@ -590,7 +590,7 @@ func test_task_files(a: Array) -> void:
 		return p.ends_with(".gd")
 	v.current_milestone = "m01"
 	_select(v, a[1])
-	var buttons := v.files_box.get_children().filter(func(n): return n is Button)
+	var buttons := v.detail.files_box.get_children().filter(func(n): return n is Button)
 	var names := buttons.map(func(b): return b.text)
 	if not _check(c, names == ["src/player.gd", "docs/notas.md", "src/borrado.gd"], "archivos: %s" % [names]): return
 	if not _check(c, not buttons[0].has_theme_color_override("font_color") and buttons[2].has_theme_color_override("font_color"), "el que no está va en rojo"): return
@@ -599,7 +599,7 @@ func test_task_files(a: Array) -> void:
 	if not _check(c, opened == ["src/player.gd", "docs/notas.md"], "abrió %s" % [opened]): return
 	if not _check(c, v.notice.visible and v.notice.text.contains("docs/notas.md"), "sin hub, avisa: " + v.notice.text): return
 	_select(v, a[2])
-	_check(c, v.files_box.get_child_count() == 0, "una tarea sin archivos no muestra la sección")
+	_check(c, v.detail.files_box.get_child_count() == 0, "una tarea sin archivos no muestra la sección")
 
 
 # El script y la escena que se editan (15.4): arriba, las tareas sin terminar que los citan, de cualquier hito; un
@@ -616,9 +616,9 @@ func test_editing(a: Array) -> void:
 	if not _check(c, v.editing.scene == "", "un script incorporado no es un archivo: " + v.editing.scene): return
 	v.editing_box.get_child(0).pressed.emit()
 	if not _check(c, v.selected_task == a[1] and v.current_milestone == "m01", "no fue a la tarea: %s en %s" % [v.selected_task, v.current_milestone]): return
-	if not _check(c, not v.files_box.get_children().any(func(b): return b is Button and b.text.begins_with("+ Vincular")), "ofrece vincular lo que ya cita"): return
+	if not _check(c, not v.detail.files_box.get_children().any(func(b): return b is Button and b.text.begins_with("+ Vincular")), "ofrece vincular lo que ya cita"): return
 	_select(v, a[2])
-	var add = v.files_box.get_children().filter(func(b): return b is Button and b.text == "+ Vincular player.gd")
+	var add = v.detail.files_box.get_children().filter(func(b): return b is Button and b.text == "+ Vincular player.gd")
 	if not _check(c, add.size() == 1, "falta + Vincular player.gd"): return
 	add[0].pressed.emit()
 	if not _check(c, await _until(func(): return v.board.task(a[2]).get("files", []) == ["src/player.gd"]), "no se vinculó"): return
@@ -647,12 +647,12 @@ func test_thumbs(a: Array) -> void:
 	var v := await _view(a[0])
 	v.current_milestone = "m01"
 	_select(v, a[1])
-	var shots := v.images_box.get_children()
+	var shots := v.detail.images_box.get_children()
 	if not _check(c, shots.size() == 2 and shots[0] is TextureButton and shots[0].texture_normal != null, "miniatura: %d" % shots.size()): return
 	if not _check(c, shots[1] is Button and shots[1].text == "▣ anim.gif", "gif: %s" % shots[1]): return
 	var tex = shots[0].texture_normal
 	v._render()
-	if not _check(c, v.images_box.get_child(0).texture_normal == tex, "volvió a decodificar la captura"): return
+	if not _check(c, v.detail.images_box.get_child(0).texture_normal == tex, "volvió a decodificar la captura"): return
 	var loads := [0]
 	v.loaded.connect(func(): loads[0] += 1)
 	v._poll.timeout.emit()
@@ -692,7 +692,7 @@ func test_failed_writes(a: Array) -> void:
 	v.client.port = 1
 	_pick_status(v, "done")
 	if not _check(c, await _until(func(): return v._queues.is_empty()), "la fila no terminó"): return
-	if not _check(c, v.status_select.get_item_metadata(v.status_select.selected) == before, "el selector quedó en lo que no se guardó"): return
+	if not _check(c, v.detail.status_select.get_item_metadata(v.detail.status_select.selected) == before, "el selector quedó en lo que no se guardó"): return
 	if not _check(c, v.notice.text.begins_with("No se pudo guardar"), "aviso: " + v.notice.text): return
 	v.new_title.text = "Que no se pierda"
 	await v.create_task(v.new_title.text)
@@ -717,11 +717,11 @@ func test_narrow(a: Array) -> void:
 	await process_frame
 	var w: float = v.get_combined_minimum_size().x
 	if not _check(c, w <= 300, "sin hub pide %d px" % w): return
-	if not _check(c, not v.detail_web.visible, "abrir en el navegador sin hub"): return
+	if not _check(c, not v.detail.web_button.visible, "abrir en el navegador sin hub"): return
 	v.online = true
 	v._uncommitted = 12
 	v._render()
 	await process_frame
 	w = v.get_combined_minimum_size().x
 	if not _check(c, w <= 300, "con hub pide %d px" % w): return
-	_check(c, v.detail_web.visible and v.web_url("#task/" + a[1]).ends_with("/#task/" + a[1]), "falta abrir la tarea en el navegador")
+	_check(c, v.detail.web_button.visible and v.web_url("#task/" + a[1]).ends_with("/#task/" + a[1]), "falta abrir la tarea en el navegador")

@@ -3,6 +3,8 @@ extends VBoxContainer
 ## Vista del dock "Tablero" (mockups Dock_Tasks y Dock_Offline). Es un Control común: el plugin la pone
 ## dentro de un EditorDock y los tests la instancian sin editor.
 ## Con hub: carga por HTTP, cambios en vivo por WebSocket y edición. Sin hub: compass/ en solo lectura.
+## Acá están la vida del hub, la lista y las escrituras; el detalle de la tarea es task_detail.gd y los procesos
+## que lanza el dock (scompass, el hub), hub_process.gd.
 
 signal state_changed(online: bool)
 signal loaded
@@ -10,14 +12,13 @@ signal loaded
 const Reader := preload("compass_reader.gd")
 const Board := preload("board.gd")
 const HubClient := preload("hub_client.gd")
+const HubProcess := preload("hub_process.gd")
+const TaskDetail := preload("task_detail.gd")
 
-## Ancho mínimo de los textos con ajuste de línea. Sin esto, mientras el dock está en una pestaña oculta mide 0 de
-## ancho, cada palabra va en su renglón y el alto mínimo (miles de px) desacomoda todo el editor.
-const WRAP_MIN_WIDTH := 140
-const BLOCKED_COLOR := Color("#e8806e")
-## Fecha límite: vencida (el mismo rojo) y de hoy.
-const OVERDUE_COLOR := Color("#e8806e")
-const TODAY_COLOR := Color("#e0a95a")
+const WRAP_MIN_WIDTH := TaskDetail.WRAP_MIN_WIDTH
+const BLOCKED_COLOR := TaskDetail.BLOCKED_COLOR
+const OVERDUE_COLOR := TaskDetail.OVERDUE_COLOR
+const TODAY_COLOR := TaskDetail.TODAY_COLOR
 
 ## Preferencias por proyecto. El plugin las guarda en la metadata del proyecto del editor.
 var get_pref: Callable = func(_key: String, default): return default
@@ -30,6 +31,7 @@ var keep_hub_setting: Callable = func(): return false
 var project_root := ""
 var board := Board.new()
 var client := HubClient.new()
+var hub := HubProcess.new()
 var online := false
 var current_milestone := ""
 var selected_task := ""
@@ -40,16 +42,8 @@ var _reload_again := false
 var _queues := {}
 ## Iniciar hub en curso (19.10): un segundo clic no lanza otro proceso que pise la tubería del primero.
 var _starting := false
-## Miniaturas ya decodificadas (19.9): ruta absoluta → { "stamp": modificado y tamaño, "tex": ImageTexture o null si no
-## se pudo cargar }. Sin esto, cada render leía y achicaba las capturas del disco.
-var _thumbs := {}
 ## Firma de compass/ en la última lectura sin hub (19.9): si no cambió, el poll no relee ni re-renderiza.
 var _compass_stamp := ""
-var hub_pid := -1
-## Tubería con el hub que lanzó el dock: mientras exista, el hub vive; si Godot muere, el sistema la cierra.
-var _hub_pipe := {}
-## El hub se lanzó para quedar corriendo: el dock no lo cierra.
-var hub_kept := false
 
 var banner: PanelContainer
 var banner_title: Label
@@ -83,35 +77,13 @@ var tree: Tree
 var split: VSplitContainer
 var tasks_header: Button
 var tasks_collapsed := false
-var detail_scroll: ScrollContainer
-var detail: VBoxContainer
-var detail_title: Label
-## Abre la tarea abierta en la web (19.11): ahí se edita lo que el dock solo muestra.
-var detail_web: Button
-var detail_hint: Label
-## Fecha límite de la tarea abierta (solo lectura: se edita en la web o con `scompass set --due`).
-var detail_due: Label
-var detail_props: Label
-## Qué hay que hacer y por qué (D37). Solo lectura: se edita en la web o con `scompass set --description`.
-var detail_description: Label
-## Capturas de la tarea (18.4): miniaturas; un clic abre la imagen con el visor del sistema.
-var images_box: HFlowContainer
-var status_select: OptionButton
-var steps_box: VBoxContainer
-var refs_box: VBoxContainer
-## Vínculos con otras tareas (solo lectura: se editan en la web o con `scompass link`).
-var links_box: VBoxContainer
-var files_box: VBoxContainer
-## Referencias desplegadas ("ruta#id") y bloques de las secciones pedidas al hub (6.7).
-var _refs_open := {}
-## Pasos con el detalle desplegado ("tarea:índice").
-var _steps_open := {}
-var _blocks := {}
-## Resaltado para los CodeEdit de los snippets. El plugin pasa el GDScriptSyntaxHighlighter del editor; fuera
-## del editor (tests) queda un CodeHighlighter básico.
+## La tarea abierta (task_detail.gd), debajo de la lista.
+var detail: TaskDetail
 ## Abre un archivo del repo en el editor (lo pone el plugin, 15.3). false si Godot no lo ve: el dock va a la web.
 var open_file: Callable = func(_path: String) -> bool: return false
-var make_highlighter: Callable = func(lang: String): return basic_highlighter(lang)
+## Resaltado para los CodeEdit de los snippets. El plugin pasa el GDScriptSyntaxHighlighter del editor; fuera
+## del editor (tests) queda un CodeHighlighter básico.
+var make_highlighter: Callable = func(lang: String): return TaskDetail.basic_highlighter(lang)
 var notice: Label
 var footer_dot: ColorRect
 var footer_label: Label
@@ -120,8 +92,6 @@ var restart_button: Button
 var _poll: Timer
 ## Puerto del Inicio que se negó a servir el proyecto (21.1): el sondeo no le vuelve a pedir; -1 si ninguno.
 var _home_refused := -1
-## El scompass que corre en otro hilo: al cerrar el dock se espera (si el editor sale antes, el hilo sigue y Godot se cae).
-var _thread: Thread = null
 var _notice_timer: Timer
 
 
@@ -130,6 +100,7 @@ func _init() -> void:
 	size_flags_vertical = SIZE_EXPAND_FILL
 	add_theme_constant_override("separation", 6)
 	add_child(client)
+	add_child(hub)
 	client.went_online.connect(_on_online)
 	client.went_offline.connect(_on_offline)
 	client.event_received.connect(_on_event)
@@ -140,6 +111,7 @@ func _init() -> void:
 func setup(root: String) -> void:
 	project_root = root
 	client.project_root = root
+	hub.project_root = root
 	await reload()
 	await check_compass()
 	await _try_hub()
@@ -236,9 +208,7 @@ func _on_event(msg: Dictionary) -> void:
 				_render()
 		"doc_changed":
 			# El documento cambió: se olvida el BBCode de sus secciones y se recarga el índice.
-			for k in _blocks.keys():
-				if str(k).begins_with(str(msg.get("alias", "")) + "#"):
-					_blocks.erase(k)
+			detail.forget_doc(str(msg.get("alias", "")))
 			await reload()
 		"git":
 			# El hub recuenta después de cada cambio (y mientras haya algo sin commitear, por si se commitea).
@@ -289,7 +259,7 @@ func _send_update(id: String, patch) -> void:
 	else:
 		show_notice("No se pudo guardar: " + _error_of(r))
 		# La casilla o el selector quedaron con lo que no se guardó: se vuelve a mostrar lo que hay (19.10).
-		_render_detail()
+		detail.render()
 
 
 ## El mensaje de error de una respuesta del hub, o por qué no hubo respuesta.
@@ -358,36 +328,9 @@ func init_compass() -> bool:
 	return true
 
 
-## Corre scompass en el proyecto y espera, en otro hilo: el editor sigue dibujando mientras tanto. Bloquear el
-## cuadro no solo congela el editor: el cuadro siguiente llega con todo ese tiempo de golpe y vence en el acto los
-## pedidos HTTP con timeout corto (en Windows, Node tarda ~0,5 s en arrancar y el dock no encontraba el hub).
-## Devuelve [código, salida]; código -1 si no se encontró scompass.
+## Corre scompass en el proyecto, en otro hilo (hub_process.gd): [código, salida]; código -1 si no se encontró.
 func _scompass(args: Array) -> Array:
-	var cmd := scompass_command()
-	if cmd.is_empty():
-		return [-1, ""]
-	var all: Array = cmd[1] + ["--dir", project_root] + args
-	var run := func() -> Array:
-		var out := []
-		var code := OS.execute(cmd[0], PackedStringArray(all), out, true)
-		return [code, str(out[0]).strip_edges() if out.size() else ""]
-	if not is_inside_tree():
-		return run.call()
-	# Uno a la vez (19.10): dos seguidos (doble clic en Actualizar, o un clic durante el check del arranque)
-	# compartían _thread, y el primero devolvía -1 ("no encontré scompass") sin esperar a su hilo.
-	while _thread != null and is_inside_tree():
-		await get_tree().process_frame
-	if not is_inside_tree():
-		return [-1, ""]
-	var th := Thread.new()
-	_thread = th
-	th.start(run)
-	while th.is_alive() and is_inside_tree():
-		await get_tree().process_frame
-	if _thread != th: # el dock se cerró y _exit_tree ya lo esperó
-		return [-1, ""]
-	_thread = null
-	return th.wait_to_finish()
+	return await hub.run(scompass_command(), args)
 
 
 ## ¿compass/ tiene archivos generados de una versión anterior de Scope Compass (schema/, AGENTS.md)?
@@ -422,40 +365,9 @@ func _render_update() -> void:
 
 # --- Iniciar el hub (5.5) ----------------------------------------------------------------------
 
-## Dónde está scompass: la opción de Editor Settings, al lado del proyecto, dentro de él o en el PATH.
-## Devuelve [programa, args previos] listos para OS.create_process, o [] si no se encontró.
+## Dónde está scompass (hub_process.gd): [programa, args previos], o [] si no se encontró.
 func scompass_command() -> Array:
-	var candidates: Array = []
-	var configured: String = scompass_setting.call()
-	if configured != "":
-		# scompass.cmd (lo que da `where` después de npm link): Godot no lanza un .cmd, así que se usa el .js que el
-		# shim tiene al lado, como en la búsqueda por el PATH (19.11).
-		if configured.get_extension().to_lower() in ["cmd", "ps1"] or configured.get_file().to_lower() == "scompass":
-			var js := configured.replace("\\", "/").get_base_dir().path_join("node_modules/scope-compass/bin/scompass.js")
-			if FileAccess.file_exists(js):
-				configured = js
-		candidates.append(configured)
-	candidates.append(project_root.path_join("../scope-compass/hub/bin/scompass.js").simplify_path())
-	candidates.append(project_root.path_join("hub/bin/scompass.js"))
-	for path in candidates:
-		if path.ends_with(".js") and FileAccess.file_exists(path):
-			return ["node", [path]]
-		if not path.ends_with(".js") and FileAccess.file_exists(path):
-			return [path, []]
-	var out := []
-	if OS.get_name() == "Windows":
-		# `npm link` deja scompass.cmd: Godot no lanza un .cmd sin la consola de por medio, así que se usa el .js
-		# que el shim tiene al lado, con node.
-		if OS.execute("where", ["scompass"], out) == 0:
-			for line in str(out[0]).split("\n"):
-				var shim := line.strip_edges().replace("\\", "/")
-				var js := shim.get_base_dir().path_join("node_modules/scope-compass/bin/scompass.js")
-				if shim != "" and FileAccess.file_exists(js):
-					return ["node", [js]]
-		return []
-	if OS.execute("sh", ["-c", "command -v scompass"], out) == 0 and str(out[0]).strip_edges() != "":
-		return [str(out[0]).strip_edges(), []]
-	return []
+	return hub.command(str(scompass_setting.call()))
 
 
 ## Levanta `scompass serve` para este proyecto y espera a conectarse (hasta 8 s). Con el Inicio corriendo no
@@ -485,40 +397,14 @@ func _start_hub() -> bool:
 	if cmd.is_empty():
 		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path.")
 		return false
-	# Por sh con la salida a un log: si no, el hub hereda el stdout de Godot. exec conserva el PID.
-	var log_path := project_root.path_join(".godot/scope_compass_hub.log")
-	DirAccess.make_dir_recursive_absolute(log_path.get_base_dir())
-	hub_kept = bool(keep_hub_setting.call())
-	if OS.get_name() == "Windows":
-		# Sin sh (§18): node directo, y el hub escribe él mismo el log (--log). Godot lo lanza sin consola.
-		DirAccess.remove_absolute(log_path)
-		var args: Array = cmd[1] + ["--dir", project_root, "serve", "--log", log_path]
-		if hub_kept:
-			hub_pid = OS.create_process(cmd[0], PackedStringArray(args + ["--tray"]))
-		else:
-			_hub_pipe = OS.execute_with_pipe(cmd[0], PackedStringArray(args + ["--exit-on-stdin-close"]), false)
-			hub_pid = int(_hub_pipe.get("pid", -1))
-	elif hub_kept:
-		# Independiente del editor (5.9): sin tubería y con ícono en la bandeja para detenerlo. create_process ya
-		# pone al hijo en su propia sesión (setsid sobra y, al ser líder, haría un fork que cambia el PID).
-		var args: Array = ["-c", 'log="$1"; shift; exec "$@" >"$log" 2>&1 </dev/null', "sh", log_path, cmd[0]] + cmd[1] \
-			+ ["--dir", project_root, "serve", "--tray"]
-		hub_pid = OS.create_process("sh", PackedStringArray(args))
-	else:
-		var args: Array = ["-c", 'log="$1"; shift; exec "$@" >"$log" 2>&1', "sh", log_path, cmd[0]] + cmd[1] \
-			+ ["--dir", project_root, "serve", "--exit-on-stdin-close"]
-		# La entrada del hub es una tubería con Godot: si el editor se cierra, se cuelga o lo matan, el hub se va (5.8).
-		_hub_pipe = OS.execute_with_pipe("sh", PackedStringArray(args), false)
-		hub_pid = int(_hub_pipe.get("pid", -1))
-	if hub_pid <= 0:
-		hub_pid = -1
+	if not hub.launch(cmd, bool(keep_hub_setting.call())):
 		show_notice("No se pudo iniciar el hub con %s." % cmd[0])
 		return false
 	for i in 32:
 		await get_tree().create_timer(0.25).timeout
 		if await client.detect() or online:
 			break
-		if not OS.is_process_running(hub_pid):
+		if not OS.is_process_running(hub.pid):
 			break
 	if not online and not await _wait_online(2.0):
 		show_notice("El hub no arrancó. Mirá .godot/scope_compass_hub.log o probá `scompass serve` en una terminal.")
@@ -551,41 +437,17 @@ func restart_hub() -> bool:
 	if not await _wait_online(2.0):
 		show_notice("El hub no volvió después de reiniciarse. Mirá .godot/scope_compass_hub.log.")
 		return false
-	if hub_pid > 0:
+	if hub.pid > 0:
 		var h := await client.request("GET", "/api/health")
 		if h.code == 200:
-			hub_pid = int(h.json.pid)
+			hub.pid = int(h.json.pid)
 	show_notice("Hub reiniciado.")
 	return true
 
 
-## Cierra el hub solo si lo abrió este dock y no está en modo "mantener" (salvo force): corta la tubería
-## (el hub termina el export pendiente y sale).
-## Si en 3 s sigue vivo, SIGTERM (en Windows, OS.kill: no hay señales).
+## Cierra el hub solo si lo abrió este dock y no está en modo "mantener" (salvo force).
 func stop_hub(force := false) -> void:
-	if hub_pid <= 0 or (hub_kept and not force):
-		return
-	for key in ["stdio", "stderr"]:
-		if _hub_pipe.get(key) is FileAccess:
-			_hub_pipe[key].close()
-	_hub_pipe = {}
-	var t0 := Time.get_ticks_msec()
-	while pid_alive(hub_pid) and Time.get_ticks_msec() - t0 < 3000:
-		OS.delay_msec(50)
-	if pid_alive(hub_pid):
-		if OS.get_name() == "Windows" or OS.execute("kill", ["-TERM", str(hub_pid)]) != 0:
-			OS.kill(hub_pid)
-	hub_pid = -1
-
-
-## ¿Sigue vivo el proceso? OS.is_process_running solo conoce los hijos de Godot, y tras un reinicio el hub es
-## nieto: kill -0 en Linux; en Windows, tasklist.
-static func pid_alive(pid: int) -> bool:
-	if OS.get_name() == "Windows":
-		var out := []
-		OS.execute("tasklist", ["/FI", "PID eq %d" % pid, "/NH", "/FO", "CSV"], out)
-		return ("\"%d\"" % pid) in (str(out[0]) if out.size() else "")
-	return OS.execute("kill", ["-0", str(pid)]) == 0
+	hub.stop(force)
 
 
 func show_notice(text: String) -> void:
@@ -606,7 +468,7 @@ const ICONS := {
 }
 
 
-func _icon_button(name: String, tip: String) -> Button:
+func icon_button(name: String, tip: String) -> Button:
 	var b := Button.new()
 	b.icon = ICONS[name]
 	b.tooltip_text = tip
@@ -614,7 +476,7 @@ func _icon_button(name: String, tip: String) -> Button:
 
 
 ## Flecha de plegado: la del editor (la misma que usa el Tree), o ▸/▾ fuera del editor.
-func _fold_icon(open: bool, b: Button, label := "") -> void:
+func fold_icon(open: bool, b: Button, label := "") -> void:
 	var name := "GuiTreeArrowDown" if open else "GuiTreeArrowRight"
 	if has_theme_icon(name, "EditorIcons"):
 		b.icon = get_theme_icon(name, "EditorIcons")
@@ -716,13 +578,13 @@ func _build() -> void:
 	milestone_select.tooltip_text = "Hito"
 	milestone_select.item_selected.connect(_on_milestone_selected)
 	head.add_child(milestone_select)
-	reload_button = _icon_button("reload", "Recargar")
+	reload_button = icon_button("reload", "Recargar")
 	reload_button.pressed.connect(reload)
 	head.add_child(reload_button)
-	browser_button = _icon_button("browser", "Abrir el tablero en el navegador")
+	browser_button = icon_button("browser", "Abrir el tablero en el navegador")
 	browser_button.pressed.connect(func(): OS.shell_open(web_url()))
 	head.add_child(browser_button)
-	files_button = _icon_button("folder", "Ver los archivos del repo y su estado de git en el navegador")
+	files_button = icon_button("folder", "Ver los archivos del repo y su estado de git en el navegador")
 	files_button.pressed.connect(func(): OS.shell_open(web_url("#files")))
 	head.add_child(files_button)
 
@@ -770,66 +632,8 @@ func _build() -> void:
 	tree.item_collapsed.connect(_on_item_collapsed)
 	tasks_panel.add_child(tree)
 
-	# El detalle se desplaza solo: una tarea con muchos pasos no le quita lugar a la lista.
-	detail_scroll = ScrollContainer.new()
-	detail_scroll.size_flags_vertical = SIZE_EXPAND_FILL
-	detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	detail_scroll.custom_minimum_size.y = 60
-	split.add_child(detail_scroll)
-	detail = VBoxContainer.new()
-	detail.size_flags_horizontal = SIZE_EXPAND_FILL
-	detail_scroll.add_child(detail)
-	var trow := HBoxContainer.new()
-	detail.add_child(trow)
-	detail_title = Label.new()
-	detail_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail_title.custom_minimum_size.x = WRAP_MIN_WIDTH
-	detail_title.size_flags_horizontal = SIZE_EXPAND_FILL
-	detail_title.add_theme_font_size_override("font_size", 15)
-	trow.add_child(detail_title)
-	detail_web = _icon_button("browser", "Abrir esta tarea en el navegador, donde se edita todo")
-	detail_web.size_flags_vertical = SIZE_SHRINK_BEGIN
-	detail_web.pressed.connect(func(): OS.shell_open(web_url("#task/" + selected_task.uri_encode())))
-	trow.add_child(detail_web)
-	detail_hint = Label.new()
-	detail_hint.text = "Acá se cambian el estado y los pasos; lo demás, en el navegador (↗)."
-	detail_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail_hint.custom_minimum_size.x = WRAP_MIN_WIDTH
-	detail_hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.45))
-	detail_hint.add_theme_font_size_override("font_size", 11)
-	detail.add_child(detail_hint)
-	detail_due = Label.new()
-	detail.add_child(detail_due)
-	detail_props = Label.new()
-	detail_props.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail_props.custom_minimum_size.x = WRAP_MIN_WIDTH
-	detail.add_child(detail_props)
-	var srow := HBoxContainer.new()
-	detail.add_child(srow)
-	var slabel := Label.new()
-	slabel.text = "Estado"
-	srow.add_child(slabel)
-	status_select = OptionButton.new()
-	status_select.size_flags_horizontal = SIZE_EXPAND_FILL
-	for s in Board.STATUSES:
-		status_select.add_item(s.label)
-		status_select.set_item_metadata(status_select.item_count - 1, s.id)
-	status_select.item_selected.connect(func(i): if selected_task != "": update_task(selected_task, { "status": status_select.get_item_metadata(i) }))
-	srow.add_child(status_select)
-	detail_description = Label.new()
-	detail_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail_description.custom_minimum_size.x = WRAP_MIN_WIDTH
-	detail.add_child(detail_description)
-	images_box = HFlowContainer.new()
-	detail.add_child(images_box)
-	steps_box = VBoxContainer.new()
-	detail.add_child(steps_box)
-	links_box = VBoxContainer.new()
-	detail.add_child(links_box)
-	refs_box = VBoxContainer.new()
-	detail.add_child(refs_box)
-	files_box = VBoxContainer.new()
-	detail.add_child(files_box)
+	detail = TaskDetail.new(self)
+	split.add_child(detail)
 
 	notice = Label.new()
 	notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -905,10 +709,6 @@ func _enter_tree() -> void:
 
 func _exit_tree() -> void:
 	client.close()
-	if _thread:
-		var th := _thread
-		_thread = null
-		th.wait_to_finish()
 
 
 # --- Render ----------------------------------------------------------------------------------
@@ -947,7 +747,7 @@ func _render() -> void:
 
 	_render_editing()
 	_render_tree()
-	_render_detail()
+	detail.render()
 
 	footer_dot.color = Color("#6fbf94") if online else Color("#e0655a")
 	footer_label.text = ("127.0.0.1:%d" % client.port) if online else "Sin hub · solo lectura"
@@ -993,7 +793,7 @@ func _build_tree() -> void:
 			var it := tree.create_item(g)
 			var code := str(t.get("code", ""))
 			# Como la tarjeta de la web: la prioridad solo si es alta, el responsable y las etiquetas.
-			var marks := ([PRIORITIES.high] if t.get("priority") == "high" else []) + _who_and_tags(t)
+			var marks := ([TaskDetail.PRIORITIES.high] if t.get("priority") == "high" else []) + TaskDetail.who_and_tags(t)
 			it.set_text(0, ((code + "  " if code != "" else "") + str(t.title)).replace("`", "") + "".join(marks.map(func(m): return " · " + m)))
 			var st := Board.steps(t)
 			var col1 := "%d/%d" % st if st[1] > 0 else ""
@@ -1016,170 +816,14 @@ func _build_tree() -> void:
 				it.select(0)
 
 
-const PRIORITIES := { "high": "Alta", "medium": "Media", "low": "Baja" }
-
-
-## Responsable y etiquetas de la tarea (M11, spec §19), para la lista y el detalle: "@ana", "#arte #audio".
-func _who_and_tags(t: Dictionary) -> Array:
-	var out := []
-	if str(t.get("assignee", "")) != "":
-		out.append("@" + str(t.assignee))
-	var tags = t.get("tags", [])
-	if tags is Array and not tags.is_empty():
-		out.append(" ".join(tags.map(func(x): return "#" + str(x))))
-	return out
-
-
 ## Encabezado del bloque de tareas y estado del divisor (plegado: el detalle usa todo el alto).
 func _apply_split() -> void:
 	var n := board.tasks_of(current_milestone).size()
-	_fold_icon(not tasks_collapsed, tasks_header, "Tareas · %d" % n)
+	fold_icon(not tasks_collapsed, tasks_header, "Tareas · %d" % n)
 	tree.visible = not tasks_collapsed
 	split.collapsed = tasks_collapsed
 	if not tasks_collapsed:
 		split.split_offset = int(get_pref.call("split", split.split_offset))
-
-
-func _render_detail() -> void:
-	var t = board.task(selected_task)
-	detail.visible = t != null
-	detail_scroll.visible = t != null
-	if t == null:
-		return
-	detail_title.text = (((str(t.code) + " ") if str(t.get("code", "")) != "" else "") + str(t.title)).replace("`", "")
-	detail_web.visible = online
-	detail_hint.visible = online
-	var due := str(t.get("due", ""))
-	var ds := Board.due_state(t)
-	detail_due.visible = due != ""
-	detail_due.text = ("Vencida · " if ds == "overdue" else "Vence hoy · " if ds == "today" else "Vence ") + Board.show_due(due) if due != "" else ""
-	if ds == "overdue":
-		detail_due.add_theme_color_override("font_color", OVERDUE_COLOR)
-	elif ds == "today":
-		detail_due.add_theme_color_override("font_color", TODAY_COLOR)
-	else:
-		detail_due.remove_theme_color_override("font_color")
-	var prio := str(t.get("priority", ""))
-	var size := str(t.get("size", ""))
-	var props := (["Prioridad " + PRIORITIES[prio].to_lower()] if PRIORITIES.has(prio) else []) + (["Tamaño " + size.to_upper()] if size != "" else []) + _who_and_tags(t)
-	detail_props.visible = not props.is_empty()
-	detail_props.text = " · ".join(props)
-	for i in status_select.item_count:
-		if status_select.get_item_metadata(i) == t.status:
-			status_select.select(i)
-	status_select.disabled = not online
-	var description := str(t.get("description", ""))
-	detail_description.visible = description != ""
-	detail_description.text = description.replace("`", "")
-	_render_images(t)
-	for c in steps_box.get_children():
-		steps_box.remove_child(c)
-		c.queue_free()
-	var cl = t.get("checklist", [])
-	for i in (cl.size() if cl is Array else 0):
-		# Cada paso: el checkbox con el texto corto y, si tiene detalle, ▸ para desplegarlo debajo.
-		var row := VBoxContainer.new()
-		var line := HBoxContainer.new()
-		row.add_child(line)
-		# El cuadradito tilda; el texto (y ▸) despliega el detalle. Tildar al tocar el texto era contraintuitivo.
-		var cb := CheckBox.new()
-		cb.button_pressed = cl[i].get("done", false)
-		cb.disabled = not online
-		cb.size_flags_vertical = SIZE_SHRINK_BEGIN
-		cb.tooltip_text = "Marcar como hecho"
-		var id: String = t.id
-		cb.toggled.connect(func(on: bool): update_task(id, func(cur): return { "checklist": _toggled(cur, i, on) }))
-		var cb_box := MarginContainer.new() # para alinear el cuadradito con la primera línea del texto
-		cb_box.size_flags_vertical = SIZE_SHRINK_BEGIN
-		cb_box.add_child(cb)
-		line.add_child(cb_box)
-		var detail_text := str(cl[i].get("detail", ""))
-		var key := "%s:%d" % [id, i]
-		var open: bool = _steps_open.get(key, false)
-		var toggle_detail := func(): _steps_open[key] = not open; _render_detail()
-		var label := Button.new()
-		label.flat = true
-		label.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.custom_minimum_size.x = WRAP_MIN_WIDTH
-		label.size_flags_horizontal = SIZE_EXPAND_FILL
-		label.text = str(cl[i].get("text", "")).replace("`", "")
-		label.focus_mode = Control.FOCUS_NONE if detail_text == "" else Control.FOCUS_ALL
-		label.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if detail_text != "" else Control.CURSOR_ARROW
-		label.tooltip_text = ("Ocultar detalle" if open else "Ver detalle") if detail_text != "" else ""
-		if cl[i].get("done", false):
-			label.add_theme_color_override("font_color", Color("#a69d8c"))
-		if detail_text != "":
-			label.pressed.connect(toggle_detail)
-		line.add_child(label)
-		# El centro del cuadradito, a la altura del centro de la primera línea del texto (el botón tiene relleno).
-		var sb := label.get_theme_stylebox("normal")
-		var first_line := label.get_theme_font("font").get_height(label.get_theme_font_size("font_size"))
-		var center := sb.get_margin(SIDE_TOP) + first_line / 2.0
-		cb_box.add_theme_constant_override("margin_top", maxi(0, roundi(center - cb.get_combined_minimum_size().y / 2.0)))
-		if detail_text != "":
-			var toggle := Button.new()
-			toggle.flat = true
-			_fold_icon(open, toggle)
-			toggle.tooltip_text = "Ocultar detalle" if open else "Ver detalle"
-			toggle.size_flags_vertical = SIZE_SHRINK_BEGIN
-			toggle.pressed.connect(toggle_detail)
-			line.add_child(toggle)
-			if open:
-				var detail_label := Label.new()
-				detail_label.text = detail_text.replace("`", "")
-				detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				detail_label.custom_minimum_size.x = WRAP_MIN_WIDTH
-				detail_label.add_theme_color_override("font_color", Color("#a69d8c"))
-				var margin := MarginContainer.new()
-				margin.add_theme_constant_override("margin_left", 28)
-				margin.add_child(detail_label)
-				row.add_child(margin)
-		steps_box.add_child(row)
-	_render_links(t)
-	_render_refs(t)
-	_render_files(t)
-
-
-# --- Vínculos entre tareas -----------------------------------------------------------------------
-
-const LINK_KINDS := [["blocked_by", "Bloqueada por"], ["blocks", "Bloquea a"], ["related", "Relacionada con"]]
-
-
-func _render_links(t: Dictionary) -> void:
-	for c in links_box.get_children():
-		links_box.remove_child(c)
-		c.queue_free()
-	var v := board.link_view(t.id)
-	if v.blocks.is_empty() and v.blocked_by.is_empty() and v.related.is_empty():
-		return
-	var label := Label.new()
-	label.text = "Vínculos"
-	label.add_theme_color_override("font_color", Color("#a69d8c"))
-	links_box.add_child(label)
-	for kind in LINK_KINDS:
-		for id in v[kind[0]]:
-			var other = board.task(id)
-			var b := Button.new()
-			b.flat = true
-			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-			b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			b.custom_minimum_size.x = WRAP_MIN_WIDTH
-			var status := ""
-			for s in Board.STATUSES:
-				if other != null and s.id == other.status:
-					status = " · " + s.label
-			b.text = "%s: %s%s" % [kind[1], board.task_name(id), status]
-			# En rojo: el vínculo roto, o la tarea sin terminar que bloquea a esta.
-			if other == null or (kind[0] == "blocked_by" and other.status != "done" and t.status != "done"):
-				b.add_theme_color_override("font_color", BLOCKED_COLOR)
-			if other == null:
-				b.disabled = true
-			else:
-				b.tooltip_text = "Ir a la tarea"
-				b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-				b.pressed.connect(_go_to_task.bind(id))
-			links_box.add_child(b)
 
 
 ## El plugin avisa qué script o escena se edita (kind "script" o "scene"; res_path "" si ninguno). Un script
@@ -1187,66 +831,7 @@ func _render_links(t: Dictionary) -> void:
 func set_editing(kind: String, res_path: String) -> void:
 	editing[kind] = res_path.trim_prefix("res://") if res_path.begins_with("res://") and not res_path.contains("::") else ""
 	_render_editing()
-	_render_detail()
-
-
-func _render_images(t: Dictionary) -> void:
-	for c in images_box.get_children():
-		images_box.remove_child(c)
-		c.queue_free()
-	var images = t.get("images", [])
-	images_box.visible = images is Array and not images.is_empty()
-	if not images_box.visible:
-		return
-	for p in images:
-		var abs_path := project_root.path_join(str(p))
-		if not FileAccess.file_exists(abs_path):
-			var gone := Label.new()
-			gone.text = "⚠ " + str(p).get_file()
-			gone.tooltip_text = str(p) + "\nNo está en el disco"
-			gone.add_theme_color_override("font_color", OVERDUE_COLOR)
-			images_box.add_child(gone)
-			continue
-		var tex = _thumb(abs_path)
-		var b: BaseButton
-		if tex == null:
-			# Godot no carga GIF, y una imagen rota tampoco: un botón con el nombre, que igual la abre.
-			b = Button.new()
-			b.text = "▣ " + str(p).get_file()
-			b.flat = true
-		else:
-			var tb := TextureButton.new()
-			tb.ignore_texture_size = true
-			tb.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-			tb.custom_minimum_size = Vector2(96, 72)
-			tb.texture_normal = tex
-			b = tb
-		b.tooltip_text = str(p) + "\nAbrir con el visor del sistema"
-		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		b.pressed.connect(func(): OS.shell_open(abs_path))
-		images_box.add_child(b)
-
-
-## La miniatura de una captura (192 px de ancho como mucho), decodificada una sola vez mientras el archivo no cambie.
-## null si Godot no la puede cargar (un GIF, una imagen rota); eso también se recuerda, para no reintentar.
-func _thumb(abs_path: String):
-	var stamp := "%d:%d" % [FileAccess.get_modified_time(abs_path), FileAccess.get_size(abs_path)]
-	var hit = _thumbs.get(abs_path)
-	if hit is Dictionary and hit.stamp == stamp:
-		return hit.tex
-	var tex = null
-	# Image.load_from_file imprime un error con un GIF: se mira la firma antes.
-	var f := FileAccess.open(abs_path, FileAccess.READ)
-	var head := f.get_buffer(4) if f else PackedByteArray()
-	f = null
-	if head.size() == 4 and head.get_string_from_ascii() != "GIF8":
-		var img := Image.new()
-		if img.load(abs_path) == OK and not img.is_empty():
-			if img.get_width() > 192:
-				img.resize(192, maxi(1, int(192.0 * img.get_height() / img.get_width())))
-			tex = ImageTexture.create_from_image(img)
-	_thumbs[abs_path] = { "stamp": stamp, "tex": tex }
-	return tex
+	detail.render()
 
 
 ## Firma de compass/ y de los documentos: nombre, fecha y tamaño de cada archivo. Barata comparada con leerlos.
@@ -1279,11 +864,6 @@ func _stamp_docs() -> String:
 	return "|".join(parts)
 
 
-static func _files_of(t) -> Array:
-	var f = t.get("files", []) if t is Dictionary else []
-	return f if f is Array else []
-
-
 ## Arriba de la lista: las tareas sin terminar que citan el script o la escena abiertos, de cualquier hito.
 func _render_editing() -> void:
 	for c in editing_box.get_children():
@@ -1294,7 +874,7 @@ func _render_editing() -> void:
 		if path == "":
 			continue
 		for t in board.tasks:
-			if t.get("status") == "done" or not _files_of(t).has(path):
+			if t.get("status") == "done" or not TaskDetail.files_of(t).has(path):
 				continue
 			var b := Button.new()
 			b.flat = true
@@ -1304,67 +884,13 @@ func _render_editing() -> void:
 			b.text = "%s · %s" % [path.get_file(), board.task_name(t.id)]
 			b.tooltip_text = "Cita %s que estás editando. Ir a la tarea" % ("el script" if kind == "script" else "la escena")
 			b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-			b.pressed.connect(_go_to_task.bind(t.id))
+			b.pressed.connect(go_to_task.bind(t.id))
 			editing_box.add_child(b)
 	editing_box.visible = editing_box.get_child_count() > 0
 
 
-## Archivos del repo que toca la tarea (15.3): un clic lo abre en el editor. En rojo, el que ya no está en el disco.
-## Con hub, el script o la escena que se editan y la tarea no cita se pueden vincular (15.4).
-func _render_files(t: Dictionary) -> void:
-	for c in files_box.get_children():
-		files_box.remove_child(c)
-		c.queue_free()
-	var files := _files_of(t)
-	var linkable := []
-	for kind in ["script", "scene"]:
-		if online and editing[kind] != "" and not files.has(editing[kind]):
-			linkable.append(editing[kind])
-	if files.is_empty() and linkable.is_empty():
-		return
-	var label := Label.new()
-	label.text = "Archivos"
-	label.add_theme_color_override("font_color", Color("#a69d8c"))
-	files_box.add_child(label)
-	for f in files:
-		var b := Button.new()
-		b.flat = true
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		b.custom_minimum_size.x = WRAP_MIN_WIDTH
-		b.text = str(f)
-		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		if FileAccess.file_exists(project_root.path_join(str(f))):
-			b.tooltip_text = "Abrir en el editor"
-		else:
-			b.tooltip_text = "No está en el disco: se movió o se borró"
-			b.add_theme_color_override("font_color", BLOCKED_COLOR)
-		b.pressed.connect(open_task_file.bind(str(f)))
-		files_box.add_child(b)
-	for p in linkable:
-		var add := Button.new()
-		add.flat = true
-		add.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		add.text = "+ Vincular " + str(p).get_file()
-		add.tooltip_text = "Agregar a la tarea %s, que estás editando" % p
-		var id: String = t.id
-		add.pressed.connect(func(): update_task(id, func(cur): return {} if _files_of(cur).has(p) else { "files": _files_of(cur) + [p] }))
-		files_box.add_child(add)
-
-
-## Un archivo de la tarea: en el editor si Godot lo ve; si no (markdown, compass/, lo que tiene .gdignore), en la
-## pestaña Archivos de la web.
-func open_task_file(path: String) -> void:
-	if open_file.call(path):
-		return
-	if online:
-		OS.shell_open(web_url("#files/" + path.uri_encode()))
-	else:
-		show_notice("Godot no abre %s. Con el hub iniciado, se abre en la pestaña Archivos del navegador." % path)
-
-
 ## Abre otra tarea en el detalle (cambia de hito si hace falta).
-func _go_to_task(id: String) -> void:
+func go_to_task(id: String) -> void:
 	var t = board.task(id)
 	if t == null:
 		return
@@ -1372,208 +898,6 @@ func _go_to_task(id: String) -> void:
 	set_pref.call("milestone", current_milestone)
 	selected_task = id
 	_render()
-
-
-# --- Referencias a documentos (6.7) ----------------------------------------------------------------
-
-func _render_refs(t: Dictionary) -> void:
-	for c in refs_box.get_children():
-		refs_box.remove_child(c)
-		c.queue_free()
-	var refs = t.get("refs", [])
-	if not refs is Array or refs.is_empty():
-		return
-	var label := Label.new()
-	label.text = "Referencias"
-	label.add_theme_color_override("font_color", Color("#a69d8c"))
-	refs_box.add_child(label)
-	for r in refs:
-		var d = board.doc(str(r.get("doc", "")))
-		# Sin sección, la referencia es al documento entero (12.1): no se despliega, se abre en el navegador.
-		if str(r.get("section", "")) == "":
-			_render_whole_ref(r, d)
-			continue
-		var s = board.section(d, str(r.get("section", "")))
-		var key := "%s#%s" % [r.get("doc", ""), r.get("section", "")]
-		if s == null:
-			var broken := Label.new()
-			broken.text = "⚠ Referencia rota: " + key
-			broken.add_theme_color_override("font_color", Color("#e8806e"))
-			refs_box.add_child(broken)
-			continue
-		var head := HBoxContainer.new()
-		refs_box.add_child(head)
-		var open: bool = _refs_open.get(key, false)
-		var toggle := Button.new()
-		toggle.flat = true
-		toggle.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		toggle.size_flags_horizontal = SIZE_EXPAND_FILL
-		toggle.clip_text = true
-		_fold_icon(open, toggle, str(s.title).replace("`", ""))
-		toggle.tooltip_text = "%s#%s" % [d.alias, s.id]
-		toggle.pressed.connect(func(): _refs_open[key] = not open; _render_detail())
-		head.add_child(toggle)
-		if online:
-			var web := _icon_button("browser", "Abrir en el navegador")
-			web.pressed.connect(func(): OS.shell_open(web_url("#docs/%s/%s" % [str(d.alias).uri_encode(), str(s.id).uri_encode()])))
-			head.add_child(web)
-		if open:
-			var box := VBoxContainer.new()
-			box.name = "Section"
-			refs_box.add_child(box)
-			_fill_section(box, d, s)
-
-
-func _render_whole_ref(r: Dictionary, d) -> void:
-	if d == null:
-		var broken := Label.new()
-		broken.text = "⚠ Referencia rota: %s no está" % r.get("doc", "")
-		broken.add_theme_color_override("font_color", Color("#e8806e"))
-		refs_box.add_child(broken)
-		return
-	var head := HBoxContainer.new()
-	refs_box.add_child(head)
-	var title := Label.new()
-	title.name = "WholeDoc"
-	title.text = "▤ " + _doc_title(d)
-	title.tooltip_text = "%s · documento entero" % d.path
-	title.mouse_filter = Control.MOUSE_FILTER_PASS
-	title.size_flags_horizontal = SIZE_EXPAND_FILL
-	title.clip_text = true
-	head.add_child(title)
-	if online:
-		var web := _icon_button("browser", "Abrir en el navegador")
-		web.pressed.connect(func(): OS.shell_open(web_url("#docs/" + str(d.alias).uri_encode())))
-		head.add_child(web)
-
-
-## Título de un documento: su primer título de nivel 1, o la ruta (como docTitle en web/app.js).
-func _doc_title(d: Dictionary) -> String:
-	for s in d.sections:
-		if int(s.level) == 1:
-			return str(s.title).replace("`", "")
-	return str(d.path)
-
-
-## La sección en bloques: texto en RichTextLabel y cada snippet en un CodeEdit de solo lectura, con el resaltado
-## del editor. Con hub, los bloques los arma el hub (texto en BBCode); sin hub, se parte el markdown de disco.
-func _fill_section(box: VBoxContainer, d: Dictionary, s: Dictionary) -> void:
-	var key := "%s#%s" % [d.alias, s.id]
-	var blocks = _blocks.get(key)
-	if blocks == null and online:
-		var wait := Label.new()
-		wait.text = "Cargando…"
-		box.add_child(wait)
-		var r := await client.request("GET", "/api/docs/%s/sections/%s?format=blocks" % [str(d.alias).uri_encode(), str(s.id).uri_encode()])
-		if not is_instance_valid(box):
-			return
-		wait.queue_free()
-		if r.code != 200:
-			var err := Label.new()
-			err.text = "No se pudo traer la sección."
-			box.add_child(err)
-			return
-		blocks = r.json.blocks
-		_blocks[key] = blocks
-	elif blocks == null:
-		var lines: PackedStringArray = d.get("lines", PackedStringArray())
-		blocks = split_blocks(lines.slice(s.start, s.end))
-	for b in blocks:
-		if b.type == "code":
-			box.add_child(_code_view(str(b.code), str(b.get("lang", ""))))
-		else:
-			var text := RichTextLabel.new()
-			text.fit_content = true
-			text.selection_enabled = true
-			text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			text.custom_minimum_size.x = WRAP_MIN_WIDTH
-			text.bbcode_enabled = b.has("bbcode")
-			text.text = str(b.get("bbcode", b.get("text", "")))
-			box.add_child(text)
-
-
-func _code_view(code: String, lang: String) -> CodeEdit:
-	var ce := CodeEdit.new()
-	ce.text = code
-	ce.editable = false
-	ce.scroll_fit_content_height = true
-	ce.gutters_draw_line_numbers = false
-	ce.minimap_draw = false
-	ce.highlight_current_line = false
-	ce.wrap_mode = TextEdit.LINE_WRAPPING_NONE
-	ce.size_flags_horizontal = SIZE_EXPAND_FILL
-	ce.syntax_highlighter = make_highlighter.call(lang)
-	return ce
-
-
-## Parte el markdown de una sección en bloques de texto (plano) y de código, igual que renderBlocks del hub.
-static func split_blocks(lines: PackedStringArray) -> Array:
-	var blocks := []
-	var buf := PackedStringArray()
-	var fence := ""
-	var lang := ""
-	var id_line := RegEx.create_from_string("^\\s*<!--\\s*id:\\s*[a-z0-9][a-z0-9_-]*\\s*-->\\s*$")
-	var fence_re := RegEx.create_from_string("^\\s{0,3}(```|~~~)\\s*([\\w+-]*)")
-	for line in lines:
-		if id_line.search(line):
-			continue
-		var f := fence_re.search(line)
-		if fence == "" and f:
-			var chunk := "\n".join(buf).strip_edges()
-			if chunk != "":
-				blocks.append({ "type": "text", "text": chunk })
-			buf = PackedStringArray()
-			fence = f.get_string(1)
-			lang = "gdscript" if f.get_string(2) == "gd" else f.get_string(2)
-			continue
-		if fence != "" and f and f.get_string(1) == fence and f.get_string(2) == "":
-			blocks.append({ "type": "code", "lang": lang, "code": "\n".join(buf) })
-			buf = PackedStringArray()
-			fence = ""
-			continue
-		buf.append(line)
-	if fence != "":
-		blocks.append({ "type": "code", "lang": lang, "code": "\n".join(buf) })
-	elif "\n".join(buf).strip_edges() != "":
-		blocks.append({ "type": "text", "text": "\n".join(buf).strip_edges() })
-	return blocks
-
-
-const _KEYWORDS := ["func", "var", "const", "class_name", "extends", "if", "elif", "else", "for", "while", "match",
-	"return", "pass", "break", "continue", "signal", "enum", "static", "await", "in", "is", "as", "not", "and", "or",
-	"self", "super", "true", "false", "null", "void", "class"]
-const _TYPES := ["int", "float", "bool", "String", "StringName", "Array", "Dictionary", "Vector2", "Vector3", "Node",
-	"Node2D", "Node3D", "Resource", "Color", "Callable", "PackedStringArray"]
-
-
-## Resaltado básico de GDScript para cuando no hay editor (el plugin usa el del editor).
-static func basic_highlighter(lang: String) -> SyntaxHighlighter:
-	if lang != "gdscript":
-		return null
-	var h := CodeHighlighter.new()
-	for k in _KEYWORDS:
-		h.add_keyword_color(k, Color("#ff7085"))
-	for t in _TYPES:
-		h.add_keyword_color(t, Color("#8effda"))
-	h.number_color = Color("#a1ffe0")
-	h.function_color = Color("#57b3ff")
-	h.symbol_color = Color("#abc9ff")
-	h.member_variable_color = Color("#dfe2e6")
-	h.add_color_region("#", "", Color("#8a929c"), true)
-	h.add_color_region("\"", "\"", Color("#ffeda1"))
-	h.add_color_region("@", " ", Color("#ffb373"), false)
-	return h
-
-
-static func _toggled(t: Dictionary, index: int, on: bool) -> Array:
-	var out := []
-	var cl = t.get("checklist", [])
-	for j in (cl.size() if cl is Array else 0):
-		var c: Dictionary = cl[j].duplicate()
-		if j == index:
-			c["done"] = on
-		out.append(c)
-	return out
 
 
 # --- Eventos ---------------------------------------------------------------------------------
@@ -1590,7 +914,7 @@ func _on_item_selected() -> void:
 	var id = it.get_metadata(0) if it else null
 	if id is String and not id.begins_with("status:"):
 		selected_task = id
-		_render_detail()
+		detail.render()
 
 
 func _on_item_collapsed(it: TreeItem) -> void:
@@ -1617,11 +941,6 @@ func _count_uncommitted() -> int:
 
 
 # --- Para los tests ----------------------------------------------------------------------------
-
-## El checkbox del paso i del detalle.
-func step_checkbox(i: int) -> CheckBox:
-	return steps_box.get_child(i).get_child(0).get_child(0).get_child(0)
-
 
 ## Ids de las tareas visibles en la lista, en orden, con el estado de su grupo: ["doing:m0-03", …].
 func listed() -> Array:

@@ -4,11 +4,11 @@
   "created_at": "2026-10-16T04:39:00.393Z",
   "description": "Tiene ~1600 líneas y mezcla la vida del hub, la lista, el detalle y las referencias. Separarlo en dos o tres scripts sin cambiar el comportamiento.",
   "milestone": "m21",
-  "notes": "",
+  "notes": "dock_view.gd (~1150 líneas) queda con la vida del hub, la lista y las escrituras. task_detail.gd (ScrollContainer) arma y pinta el detalle: estado, pasos, capturas, vínculos, referencias y archivos; lo que necesita lo toma de view (board, online, update_task, web_url, icon_button, fold_icon, go_to_task). hub_process.gd (Node hijo) busca scompass, lo corre en otro hilo y lanza, cierra y vigila el hub (pid, kept). En los tests: v.detail.<caja>, v.hub.pid; DockView.TaskDetail.basic_highlighter en el plugin.",
   "order": 6,
   "refs": [],
-  "status": "todo",
-  "test": "",
+  "status": "review",
+  "test": "dock.test.js 39/39 sin cambios de comportamiento; el editor sin ventana monta el plugin sin errores.",
   "title": "Partir dock_view.gd",
-  "updated_at": "2026-10-16T04:39:00.393Z"
+  "updated_at": "2026-10-16T06:51:29.755Z"
 }
