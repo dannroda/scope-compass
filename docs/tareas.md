@@ -2435,7 +2435,7 @@ dock.test.js salteaba los 39 tests cuando 'godot --version' fallaba, como si no 
 
 **Notas:** La causa no era el PATH: .godot-version pedía 4.8-dev6, desinstalada; pasa a 4.8-beta1. Con beta1, godot --import se colgaba (Message queue out of memory, millones de 'Object was deleted while awaiting a callback') por .godot/editor/editor_layout.cfg guardado por una versión anterior; no es el addon (pasa con el plugin vacío o desactivado). Es estado local: se movió y Godot lo vuelve a crear. El test sugiere eso si ve ese error. 39/39 con 4.8-beta1.
 
-### 21.3 Resultado del playtest en el dock · En curso
+### 21.3 Resultado del playtest en el dock · Revisión
 
 El resultado vive en la tarea (D40): mostrar Anda / Falla y la nota en el detalle, y una marca en la lista. Las sesiones siguen fuera del dock.
 
@@ -2447,9 +2447,13 @@ El resultado vive en la tarea (D40): mostrar Anda / Falla y la nota en el detall
 
 Nueva tarea con la etiqueta bug (y su plantilla de description_templates) y una captura del juego corriendo o del viewport del editor, guardada en compass/images/.
 
-### 21.5 Buscar tareas en el dock · Pendiente
+### 21.5 Buscar tareas en el dock · En curso
 
 Una caja de texto que filtra la lista por código, título o id, sin tildes, como scompass list --q.
+
+**Prueba:** dock.test.js 21.5: menu PAUSA encuentra 'Menú de pausa', por id en otro hito con su código, código + palabra, todas las palabras, y vacía vuelve a la lista del hito con Hecho plegado.
+
+**Notas:** Board.search(q) y Board.norm (las reglas de filters.js: minúsculas, sin tildes ni ñ, todas las palabras en código, título o id). Busca en todos los hitos, como list --q: lo de otro hito lleva ' · M5' al final, los grupos van desplegados y lo que se pliega buscando no cambia la lista del hito. Esc o la × la vacían. La caja se esconde con la lista plegada.
 
 ### 21.6 Partir dock_view.gd · Revisión
 

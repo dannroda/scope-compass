@@ -577,3 +577,8 @@ test('21.3: con hub: Anda / Falla del dock escriben en la tarea, conservan la no
   assert.deepEqual((await task('m1-05')).playtest, { note: 'Se traba' });
   assert.equal((await task('m1-04')).playtest, undefined);
 });
+
+test('21.5: dock: la búsqueda filtra por código, título o id en todos los hitos, sin tildes', { skip }, async () => {
+  await setTask('m1-05', { title: 'Menú de pausa' });
+  expectOk(await godot('search', dir), 'search');
+});

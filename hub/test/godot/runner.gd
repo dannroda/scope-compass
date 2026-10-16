@@ -739,6 +739,7 @@ func test_playtest(a: Array) -> void:
 	var d = v.detail
 	if not _check(c, d.playtest_box.visible and d.result_buttons.fail.button_pressed and not d.result_buttons.pass.button_pressed, "detalle: falla marcada"): return
 	if not _check(c, d.result_buttons.fail.disabled, "sin hub los botones tendrían que estar deshabilitados"): return
+	if not _check(c, d.result_buttons.fail.has_theme_color_override("font_disabled_color") and not d.result_buttons.pass.has_theme_color_override("font_disabled_color"), "deshabilitado, no se ve cuál está marcado"): return
 	if not _check(c, d.playtest_note.visible and d.playtest_note.text == "Se traba\nal saltar", "nota: " + d.playtest_note.text): return
 	_select(v, a[2])
 	row = v.tree.get_selected()
@@ -766,3 +767,33 @@ func test_playtest_online(a: Array) -> void:
 	_select(v, a[2])
 	d.result_buttons.pass.pressed.emit()
 	_check(c, await _until(func(): return v._queues.is_empty() and not v.board.task(a[2]).has("playtest")), "sin resultado ni nota no se borró playtest")
+
+
+# 21.5: la caja de búsqueda filtra por código, título o id en todos los hitos, con todas las palabras y sin tildes;
+# lo de otro hito lleva su código, Hecho se despliega, y vacía vuelve a la lista del hito.
+func test_search(a: Array) -> void:
+	var c := "search"
+	var v := await _view(a[0])
+	v.current_milestone = "m01"
+	v._render()
+	var before: Array = v.listed()
+	v.search.text = "menu PAUSA"
+	v.search.text_changed.emit(v.search.text)
+	if not _check(c, v.listed() == ["review:m1-05"], "menu PAUSA: %s" % [v.listed()]): return
+	if not _check(c, v.tasks_header.text.ends_with("Tareas · 1 encontrada"), "encabezado: " + v.tasks_header.text): return
+	v.search.text = "m0-02"
+	v.search.text_changed.emit(v.search.text)
+	if not _check(c, v.listed() == ["done:m0-02"], "por id en otro hito: %s" % [v.listed()]): return
+	var g: TreeItem = v.tree.get_root().get_child(0)
+	if not _check(c, not g.collapsed and g.get_child(0).get_text(0).ends_with(" · M0"), "Hecho desplegado y con el hito: %s" % g.get_child(0).get_text(0)): return
+	v.search.text = "1.5 pausa"
+	v.search.text_changed.emit(v.search.text)
+	if not _check(c, v.listed() == ["review:m1-05"], "código y palabra: %s" % [v.listed()]): return
+	v.search.text = "pausa inexistente"
+	v.search.text_changed.emit(v.search.text)
+	if not _check(c, v.listed().is_empty(), "todas las palabras: %s" % [v.listed()]): return
+	v.search.text = ""
+	v.search.text_changed.emit("")
+	if not _check(c, v.listed() == before, "vacía no volvió a la lista del hito: %s" % [v.listed()]): return
+	var done: TreeItem = v.tree.get_root().get_child(v.tree.get_root().get_child_count() - 1)
+	_check(c, done.collapsed, "Hecho tendría que volver a estar plegado")

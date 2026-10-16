@@ -76,6 +76,8 @@ var tree: Tree
 ## Lista de tareas y detalle, con divisor arrastrable; el bloque de tareas se puede plegar.
 var split: VSplitContainer
 var tasks_header: Button
+## Filtra la lista por código, título o id en todos los hitos (21.5); vacía, la lista es la del hito.
+var search: LineEdit
 var tasks_collapsed := false
 ## La tarea abierta (task_detail.gd), debajo de la lista.
 var detail: TaskDetail
@@ -620,6 +622,17 @@ func _build() -> void:
 		set_pref.call("tasks_collapsed", tasks_collapsed)
 		_apply_split())
 	tasks_panel.add_child(tasks_header)
+	search = LineEdit.new()
+	search.placeholder_text = "Buscar en todos los hitos"
+	search.tooltip_text = "Código, título o id; todas las palabras, sin importar tildes ni mayúsculas"
+	search.clear_button_enabled = true
+	search.text_changed.connect(func(_t): _render_tree())
+	search.gui_input.connect(func(e: InputEvent):
+		if e is InputEventKey and e.pressed and e.keycode == KEY_ESCAPE and search.text != "":
+			search.clear()
+			_render_tree()
+			search.accept_event())
+	tasks_panel.add_child(search)
 	tree = Tree.new()
 	tree.hide_root = true
 	tree.columns = 2
@@ -777,7 +790,8 @@ func _render_tree() -> void:
 func _build_tree() -> void:
 	tree.clear()
 	var root := tree.create_item()
-	var ts := board.tasks_of(current_milestone)
+	var q := search.text.strip_edges()
+	var ts := board.search(q) if q != "" else board.tasks_of(current_milestone)
 	for s in Board.STATUSES:
 		var items := ts.filter(func(t): return t.status == s.id)
 		if items.is_empty():
@@ -788,12 +802,16 @@ func _build_tree() -> void:
 		g.set_selectable(0, false)
 		g.set_selectable(1, false)
 		g.set_metadata(0, "status:" + s.id)
-		g.collapsed = _collapsed.get(s.id, false)
+		# Buscando, todo desplegado: lo encontrado no queda escondido en Hecho.
+		g.collapsed = _collapsed.get(s.id, false) and q == ""
 		for t in items:
 			var it := tree.create_item(g)
 			var code := str(t.get("code", ""))
 			# Como la tarjeta de la web: la prioridad solo si es alta, el responsable y las etiquetas.
 			var marks := ([TaskDetail.PRIORITIES.high] if t.get("priority") == "high" else []) + TaskDetail.who_and_tags(t)
+			# Un resultado de otro hito lleva su código.
+			if t.milestone != current_milestone and board.milestone(t.milestone) != null:
+				marks.append(str(board.milestone(t.milestone).code))
 			# Cómo salió el playtest (21.3): ✓ anda, ✗ falla; sin marca, sin probar.
 			var pt := Board.playtest_of(t)
 			var mark: String = { "pass": "✓ ", "fail": "✗ " }.get(pt.get("result"), "")
@@ -824,9 +842,14 @@ func _build_tree() -> void:
 
 ## Encabezado del bloque de tareas y estado del divisor (plegado: el detalle usa todo el alto).
 func _apply_split() -> void:
-	var n := board.tasks_of(current_milestone).size()
-	fold_icon(not tasks_collapsed, tasks_header, "Tareas · %d" % n)
+	var q := search.text.strip_edges()
+	if q != "":
+		var n := board.search(q).size()
+		fold_icon(not tasks_collapsed, tasks_header, "Tareas · %d encontrada%s" % [n, "" if n == 1 else "s"])
+	else:
+		fold_icon(not tasks_collapsed, tasks_header, "Tareas · %d" % board.tasks_of(current_milestone).size())
 	tree.visible = not tasks_collapsed
+	search.visible = not tasks_collapsed
 	split.collapsed = tasks_collapsed
 	if not tasks_collapsed:
 		split.split_offset = int(get_pref.call("split", split.split_offset))
@@ -925,7 +948,8 @@ func _on_item_selected() -> void:
 
 func _on_item_collapsed(it: TreeItem) -> void:
 	var m = it.get_metadata(0)
-	if m is String and m.begins_with("status:"):
+	# Buscando todo va desplegado: lo que se pliega ahí no cambia la lista del hito.
+	if m is String and m.begins_with("status:") and search.text.strip_edges() == "":
 		_collapsed[m.trim_prefix("status:")] = it.collapsed
 
 

@@ -60,6 +60,28 @@ func tasks_of(milestone_id: String) -> Array:
 	return out
 
 
+## Sin mayúsculas ni tildes, como norm de hub/src/filters.js: "Diseño" encuentra "diseno".
+static func norm(s: String) -> String:
+	var out := s.to_lower()
+	for pair in [["áàäâã", "a"], ["éèëê", "e"], ["íìïî", "i"], ["óòöôõ", "o"], ["úùüû", "u"], ["ñ", "n"], ["ç", "c"]]:
+		for ch in pair[0]:
+			out = out.replace(ch, pair[1])
+	return out
+
+
+## Las tareas de todos los hitos cuyo código, título o id tienen todas las palabras de q (21.5), como
+## `scompass list --q`: en el orden de los hitos y, dentro de cada uno, como tasks_of.
+func search(q: String) -> Array:
+	var words := Array(norm(q).split(" ", false))
+	var out := []
+	for m in milestones:
+		for t in tasks_of(m.id):
+			var text := norm("%s %s %s" % [t.get("code", ""), t.get("title", ""), t.id])
+			if words.all(func(w): return text.contains(w)):
+				out.append(t)
+	return out
+
+
 ## [hechas, total] del hito.
 func progress(milestone_id: String) -> Array:
 	var ts := tasks_of(milestone_id)
