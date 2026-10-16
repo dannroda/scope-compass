@@ -2443,11 +2443,15 @@ El resultado vive en la tarea (D40): mostrar Anda / Falla y la nota en el detall
 
 **Notas:** Lista: ✓/✗ delante del código y el resultado y la nota en el tooltip. Detalle (task_detail.gd): fila Playtest con ✓ Anda / ✗ Falla y la nota debajo (roja si falla), visible si la tarea tiene playtest o está en Revisión. Con hub los botones escriben playtest.result con update_task sobre la versión más reciente (Board.next_playtest, las reglas de la web: otro clic lo quita; sin nada, playtest se borra). La nota es de solo lectura en el dock. Sin hub, compass_reader avisa un playtest que no sea objeto.
 
-### 21.4 Cargar un bug con captura desde el dock · Pendiente
+### 21.4 Cargar un bug con captura desde el dock · Revisión
 
 Nueva tarea con la etiqueta bug (y su plantilla de description_templates) y una captura del juego corriendo o del viewport del editor, guardada en compass/images/.
 
-### 21.5 Buscar tareas en el dock · En curso
+**Prueba:** dock.test.js 21.4: con hub, bug con captura (tags, plantilla, PNG en compass/images/), sin juego se carga sin captura y avisa, sin título no carga; con Xvfb, editor real: game_shot.gd trae la ventana del juego y el recorte 2D es más chico que la ventana (falla si se rompe el pedido del depurador).
+
+**Notas:** Menú Bug al lado de Agregar: Con captura del juego (solo con juego corriendo), del editor o sin captura; título de la caja, tags [bug] y description_templates.bug. Captura antes de crear la tarea; después POST /api/tasks/<id>/images (30 s, PNG o JPEG si pasa 9 MB). Si la captura falla, el bug se carga igual y se avisa. Juego: game_shot.gd (EditorDebuggerPlugin) manda scene:rq_screenshot y lee game_view:get_screenshot (ids desde 2^40; lo tardío se borra). Editor: el viewport 2D/3D visible (unión si el 3D está partido), si no la ventana entera; en 4.8 get_editor_main_screen() es un LegacyMainScreenContainer de 0x0. Probado en un editor real con xvfb-run: el juego devuelve su ventana (roja) y el 2D se recorta.
+
+### 21.5 Buscar tareas en el dock · Revisión
 
 Una caja de texto que filtra la lista por código, título o id, sin tildes, como scompass list --q.
 

@@ -582,3 +582,81 @@ test('21.5: dock: la búsqueda filtra por código, título o id en todos los hit
   await setTask('m1-05', { title: 'Menú de pausa' });
   expectOk(await godot('search', dir), 'search');
 });
+
+test('21.4: con hub: Bug desde el dock carga la tarea con la etiqueta bug, su plantilla y la captura en compass/images/', { skip }, async () => {
+  const cfgPath = join(dir, 'compass', 'config.json');
+  const template = 'Cómo reproducirlo:\n1. \n\nQué pasó:';
+  await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), description_templates: { bug: template } }));
+  const hub = await startHub();
+  const r = await godotLive(['bug', dir]);
+  await hub.app.close();
+  expectOk(r, 'bug');
+  const t = await task(/BUG (\S+)/.exec(r.out)[1]);
+  assert.deepEqual(t.tags, ['bug']);
+  assert.equal(t.description, template);
+  assert.equal(t.milestone, 'm02');
+  assert.match(t.images[0], /^compass\/images\/.+\.png$/);
+  const png = await readFile(join(dir, t.images[0]));
+  assert.equal(png.subarray(1, 4).toString('latin1'), 'PNG');
+  const bare = await task(/NOSHOT (\S+)/.exec(r.out)[1]);
+  assert.deepEqual(bare.tags, ['bug']);
+  assert.equal(bare.images, undefined);
+});
+
+// La captura del juego va por un pedido interno del depurador de Godot (scene:rq_screenshot, el de la pestaña Game): si
+// una versión nueva lo cambia, este test falla. Corre un editor de verdad en una pantalla virtual (Xvfb) sobre un
+// proyecto con una escena roja; un plugin de prueba corre la escena y pide las capturas con game_shot.gd y el plugin.
+const hasXvfb = process.platform === 'linux' && (() => { try { execFileSync('xvfb-run', ['--help'], { stdio: 'pipe' }); return true; } catch (e) { return e.code !== 'ENOENT'; } })();
+const PROBE = `@tool
+extends EditorPlugin
+const GameShot := preload("res://addons/scope_compass/game_shot.gd")
+var shots
+
+func _enter_tree() -> void:
+	shots = GameShot.new()
+	add_debugger_plugin(shots)
+	_run.call_deferred()
+
+func _run() -> void:
+	await get_tree().create_timer(2.0).timeout
+	var plugin = load("res://addons/scope_compass/scope_compass.gd").new()
+	EditorInterface.set_main_screen_editor("2D")
+	var ed = await plugin._editor_image()
+	print("PROBE editor ", ed.get_width() if ed else 0, " ", get_tree().root.size.x)
+	print("PROBE before ", shots.running())
+	EditorInterface.play_main_scene()
+	for i in 100:
+		await get_tree().create_timer(0.1).timeout
+		if shots.running(): break
+	await get_tree().create_timer(1.5).timeout
+	var img = await shots.game_image()
+	print("PROBE game ", img.get_width() if img else 0, " ", img.get_pixel(10, 10).to_html(false) if img else "")
+	EditorInterface.stop_playing_scene()
+	await get_tree().create_timer(0.5).timeout
+	get_tree().quit()
+`;
+
+test('21.4: con Xvfb: el editor le pide la captura al juego que corre (game_shot.gd) y recorta el viewport 2D', { skip: skip || (!hasXvfb && 'sin xvfb-run') }, async () => {
+  const { mkdir } = await import('node:fs/promises');
+  const proj = await mkdtemp(join(tmpdir(), 'scompass-shot-'));
+  try {
+    await cp(join(REPO, 'addons', 'scope_compass'), join(proj, 'addons', 'scope_compass'), { recursive: true });
+    await mkdir(join(proj, 'addons', 'probe'));
+    await writeFile(join(proj, 'addons', 'probe', 'plugin.cfg'), '[plugin]\nname="probe"\ndescription=""\nauthor=""\nversion="0"\nscript="probe.gd"\n');
+    await writeFile(join(proj, 'addons', 'probe', 'probe.gd'), PROBE);
+    await writeFile(join(proj, 'project.godot'), 'config_version=5\n\n[application]\nconfig/name="probe"\nrun/main_scene="res://main.tscn"\n\n[editor_plugins]\nenabled=PackedStringArray("res://addons/probe/plugin.cfg")\n\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n');
+    await writeFile(join(proj, 'main.tscn'), '[gd_scene format=3]\n\n[node name="Main" type="Node2D"]\n\n[node name="Red" type="ColorRect" parent="."]\noffset_right = 300.0\noffset_bottom = 200.0\ncolor = Color(1, 0, 0, 1)\n');
+    // La misma versión de Godot que el repo (el wrapper de godot-manager la lee de .godot-version).
+    await cp(join(REPO, '.godot-version'), join(proj, '.godot-version')).catch(() => {});
+    execFileSync(GODOT, ['--headless', '--path', proj, '--import'], { stdio: 'pipe', timeout: 120000 });
+    const out = await new Promise((resolve) => execFile('xvfb-run', ['-a', '-s', '-screen 0 1600x900x24', GODOT, '--path', proj, '--editor'],
+      { cwd: proj, timeout: 90000, env: { ...process.env, SCOMPASS_REGISTRY: join(proj, 'registry') } }, (err, stdout, stderr) => resolve(stdout + stderr)));
+    const editor = /PROBE editor (\d+) (\d+)/.exec(out);
+    assert.ok(editor, out.slice(-3000));
+    assert.ok(Number(editor[1]) > 0 && Number(editor[1]) < Number(editor[2]), `el recorte del viewport 2D: ${editor[0]}`);
+    assert.match(out, /PROBE before false/);
+    assert.match(out, /PROBE game [1-9]\d* ff0000/, out.split('\n').filter((l) => /PROBE|ERROR/.test(l)).join('\n'));
+  } finally {
+    await rm(proj, { recursive: true, force: true, maxRetries: 10 });
+  }
+});

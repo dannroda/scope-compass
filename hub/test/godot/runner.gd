@@ -797,3 +797,37 @@ func test_search(a: Array) -> void:
 	if not _check(c, v.listed() == before, "vacía no volvió a la lista del hito: %s" % [v.listed()]): return
 	var done: TreeItem = v.tree.get_root().get_child(v.tree.get_root().get_child_count() - 1)
 	_check(c, done.collapsed, "Hecho tendría que volver a estar plegado")
+
+
+# 21.4: Bug desde el dock: el título de la caja, la etiqueta bug con su plantilla y la captura (acá, una imagen fija en
+# lugar del editor); si el juego no contesta, el bug se carga igual y se avisa; sin título, no se carga nada.
+func test_bug(a: Array) -> void:
+	var c := "bug"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	v.current_milestone = "m02"
+	var n: int = v.board.tasks.size()
+	v.new_title.text = "  "
+	await v.create_bug(v.new_title.text, "editor")
+	if not _check(c, v.notice.text.begins_with("Escribí en la caja") and v.board.tasks.size() == n, "sin título: " + v.notice.text): return
+	v.capture_editor = func():
+		var img := Image.create(64, 40, false, Image.FORMAT_RGB8)
+		img.fill(Color.RED)
+		return img
+	v.new_title.text = "Se cae del mapa"
+	await v.create_bug(v.new_title.text, "editor")
+	var made = v.board.task(v.selected_task)
+	if not _check(c, made != null and made.title == "Se cae del mapa" and made.get("images", []).size() == 1, "no se cargó con la captura: %s" % made): return
+	if not _check(c, v.new_title.text == "" and v.notice.text.contains("con la captura del editor") and v.notice.text.contains("Completá la descripción"), "aviso: " + v.notice.text): return
+	if not _check(c, v.detail.images_box.get_child_count() == 1, "la captura no está en el detalle"): return
+	print("BUG ", made.id)
+	await v.create_bug("Sin juego", "game")
+	made = v.board.task(v.selected_task)
+	if not _check(c, made.title == "Sin juego" and not made.has("images") and v.notice.text.contains("el juego no contestó"), "sin juego: %s / %s" % [made, v.notice.text]): return
+	print("NOSHOT ", made.id)
+	# El menú: "Con captura del juego" solo con un juego corriendo.
+	v.bug_button.about_to_popup.emit()
+	if not _check(c, v.bug_button.get_popup().is_item_disabled(0), "captura del juego habilitada sin juego"): return
+	v.game_running = func() -> bool: return true
+	v.bug_button.about_to_popup.emit()
+	_check(c, not v.bug_button.get_popup().is_item_disabled(0), "captura del juego deshabilitada con juego")

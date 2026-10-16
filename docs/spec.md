@@ -1169,5 +1169,21 @@ Que el dock de Godot se conecte solo al Inicio, que sus tests no se salteen en s
 - **Conectarse solo al Inicio (21.1):** ver §17 (*CLI y dock*).
 - **Tests que no se saltean en silencio (21.2):** `dock.test.js` toma Godot de `GODOT` o del PATH y solo se saltea si no hay ninguno; un Godot que no arranca falla con el motivo.
 - **Resultado del playtest (21.3, D40):** la lista marca ✓ (anda) o ✗ (falla) delante del código, y el tooltip dice el resultado y la nota. El detalle muestra *Playtest* con *✓ Anda* / *✗ Falla* y la nota debajo (en rojo si falla) cuando la tarea ya se probó o está en Revisión. Con hub, *Anda* / *Falla* escriben `playtest.result` en la tarea, sobre su versión más reciente, como la web: otro clic en el mismo lo quita y, sin resultado ni nota, el campo se borra. La nota se escribe en la web o con la CLI. Las sesiones siguen fuera del dock.
+- **Cargar un bug con captura (21.4):** al lado de *Agregar*, el menú *Bug* crea una tarea en el hito con el título de la caja, la etiqueta `bug` y su plantilla de `description_templates` (como al etiquetar en la web o la CLI), y le suma una captura (`POST /api/tasks/<id>/images`, que la guarda en `compass/images/`): *Con captura del juego* (solo con un juego corriendo desde el editor), *Con captura del editor* o *Sin captura*. La captura se toma antes de crear la tarea; si no se puede, el bug se carga igual y el dock lo avisa.
+  - **Del juego:** `game_shot.gd`, un `EditorDebuggerPlugin`, le manda al juego `scene:rq_screenshot [id]` por el depurador, el mismo pedido de la pestaña Game de Godot: el juego guarda su ventana en un PNG temporal y contesta `game_view:get_screenshot [id, ancho, alto, ruta]`. No hace falta nada del lado del juego. Los ids empiezan en 2⁴⁰ para no cruzarse con los de Godot, que también recibe la respuesta. Si el juego no contesta en 3 s (frenado en un breakpoint, por ejemplo), no hay captura.
+  - **Del editor:** el viewport 2D o 3D que esté a la vista, con lo que tiene encima (el gizmo, la barra); si no se ve ninguno (Script, Game), la ventana entera. En 4.8, `get_editor_main_screen()` es un contenedor vacío, así que se va por `get_editor_viewport_2d()` y `get_editor_viewport_3d()`.
+  - Un PNG de más de 9 MB va como JPEG (el hub acepta hasta 10 MB).
 - **Buscar (21.5):** una caja arriba de la lista filtra por código, título o id, con todas las palabras y sin importar tildes ni mayúsculas, como `scompass list --q`. Busca en todos los hitos: lo de otro hito lleva su código al final, los grupos se despliegan (también Hecho) y el encabezado dice cuántas encontró. Vacía (× o Esc), vuelve la lista del hito.
 - **Tres scripts (21.6):** `dock_view.gd` (la conexión con el hub, la lista y las escrituras), `task_detail.gd` (el detalle de la tarea abierta) y `hub_process.gd` (buscar y correr scompass; lanzar, vigilar y cerrar el hub).
+
+### 29.1 Criterios de aceptación de M21
+<!-- id: criterios-dock-al-dia -->
+
+- [x] Con el Inicio corriendo, el dock se conecta al abrir y en Reintentar sin apretar Iniciar hub.
+- [x] `dock.test.js` encuentra Godot por `GODOT` o por el PATH, y avisa claro si no lo encuentra o no arranca.
+- [x] El detalle del dock muestra el resultado y la nota del playtest, y la lista marca anda / falla.
+- [x] Desde el dock se carga un bug con la plantilla y una captura del juego o del editor.
+- [x] El dock filtra la lista por texto.
+
+Tests: `dock.test.js` (21.1–21.6; la captura del juego corre un editor de verdad con `xvfb-run`).
+

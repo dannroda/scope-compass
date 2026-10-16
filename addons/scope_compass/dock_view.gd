@@ -67,6 +67,14 @@ var reload_button: Button
 var browser_button: Button
 var files_button: Button
 var new_row: HBoxContainer
+## Cargar un bug (21.4): menú con la captura que lleva (del juego, del editor o ninguna).
+var bug_button: MenuButton
+const BUG_SOURCES := [["game", "Con captura del juego"], ["editor", "Con captura del editor"], ["", "Sin captura"]]
+## Capturas para los bugs (las pone el plugin): la ventana del juego que corre desde el editor (por el depurador) y la
+## pantalla principal del editor. Devuelven un Image, o null si no se pudo; game_running dice si hay juego.
+var capture_game: Callable = func(): return null
+var capture_editor: Callable = func(): return null
+var game_running: Callable = func() -> bool: return false
 ## Tareas sin terminar que citan el script o la escena que se editan (15.4).
 var editing_box: VBoxContainer
 ## Lo que se edita en Godot, con la ruta desde la raíz del proyecto ("" si nada): lo avisa el plugin.
@@ -275,17 +283,71 @@ func create_task(title: String) -> void:
 	title = title.strip_edges()
 	if title == "" or current_milestone == "" or not online:
 		return
-	var r := await client.request("POST", "/api/tasks", { "title": title, "milestone": current_milestone, "code": "",
-		"status": "todo", "checklist": [], "test": "", "notes": "", "refs": [] })
-	if r.code == 201:
-		board.apply("tasks", r.json.id, r.json)
-		selected_task = r.json.id
-		# El título se borra recién ahora: si falla, queda para corregirlo o reintentar (19.10).
-		if new_title.text.strip_edges() == title:
-			new_title.clear()
-		_render()
-	else:
+	await _post_task({ "title": title })
+
+
+## Crea la tarea en el hito elegido (fields: title y lo que se agregue) y la abre. Devuelve su id, o "" si falló.
+func _post_task(fields: Dictionary) -> String:
+	var body := { "milestone": current_milestone, "code": "", "status": "todo", "checklist": [], "test": "", "notes": "", "refs": [] }
+	body.merge(fields, true)
+	var r := await client.request("POST", "/api/tasks", body)
+	if r.code != 201:
 		show_notice("No se pudo crear la tarea: " + _error_of(r))
+		return ""
+	board.apply("tasks", r.json.id, r.json)
+	selected_task = r.json.id
+	# El título se borra recién ahora: si falla, queda para corregirlo o reintentar (19.10).
+	if new_title.text.strip_edges() == body.title:
+		new_title.clear()
+	_render()
+	return r.json.id
+
+
+## Carga un bug (21.4): una tarea con el título de la caja, la etiqueta bug y su plantilla de descripción
+## (config.json › description_templates, como al etiquetar en la web o la CLI) y, según source, la captura del juego
+## ("game"), la del editor ("editor") o ninguna (""). La captura se toma antes de crear la tarea, para que sea lo que
+## se veía; si no se puede, el bug se carga igual y se avisa.
+func create_bug(title: String, source := "") -> void:
+	title = title.strip_edges()
+	if current_milestone == "" or not online:
+		return
+	if title == "":
+		show_notice("Escribí en la caja qué pasa: es el título del bug.")
+		if new_title.is_inside_tree():
+			new_title.grab_focus()
+		return
+	var img = null
+	if source != "":
+		img = await (capture_game if source == "game" else capture_editor).call()
+	var fields := { "title": title, "tags": ["bug"] }
+	var templates = board.config.get("description_templates") if board.config is Dictionary else null
+	if templates is Dictionary and templates.get("bug") is String and str(templates.bug).strip_edges() != "":
+		fields["description"] = templates.bug
+	var id := await _post_task(fields)
+	if id == "":
+		return
+	var what := "Bug cargado"
+	if img is Image and not img.is_empty():
+		var r := await client.request("POST", "/api/tasks/%s/images" % id.uri_encode(), { "data": encode_image(img) }, [], 30.0)
+		if r.code == 201:
+			board.apply("tasks", id, r.json)
+			_render()
+			what += " con la captura del " + ("juego" if source == "game" else "editor")
+		else:
+			what += ", pero no se pudo guardar la captura (%s)" % _error_of(r)
+	elif source == "game":
+		what += " sin captura: el juego no contestó (¿está corriendo, o frenado en un breakpoint?)"
+	elif source == "editor":
+		what += " sin captura: no se pudo capturar el editor"
+	show_notice(what + ". Completá la descripción en el navegador (↗)." if fields.has("description") else what + ".")
+
+
+## La captura en base64 para POST /api/tasks/<id>/images: PNG, o JPEG si el PNG pasa de 9 MB (el hub acepta hasta 10).
+static func encode_image(img: Image) -> String:
+	var buf := img.save_png_to_buffer()
+	if buf.size() > 9 << 20:
+		buf = img.save_jpg_to_buffer(0.9)
+	return Marshalls.raw_to_base64(buf)
 
 
 ## La UI web del hub conectado (un hub suelto o el Inicio, con su base), con un #hash opcional.
@@ -601,6 +663,16 @@ func _build() -> void:
 	add.text = "Agregar"
 	add.pressed.connect(func(): create_task(new_title.text))
 	new_row.add_child(add)
+	bug_button = MenuButton.new()
+	bug_button.text = "Bug"
+	bug_button.flat = false
+	bug_button.tooltip_text = "Cargar un bug con el título de la caja: etiqueta bug, su plantilla de descripción y una captura"
+	var bug_menu := bug_button.get_popup()
+	for i in BUG_SOURCES.size():
+		bug_menu.add_item(BUG_SOURCES[i][1], i)
+	bug_button.about_to_popup.connect(func(): bug_menu.set_item_disabled(0, not game_running.call()))
+	bug_menu.id_pressed.connect(func(i: int): create_bug(new_title.text, BUG_SOURCES[i][0]))
+	new_row.add_child(bug_button)
 
 	editing_box = VBoxContainer.new()
 	editing_box.visible = false

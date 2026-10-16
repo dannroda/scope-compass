@@ -3,11 +3,14 @@ extends EditorPlugin
 ## Plugin de Scope Compass: el dock "Tablero" con las tareas del proyecto (spec §11.1, D19).
 
 const DockView := preload("dock_view.gd")
+const GameShot := preload("game_shot.gd")
 const SCOMPASS_SETTING := "scope_compass/scompass_path"
 const KEEP_SETTING := "scope_compass/keep_hub_running"
 
 var _dock: EditorDock
 var _view: DockView
+## Pide capturas al juego que corre desde el editor (21.4).
+var _shots: GameShot
 
 
 func _enter_tree() -> void:
@@ -42,6 +45,12 @@ func _enter_tree() -> void:
 		else:
 			EditorInterface.edit_resource(load(res))
 		return true
+	# Capturas para los bugs (21.4): el juego por el depurador; el editor, su pantalla principal (2D, 3D, Script…).
+	_shots = GameShot.new()
+	add_debugger_plugin(_shots)
+	_view.game_running = func() -> bool: return _shots.running()
+	_view.capture_game = func(): return await _shots.game_image()
+	_view.capture_editor = _editor_image
 	_view.get_pref = func(key: String, default): return es.get_project_metadata("scope_compass", key, default)
 	_view.set_pref = func(key: String, value): es.set_project_metadata("scope_compass", key, value)
 
@@ -59,6 +68,29 @@ func _enter_tree() -> void:
 	_on_scene_changed(EditorInterface.get_edited_scene_root())
 
 
+## Lo que se ve del editor: el viewport 2D o 3D si está a la vista (con sus controles encima, como el gizmo) y, si no
+## (Script, Game, Asset Store), la ventana entera. null si no se pudo. Espera a que se dibuje sin el menú que se acaba de
+## cerrar. En 4.8 get_editor_main_screen() es un contenedor vacío (el sistema de pantallas cambió): se va por los viewports.
+func _editor_image():
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	var root := EditorInterface.get_base_control().get_viewport()
+	var img := root.get_texture().get_image()
+	if img == null or img.is_empty():
+		return null
+	var area := Rect2()
+	for vp in [EditorInterface.get_editor_viewport_2d()] + range(4).map(func(i): return EditorInterface.get_editor_viewport_3d(i)):
+		var box := vp.get_parent() as Control if vp else null
+		if box and box.is_visible_in_tree() and box.get_global_rect().has_area():
+			area = box.get_global_rect() if not area.has_area() else area.merge(box.get_global_rect())
+	if not area.has_area():
+		return img
+	# De coordenadas del viewport a píxeles de la imagen (con la escala del editor pueden no coincidir).
+	var k := Vector2(img.get_size()) / root.get_visible_rect().size
+	var r := Rect2i(Rect2(area.position * k, area.size * k)).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
+	return img.get_region(r) if r.has_area() else img
+
+
 func _on_script_changed(script: Script) -> void:
 	if _view:
 		_view.set_editing("script", script.resource_path if script else "")
@@ -71,6 +103,9 @@ func _on_scene_changed(root: Node) -> void:
 
 func _exit_tree() -> void:
 	EditorInterface.get_script_editor().editor_script_changed.disconnect(_on_script_changed)
+	if _shots:
+		remove_debugger_plugin(_shots)
+		_shots = null
 	if _view:
 		_view.stop_hub() # solo si lo abrió el dock y no está en modo "mantener"
 	if _dock:
