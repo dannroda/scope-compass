@@ -85,25 +85,41 @@
     if (!S.today.length) { box.replaceChildren(h('div', { class: 'hoy-empty' }, 'Nada vencido ni para hoy, y nada en curso.')); return; }
     // Lo vencido y lo de hoy van arriba, sueltos; lo que solo está en curso, en un grupo plegable por proyecto.
     const urgent = (x) => x.kind === 'item' || x.due_state === 'overdue' || x.due_state === 'today';
-    // Dos proyectos con el mismo nombre (worktrees del mismo repo): se distinguen por la carpeta.
-    const paths = new Map();
-    for (const x of S.today) paths.set(x.project.name, new Set([...(paths.get(x.project.name) ?? []), x.project.path]));
-    hoyName = (pr) => (paths.get(pr.name)?.size > 1 ? `${pr.name} · ${pr.path.split(/[\\/]/).pop()}` : pr.name);
+    // Los worktrees de un repo (23.2) son un proyecto: lo mismo en varios (la misma tarea, el mismo ítem) es una fila
+    // sola, la del worktree principal si está ahí, con los worktrees donde aparece si no es en todos.
+    const members = new Map();
+    for (const p of S.projects.filter((x) => x.found)) members.set(repoKey(p), (members.get(repoKey(p)) ?? 0) + 1);
+    const rows = new Map();
+    for (const x of S.today) {
+      const k = [repoKey(x.project), x.kind, x.kind === 'item' ? [x.list, x.text, x.due].join('\n') : x.id].join('\n');
+      const r = rows.get(k);
+      if (!r) rows.set(k, { x, in: [x.project.path] });
+      else { r.in.push(x.project.path); if (x.project.worktree?.main) r.x = x; }
+    }
+    for (const r of rows.values()) r.only = members.get(repoKey(r.x.project)) > r.in.length ? r.in.map(folder) : null;
+    // Dos repos con el mismo nombre: se distinguen por la carpeta.
+    const keys = new Map();
+    for (const r of rows.values()) keys.set(r.x.project.name, new Set([...(keys.get(r.x.project.name) ?? []), repoKey(r.x.project)]));
+    hoyName = (pr) => (keys.get(pr.name)?.size > 1 ? `${pr.name} · ${folder(pr.path)}` : pr.name);
     const groups = new Map();
-    for (const x of S.today.filter((y) => !urgent(y))) {
-      if (!groups.has(x.project.path)) groups.set(x.project.path, { name: hoyName(x.project), rows: [] });
-      groups.get(x.project.path).rows.push(x);
+    for (const r of [...rows.values()].filter((y) => !urgent(y.x))) {
+      const k = repoKey(r.x.project);
+      if (!groups.has(k)) groups.set(k, { name: hoyName(r.x.project), rows: [] });
+      groups.get(k).rows.push(r);
     }
     const closed = foldedHoy();
-    box.replaceChildren(...S.today.filter(urgent).map((x, i) => hoyRow(x, i, true)), ...[...groups].map(([path, g]) =>
-      h('details', { class: 'hoy-group', open: !closed.has(path) },
+    box.replaceChildren(...[...rows.values()].filter((r) => urgent(r.x)).map((r, i) => hoyRow(r, i, true)), ...[...groups].map(([k, g]) =>
+      h('details', { class: 'hoy-group', open: !closed.has(k) },
         // Con el clic y no con toggle: toggle también salta al crear el grupo abierto, y un render lo pisaría.
-        h('summary', { onclick: (e) => { const s = foldedHoy(); e.currentTarget.parentElement.open ? s.add(path) : s.delete(path); foldedHoy(s); } },
+        h('summary', { onclick: (e) => { const s = foldedHoy(); e.currentTarget.parentElement.open ? s.add(k) : s.delete(k); foldedHoy(s); } },
           h('span', { class: 'what' }, g.name), h('span', { class: 'tag doing' }, `${g.rows.length} en curso`)),
-        g.rows.map((x, i) => hoyRow(x, i, false)))));
+        g.rows.map((r, i) => hoyRow(r, i, false)))));
   }
+  // Un repo con varios worktrees se junta por su repo; sin git, cada carpeta es un proyecto.
+  const repoKey = (p) => p.worktree?.repo ?? p.path;
+  const folder = (path) => path.split(/[\\/]/).pop();
   let hoyName = (pr) => pr.name;
-  // Los proyectos con el grupo de Hoy plegado, en este navegador; sin almacenamiento, todos abiertos.
+  // Los grupos de Hoy plegados (por repoKey), en este navegador; sin almacenamiento, todos abiertos.
   function foldedHoy(set) {
     try {
       if (set) localStorage.setItem('scompass.home.hoy-folded', JSON.stringify([...set]));
@@ -112,8 +128,9 @@
     return set ?? new Set();
   }
   // Una fila de Hoy. Dentro del grupo de su proyecto no repite el proyecto ni "en curso".
-  function hoyRow(x, i, loose) {
-    const where = loose ? h('span', { class: 'tag' }, hoyName(x.project) + (x.kind === 'item' ? ' · ' + x.list_title : '')) : null;
+  function hoyRow({ x, only }, i, loose) {
+    const where = [loose ? h('span', { class: 'tag' }, hoyName(x.project) + (x.kind === 'item' ? ' · ' + x.list_title : '')) : null,
+      only ? h('span', { class: 'tag', title: 'Solo en estos worktrees' }, '⎇ ' + only.join(', ')) : null];
     if (x.kind === 'item') {
       const id = 'hoy-' + i;
       const key = 'item:' + x.project.path + ':' + x.list + ':' + x.n;
@@ -142,9 +159,10 @@
     return null;
   }
 
-  function projectCard(p) {
+  // others: los otros worktrees del mismo repo (23.2), que van en la tarjeta del principal.
+  function projectCard(p, others = []) {
     const s = p.summary;
-    const kind = !p.found ? p.path : [p.godot ? 'Godot' : null, p.views?.[0] === 'lists' ? 'Personal' : null].filter(Boolean).join(' · ') || p.path;
+    const kind = !p.found ? p.path : [p.godot ? 'Godot' : null, p.views?.[0] === 'lists' ? 'Personal' : null, others.length && p.worktree?.branch].filter(Boolean).join(' · ') || p.path;
     const key = 'hub:' + p.path;
     const head = h('div', { class: 'head' }, h('div', null, h('h3', null, p.name), h('div', { class: 'kind', title: p.path }, kind)), hubTag(p));
     const body = [];
@@ -171,17 +189,30 @@
       h('button', { class: 'btn small', type: 'button', onclick: () => act('upd:' + p.path, () => call('POST', '/api/projects/update', { path: p.path }), (r) => `Actualizado: ${r.updated.join(', ')}`) }, 'Actualizar')));
     if (p.warnings) body.push(h('p', { class: 'muted', style: 'margin:0' }, `⚠ ${p.warnings} archivo${p.warnings > 1 ? 's' : ''} con problemas (abrí el tablero para verlos)`));
 
+    if (others.length) {
+      body.push(h('div', { class: 'wts' }, h('span', { class: 'k' }, others.length === 1 ? '1 worktree' : others.length + ' worktrees'),
+        h('ul', null, others.map((w) => h('li', null,
+          h('span', { class: 'v', title: w.path }, folder(w.path), w.worktree?.branch ? h('span', { class: 'n' }, ' ' + w.worktree.branch) : null),
+          w.doing ? h('span', { class: 'tag doing' }, w.doing + ' en curso') : null, hubTag(w),
+          w.git?.uncommitted ? h('span', { class: 'tag today', title: 'Archivos del tablero sin commitear en este worktree' }, w.git.uncommitted + ' sin commitear') : null,
+          h('span', { class: 'acts' }, w.url ? h('a', { href: w.url }, 'Abrir') : null, removeBtn(w, 'btn ghost small')))))));
+    }
     if (p.git?.uncommitted) body.push(h('p', { style: 'margin:0' }, h('span', { class: 'tag today', title: 'La app no commitea sola: commiteá compass/ cuando quieras' }, p.git.uncommitted === 1 ? '1 archivo sin commitear' : p.git.uncommitted + ' archivos sin commitear')));
     const foot = h('div', { class: 'foot' });
     // Solo un hub suelto se apaga desde acá; los proyectos que sirve el Inicio no tienen un proceso propio.
     if (p.found && p.served === 'hub') {
       foot.append(h('button', { class: 'btn', type: 'button', disabled: S.busy.has(key), 'aria-label': 'Apagar el hub suelto de ' + p.name, onclick: () => stopHub(p) }, '■ Apagar hub suelto'));
     }
-    foot.append(h('button', { class: 'btn ghost', type: 'button', 'aria-label': 'Quitar ' + p.name + ' del Inicio',
-      onclick: () => { if (confirm(`¿Quitar "${p.name}" del Inicio? No se borra nada de la carpeta; se puede volver a agregar.`)) act('rm:' + p.path, () => call('DELETE', '/api/projects?path=' + encodeURIComponent(p.path)), 'Quitado del Inicio'); } }, 'Quitar'));
+    foot.append(removeBtn(p, 'btn ghost'));
     foot.append(h('span', { class: 'spacer' }));
     if (p.url) foot.append(h('a', { href: p.url, class: 'open' }, 'Abrir tablero'));
     return h('article', { class: 'proj' + (p.found ? '' : ' missing'), 'aria-label': p.name }, head, ...body, foot);
+  }
+
+  function removeBtn(p, cls) {
+    const label = p.worktree && !p.worktree.main ? `${p.name} (${folder(p.path)})` : p.name;
+    return h('button', { class: cls, type: 'button', 'aria-label': 'Quitar ' + label + ' del Inicio',
+      onclick: () => { if (confirm(`¿Quitar "${label}" del Inicio? No se borra nada de la carpeta; se puede volver a agregar.`)) act('rm:' + p.path, () => call('DELETE', '/api/projects?path=' + encodeURIComponent(p.path)), 'Quitado del Inicio'); } }, 'Quitar');
   }
 
   async function stopHub(p) {
@@ -200,7 +231,13 @@
   function renderProjects() {
     const box = document.getElementById('projects');
     if (!S.loaded) { box.replaceChildren(); return; }
-    const cards = S.projects.map(projectCard);
+    // Una tarjeta por repo: la del worktree principal (o la primera), con los otros adentro.
+    const repos = new Map();
+    for (const p of S.projects) { const k = p.found ? repoKey(p) : p.path; repos.set(k, [...(repos.get(k) ?? []), p]); }
+    const cards = [...repos.values()].map((ps) => {
+      const lead = ps.find((p) => p.worktree?.main) ?? ps[0];
+      return projectCard(lead, ps.filter((p) => p !== lead).map((w) => ({ ...w, doing: w.summary?.doing?.length ?? 0 })));
+    });
     cards.push(h('article', { class: 'proj', style: 'border-style:dashed;align-items:center;justify-content:center;text-align:center;min-height:200px' },
       h('h3', null, 'Agregar proyecto'),
       h('p', { class: 'muted', style: 'margin:0;max-width:300px' }, 'Los proyectos aparecen solos al abrir su hub. También se pueden agregar sin prenderlo, o crear uno nuevo.'),

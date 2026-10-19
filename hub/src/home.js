@@ -35,7 +35,7 @@ import { loadCompass } from './store/load.js';
 import { summarize, todayOf } from './summary.js';
 import { registerProjectRoutes } from './home-serve.js';
 import { outdatedFiles, updateCompass } from './update.js';
-import { boardStatus } from './git.js';
+import { boardStatus, repoWorktree } from './git.js';
 import { listTemplates, loadTemplate } from './templates.js';
 import { STATUSES } from './views.js';
 
@@ -116,8 +116,9 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
       ...(key && { key, url: `/p/${encodeURIComponent(key)}/`, served: serving.served(p.path) }) };
     if (!p.found) return base;
     const all = await loadCompass(compassOf(p.path), validators);
-    const git = await boardStatus(p.path, all.config);
-    return { ...base, name: all.config?.project ?? p.name, views: all.config?.views ?? null, godot: existsSync(join(p.path, 'project.godot')),
+    const [git, worktree] = await Promise.all([boardStatus(p.path, all.config), repoWorktree(p.path)]);
+    // worktree (23.2): los worktrees del mismo repo comparten repo; la página los junta en una tarjeta.
+    return { ...base, worktree, name: all.config?.project ?? p.name, views: all.config?.views ?? null, godot: existsSync(join(p.path, 'project.godot')),
       warnings: all.warnings.length, summary: summarize(all, now()), git: git.repo ? { uncommitted: git.uncommitted } : null,
       // schema/ o AGENTS.md de una versión anterior de Scope Compass (9.9): la tarjeta ofrece actualizarlos.
       outdated: outdatedFiles(compassOf(p.path)) };
@@ -231,8 +232,8 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   app.get('/api/today', async () => {
     const items = [];
     for (const p of projectsStatus().filter((x) => x.found)) {
-      const all = await loadCompass(compassOf(p.path), validators);
-      for (const x of todayOf(all, now())) items.push({ ...x, project: { path: p.path, name: all.config?.project ?? p.name } });
+      const [all, worktree] = await Promise.all([loadCompass(compassOf(p.path), validators), repoWorktree(p.path)]);
+      for (const x of todayOf(all, now())) items.push({ ...x, project: { path: p.path, name: all.config?.project ?? p.name, worktree } });
     }
     const rank = { overdue: 0, today: 1 };
     return { items: items.sort((a, b) => (rank[a.due_state] ?? 2) - (rank[b.due_state] ?? 2) || String(a.due ?? '~').localeCompare(String(b.due ?? '~'))) };

@@ -1,6 +1,7 @@
 // Cambios sin commitear en el tablero (4.4): `git status` de compass/ y del export markdown. La app nunca
 // commitea en local (spec §4.5); esto solo lo recuerda. Sin git o fuera de un repo: { repo: false }.
 import { execFile } from 'node:child_process';
+import { realpathSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 
 /** { repo, uncommitted, files } con las rutas relativas al proyecto. */
@@ -89,4 +90,18 @@ export async function repoBranch(projectDir) {
   const [branch, ab] = await Promise.all([git(projectDir, ['symbolic-ref', '--short', '-q', 'HEAD']), git(projectDir, ['rev-list', '--left-right', '--count', '@{upstream}...HEAD'])]);
   const [behind, ahead] = ab ? ab.trim().split(/\s+/).map(Number) : [];
   return { branch: branch?.trim() || null, ...(ab && { ahead, behind }) };
+}
+
+/**
+ * El repo del proyecto visto desde sus worktrees (23.2): { repo, main, branch }. repo es el mismo en todos los
+ * worktrees de un repo (el .git común, más dónde está el proyecto dentro del repo); main dice si este es el worktree
+ * principal. Sin repo, null.
+ */
+export async function repoWorktree(projectDir) {
+  const [out, head] = await Promise.all([git(projectDir, ['rev-parse', '--path-format=absolute', '--git-common-dir', '--git-dir', '--show-toplevel']),
+    git(projectDir, ['symbolic-ref', '--short', '-q', 'HEAD'])]);
+  if (!out) return null;
+  const [common, gitDir, top] = out.trim().split('\n');
+  const inside = relative(top, realpathSync(resolve(projectDir))).split('\\').join('/');
+  return { repo: common + (inside ? '#' + inside : ''), main: common === gitDir, branch: head?.trim() || null };
 }

@@ -3,6 +3,7 @@
 import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, sep } from 'node:path';
@@ -104,6 +105,22 @@ test('GET /api/today junta lo de todos los proyectos', async () => {
   const { body } = await api('GET', '/api/today');
   const items = body.items.filter((x) => x.kind === 'item');
   assert.deepEqual(items.map((x) => [x.project.path, x.text, x.due_state]), [[b, 'Gas', 'overdue'], [a, 'Pagar la luz', 'today']]);
+});
+
+test('worktrees (23.2): /api/projects y /api/today dicen el repo, si es el principal y la rama', async () => {
+  const git = (cwd, ...x) => execFileSync('git', ['-C', cwd, '-c', 'user.name=t', '-c', 'user.email=t@t', ...x], { stdio: 'ignore' });
+  git(b, 'init', '-q', '-b', 'main'); git(b, 'add', '-A'); git(b, 'commit', '-qm', 'base');
+  const wt = join(root, 'b-arte');
+  git(b, 'worktree', 'add', '-q', '-b', 'arte', wt);
+  await recordProject(wt);
+  const { body } = await api('GET', '/api/projects');
+  const of = (path) => body.projects.find((p) => p.path === path).worktree;
+  assert.equal(of(a), null, 'sin repo');
+  assert.deepEqual({ ...of(b), repo: undefined }, { repo: undefined, main: true, branch: 'main' });
+  assert.deepEqual({ ...of(wt), repo: undefined }, { repo: undefined, main: false, branch: 'arte' });
+  assert.equal(of(wt).repo, of(b).repo);
+  const today = (await api('GET', '/api/today')).body.items.filter((x) => x.kind === 'item' && x.text === 'Gas');
+  assert.deepEqual(today.map((x) => [x.project.path, x.project.worktree.main, x.project.worktree.repo === of(b).repo]).sort(), [[b, true, true], [wt, false, true]]);
 });
 
 test('check-item con hub pasa por el hub; sin hub escribe directo y avanza lo que se repite', async () => {

@@ -4,6 +4,7 @@ import { test, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -102,6 +103,35 @@ test('Hoy: lo que solo está en curso va en un grupo plegable por proyecto, y el
   await page.waitForSelector('.hoy-group');
   assert.equal((await groups()).find((g) => g[0] === 'Juego')[2], false);
   assert.equal((await groups()).find((g) => g[0] === 'Scope Compass')[2], true);
+});
+
+test('worktrees (23.2): una tarjeta por repo con los worktrees adentro, y en Hoy cada tarea una vez', async () => {
+  const git = (cwd, ...x) => execFileSync('git', ['-C', cwd, '-c', 'user.name=t', '-c', 'user.email=t@t', ...x], { stdio: 'ignore' });
+  const cfg = join(juego, 'compass', 'config.json');
+  await writeFile(cfg, JSON.stringify({ ...JSON.parse(await readFile(cfg, 'utf8')), project: 'Juego' }));
+  const sj = createJsonFilesStore(join(juego, 'compass'), { validators: V });
+  await sj.patch('tasks', 'm1-04', { status: 'doing' });
+  git(juego, 'init', '-q', '-b', 'main'); git(juego, 'add', '-A'); git(juego, 'commit', '-qm', 'base');
+  const arte = join(root, 'juego-arte');
+  git(juego, 'worktree', 'add', '-q', '-b', 'wt/arte', arte);
+  // En el worktree hay una tarea más en curso, que el principal no tiene.
+  await createJsonFilesStore(join(arte, 'compass'), { validators: V }).patch('tasks', 'm0-01', { status: 'doing' });
+  await recordProject(arte);
+  const page = await open();
+  await page.waitForSelector('.hoy-group');
+  assert.equal(await page.locator('article.proj[aria-label="Juego"]').count(), 1, 'una tarjeta para el repo');
+  const card = page.locator('article.proj[aria-label="Juego"]');
+  assert.match(await card.locator('.kind').textContent(), /main/);
+  assert.match(await card.locator('.wts').textContent(), /1 worktree.*juego-arte wt\/arte.*2 en curso/s);
+  assert.equal(await card.locator('.wts a', { hasText: 'Abrir' }).count(), 1);
+  const juegoGroup = page.locator('.hoy-group', { hasText: 'Juego' });
+  assert.equal(await page.locator('.hoy-group').count(), 1);
+  assert.match(await juegoGroup.locator('summary').textContent(), /2 en curso/);
+  // m1-04 está en curso en los dos: una fila, sin marca; m0-01 solo en el worktree.
+  const rows = await juegoGroup.locator('.hoy-row').allTextContents();
+  assert.equal(rows.length, 2);
+  assert.ok(rows.some((r) => /^●1\.\d/.test(r) && !/⎇/.test(r)), rows.join(' | '));
+  assert.ok(rows.some((r) => /⎇ juego-arte/.test(r)), rows.join(' | '));
 });
 
 test('tarjetas: "Abrir tablero" abre el tablero dentro del Inicio (mismo puerto), con la barra y el selector', async () => {

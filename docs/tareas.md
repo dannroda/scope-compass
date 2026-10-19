@@ -2546,7 +2546,7 @@ Cómo agregarlo a Claude Code (claude mcp add / .mcp.json del proyecto) y una se
 
 **Bloqueada por:** 22.4 Herramientas de escritura
 
-## M23 — Inicio con muchos proyectos  (1/2)
+## M23 — Inicio con muchos proyectos  (2/2)
 
 Que el Inicio siga legible con varios proyectos y worktrees del mismo repo: Hoy agrupado por proyecto y plegable, y los worktrees sin repetir el tablero entero.
 
@@ -2564,6 +2564,12 @@ En Hoy, las tareas que solo están en curso van en un grupo plegable por proyect
 
 **Notas:** Plegados en localStorage scompass.home.hoy-folded (rutas). Se guarda en el clic del summary y no en toggle, que también salta al crear el details abierto y pisaba lo guardado. Con el mismo nombre: «Project Epiphany · art» (último tramo de la ruta).
 
-### 23.2 Worktrees del mismo repo en el Inicio · Pendiente
+### 23.2 Worktrees del mismo repo en el Inicio · Hecho
 
-El registro tiene project-epiphany y sus worktrees (epiphany-wt/art, design, overworld) como proyectos aparte, y Hoy repite las mismas 12-13 tareas en curso por cada uno. Decidir: agruparlos bajo el repo principal (git rev-parse --git-common-dir), no anotar worktrees al servir, o mostrarlos como una sola tarjeta con sus ramas.
+**Terminada:** 2026-10-19
+
+El registro tiene project-epiphany y sus worktrees (epiphany-wt/art, design, overworld) como proyectos aparte: Hoy repetía las mismas 12-13 tareas en curso por cada uno y había una tarjeta por worktree. Se agrupan por repo, en Hoy y en las tarjetas.
+
+**Prueba:** home.test.js (worktree en /api/projects y /api/today), ui-home.test.js (una tarjeta por repo, en Hoy cada tarea una vez y ⎇ en la que está solo en un worktree)
+
+**Notas:** git.js repoWorktree: rev-parse --git-common-dir/--git-dir/--show-toplevel; repo = common dir + #carpeta del proyecto dentro del repo (dos compass/ en un mismo repo no se juntan). Sin git, la clave es la ruta. El registro no cambia: los worktrees se siguen anotando solos al servirlos, la página los junta. La fila que queda es la del principal (su enlace y su ítem para tildar).

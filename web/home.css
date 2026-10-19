@@ -45,6 +45,10 @@ header.top h1 { flex: 1 1 auto; }
 .proj li .k.doing { color: var(--s-doing); }
 .proj li .v { min-width: 0; overflow-wrap: anywhere; }
 .proj .lists li { justify-content: space-between; }
+.proj .wts { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--surface-2); padding-top: 10px; }
+.proj .wts > .k { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.proj .wts li { flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.proj .wts li .acts { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
 .proj .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-top: 1px solid var(--surface-2); padding-top: 12px; margin-top: auto; }
 .proj .foot .spacer { flex: 1; }
 .proj .foot .btn { min-height: 36px; padding: 4px 12px; font-size: 14px; }
