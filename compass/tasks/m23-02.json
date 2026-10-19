@@ -1,0 +1,14 @@
+{
+  "checklist": [],
+  "code": "23.2",
+  "created_at": "2026-10-19T23:43:57.237Z",
+  "description": "El registro tiene project-epiphany y sus worktrees (epiphany-wt/art, design, overworld) como proyectos aparte, y Hoy repite las mismas 12-13 tareas en curso por cada uno. Decidir: agruparlos bajo el repo principal (git rev-parse --git-common-dir), no anotar worktrees al servir, o mostrarlos como una sola tarjeta con sus ramas.",
+  "milestone": "m23",
+  "notes": "",
+  "order": 2,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Worktrees del mismo repo en el Inicio",
+  "updated_at": "2026-10-19T23:43:57.237Z"
+}

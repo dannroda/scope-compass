@@ -2545,3 +2545,25 @@ Lanza scompass mcp en un proyecto temporal, recorre initialize, tools/list y cad
 Cómo agregarlo a Claude Code (claude mcp add / .mcp.json del proyecto) y una sección en AGENTS.md (template, addon y compass/) sobre cuándo usar las herramientas y cuándo la CLI.
 
 **Bloqueada por:** 22.4 Herramientas de escritura
+
+## M23 — Inicio con muchos proyectos  (1/2)
+
+Que el Inicio siga legible con varios proyectos y worktrees del mismo repo: Hoy agrupado por proyecto y plegable, y los worktrees sin repetir el tablero entero.
+
+**Hecho cuando:**
+- En Hoy, lo que solo está en curso va en un grupo plegable por proyecto, y el pliegue se recuerda.
+- Los worktrees del mismo repo no repiten sus tareas en Hoy ni en las tarjetas.
+
+### 23.1 Hoy: en curso por proyecto y plegable · Hecho
+
+**Terminada:** 2026-10-19
+
+En Hoy, las tareas que solo están en curso van en un grupo plegable por proyecto (lo vencido y lo de hoy siguen sueltos arriba); el pliegue se recuerda en el navegador. Dos proyectos con el mismo nombre se distinguen por la carpeta.
+
+**Prueba:** ui-home.test.js: grupos por proyecto con su cuenta, la tarea para hoy queda suelta, plegar sobrevive a recargar
+
+**Notas:** Plegados en localStorage scompass.home.hoy-folded (rutas). Se guarda en el clic del summary y no en toggle, que también salta al crear el details abierto y pisaba lo guardado. Con el mismo nombre: «Project Epiphany · art» (último tramo de la ruta).
+
+### 23.2 Worktrees del mismo repo en el Inicio · Pendiente
+
+El registro tiene project-epiphany y sus worktrees (epiphany-wt/art, design, overworld) como proyectos aparte, y Hoy repite las mismas 12-13 tareas en curso por cada uno. Decidir: agruparlos bajo el repo principal (git rev-parse --git-common-dir), no anotar worktrees al servir, o mostrarlos como una sola tarjeta con sus ramas.

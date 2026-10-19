@@ -18,6 +18,15 @@ header.top h1 { flex: 1 1 auto; }
 .hoy-row .mark { width: 20px; text-align: center; color: var(--s-doing); flex: none; }
 .hoy-row .code { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-right: 6px; }
 .hoy-empty { padding: 16px; color: var(--muted); }
+.hoy-group { border-top: 1px solid var(--surface-2); }
+.hoy-group:first-child { border-top: 0; }
+.hoy-group > summary { list-style: none; display: flex; align-items: center; gap: 8px 12px; padding: 10px 16px; min-height: 48px; cursor: pointer; user-select: none; font-weight: 700; }
+.hoy-group > summary::-webkit-details-marker { display: none; }
+.hoy-group > summary::before { content: '▸'; width: 20px; text-align: center; color: var(--muted); flex: none; }
+.hoy-group[open] > summary::before { content: '▾'; }
+.hoy-group > summary .what { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.hoy-group .hoy-row { padding-left: 32px; }
+.hoy-group .hoy-row:first-of-type { border-top: 1px solid var(--surface-2); }
 
 .projects { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 16px; }
 .proj { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }

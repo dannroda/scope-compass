@@ -83,27 +83,55 @@
     const box = document.getElementById('hoy');
     if (!S.loaded) { box.replaceChildren(h('div', { class: 'hoy-empty' }, 'Cargando…')); return; }
     if (!S.today.length) { box.replaceChildren(h('div', { class: 'hoy-empty' }, 'Nada vencido ni para hoy, y nada en curso.')); return; }
-    box.replaceChildren(...S.today.map((x, i) => {
-      const where = h('span', { class: 'tag' }, x.project.name + (x.kind === 'item' ? ' · ' + x.list_title : ''));
-      if (x.kind === 'item') {
-        const id = 'hoy-' + i;
-        const key = 'item:' + x.project.path + ':' + x.list + ':' + x.n;
-        return h('div', { class: 'hoy-row' },
-          // Mientras se guarda queda tildado (re-renderizar no lo destilda).
-          h('input', { type: 'checkbox', id, disabled: S.busy.has(key), checked: S.busy.has(key),
-            onchange: () => act(key, () => call('POST', '/api/projects/check-item', { path: x.project.path, list: x.list, n: x.n, etag: x.etag }),
-              (r) => (r.advanced ? `${x.text}: ↻ la próxima vez es el ${showDue(r.list.items[x.n - 1].due)}` : `${x.text}: hecho`)) }),
-          h('label', { for: id, class: 'what' }, x.text),
-          dueTag(x), x.repeat ? h('span', { class: 'tag' }, '↻ ' + EVERY[x.repeat.every]) : null, where);
-      }
-      const url = boardUrl(x.project.path);
-      const [code, ...rest] = x.text.split(' ');
-      const title = /^\d/.test(code) ? h('span', null, h('span', { class: 'code' }, code), rich(rest.join(' '))) : rich(x.text);
+    // Lo vencido y lo de hoy van arriba, sueltos; lo que solo está en curso, en un grupo plegable por proyecto.
+    const urgent = (x) => x.kind === 'item' || x.due_state === 'overdue' || x.due_state === 'today';
+    // Dos proyectos con el mismo nombre (worktrees del mismo repo): se distinguen por la carpeta.
+    const paths = new Map();
+    for (const x of S.today) paths.set(x.project.name, new Set([...(paths.get(x.project.name) ?? []), x.project.path]));
+    hoyName = (pr) => (paths.get(pr.name)?.size > 1 ? `${pr.name} · ${pr.path.split(/[\\/]/).pop()}` : pr.name);
+    const groups = new Map();
+    for (const x of S.today.filter((y) => !urgent(y))) {
+      if (!groups.has(x.project.path)) groups.set(x.project.path, { name: hoyName(x.project), rows: [] });
+      groups.get(x.project.path).rows.push(x);
+    }
+    const closed = foldedHoy();
+    box.replaceChildren(...S.today.filter(urgent).map((x, i) => hoyRow(x, i, true)), ...[...groups].map(([path, g]) =>
+      h('details', { class: 'hoy-group', open: !closed.has(path) },
+        // Con el clic y no con toggle: toggle también salta al crear el grupo abierto, y un render lo pisaría.
+        h('summary', { onclick: (e) => { const s = foldedHoy(); e.currentTarget.parentElement.open ? s.add(path) : s.delete(path); foldedHoy(s); } },
+          h('span', { class: 'what' }, g.name), h('span', { class: 'tag doing' }, `${g.rows.length} en curso`)),
+        g.rows.map((x, i) => hoyRow(x, i, false)))));
+  }
+  let hoyName = (pr) => pr.name;
+  // Los proyectos con el grupo de Hoy plegado, en este navegador; sin almacenamiento, todos abiertos.
+  function foldedHoy(set) {
+    try {
+      if (set) localStorage.setItem('scompass.home.hoy-folded', JSON.stringify([...set]));
+      else return new Set(JSON.parse(localStorage.getItem('scompass.home.hoy-folded') || '[]'));
+    } catch { /* sin localStorage */ }
+    return set ?? new Set();
+  }
+  // Una fila de Hoy. Dentro del grupo de su proyecto no repite el proyecto ni "en curso".
+  function hoyRow(x, i, loose) {
+    const where = loose ? h('span', { class: 'tag' }, hoyName(x.project) + (x.kind === 'item' ? ' · ' + x.list_title : '')) : null;
+    if (x.kind === 'item') {
+      const id = 'hoy-' + i;
+      const key = 'item:' + x.project.path + ':' + x.list + ':' + x.n;
       return h('div', { class: 'hoy-row' },
-        h('span', { class: 'mark', 'aria-hidden': 'true' }, x.status === 'doing' ? '●' : '○'),
-        h('span', { class: 'what' }, url ? h('a', { href: url }, title) : title),
-        dueTag(x), x.status === 'doing' ? h('span', { class: 'tag doing' }, 'en curso') : null, where);
-    }));
+        // Mientras se guarda queda tildado (re-renderizar no lo destilda).
+        h('input', { type: 'checkbox', id, disabled: S.busy.has(key), checked: S.busy.has(key),
+          onchange: () => act(key, () => call('POST', '/api/projects/check-item', { path: x.project.path, list: x.list, n: x.n, etag: x.etag }),
+            (r) => (r.advanced ? `${x.text}: ↻ la próxima vez es el ${showDue(r.list.items[x.n - 1].due)}` : `${x.text}: hecho`)) }),
+        h('label', { for: id, class: 'what' }, x.text),
+        dueTag(x), x.repeat ? h('span', { class: 'tag' }, '↻ ' + EVERY[x.repeat.every]) : null, where);
+    }
+    const url = boardUrl(x.project.path);
+    const [code, ...rest] = x.text.split(' ');
+    const title = /^\d/.test(code) ? h('span', null, h('span', { class: 'code' }, code), rich(rest.join(' '))) : rich(x.text);
+    return h('div', { class: 'hoy-row' },
+      h('span', { class: 'mark', 'aria-hidden': 'true' }, x.status === 'doing' ? '●' : '○'),
+      h('span', { class: 'what' }, url ? h('a', { href: url }, title) : title),
+      dueTag(x), loose && x.status === 'doing' ? h('span', { class: 'tag doing' }, 'en curso') : null, where);
   }
 
   // Quién sirve el proyecto: el Inicio (lo normal, D29) o un hub suelto (el del dock, `scompass serve`).

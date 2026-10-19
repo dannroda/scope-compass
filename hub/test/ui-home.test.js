@@ -2,7 +2,7 @@
 import './isolate.js';
 import { test, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, sep } from 'node:path';
@@ -75,6 +75,33 @@ test('Hoy: tildar un ítem lo guarda; uno que se repite avanza y sigue en la lis
   const [luz] = await pendientes();
   assert.equal(luz.done, false);
   assert.notEqual(luz.due, TODAY);
+});
+
+test('Hoy: lo que solo está en curso va en un grupo plegable por proyecto, y el pliegue se recuerda', async () => {
+  const cfg = join(juego, 'compass', 'config.json');
+  await writeFile(cfg, JSON.stringify({ ...JSON.parse(await readFile(cfg, 'utf8')), project: 'Juego' }));
+  const sv = createJsonFilesStore(join(vida, 'compass'), { validators: V });
+  const sj = createJsonFilesStore(join(juego, 'compass'), { validators: V });
+  await sv.patch('tasks', 'm1-04', { status: 'doing' });
+  await sj.patch('tasks', 'm1-04', { status: 'doing' });
+  await sj.patch('tasks', 'm0-01', { status: 'doing' });
+  // En curso y para hoy: va suelto, arriba, con su proyecto.
+  await sj.patch('tasks', 'm0-02', { status: 'doing', due: TODAY });
+  const page = await open();
+  await page.waitForSelector('.hoy-group');
+  const groups = () => page.$$eval('.hoy-group', (gs) => gs.map((g) => [g.querySelector('summary .what').textContent, g.querySelector('summary .tag').textContent, g.open, g.querySelectorAll('.hoy-row').length]));
+  assert.deepEqual((await groups()).sort(), [['Juego', '2 en curso', true, 2], ['Scope Compass', '1 en curso', true, 1]]);
+  const loose = await page.$$eval('#hoy > .hoy-row', (rs) => rs.map((r) => r.textContent));
+  assert.equal(loose.filter((x) => /Juego/.test(x) && /en curso/.test(x) && /hoy/.test(x)).length, 1, 'la de hoy queda suelta');
+  // Dentro del grupo no se repite el proyecto ni "en curso".
+  assert.equal(await page.locator('.hoy-group .hoy-row .tag').count(), 0);
+  await page.locator('.hoy-group summary', { hasText: 'Juego' }).click();
+  assert.deepEqual((await groups()).find((g) => g[0] === 'Juego').slice(2), [false, 2]);
+  // Al recargar (o con un evento que re-renderiza) sigue plegado.
+  await page.reload();
+  await page.waitForSelector('.hoy-group');
+  assert.equal((await groups()).find((g) => g[0] === 'Juego')[2], false);
+  assert.equal((await groups()).find((g) => g[0] === 'Scope Compass')[2], true);
 });
 
 test('tarjetas: "Abrir tablero" abre el tablero dentro del Inicio (mismo puerto), con la barra y el selector', async () => {

@@ -1,0 +1,10 @@
+{
+  "code": "M23",
+  "done_when": [
+    "En Hoy, lo que solo está en curso va en un grupo plegable por proyecto, y el pliegue se recuerda.",
+    "Los worktrees del mismo repo no repiten sus tareas en Hoy ni en las tarjetas."
+  ],
+  "goal": "Que el Inicio siga legible con varios proyectos y worktrees del mismo repo: Hoy agrupado por proyecto y plegable, y los worktrees sin repetir el tablero entero.",
+  "order": 23,
+  "title": "Inicio con muchos proyectos"
+}
