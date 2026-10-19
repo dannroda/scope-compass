@@ -2467,7 +2467,7 @@ Tiene ~1600 líneas y mezcla la vida del hub, la lista, el detalle y las referen
 
 **Notas:** dock_view.gd (~1150 líneas) queda con la vida del hub, la lista y las escrituras. task_detail.gd (ScrollContainer) arma y pinta el detalle: estado, pasos, capturas, vínculos, referencias y archivos; lo que necesita lo toma de view (board, online, update_task, web_url, icon_button, fold_icon, go_to_task). hub_process.gd (Node hijo) busca scompass, lo corre en otro hilo y lanza, cierra y vigila el hub (pid, kept). En los tests: v.detail.<caja>, v.hub.pid; DockView.TaskDetail.basic_highlighter en el plugin.
 
-## M22 — MCP  (0/7)
+## M22 — MCP  (1/7)
 
 Que Claude Code opere el tablero con herramientas MCP tipadas en lugar de armar comandos de Bash: scompass mcp por stdio, sobre el mismo código que la CLI, sin SDK.
 
@@ -2478,13 +2478,15 @@ Que Claude Code opere el tablero con herramientas MCP tipadas en lugar de armar 
 - Un test lanza scompass mcp y compara sus resultados con los de la CLI.
 - La spec y AGENTS.md explican cómo registrarlo en Claude Code y cuándo usarlo en vez de la CLI.
 
-### 22.1 Spec y decisión del MCP · Pendiente
+### 22.1 Spec y decisión del MCP · Hecho
+
+**Terminada:** 2026-10-19
 
 Sección §30 en la spec con los criterios de aceptación de M22 y una decisión en decisiones.md: solo stdio y solo Claude Code por ahora, JSON-RPC a mano sin @modelcontextprotocol/sdk, herramientas sobre el mismo código que la CLI.
 
 **Bloquea a:** 22.2 scompass mcp: transporte stdio
 
-### 22.2 scompass mcp: transporte stdio · Pendiente
+### 22.2 scompass mcp: transporte stdio · En curso
 
 JSON-RPC delimitado por líneas en stdin/stdout: initialize (versión de protocolo y capacidades), ping, notificaciones, errores JSON-RPC y logs solo por stderr. Encuentra compass/ hacia arriba o usa --dir, como la CLI.
 

@@ -1187,3 +1187,26 @@ Que el dock de Godot se conecte solo al Inicio, que sus tests no se salteen en s
 
 Tests: `dock.test.js` (21.1–21.6; la captura del juego corre un editor de verdad con `xvfb-run`).
 
+
+## 30. MCP (M22)
+<!-- id: mcp -->
+
+Que Claude Code opere el tablero con herramientas tipadas en lugar de armar comandos de Bash (D41).
+
+- **`scompass mcp`:** un servidor MCP por stdio: JSON-RPC 2.0, un mensaje por línea en stdin y stdout; stdout es solo del protocolo y los avisos van por stderr. Contesta `initialize` (con la versión de protocolo que pide el cliente si la conoce, si no la más nueva que conoce), `ping`, `tools/list`, `tools/call`, `resources/list`, `resources/templates/list` y `resources/read`. Sin dependencias nuevas.
+- **El proyecto:** el de `--dir`, o el primero con `compass/config.json` desde la carpeta donde lo lanzan, como la CLI. Cada herramienta acepta además `dir` para operar sobre otro proyecto sin otro servidor.
+- **Las herramientas son la CLI:** cada una arma los argumentos de un comando y llama a `run()` en el mismo proceso con `--json`, una por vez. Así validan, encuentran el hub, regeneran el export y avisan igual que la CLI, y lo que cambie en la CLI llega solo. El resultado es el JSON de `--json` (como texto y como `structuredContent`); un error es `isError` con el mensaje de la CLI (conflicto, validación, id inexistente). Los avisos de la CLI (hub de otra versión, archivos inválidos) se agregan al resultado.
+- **Herramientas (22.3, 22.4):** lectura: `list_tasks` (los filtros de `list`), `show_task`, `task_history`, `list_milestones`, `show_milestone`, `list_links`, `list_playtests`, `show_playtest`, `search_docs`, `show_doc`. Escritura: `add_task`, `update_task` (campos sueltos), `move_task`, `add_step`, `update_step`, `remove_step`, `check_step`, `add_link`, `remove_link`, `add_ref`, `remove_ref`, `add_file`, `remove_file`, `set_playtest_result`. Las escrituras aceptan `etag`: si la tarea cambió, falla con conflicto, como `--etag`.
+- **Recursos (22.5):** `compass://milestone/<id>` (el hito con sus tareas), `compass://task/<id>` (plantilla) y `compass://doc/<alias>` (el markdown de un documento de `config.json`). `resources/list` da los hitos y los documentos; las tareas se piden por la plantilla.
+- **Registrarlo (22.7):** `claude mcp add --scope user scompass -- node <scope-compass>/hub/bin/scompass.js mcp` lo deja en todos los proyectos; toma el proyecto de la carpeta de la sesión.
+
+### 30.1 Criterios de aceptación de M22
+<!-- id: criterios-mcp -->
+
+- [ ] `scompass mcp` habla MCP por stdio (initialize, tools/list, tools/call, resources/list, resources/read) sin dependencias nuevas.
+- [ ] Las herramientas leen y escriben tareas, pasos, vínculos, hitos y playtest igual que la CLI: con hub pasan por él y la web y el dock se enteran; sin hub escriben en `compass/`.
+- [ ] Hitos, tareas y documentos se pueden adjuntar como recursos.
+- [ ] Un test lanza `scompass mcp` y compara sus resultados con los de la CLI.
+- [ ] La spec y AGENTS.md explican cómo registrarlo en Claude Code y cuándo usarlo en vez de la CLI.
+
+- **Fuera de M22:** transporte HTTP (`/mcp` en el hub) para clientes sin shell; listas e ítems; sesiones de playtest más allá del resultado (crear, ordenar).

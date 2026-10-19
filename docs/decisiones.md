@@ -400,3 +400,15 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
 - **Descartado:**
   - Sincronizar el resultado entre las sesiones que tienen la tarea: varias copias del mismo dato que hay que mantener iguales.
   - Un resultado por sesión con un "último resultado" calculado: dos fuentes para lo mismo, y la nota seguiría repartida.
+
+## D41 · MCP: solo stdio, escrito a mano, sobre la CLI
+**2026-10-19 · vigente** · spec §30
+
+- **Qué:** `scompass mcp`, un servidor MCP por stdio para Claude Code. Cada herramienta llama a `run()` de la CLI con `--json`.
+- **Por qué MCP:** con la CLI el agente arma comandos de Bash a partir de AGENTS.md; con herramientas tipadas ve los parámetros y los valores válidos, y no pide permiso de Bash por cada comando.
+- **Por qué solo stdio:** por ahora lo usa Claude Code en el mismo equipo, que lanza el servidor como un proceso. HTTP solo haría falta para clientes sin shell (Desktop, el teléfono), y sumaría autenticación.
+- **Por qué sin el SDK:** el transporte stdio es JSON-RPC con un mensaje por línea y pocos métodos; a mano son unas cien líneas, y el SDK traería dependencias (zod, entre otras) para eso. Las herramientas no cambian si un día se pasa al SDK.
+- **Por qué sobre la CLI y no sobre el store:** la CLI ya valida, encuentra el hub, regenera el export y da los mensajes de error. Llamarla en el mismo proceso hace que las dos no se separen y que lo nuevo en la CLI llegue al MCP con solo describir el parámetro.
+- **Descartado:**
+  - Lanzar `scompass` como proceso aparte por cada llamada: más lento y lo mismo que llamar a `run()`.
+  - Un servidor MCP dentro del hub: haría falta un hub corriendo, y la CLI anda sin él.
