@@ -1,0 +1,14 @@
+{
+  "checklist": [],
+  "code": "22.7",
+  "created_at": "2026-10-19T23:09:04.527Z",
+  "description": "Cómo agregarlo a Claude Code (claude mcp add / .mcp.json del proyecto) y una sección en AGENTS.md (template, addon y compass/) sobre cuándo usar las herramientas y cuándo la CLI.",
+  "milestone": "m22",
+  "notes": "",
+  "order": 7,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Registrar el MCP y documentarlo",
+  "updated_at": "2026-10-19T23:09:04.527Z"
+}

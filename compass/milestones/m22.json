@@ -1,0 +1,13 @@
+{
+  "code": "M22",
+  "done_when": [
+    "scompass mcp habla MCP por stdio (initialize, tools/list, tools/call, resources/list, resources/read) sin dependencias nuevas.",
+    "Las herramientas leen y escriben tareas, pasos, vínculos, hitos y playtest igual que la CLI: con hub pasan por él y la web y el dock se enteran; sin hub escriben en compass/.",
+    "Hitos, tareas y documentos se pueden adjuntar como recursos.",
+    "Un test lanza scompass mcp y compara sus resultados con los de la CLI.",
+    "La spec y AGENTS.md explican cómo registrarlo en Claude Code y cuándo usarlo en vez de la CLI."
+  ],
+  "goal": "Que Claude Code opere el tablero con herramientas MCP tipadas en lugar de armar comandos de Bash: scompass mcp por stdio, sobre el mismo código que la CLI, sin SDK.",
+  "order": 22,
+  "title": "MCP"
+}

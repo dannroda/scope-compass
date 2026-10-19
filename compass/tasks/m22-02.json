@@ -1,0 +1,28 @@
+{
+  "checklist": [],
+  "code": "22.2",
+  "created_at": "2026-10-19T23:09:03.141Z",
+  "description": "JSON-RPC delimitado por líneas en stdin/stdout: initialize (versión de protocolo y capacidades), ping, notificaciones, errores JSON-RPC y logs solo por stderr. Encuentra compass/ hacia arriba o usa --dir, como la CLI.",
+  "links": [
+    {
+      "task": "m22-03",
+      "type": "blocks"
+    },
+    {
+      "task": "m22-04",
+      "type": "blocks"
+    },
+    {
+      "task": "m22-05",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m22",
+  "notes": "",
+  "order": 2,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "scompass mcp: transporte stdio",
+  "updated_at": "2026-10-19T23:09:05.667Z"
+}

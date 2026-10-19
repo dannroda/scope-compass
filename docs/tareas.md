@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-10-16
+> Generado: 2026-10-19
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -2466,3 +2466,60 @@ Tiene ~1600 líneas y mezcla la vida del hub, la lista, el detalle y las referen
 **Prueba:** dock.test.js 39/39 sin cambios de comportamiento; el editor sin ventana monta el plugin sin errores.
 
 **Notas:** dock_view.gd (~1150 líneas) queda con la vida del hub, la lista y las escrituras. task_detail.gd (ScrollContainer) arma y pinta el detalle: estado, pasos, capturas, vínculos, referencias y archivos; lo que necesita lo toma de view (board, online, update_task, web_url, icon_button, fold_icon, go_to_task). hub_process.gd (Node hijo) busca scompass, lo corre en otro hilo y lanza, cierra y vigila el hub (pid, kept). En los tests: v.detail.<caja>, v.hub.pid; DockView.TaskDetail.basic_highlighter en el plugin.
+
+## M22 — MCP  (0/7)
+
+Que Claude Code opere el tablero con herramientas MCP tipadas en lugar de armar comandos de Bash: scompass mcp por stdio, sobre el mismo código que la CLI, sin SDK.
+
+**Hecho cuando:**
+- scompass mcp habla MCP por stdio (initialize, tools/list, tools/call, resources/list, resources/read) sin dependencias nuevas.
+- Las herramientas leen y escriben tareas, pasos, vínculos, hitos y playtest igual que la CLI: con hub pasan por él y la web y el dock se enteran; sin hub escriben en compass/.
+- Hitos, tareas y documentos se pueden adjuntar como recursos.
+- Un test lanza scompass mcp y compara sus resultados con los de la CLI.
+- La spec y AGENTS.md explican cómo registrarlo en Claude Code y cuándo usarlo en vez de la CLI.
+
+### 22.1 Spec y decisión del MCP · Pendiente
+
+Sección §30 en la spec con los criterios de aceptación de M22 y una decisión en decisiones.md: solo stdio y solo Claude Code por ahora, JSON-RPC a mano sin @modelcontextprotocol/sdk, herramientas sobre el mismo código que la CLI.
+
+**Bloquea a:** 22.2 scompass mcp: transporte stdio
+
+### 22.2 scompass mcp: transporte stdio · Pendiente
+
+JSON-RPC delimitado por líneas en stdin/stdout: initialize (versión de protocolo y capacidades), ping, notificaciones, errores JSON-RPC y logs solo por stderr. Encuentra compass/ hacia arriba o usa --dir, como la CLI.
+
+**Bloquea a:** 22.3 Herramientas de lectura; 22.4 Herramientas de escritura; 22.5 Recursos
+
+**Bloqueada por:** 22.1 Spec y decisión del MCP
+
+### 22.3 Herramientas de lectura · Pendiente
+
+list_tasks (los filtros de scompass list), show_task, list_milestones, link_list y history, con inputSchema y resultados en el JSON de --json, etags incluidos.
+
+**Bloqueada por:** 22.2 scompass mcp: transporte stdio
+
+### 22.4 Herramientas de escritura · Pendiente
+
+add_task, update_task (campos sueltos, con etag opcional), move_task, step_add/step_set/step_rm/check_step, link_add/link_rm y playtest_pass/fail/reset. Con hub pasan por la API; sin hub escriben en compass/. Los errores de la CLI (conflicto, validación, id inexistente) vuelven como isError con el mensaje.
+
+**Bloquea a:** 22.6 Test de punta a punta del MCP; 22.7 Registrar el MCP y documentarlo
+
+**Bloqueada por:** 22.2 scompass mcp: transporte stdio
+
+### 22.5 Recursos · Pendiente
+
+resources/list y resources/read: compass://milestone/<id> (hito con sus tareas), compass://task/<id> y los documentos de docs/, para adjuntarlos con @ en Claude Code.
+
+**Bloqueada por:** 22.2 scompass mcp: transporte stdio
+
+### 22.6 Test de punta a punta del MCP · Pendiente
+
+Lanza scompass mcp en un proyecto temporal, recorre initialize, tools/list y cada herramienta, y compara con lo que devuelve la CLI; con y sin hub.
+
+**Bloqueada por:** 22.4 Herramientas de escritura
+
+### 22.7 Registrar el MCP y documentarlo · Pendiente
+
+Cómo agregarlo a Claude Code (claude mcp add / .mcp.json del proyecto) y una sección en AGENTS.md (template, addon y compass/) sobre cuándo usar las herramientas y cuándo la CLI.
+
+**Bloqueada por:** 22.4 Herramientas de escritura
