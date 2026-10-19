@@ -3,12 +3,13 @@
   "code": "22.3",
   "created_at": "2026-10-19T23:09:03.423Z",
   "description": "list_tasks (los filtros de scompass list), show_task, list_milestones, link_list y history, con inputSchema y resultados en el JSON de --json, etags incluidos.",
+  "done_at": "2026-10-19T23:15:14.967Z",
   "milestone": "m22",
   "notes": "",
   "order": 3,
   "refs": [],
-  "status": "todo",
+  "status": "done",
   "test": "",
   "title": "Herramientas de lectura",
-  "updated_at": "2026-10-19T23:09:03.423Z"
+  "updated_at": "2026-10-19T23:15:14.967Z"
 }

@@ -2467,7 +2467,7 @@ Tiene ~1600 líneas y mezcla la vida del hub, la lista, el detalle y las referen
 
 **Notas:** dock_view.gd (~1150 líneas) queda con la vida del hub, la lista y las escrituras. task_detail.gd (ScrollContainer) arma y pinta el detalle: estado, pasos, capturas, vínculos, referencias y archivos; lo que necesita lo toma de view (board, online, update_task, web_url, icon_button, fold_icon, go_to_task). hub_process.gd (Node hijo) busca scompass, lo corre en otro hilo y lanza, cierra y vigila el hub (pid, kept). En los tests: v.detail.<caja>, v.hub.pid; DockView.TaskDetail.basic_highlighter en el plugin.
 
-## M22 — MCP  (1/7)
+## M22 — MCP  (7/7)
 
 Que Claude Code opere el tablero con herramientas MCP tipadas en lugar de armar comandos de Bash: scompass mcp por stdio, sobre el mismo código que la CLI, sin SDK.
 
@@ -2486,21 +2486,31 @@ Sección §30 en la spec con los criterios de aceptación de M22 y una decisión
 
 **Bloquea a:** 22.2 scompass mcp: transporte stdio
 
-### 22.2 scompass mcp: transporte stdio · En curso
+### 22.2 scompass mcp: transporte stdio · Hecho
+
+**Terminada:** 2026-10-19
 
 JSON-RPC delimitado por líneas en stdin/stdout: initialize (versión de protocolo y capacidades), ping, notificaciones, errores JSON-RPC y logs solo por stderr. Encuentra compass/ hacia arriba o usa --dir, como la CLI.
+
+**Prueba:** mcp.test.js
+
+**Notas:** src/mcp.js: readline sobre stdin, una respuesta por línea; initialize devuelve la versión que pide el cliente si está en PROTOCOLS. Cada tool arma [opciones --x=v, --, posicionales] y llama a run() con --json, en cola (una por vez). El proyecto: --dir, la carpeta de lanzamiento si tiene compass/, si no CLAUDE_PROJECT_DIR.
 
 **Bloquea a:** 22.3 Herramientas de lectura; 22.4 Herramientas de escritura; 22.5 Recursos
 
 **Bloqueada por:** 22.1 Spec y decisión del MCP
 
-### 22.3 Herramientas de lectura · Pendiente
+### 22.3 Herramientas de lectura · Hecho
+
+**Terminada:** 2026-10-19
 
 list_tasks (los filtros de scompass list), show_task, list_milestones, link_list y history, con inputSchema y resultados en el JSON de --json, etags incluidos.
 
 **Bloqueada por:** 22.2 scompass mcp: transporte stdio
 
-### 22.4 Herramientas de escritura · Pendiente
+### 22.4 Herramientas de escritura · Hecho
+
+**Terminada:** 2026-10-19
 
 add_task, update_task (campos sueltos, con etag opcional), move_task, step_add/step_set/step_rm/check_step, link_add/link_rm y playtest_pass/fail/reset. Con hub pasan por la API; sin hub escriben en compass/. Los errores de la CLI (conflicto, validación, id inexistente) vuelven como isError con el mensaje.
 
@@ -2508,19 +2518,29 @@ add_task, update_task (campos sueltos, con etag opcional), move_task, step_add/s
 
 **Bloqueada por:** 22.2 scompass mcp: transporte stdio
 
-### 22.5 Recursos · Pendiente
+### 22.5 Recursos · Hecho
+
+**Terminada:** 2026-10-19
 
 resources/list y resources/read: compass://milestone/<id> (hito con sus tareas), compass://task/<id> y los documentos de docs/, para adjuntarlos con @ en Claude Code.
 
 **Bloqueada por:** 22.2 scompass mcp: transporte stdio
 
-### 22.6 Test de punta a punta del MCP · Pendiente
+### 22.6 Test de punta a punta del MCP · Hecho
+
+**Terminada:** 2026-10-19
 
 Lanza scompass mcp en un proyecto temporal, recorre initialize, tools/list y cada herramienta, y compara con lo que devuelve la CLI; con y sin hub.
 
+**Prueba:** npm test -- test/mcp.test.js: 7 tests, con y sin hub
+
+**Notas:** Lanza bin/scompass.js mcp como proceso, como Claude Code. Compara list/show/milestone/doc/link con run() de la CLI.
+
 **Bloqueada por:** 22.4 Herramientas de escritura
 
-### 22.7 Registrar el MCP y documentarlo · Pendiente
+### 22.7 Registrar el MCP y documentarlo · Hecho
+
+**Terminada:** 2026-10-19
 
 Cómo agregarlo a Claude Code (claude mcp add / .mcp.json del proyecto) y una sección en AGENTS.md (template, addon y compass/) sobre cuándo usar las herramientas y cuándo la CLI.
 

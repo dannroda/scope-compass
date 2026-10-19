@@ -17,6 +17,7 @@ import { canonical } from './store/canonical.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { createHttpStore, detectHub, hubVersions } from './store/http.js';
 import { createServer, freePortFrom, listen, VERSION } from './server.js';
+import { serveMcp } from './mcp.js';
 import { startTray } from './tray.js';
 import { outdatedFiles, TEMPLATES, updateCompass } from './update.js';
 import { listTemplates, loadTemplate as loadTemplateFile } from './templates.js';
@@ -54,6 +55,8 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
         [--tray]                            ícono en la bandeja del sistema, con "Detener hub"
         [--log <archivo>]                   agrega la salida a ese archivo (el dock en Windows)
   restart                                   reinicia el hub de este proyecto (para cargar código nuevo)
+  mcp                                       servidor MCP por stdio para Claude Code (§30): las herramientas son
+                                            estos comandos; el proyecto es --dir o el de CLAUDE_PROJECT_DIR
   hubs                                      hubs activos de todos los proyectos
   home [--port 4700] [--open] [--tray]      levanta el Inicio: todos los proyectos del equipo (uno solo por usuario;
        [--lan]                              si ya corre, dice dónde); --lan como en serve
@@ -202,7 +205,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const validators = loadValidators();
   let store = createJsonFilesStore(compass, { validators, ...(now && { now }) });
   // Con un hub de este proyecto corriendo, todo pasa por su API (eventos al instante, una sola cola de escritura).
-  if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'home', 'help'].includes(cmd)) {
+  if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'home', 'help', 'mcp'].includes(cmd)) {
     const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
     const hub = await detectHub(project, cfg?.port);
     if (hub) {
@@ -616,6 +619,15 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const text = { blocks: `${a} bloquea a ${b}`, 'blocked-by': `${a} queda bloqueada por ${b}`, related: `${a} y ${b} relacionadas` };
       const r = last ? { id: last.id, etag: last.etag, ...last.doc } : { id: a };
       return written(r, sub === 'add' ? text[type] : `${a} y ${b}: vínculo quitado`);
+    },
+
+    // Servidor MCP (§30, D41): el proyecto es --dir, el de la carpeta donde lo lanzan o, si ahí no hay compass/, el
+    // de CLAUDE_PROJECT_DIR, que Claude Code pasa a sus servidores.
+    async mcp() {
+      const found = o.dir || existsSync(join(project, 'compass', 'config.json'));
+      const root = found || !process.env.CLAUDE_PROJECT_DIR ? project : findProject(process.env.CLAUDE_PROJECT_DIR);
+      await serveMcp({ project: root, stdin, out, err });
+      return 0;
     },
 
     async restart() {

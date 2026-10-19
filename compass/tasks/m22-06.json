@@ -3,12 +3,13 @@
   "code": "22.6",
   "created_at": "2026-10-19T23:09:04.245Z",
   "description": "Lanza scompass mcp en un proyecto temporal, recorre initialize, tools/list y cada herramienta, y compara con lo que devuelve la CLI; con y sin hub.",
+  "done_at": "2026-10-19T23:15:16.048Z",
   "milestone": "m22",
-  "notes": "",
+  "notes": "Lanza bin/scompass.js mcp como proceso, como Claude Code. Compara list/show/milestone/doc/link con run() de la CLI.",
   "order": 6,
   "refs": [],
-  "status": "todo",
-  "test": "",
+  "status": "done",
+  "test": "npm test -- test/mcp.test.js: 7 tests, con y sin hub",
   "title": "Test de punta a punta del MCP",
-  "updated_at": "2026-10-19T23:09:04.245Z"
+  "updated_at": "2026-10-19T23:15:16.732Z"
 }

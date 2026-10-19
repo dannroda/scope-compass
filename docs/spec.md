@@ -1203,10 +1203,12 @@ Que Claude Code opere el tablero con herramientas tipadas en lugar de armar coma
 ### 30.1 Criterios de aceptación de M22
 <!-- id: criterios-mcp -->
 
-- [ ] `scompass mcp` habla MCP por stdio (initialize, tools/list, tools/call, resources/list, resources/read) sin dependencias nuevas.
-- [ ] Las herramientas leen y escriben tareas, pasos, vínculos, hitos y playtest igual que la CLI: con hub pasan por él y la web y el dock se enteran; sin hub escriben en `compass/`.
-- [ ] Hitos, tareas y documentos se pueden adjuntar como recursos.
-- [ ] Un test lanza `scompass mcp` y compara sus resultados con los de la CLI.
-- [ ] La spec y AGENTS.md explican cómo registrarlo en Claude Code y cuándo usarlo en vez de la CLI.
+- [x] `scompass mcp` habla MCP por stdio (initialize, tools/list, tools/call, resources/list, resources/read) sin dependencias nuevas.
+- [x] Las herramientas leen y escriben tareas, pasos, vínculos, hitos y playtest igual que la CLI: con hub pasan por él y la web y el dock se enteran; sin hub escriben en `compass/`.
+- [x] Hitos, tareas y documentos se pueden adjuntar como recursos.
+- [x] Un test lanza `scompass mcp` y compara sus resultados con los de la CLI.
+- [x] La spec y AGENTS.md explican cómo registrarlo en Claude Code y cuándo usarlo en vez de la CLI.
+
+Tests: `mcp.test.js` (lanza `scompass mcp`, compara con la CLI con y sin hub).
 
 - **Fuera de M22:** transporte HTTP (`/mcp` en el hub) para clientes sin shell; listas e ítems; sesiones de playtest más allá del resultado (crear, ordenar).

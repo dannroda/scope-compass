@@ -39,6 +39,8 @@ scompass --dir ../project-epiphany list --json
 scompass home list                     # proyectos conocidos en este equipo y el estado de su hub
 ```
 
+`scompass mcp` es un servidor MCP por stdio con estos mismos comandos como herramientas (spec §30). En Claude Code, para todos los proyectos: `claude mcp add --scope user scompass -- node <esta carpeta>/bin/scompass.js mcp`.
+
 Los tests usan un registro, una config y una carpeta de datos propios (`SCOMPASS_REGISTRY`, `SCOMPASS_CONFIG`, `SCOMPASS_DATA` en `npm test`): correrlos con `npm test`, no con `node --test` a secas, para no tocar `~/.config/scope-compass/` ni `~/.local/share/scope-compass/`.
 
 Sin `npm link`: `node hub/bin/scompass.js …`. Por ahora escribe siempre directo en `compass/`; cuando exista el hub (M2), usará la API si está corriendo.
