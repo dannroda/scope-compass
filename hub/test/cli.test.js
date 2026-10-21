@@ -419,3 +419,62 @@ test('step add/set/rm: texto corto y detalle; show imprime el detalle sangrado',
   assert.equal((await cli(['step', 'rm', 'm1-07', n])).code, 0);
   assert.equal((await task('m1-07')).checklist.length, steps.length - 1);
 });
+
+test('decisiones (§31): decide, revisar, responder, quitar; show, list --decisions, decisions y el export', async () => {
+  assert.equal((await cli(['decide', 'm1-07', 'Usar X', '--why', 'porque', '--alternatives', 'Y'])).out, 'm1-07: decisión 1 registrada (sin revisar)\n');
+  assert.equal((await cli(['decide', 'm1-07', '¿A o B?', '--ask'])).out, 'm1-07: decisión 2 registrada (pregunta abierta)\n');
+  assert.deepEqual((await task('m1-07')).decisions, [{ text: 'Usar X', why: 'porque', alternatives: 'Y', at: NOW }, { text: '¿A o B?', asked: true, at: NOW }]);
+  // Filtros: las sin revisar y las preguntas abiertas.
+  const ids = async (...f) => (await cli(['list', '--json', ...f])).json().tasks.map((t) => t.id);
+  assert.deepEqual(await ids('--decisions', 'pending'), ['m1-07']);
+  assert.deepEqual(await ids('--decisions', 'revert'), []);
+  assert.equal((await cli(['list', '--decisions', 'nada'])).code, 2);
+  assert.match((await cli(['list', '--milestone', 'm01'])).out, /m1-07 .* · 1 pregunta abierta {2}· 1 sin revisar/);
+  // Una pregunta se responde; una decisión se revisa. Al revés, error.
+  assert.match((await cli(['decision', 'ok', 'm1-07', '2'])).err, /es una pregunta/);
+  assert.match((await cli(['decision', 'reply', 'm1-07', '1', 'x'])).err, /no es una pregunta/);
+  assert.match((await cli(['decision', 'reverted', 'm1-07', '1'])).err, /no está para revertir/);
+  assert.match((await cli(['decision', 'ok', 'm1-07', '3'])).err, /decisión inexistente: 3 \(la tarea tiene 2\)/);
+  assert.equal((await cli(['decision', 'reply', 'm1-07', '2', 'A'])).out, 'm1-07: decisión 2 respondida\n');
+  assert.equal((await cli(['decision', 'revert', 'm1-07', '1', '--reply', 'hacer W'])).out, 'm1-07: decisión 1 a revertir\n');
+  assert.deepEqual(await ids('--decisions', 'revert'), ['m1-07']);
+  const show = (await cli(['show', 'm1-07'])).out;
+  assert.ok(show.includes('Decisiones:\n   1. ↺ Usar X · a revertir · 2026-10-01\n        Por qué: porque\n        Descartado: Y\n        Qué hacer: hacer W\n   2. ✓ ¿A o B? · respondida · 2026-10-01\n        Respuesta: A\n'), show);
+  const md = await readFile(join(dir, 'docs', 'tareas.md'), 'utf8');
+  assert.ok(md.includes('**Decisiones:**\n- ↺ Usar X · a revertir\n'), 'el export se regenera');
+  // decisions: las de todo el proyecto; --revert filtra; --json con la tarea, el número y el estado.
+  const all = (await cli(['decisions', '--json'])).json().decisions;
+  assert.deepEqual(all.map((d) => [d.task, d.n, d.state]), [['m1-07', 1, 'revert'], ['m1-07', 2, 'resolved']]);
+  assert.match((await cli(['decisions', '--revert'])).out, /^ 1\. ↺ Usar X · a revertir · m1-07 \(/);
+  assert.equal((await cli(['decisions', '--open'])).out, 'Sin decisiones.\n');
+  assert.equal((await cli(['decision', 'reverted', 'm1-07', '1'])).out, 'm1-07: decisión 1 revertida\n');
+  assert.equal((await task('m1-07')).decisions[0].reply, 'hacer W', 'marcarla revertida no pierde qué hacer');
+  // Quitar la última borra el campo.
+  await cli(['decision', 'rm', 'm1-07', '2']);
+  await cli(['decision', 'rm', 'm1-07', '1']);
+  assert.equal('decisions' in await task('m1-07'), false);
+});
+
+test('decision promote (§31): agrega D-n al documento de decisiones y la marca; solo resueltas, una vez', async () => {
+  await mkdir(join(dir, 'docs'), { recursive: true });
+  await writeFile(join(dir, 'docs', 'decisiones.md'), '# Decisiones\n\n## D1 · Algo\n**2026-01-01 · vigente**\n\n## D7 · Otra\n\ntexto\n\n');
+  assert.equal((await cli(['decision', 'promote', 'm1-07', '1'])).code, 1);
+  await cli(['decide', 'm1-07', 'Usar X', '--why', 'porque\nsí', '--alternatives', 'Y']);
+  await cli(['decide', 'm1-07', '¿A o B?', '--ask']);
+  assert.match((await cli(['decision', 'promote', 'm1-07', '1'])).err, /no está resuelta/);
+  await cli(['decision', 'ok', 'm1-07', '1']);
+  // config.json › decisions_doc elige otro documento; uno que no está declarado es un error claro.
+  const cfg = join(dir, 'compass', 'config.json'), original = await readFile(cfg, 'utf8');
+  await writeFile(cfg, JSON.stringify({ ...JSON.parse(original), decisions_doc: 'otro' }));
+  assert.match((await cli(['decision', 'promote', 'm1-07', '1'])).err, /no hay un documento "otro"/);
+  await writeFile(cfg, original);
+  await cli(['decision', 'reply', 'm1-07', '2', 'A']);
+  assert.equal((await cli(['decision', 'promote', 'm1-07', '1'])).out, 'm1-07: decisión 1 promovida a D8 (docs/decisiones.md)\n');
+  assert.equal((await cli(['decision', 'promote', 'm1-07', '2', '--json'])).json().decisions[1].promoted, 'D9');
+  assert.match((await cli(['decision', 'promote', 'm1-07', '1'])).err, /ya está en D8/);
+  const day = new Date(NOW).toLocaleDateString('sv');
+  assert.equal(await readFile(join(dir, 'docs', 'decisiones.md'), 'utf8'), '# Decisiones\n\n## D1 · Algo\n**2026-01-01 · vigente**\n\n## D7 · Otra\n\ntexto\n\n' +
+    `## D8 · Usar X\n**${day} · vigente** · tarea 1.7 (m1-07)\n\n- **Por qué:** porque\n  sí\n- **Descartado:** Y\n\n` +
+    `## D9 · A\n**${day} · vigente** · tarea 1.7 (m1-07)\n\n- **Pregunta:** ¿A o B?\n`);
+  assert.match((await cli(['show', 'm1-07'])).out, /1\. ✓ Usar X · ok · D8/);
+});

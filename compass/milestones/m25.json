@@ -1,0 +1,14 @@
+{
+  "code": "M25",
+  "done_when": [
+    "El hub lanza el claude instalado con stream-json en la carpeta del proyecto, con el MCP scompass y las herramientas permitidas fijadas de antemano, sin dependencias nuevas.",
+    "Las conversaciones se retoman con --resume y se listan por proyecto.",
+    "El chat solo atiende a 127.0.0.1, también con --lan.",
+    "La web tiene un panel de chat con el texto en vivo, las herramientas que usa y la tarea abierta como contexto.",
+    "Responder una pregunta abierta de M24 puede retomar la sesión que la hizo.",
+    "Un test de punta a punta corre con un claude falso, sin gastar tokens."
+  ],
+  "goal": "Un chat chico sobre el tablero, desde la web, que habla con el Claude Code local: preguntar por tareas, cargarlas y responder las preguntas del agente sin abrir una terminal.",
+  "order": 25,
+  "title": "Chat"
+}

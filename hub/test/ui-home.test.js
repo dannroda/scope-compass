@@ -105,6 +105,18 @@ test('Hoy: lo que solo está en curso va en un grupo plegable por proyecto, y el
   assert.equal((await groups()).find((g) => g[0] === 'Scope Compass')[2], true);
 });
 
+test('decisiones (§31): las preguntas abiertas van arriba en Hoy y llevan a la tarea; la tarjeta cuenta las que esperan', async () => {
+  const sv = createJsonFilesStore(join(vida, 'compass'), { validators: V });
+  await sv.patch('tasks', 'm1-04', { decisions: [{ text: '¿Lo hago en JSON?', asked: true }, { text: 'Usé X' }, { text: 'Usé Y' }] });
+  const page = await open();
+  await page.waitForSelector('#hoy > .hoy-row.question');
+  assert.match(await page.textContent('#hoy > .hoy-row:first-child'), /¿Lo hago en JSON\?.*pregunta · 1\.4/);
+  assert.match(await page.getAttribute('#hoy > .hoy-row.question a', 'href'), /#task\/m1-04$/);
+  const tag = page.locator('.proj .decs a');
+  assert.equal(await tag.textContent(), 'Decisiones: 1 pregunta abierta · 2 sin revisar');
+  assert.match(await tag.getAttribute('href'), /#decisions$/);
+});
+
 test('worktrees (23.2): una tarjeta por repo con los worktrees adentro, y en Hoy cada tarea una vez', async () => {
   const git = (cwd, ...x) => execFileSync('git', ['-C', cwd, '-c', 'user.name=t', '-c', 'user.email=t@t', ...x], { stdio: 'ignore' });
   const cfg = join(juego, 'compass', 'config.json');

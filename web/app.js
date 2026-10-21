@@ -16,9 +16,9 @@
     // Vínculos entre tareas: buscador abierto ({ type, q }) o null.
     linkSearch: null, fileSearch: null,
     // Pasos: detalles desplegados y el paso en edición ("tarea:índice").
-    stepsOpen: new Set(), editStep: null,
+    stepsOpen: new Set(), editStep: null, decisionEdit: null,
     // Listas (D25): las del proyecto, la abierta, el ítem en edición ("lista:n") y las pestañas de config.views.
-    lists: [], list: '', editItem: null, views: ['board', 'lists', 'playtest', 'docs', 'files'], viewsApplied: false,
+    lists: [], list: '', editItem: null, views: ['board', 'lists', 'playtest', 'decisions', 'docs', 'files'], viewsApplied: false,
     // Playtest (D39): las sesiones, la abierta y lo que se busca para agregarle.
     playtests: [], playtest: '', ptQ: '',
     // Archivos del repo (M14): lo de /api/files, el filtro, Solo con cambios, el archivo abierto, sus carpetas abiertas
@@ -73,6 +73,7 @@
     update: (id, patch, etag) => call('PATCH', '/api/tasks/' + encodeURIComponent(id), patch, etag),
     remove: (id, etag) => call('DELETE', '/api/tasks/' + encodeURIComponent(id), undefined, etag),
     history: (id) => call('GET', '/api/tasks/' + encodeURIComponent(id) + '/history'),
+    promote: (id, n) => call('POST', '/api/tasks/' + encodeURIComponent(id) + '/decisions/' + n + '/promote'),
     imageAdd: (id, data, etag) => call('POST', '/api/tasks/' + encodeURIComponent(id) + '/images', { data }, etag),
     imageRemove: (id, path, etag) => call('DELETE', '/api/tasks/' + encodeURIComponent(id) + '/images?path=' + encodeURIComponent(path), undefined, etag),
     docs: () => call('GET', '/api/docs'),
@@ -790,6 +791,7 @@
         tagsOf(t).map((x) => h('span', { class: 'tag' }, x))) : null,
       refsOf(t).length ? h('span', { class: 'refmark' + (brokenRefs(t).length ? ' bad' : ''), title: brokenRefs(t).length ? 'Tiene referencias rotas' : refsOf(t).length + ' referencias a documentos' },
         brokenRefs(t).length ? '⚠ ' : '§ ', refsOf(t).length) : null,
+      decisionMark(t),
       openBlockers(t).length ? h('span', { class: 'blockmark', title: 'Bloqueada por: ' + openBlockers(t).map(taskName).join('; ') }, 'Bloqueada') : null,
       t.due ? dueMark(t) : null,
       p.total ? h('span', { class: 'cl' }, h('span', { class: 'bar', role: 'img', 'aria-label': p.done + ' de ' + p.total + ' pasos' }, h('i', { style: 'width:' + pct + '%' })), p.done + '/' + p.total) : null);
@@ -797,7 +799,7 @@
 
   // Campos editables del detalle. Cada uno guarda en data-orig el valor con el que se dibujó:
   // si el usuario lo cambió y todavía no lo guardó, el valor escrito se conserva al redibujar.
-  const EDITABLE = ['d-title', 'd-assignee', 'd-tag', 'd-addcl', 'd-refq', 'd-linkq', 'd-step-text', 'd-step-detail', 'd-description', 'd-test', 'd-notes', 'd-ptnote'];
+  const EDITABLE = ['d-title', 'd-assignee', 'd-tag', 'd-addcl', 'd-refq', 'd-linkq', 'd-step-text', 'd-step-detail', 'd-description', 'd-test', 'd-notes', 'd-ptnote', 'd-dreply'];
   function captureEdits(box) {
     const active = box.contains(document.activeElement) ? document.activeElement : null;
     const dirty = {};
@@ -909,6 +911,117 @@
       c.detail && open ? h('div', { class: 'step-detail' }, rich(c.detail)) : null);
   }
 
+  // --- Decisiones (M24, spec §31, D42) -----------------------------------------------------------
+  // El estado se calcula como en hub/src/decisions.js: si cambia allá, cambia acá.
+  const decisionsOf = (t) => (Array.isArray(t.decisions) ? t.decisions : []);
+  const decisionState = (d) => (d.asked ? (d.reply ? 'resolved' : 'open') : !d.review ? 'pending' : d.review === 'revert' ? 'revert' : 'resolved');
+  const decisionLabel = (d) => (d.asked ? (d.reply ? 'Respondida' : 'Pregunta abierta') : ({ ok: 'OK', revert: 'A revertir', reverted: 'Revertida' })[d.review] ?? 'Sin revisar');
+  const DECISION_MARK = { open: '?', pending: '!', revert: '↺', resolved: '✓' };
+  const decisionCounts = (t) => { const n = { open: 0, pending: 0, revert: 0, resolved: 0 }; for (const d of decisionsOf(t)) n[decisionState(d)]++; return n; };
+  // Una decisión se identifica por cuándo se registró y su texto: el número cambia si se quita una de antes.
+  const decisionKey = (d) => d.at + '|' + d.text;
+  // Lo que espera al usuario, en la tarjeta: preguntas abiertas, sin revisar y a revertir.
+  function decisionMark(t) {
+    const n = decisionCounts(t);
+    const parts = [n.open && (n.open === 1 ? '1 pregunta abierta' : n.open + ' preguntas abiertas'), n.pending && n.pending + ' sin revisar', n.revert && n.revert + ' a revertir'].filter(Boolean);
+    if (!parts.length) return null;
+    return h('span', { class: 'decmark' + (n.open ? ' open' : ''), title: 'Decisiones: ' + parts.join(', ') }, (n.open ? '? ' : '! ') + (n.open + n.pending + n.revert));
+  }
+  // Cambia la decisión de clave key sobre la versión más reciente de la tarea; fn devuelve la nueva o null (quitarla).
+  const updateDecision = (id, key, fn) => updateTask(id, (cur) => {
+    const list = decisionsOf(cur);
+    const i = list.findIndex((d) => decisionKey(d) === key);
+    if (i < 0) return null;
+    const next = list.flatMap((d, j) => (j === i ? [fn(d)].filter(Boolean) : [d]));
+    return { decisions: next.length ? next : null };
+  });
+  const reviewDecision = (id, key, review, reply) => updateDecision(id, key, (d) => {
+    const { reply: old, review: _, ...rest } = d;
+    const r = reply !== undefined ? reply.trim() : old;
+    return { ...rest, ...(review && { review }), ...(r && { reply: r }) };
+  });
+  const promoteDecision = (id, key) => queueTask(id, async (cur) => {
+    const n = decisionsOf(cur).findIndex((d) => decisionKey(d) === key) + 1;
+    if (n) { applyTask(id, await api.promote(id, n)); toast('Agregada al documento de decisiones'); }
+  });
+  // where: 'detail' (en el detalle de la tarea) o 'view' (la vista Decisiones, con la tarea al lado).
+  function decisionItem(t, d, where = 'detail') {
+    const key = decisionKey(d), st = decisionState(d);
+    const editing = S.decisionEdit?.key === key && S.decisionEdit.where === where ? S.decisionEdit : null;
+    const rerender = where === 'detail' ? renderDetail : renderDecisionsView;
+    const done = () => { S.decisionEdit = null; rerender(); };
+    // Revertir pide qué hacer en su lugar (opcional); una pregunta abierta, la respuesta.
+    const form = editing && h('form', { class: 'step-edit', onsubmit: (e) => {
+      e.preventDefault();
+      const v = document.getElementById('d-dreply').value;
+      if (editing.mode === 'reply') { if (!v.trim()) return; updateDecision(t.id, key, (x) => ({ ...x, reply: v.trim() })); }
+      else reviewDecision(t.id, key, 'revert', v);
+      done();
+    } },
+      h('label', { for: 'd-dreply', class: 'sr' }, editing.mode === 'reply' ? 'Respuesta' : 'Qué hacer en su lugar'),
+      h('textarea', { id: 'd-dreply', 'data-orig': '', placeholder: editing.mode === 'reply' ? 'Tu respuesta' : 'Qué hacer en su lugar (opcional)', onkeydown: (e) => { if (e.key === 'Escape') done(); } }),
+      h('span', { class: 'row-actions' }, h('button', { class: 'btn primary small', type: 'submit' }, editing.mode === 'reply' ? 'Responder' : 'Revertir'),
+        h('button', { class: 'btn small', type: 'button', onclick: done }, 'Cancelar')));
+    const open = (mode) => () => { S.decisionEdit = { key, mode, where }; rerender(); document.getElementById('d-dreply')?.focus(); };
+    const actions = st === 'pending' ? [h('button', { class: 'btn small', type: 'button', onclick: () => reviewDecision(t.id, key, 'ok') }, 'OK'), h('button', { class: 'btn small', type: 'button', onclick: open('revert') }, 'Revertir')]
+      : st === 'open' ? [h('button', { class: 'btn small primary', type: 'button', onclick: open('reply') }, 'Responder')]
+        : st === 'revert' ? [h('button', { class: 'btn small', type: 'button', title: 'Volver a sin revisar', onclick: () => reviewDecision(t.id, key, null, '') }, 'Deshacer')]
+          : d.review !== 'reverted' && !d.promoted ? [h('button', { class: 'btn small ghost', type: 'button', title: 'Agregarla como D-n al documento de decisiones', onclick: () => promoteDecision(t.id, key) }, 'Promover')] : [];
+    const more = [['Por qué', d.why], ['Descartado', d.alternatives], [d.asked ? 'Respuesta' : 'Qué hacer', d.reply]].filter(([, s]) => s);
+    return h('li', { class: 'decision ' + st, 'data-key': key },
+      h('span', { class: 'dmark', 'aria-hidden': 'true' }, DECISION_MARK[st]),
+      h('div', { class: 'dbody' },
+        h('div', { class: 'dtext' }, rich(d.text)),
+        where === 'view' ? h('a', { href: '#task/' + encodeURIComponent(t.id), class: 'dtask', onclick: (e) => { e.preventDefault(); openTask(t.id); } },
+          h('span', { class: 'dot', style: 'background:' + STATUSES.find((x) => x.id === (t.status || 'todo')).color }),
+          [t.code, msById(t.milestone)?.code].filter(Boolean).join(' · ') + ' ', rich(t.title, true)) : null,
+        h('div', { class: 'dmeta' }, h('span', { class: 'dstate' }, decisionLabel(d)), h('span', null, d.asked ? 'consultada' : 'sin consultar'),
+          d.promoted ? h('span', null, d.promoted) : null, d.at ? h('span', null, new Date(d.at).toLocaleDateString('es-AR', { dateStyle: 'short' })) : null),
+        more.length ? h('details', { class: 'dmore', open: st !== 'resolved' ? '' : null }, h('summary', null, more.map(([l]) => l).join(' · ')),
+          more.map(([l, s]) => h('p', null, h('b', null, l + ': '), rich(s)))) : null,
+        form || (actions.length ? h('span', { class: 'row-actions' }, actions) : null)));
+  }
+  function renderDecisions(t) {
+    const list = decisionsOf(t);
+    if (!list.length) return null;
+    const n = decisionCounts(t);
+    const waiting = [n.open && n.open + ' abiertas', n.pending && n.pending + ' sin revisar', n.revert && n.revert + ' a revertir'].filter(Boolean);
+    return h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
+      h('span', { class: 'label' }, 'Decisiones' + (waiting.length ? ' (' + waiting.join(', ') + ')' : '')),
+      h('ul', { class: 'decisions' }, list.map((d) => decisionItem(t, d))));
+  }
+
+  // Vista Decisiones (24.7): todas las del proyecto, la más nueva arriba, agrupadas por día. Por defecto, lo que espera
+  // al usuario (preguntas abiertas, sin revisar y a revertir).
+  const DECISION_FILTERS = [['waiting', 'Esperan', ['open', 'pending', 'revert']], ['open', 'Preguntas abiertas', ['open']], ['pending', 'Sin revisar', ['pending']],
+    ['revert', 'A revertir', ['revert']], ['all', 'Todas', null]];
+  function renderDecisionsView() {
+    const box = document.getElementById('decisions');
+    const tab = document.getElementById('tab-decisions');
+    const waitingAll = S.tasks.reduce((n, t) => { const c = decisionCounts(t); return n + c.open + c.pending + c.revert; }, 0);
+    tab.dataset.count = waitingAll ? String(waitingAll) : '';
+    if (S.view !== 'decisions') { box.replaceChildren(); return; }
+    const filter = DECISION_FILTERS.find(([k]) => k === (pref('decisions') || 'waiting')) ?? DECISION_FILTERS[0];
+    const ms = pref('decisionsMs') || '';
+    const all = S.tasks.filter((t) => !ms || t.milestone === ms).flatMap((t) => decisionsOf(t).map((d) => ({ t, d, st: decisionState(d) })));
+    const rows = all.filter(({ st }) => !filter[2] || filter[2].includes(st)).sort((a, b) => (a.d.at < b.d.at ? 1 : a.d.at > b.d.at ? -1 : 0));
+    const count = (states) => all.filter(({ st }) => !states || states.includes(st)).length;
+    const day = (iso) => (iso ? new Date(iso).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Sin fecha');
+    const groups = [];
+    for (const r of rows) { const k = day(r.d.at); if (groups.at(-1)?.[0] !== k) groups.push([k, []]); groups.at(-1)[1].push(r); }
+    box.replaceChildren(h('div', { class: 'list-panel dec-panel' },
+      h('div', { class: 'dec-head' },
+        h('div', { class: 'chips', role: 'group', 'aria-label': 'Qué decisiones' }, DECISION_FILTERS.map(([k, label, states]) =>
+          h('button', { class: 'chip', type: 'button', 'aria-pressed': k === filter[0] ? 'true' : 'false', onclick: () => { pref('decisions', k); renderDecisionsView(); } },
+            label, h('span', { class: 'n' }, String(count(states)))))),
+        h('label', { class: 'sr', for: 'dec-ms' }, 'Hito'),
+        h('select', { id: 'dec-ms', onchange: (e) => { pref('decisionsMs', e.target.value); renderDecisionsView(); } },
+          h('option', { value: '' }, 'Todos los hitos'), S.milestones.map((m) => h('option', { value: m.id, selected: m.id === ms }, m.code + ' · ' + m.title)))),
+      rows.length ? groups.map(([k, list]) => h('section', { class: 'dec-day' }, h('h3', null, k), h('ul', { class: 'decisions' }, list.map(({ t, d }) => decisionItem(t, d, 'view')))))
+        : h('p', { class: 'muted' }, all.length ? 'Ninguna decisión en este filtro.'
+          : 'Todavía no hay decisiones. Los agentes las registran al trabajar (scompass decide, o add_decision en el MCP): lo que deciden sin preguntarte aparece acá para revisar.')));
+  }
+
   function renderDetail() {
     const box = document.getElementById('detail');
     const t = S.tasks.find((x) => x.id === S.openId);
@@ -949,6 +1062,7 @@
           h('label', { for: 'd-addcl', class: 'sr' }, 'Nuevo paso'),
           h('input', { id: 'd-addcl', placeholder: 'Agregar paso', autocomplete: 'off', 'data-orig': '' }),
           h('button', { class: 'btn', type: 'submit' }, 'Agregar'))),
+      renderDecisions(t),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('label', { class: 'label', for: 'd-notes' }, 'Notas'),
         h('textarea', { id: 'd-notes', 'data-orig': t.notes || '', onchange: (e) => updateTask(t.id, { notes: e.target.value }) }, t.notes || ''),
@@ -1245,6 +1359,7 @@
     }
     const l = /^#lists(?:\/([^/]+))?$/.exec(location.hash);
     if (l) { S.view = 'lists'; S.openId = null; S.confirmDelete = false; if (l[1]) S.list = decodeURIComponent(l[1]); return; }
+    if (location.hash === '#decisions') { S.view = 'decisions'; S.openId = null; S.confirmDelete = false; return; }
     const pt = /^#playtest(?:\/([^/]+))?$/.exec(location.hash);
     if (pt) { S.view = 'playtest'; S.openId = null; S.confirmDelete = false; if (pt[1]) S.playtest = decodeURIComponent(pt[1]); return; }
     // La tarea se abre encima de la vista desde la que se abrió (taskFrom); un enlace directo, encima del tablero.
@@ -1255,7 +1370,7 @@
     S.openId = null; S.confirmDelete = false; // la tarea abierta tiene su ruta (#task/<id>, 16.7)
     if (m) { S.doc = m[1] ? decodeURIComponent(m[1]) : (S.doc || ''); S.sec = m[2] ? decodeURIComponent(m[2]) : ''; }
   }
-  const viewOf = (hash) => /^#(lists|playtest|docs|files)\b/.exec(hash)?.[1] ?? 'board';
+  const viewOf = (hash) => /^#(lists|playtest|decisions|docs|files)\b/.exec(hash)?.[1] ?? 'board';
   function docHtml(alias) {
     if (docCache.has(alias)) return docCache.get(alias);
     docCache.set(alias, null);
@@ -2254,7 +2369,7 @@
 
   function render() {
     renderGit();
-    renderMiles(); renderFilters(); renderSummary(); renderWarnings(); renderBoard(); renderTaskList(); renderDetail(); renderDocs(); renderFiles(); renderLists(); renderPlaytest(); renderConn();
+    renderMiles(); renderFilters(); renderSummary(); renderWarnings(); renderBoard(); renderTaskList(); renderDetail(); renderDocs(); renderFiles(); renderLists(); renderPlaytest(); renderDecisionsView(); renderConn();
     // La vista se aplica al final: renderSummary muestra su caja por su cuenta.
     const boardView = S.view === 'board';
     for (const id of ['miles', 'filters', 'summary', 'new-btn']) document.getElementById(id).hidden = !boardView;
@@ -2265,9 +2380,10 @@
     document.getElementById('files').hidden = S.view !== 'files';
     document.getElementById('lists').hidden = S.view !== 'lists';
     document.getElementById('playtest').hidden = S.view !== 'playtest';
+    document.getElementById('decisions').hidden = S.view !== 'decisions';
     // Pestañas en el orden de config.views; las que no están se esconden (la del tablero, si es la actual, no).
     const nav = document.querySelector('nav.views');
-    for (const v of ['board', 'lists', 'playtest', 'docs', 'files']) {
+    for (const v of ['board', 'lists', 'playtest', 'decisions', 'docs', 'files']) {
       const tab = document.getElementById('tab-' + v);
       tab.setAttribute('aria-current', S.view === v ? 'page' : 'false');
       tab.hidden = !S.views.includes(v) && S.view !== v;
@@ -2407,7 +2523,7 @@
         S.git = await api.git().catch(() => null);
         S.lists = l.lists;
         S.playtests = p.playtests;
-        S.views = Array.isArray(config.views) && config.views.length ? config.views : ['board', 'lists', 'playtest', 'docs', 'files'];
+        S.views = Array.isArray(config.views) && config.views.length ? config.views : ['board', 'lists', 'playtest', 'decisions', 'docs', 'files'];
         S.docs = d.docs;
         S.docEntries = config.docs ?? [];
         S.descTemplates = config.description_templates ?? {};

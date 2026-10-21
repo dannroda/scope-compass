@@ -27,12 +27,14 @@ import { boardStatus, docDiff, docLog, docsStatus, repoFiles } from './git.js';
 import { imageFile, repoFile } from './files-api.js';
 import { dropImage, IMAGE_EXT, importImage, insideProject, isImagePath } from './images.js';
 import { taskHistory } from './history.js';
+import { promoteDecision } from './promote.js';
 import { forgetProject, projectsFile, projectsStatus, pruneTempProjects, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listPlaytests, listTasks } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
 import { migrateSessions, nextPlaytest, sessionState } from './playtests.js';
 import { dueState, EVERY, isValidDue, localDay, localStamp, milestoneDueState, showDue } from './dates.js';
 import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
+import { decisionCounts, decisionLabel, decisionState, DECISION_STATES, MARK } from './decisions.js';
 import { descriptionTemplate, DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, SIZES, splitList } from './filters.js';
 
 const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
@@ -69,7 +71,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
                                             --due overdue|today|week|none, --blocked, --unblocked,
                                             --pending-steps, --with-refs, --tag arte,audio,
                                             --priority high,medium,low,none, --size s,m,l,none,
-                                            --assignee nombre|none
+                                            --assignee nombre|none, --decisions open,pending,revert
   show <id>                                 una tarea, con los pasos numerados
   history <id>                              qué cambió en la tarea en cada commit (y lo que hay sin commitear)
   add "<título>" --milestone m00 [--code 0.11] [--status todo] [--due 2026-10-10]
@@ -79,6 +81,18 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   step add <id> "<texto>" [--detail "…"]     agrega un paso (texto corto; el detalle se despliega)
   step set <id> <n> [--text …] [--detail …]  cambia un paso (--detail "" lo quita)
   step rm <id> <n>                          quita un paso
+  decide <id> "<texto>" [--why "…"] [--alternatives "…"] [--ask]
+                                            registra una decisión (§31): sin --ask, tomada sin consultar (queda sin
+                                            revisar); con --ask, una pregunta al usuario (queda abierta)
+  decision ok|revert|reverted <id> <n> [--reply "…"]
+                                            revisa la decisión n (desde 1): de acuerdo, a revertir (--reply: qué
+                                            hacer en su lugar) o ya revertida
+  decision reply <id> <n> "<respuesta>"     responde la pregunta n
+  decision rm <id> <n>                      quita la decisión n
+  decision promote <id> <n>                 la agrega como entrada D-n al documento de decisiones (el alias de
+                                            config.json › decisions_doc, o "decisiones"); no commitea
+  decisions [--open] [--pending] [--revert] [--milestone m00]
+                                            decisiones de todo el proyecto, la más nueva arriba (sin filtro, todas)
   set <id> --file task.json                 reemplazo completo (--file - lee stdin; vale la salida de show --json)
   set <id> [--title t] [--description d] [--notes n] [--test p] [--code c] [--milestone m] [--status s]
       [--due d] [--tags a,b] [--priority p] [--size s|m|l] [--assignee a]
@@ -169,6 +183,8 @@ const OPTIONS = {
   q: { type: 'string' }, blocked: { type: 'boolean' }, unblocked: { type: 'boolean' }, 'pending-steps': { type: 'boolean' }, 'with-refs': { type: 'boolean' },
   tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, size: { type: 'string' }, assignee: { type: 'string' },
   at: { type: 'string' }, review: { type: 'boolean' }, note: { type: 'string' },
+  why: { type: 'string' }, alternatives: { type: 'string' }, ask: { type: 'boolean' }, reply: { type: 'string' }, decisions: { type: 'string' },
+  pending: { type: 'boolean' }, revert: { type: 'boolean' },
   title: { type: 'string' }, description: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
@@ -247,6 +263,14 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     return { doc, opts: o.etag === undefined && typeof etag === 'string' ? { ifMatch: etag } : ifMatch };
   };
   const done = (r, msg) => { o.json ? print(JSON.stringify(r)) : print(msg); return 0; };
+  // "  2. ! Usar X · sin revisar", con el porqué, lo descartado y la respuesta debajo. task: de qué tarea, en decisions.
+  const printDecision = (d, n, pad, task) => {
+    const st = decisionState(d);
+    print(`${pad}${String(n).padStart(2)}. ${MARK[st]} ${d.text} · ${decisionLabel(d)}${d.promoted ? ' · ' + d.promoted : ''}${task ? ` · ${task}` : ''}${d.at ? ' · ' + localDay(d.at) : ''}`);
+    for (const [label, s] of [['Por qué', d.why], ['Descartado', d.alternatives], [d.asked ? 'Respuesta' : 'Qué hacer', d.reply]]) {
+      if (s) print(`${pad}      ${label}: ${s.replace(/\n/g, `\n${pad}      `)}`);
+    }
+  };
   // D13: después de cada escritura se regenera el export, salvo auto_export_md: false. Con hub, lo hace el hub.
   const written = async (r, msg) => {
     if (store.hub) return done(r, msg);
@@ -508,13 +532,15 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       for (const p of priorities) if (p !== 'none' && !PRIORITIES.includes(p)) throw new UsageError(`prioridad inválida: ${p} (${PRIORITIES.join(', ')}, none)`);
       const sizes = splitList(o.size).map((x) => x.toLowerCase());
       for (const s of sizes) if (s !== 'none' && !SIZES.includes(s)) throw new UsageError(`tamaño inválido: ${s} (${SIZES.join(', ')}, none)`);
+      const decisions = splitList(o.decisions);
+      for (const s of decisions) if (!DECISION_STATES.includes(s)) throw new UsageError(`--decisions: ${DECISION_STATES.join(', ')}`);
       const all = await store.loadAll();
       showWarnings(all.warnings);
       const ms = new Map(all.milestones);
       const everything = listTasks(all);
       const tasks = filterTasks(listTasks(all, { milestone: o.milestone }), {
         q: o.q, status: statuses, due: o.due, blocked: o.blocked ? true : o.unblocked ? false : undefined,
-        pendingSteps: o['pending-steps'], withRefs: o['with-refs'], tags: splitList(o.tag ?? o.tags), priority: priorities, size: sizes, assignee: splitList(o.assignee)
+        pendingSteps: o['pending-steps'], withRefs: o['with-refs'], tags: splitList(o.tag ?? o.tags), priority: priorities, size: sizes, assignee: splitList(o.assignee), decisions
       }, { all: everything });
       const git = await boardStatus(project, all.config);
       if (o.json) {
@@ -533,7 +559,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         const blockers = t.status === 'done' ? [] : openBlockers(everything, t.id);
         const blocked = blockers.length ? `  [bloqueada por ${blockers.join(', ')}]` : '';
         const when = t.due ? `  · ${dueNote(t.due, t.status === 'done')}` : '';
-        const more = extras(t).map((x) => `  · ${x}`).join('');
+        const dc = decisionCounts(t);
+        const more = [...extras(t), dc.open && `${dc.open} ${dc.open === 1 ? 'pregunta abierta' : 'preguntas abiertas'}`, dc.pending && `${dc.pending} sin revisar`,
+          dc.revert && `${dc.revert} a revertir`].filter(Boolean).map((x) => `  · ${x}`).join('');
         print(`  ${t.id.padEnd(9)} ${(t.code || '').padEnd(5)} ${STATUS[t.status].padEnd(9)} ${t.title}${steps}${when}${more}${blocked}`);
       }
       if (!tasks.length) print('Sin tareas.');
@@ -554,6 +582,10 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         print(`  ${String(i + 1).padStart(2)}. [${c.done ? 'x' : ' '}] ${c.text}`);
         if (c.detail) for (const l of c.detail.split('\n')) print(`         ${l}`);
       });
+      if (d.decisions?.length) {
+        print('Decisiones:');
+        d.decisions.forEach((x, i) => printDecision(x, i + 1, '  '));
+      }
       if (d.test) print(`Prueba: ${d.test}`);
       if (d.notes) print(`Notas: ${d.notes}`);
       if (d.refs?.length) print(`Referencias: ${d.refs.map((r) => (r.section ? `${r.doc}#${r.section}` : r.doc)).join(', ')}`);
@@ -1028,6 +1060,77 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       const r = await store.patch('tasks', id, { checklist: next }, { ifMatch: o.etag ?? cur.etag });
       return written({ id: r.id, etag: r.etag, ...r.doc }, msg);
+    },
+
+    // Decisiones (§31, D42): como los pasos, se lee la tarea y se escribe la lista entera con If-Match.
+    async decide() {
+      const id = need(rest[0], 'el id');
+      const text = need(rest[1], 'el texto de la decisión').trim();
+      if (!text) throw new UsageError('el texto de la decisión está vacío');
+      const cur = await store.get('tasks', id);
+      const list = cur.doc.decisions ?? [];
+      const d = { text, ...(o.why?.trim() && { why: o.why }), ...(o.alternatives?.trim() && { alternatives: o.alternatives }), ...(o.ask && { asked: true }) };
+      const r = await store.patch('tasks', id, { decisions: [...list, d] }, { ifMatch: o.etag ?? cur.etag });
+      return written({ id: r.id, etag: r.etag, ...r.doc }, `${id}: decisión ${list.length + 1} registrada (${decisionLabel(d)})`);
+    },
+
+    async decision() {
+      const [sub, id, arg] = rest;
+      const SUBS = ['ok', 'revert', 'reverted', 'reply', 'rm', 'promote'];
+      if (!SUBS.includes(sub)) throw new UsageError(`subcomando desconocido: decision ${sub ?? ''} (${SUBS.join(', ')})`);
+      need(id, 'el id de la tarea');
+      if (sub === 'promote') {
+        const n = Number(need(arg, 'el número de decisión'));
+        let task, promoted, path;
+        if (store.hub) {
+          const r = await fetch(`${store.hub}/api/tasks/${encodeURIComponent(id)}/decisions/${encodeURIComponent(arg)}/promote`, { method: 'POST' });
+          if (!r.ok) { const e = (await r.json().catch(() => null))?.error ?? {}; throw new StoreError(e.code ?? 'io_error', e.message ?? `HTTP ${r.status}`); }
+          task = await r.json();
+          promoted = r.headers.get('x-promoted');
+          path = decodeURIComponent(r.headers.get('x-promoted-path'));
+        } else {
+          const r = await promoteDecision(project, store, id, n, { ...(now && { now }) });
+          task = { id: r.task.id, etag: r.task.etag, ...r.task.doc };
+          ({ promoted, doc: { path } } = r);
+        }
+        return written(task, `${id}: decisión ${n} promovida a ${promoted} (${path})`);
+      }
+      const cur = await store.get('tasks', id);
+      const list = cur.doc.decisions ?? [];
+      const n = Number(need(arg, 'el número de decisión'));
+      if (!Number.isInteger(n) || n < 1 || n > list.length) throw new StoreError('invalid_argument', `decisión inexistente: ${arg} (la tarea tiene ${list.length})`);
+      const d = list[n - 1];
+      let next;
+      if (sub === 'rm') next = list.filter((_, i) => i !== n - 1);
+      else if (sub === 'reply') {
+        if (!d.asked) throw new StoreError('invalid_argument', `la decisión ${n} no es una pregunta: se revisa con decision ok o revert`);
+        const reply = need(rest[3], 'la respuesta').trim();
+        if (!reply) throw new UsageError('la respuesta está vacía');
+        next = list.map((x, i) => (i === n - 1 ? { ...x, reply } : x));
+      } else {
+        if (d.asked) throw new StoreError('invalid_argument', `la decisión ${n} es una pregunta: se responde con decision reply`);
+        if (sub === 'reverted' && d.review !== 'revert' && d.review !== 'reverted') throw new StoreError('invalid_argument', `la decisión ${n} no está para revertir`);
+        const { reply, ...rest } = d;
+        const r = o.reply !== undefined ? o.reply.trim() : reply;
+        next = list.map((x, i) => (i === n - 1 ? { ...rest, review: sub, ...(r && { reply: r }) } : x));
+      }
+      const r = await store.patch('tasks', id, { decisions: next.length ? next : null }, { ifMatch: o.etag ?? cur.etag });
+      return written({ id: r.id, etag: r.etag, ...r.doc }, sub === 'rm' ? `${id}: decisión ${n} quitada` : `${id}: decisión ${n} ${decisionLabel(next[n - 1])}`);
+    },
+
+    // Las de todo el proyecto, la más nueva arriba. Sin --open, --pending ni --revert, todas.
+    async decisions() {
+      const states = DECISION_STATES.filter((s) => o[s]);
+      const all = await store.loadAll();
+      showWarnings(all.warnings);
+      const tasks = listTasks(all, { milestone: o.milestone });
+      const out = tasks.flatMap((t) => (t.decisions ?? []).map((d, i) => ({ task: t.id, n: i + 1, state: decisionState(d), ...d })))
+        .filter((d) => !states.length || states.includes(d.state))
+        .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+      if (o.json) return done({ decisions: out });
+      for (const d of out) printDecision(d, d.n, '', taskLabel(tasks, d.task));
+      if (!out.length) print('Sin decisiones.');
+      return 0;
     },
 
     async set() {

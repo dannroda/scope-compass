@@ -85,7 +85,7 @@ static func _check(doc: Dictionary, kind: String) -> String:
 			if doc.has("checklist") and typeof(doc.checklist) != TYPE_ARRAY:
 				return "checklist no es una lista"
 			# Sin hub nadie valida el schema: una lista con otra forma (un JSON editado a mano) rompía el render (19.10).
-			for k in ["checklist", "links", "refs", "images", "files", "tags"]:
+			for k in ["checklist", "links", "refs", "images", "files", "tags", "decisions"]:
 				var v = doc.get(k, [])
 				if typeof(v) != TYPE_ARRAY:
 					return k + " no es una lista"

@@ -1,0 +1,20 @@
+{
+  "checklist": [],
+  "code": "24.2",
+  "created_at": "2026-10-21T03:52:52.007Z",
+  "description": "Modelo, validación y JSON Schema del campo decisions (opcional; sin decisiones el campo no está). El store pone at al agregar. El export markdown las lista debajo de la tarea marcando las tomadas sin consultar y sin revisar. Tests del store y del export.",
+  "links": [
+    {
+      "task": "m24-03",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m24",
+  "notes": "hub/src/decisions.js calcula el estado (open, pending, revert, resolved) para el export, el historial y lo que sigue (CLI, Inicio). El store pone at = updated_at a las que llegan sin at. schema/task.schema.json copiado a compass/schema/ y al fixture (lo exigen m1-criteria y la bandeja). La identidad de una decisión en el historial es at + texto. AGENTS.md (las tres copias) y §4.2 describen el campo; los comandos y la regla van en 24.3 y 24.5.",
+  "order": 2,
+  "refs": [],
+  "status": "review",
+  "test": "cd hub && node --test test/store.test.js test/history.test.js test/export-md.test.js: el store pone at a las decisiones nuevas y rechaza las inválidas; el historial dice agregadas, quitadas y cambios de estado; el export las lista debajo de los pasos con ? ! ↺ ✓.",
+  "title": "Campo decisions en la tarea",
+  "updated_at": "2026-10-21T04:06:13.736Z"
+}

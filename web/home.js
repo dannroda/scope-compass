@@ -83,15 +83,16 @@
     const box = document.getElementById('hoy');
     if (!S.loaded) { box.replaceChildren(h('div', { class: 'hoy-empty' }, 'Cargando…')); return; }
     if (!S.today.length) { box.replaceChildren(h('div', { class: 'hoy-empty' }, 'Nada vencido ni para hoy, y nada en curso.')); return; }
-    // Lo vencido y lo de hoy van arriba, sueltos; lo que solo está en curso, en un grupo plegable por proyecto.
-    const urgent = (x) => x.kind === 'item' || x.due_state === 'overdue' || x.due_state === 'today';
+    // Las preguntas abiertas de los agentes (§31), lo vencido y lo de hoy van arriba, sueltos; lo que solo está en
+    // curso, en un grupo plegable por proyecto.
+    const urgent = (x) => x.kind === 'item' || x.kind === 'question' || x.due_state === 'overdue' || x.due_state === 'today';
     // Los worktrees de un repo (23.2) son un proyecto: lo mismo en varios (la misma tarea, el mismo ítem) es una fila
     // sola, la del worktree principal si está ahí, con los worktrees donde aparece si no es en todos.
     const members = new Map();
     for (const p of S.projects.filter((x) => x.found)) members.set(repoKey(p), (members.get(repoKey(p)) ?? 0) + 1);
     const rows = new Map();
     for (const x of S.today) {
-      const k = [repoKey(x.project), x.kind, x.kind === 'item' ? [x.list, x.text, x.due].join('\n') : x.id].join('\n');
+      const k = [repoKey(x.project), x.kind, x.kind === 'item' ? [x.list, x.text, x.due].join('\n') : x.kind === 'question' ? [x.id, x.at, x.text].join('\n') : x.id].join('\n');
       const r = rows.get(k);
       if (!r) rows.set(k, { x, in: [x.project.path] });
       else { r.in.push(x.project.path); if (x.project.worktree?.main) r.x = x; }
@@ -143,6 +144,13 @@
         dueTag(x), x.repeat ? h('span', { class: 'tag' }, '↻ ' + EVERY[x.repeat.every]) : null, where);
     }
     const url = boardUrl(x.project.path);
+    // Una pregunta de un agente: lleva a la tarea, donde se responde.
+    if (x.kind === 'question') {
+      return h('div', { class: 'hoy-row question' },
+        h('span', { class: 'mark', 'aria-hidden': 'true' }, '?'),
+        h('span', { class: 'what' }, url ? h('a', { href: url + '#task/' + encodeURIComponent(x.id), title: 'Responder en la tarea' }, rich(x.text)) : rich(x.text)),
+        h('span', { class: 'tag ask', title: 'Pregunta abierta de la tarea ' + x.task }, 'pregunta · ' + x.task.split(' ')[0]), where);
+    }
     const [code, ...rest] = x.text.split(' ');
     const title = /^\d/.test(code) ? h('span', null, h('span', { class: 'code' }, code), rich(rest.join(' '))) : rich(x.text);
     return h('div', { class: 'hoy-row' },
@@ -176,6 +184,13 @@
         // m.done incluye las de Revisión (m.review), que van en su color al final de la barra.
         h('div', { class: 'bar', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': m.total, 'aria-valuenow': m.done, 'aria-label': 'Avance de ' + m.code + (m.review ? ', ' + m.review + ' en revisión' : '') },
           h('i', { style: 'width:' + pct(m.done - (m.review ?? 0)) + '%' }), m.review ? h('i', { class: 'rev', style: 'width:' + pct(m.review) + '%' }) : null)));
+    }
+    // Decisiones que esperan (§31): enlace a la vista Decisiones del proyecto.
+    const dc = s?.decisions;
+    if (dc && dc.open + dc.pending + dc.revert) {
+      const parts = [dc.open && (dc.open === 1 ? '1 pregunta abierta' : dc.open + ' preguntas abiertas'), dc.pending && dc.pending + ' sin revisar', dc.revert && dc.revert + ' a revertir'].filter(Boolean);
+      const text = 'Decisiones: ' + parts.join(' · ');
+      body.push(h('p', { class: 'decs', style: 'margin:0' }, p.url ? h('a', { href: p.url + '#decisions', class: 'tag ' + (dc.open ? 'ask' : 'today') }, text) : h('span', { class: 'tag today' }, text)));
     }
     if (s?.done_week) body.push(h('p', { class: 'muted week', style: 'margin:0' }, s.done_week === 1 ? '1 tarea terminada en los últimos 7 días' : s.done_week + ' tareas terminadas en los últimos 7 días'));
     const tasks = [...(s?.doing ?? []).map((t) => ['en curso', t, 'doing']), ...(s?.next ?? []).map((t) => ['sigue', t, ''])].slice(0, 4);

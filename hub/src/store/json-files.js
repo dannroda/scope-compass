@@ -89,6 +89,8 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
       if (doc.status !== 'done') delete doc.done_at;
       else if (current?.doc.status !== 'done') doc.done_at ??= doc.updated_at;
       else if (!doc.done_at && current.doc.done_at) doc.done_at = current.doc.done_at;
+      // Una decisión nueva (§31) llega sin at: es de esta escritura.
+      if (Array.isArray(doc.decisions)) doc.decisions = doc.decisions.map((d) => (d && typeof d === 'object' && !d.at ? { ...d, at: doc.updated_at } : d));
     }
     const res = parseDoc(JSON.stringify(doc), COLLECTIONS[collection], validators);
     if (!res.ok) throw new StoreError('invalid_argument', res.message, { details: res.details });

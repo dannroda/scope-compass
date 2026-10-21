@@ -1,0 +1,15 @@
+{
+  "checklist": [],
+  "code": "26.5",
+  "created_at": "2026-10-21T04:01:05.785Z",
+  "description": "D42 deja que la app escriba documentos y posterga editarlos desde la web. Decidir si vale la pena (D33 lo descartaba por duplicar el editor y perder cambios sin git) y cómo: por sección, con etag del documento para no pisar una edición hecha en el editor.",
+  "milestone": "m26",
+  "notes": "",
+  "order": 5,
+  "priority": "low",
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Editar documentos desde la web",
+  "updated_at": "2026-10-21T04:01:05.785Z"
+}

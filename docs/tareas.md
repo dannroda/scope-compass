@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-10-19
+> Generado: 2026-10-21
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -840,7 +840,7 @@ Pedido del usuario: los pasos eran ambiguos cortos o demasiado largos para el do
 
 **Notas:** `checklist[].detail` opcional. Web: ▸ despliega, ✎ edita texto y detalle (vacío lo quita). Dock: ▸ debajo del checkbox. CLI: `step add|set|rm`, `show` con el detalle sangrado. Export md con el detalle sangrado (y `tools/artifact_to_md.py`, para seguir idénticos). Los enlaces del detalle cuentan en refs check, backlinks y refs suggest. `refs suggest` también reconoce "en el GDD (§4.3)".
 
-## M7 — Hosting privado  (0/2)
+## M7 — Hosting privado  (1/2, 1 en revisión)
 
 El mismo hub en un servidor privado para usarlo desde el teléfono, con git como almacenamiento (§12).
 
@@ -2322,7 +2322,7 @@ Pedido del usuario (2026-10-11): después de ver los mockups con los marcos de P
 
 **Referencias:** `docs/spec.md#auditoria`
 
-## M20 — Playtest y Pausado  (5/7)
+## M20 — Playtest y Pausado  (7/7, 2 en revisión)
 
 Ordenar lo que está en Revisión: sesiones de playtest con tareas ya creadas en un orden de prueba, y un estado Pausado para lo que se dejó de lado sin terminar.
 
@@ -2408,7 +2408,7 @@ Pedido: una tarea que está en varias sesiones mostraba en cada una un resultado
 
 **Notas:** La tarea lleva playtest: { result?, note? } (minProperties 1; sin nada, el campo se va). La sesión queda { task } en orden. hub/src/playtests.js: sessionState (cuántas faltan y fallan), nextPlaytest (undefined no cambia, null o "" quita) y migrateSessions (lee las sesiones crudas, ordena por updated_at, la más reciente que la probó gana el resultado, notas distintas se juntan de la vieja a la nueva, respeta lo que la tarea ya tenía; reescribe las sesiones directo con writeAtomic porque el store no pisa inválidas). La CLI avisa en playtest list si ve sesiones del formato anterior. Web: ptOf, ptSetResult y ptSetNote van por updateTask; Reiniciar quita result de cada tarea de la sesión (se ve en las otras). El historial muestra Playtest: anda → falla, nota agregada.
 
-## M21 — Dock al día  (0/6)
+## M21 — Dock al día  (6/6, 6 en revisión)
 
 Que el dock de Godot se conecte solo al Inicio, que sus tests no se salteen en silencio, y que sirva durante el playtest: ver el resultado de cada tarea, cargar bugs con captura desde el editor y buscar tareas.
 
@@ -2573,3 +2573,261 @@ El registro tiene project-epiphany y sus worktrees (epiphany-wt/art, design, ove
 **Prueba:** home.test.js (worktree en /api/projects y /api/today), ui-home.test.js (una tarjeta por repo, en Hoy cada tarea una vez y ⎇ en la que está solo en un worktree)
 
 **Notas:** git.js repoWorktree: rev-parse --git-common-dir/--git-dir/--show-toplevel; repo = common dir + #carpeta del proyecto dentro del repo (dos compass/ en un mismo repo no se juntan). Sin git, la clave es la ruta. El registro no cambia: los worktrees se siguen anotando solos al servirlos, la página los junta. La fila que queda es la del principal (su enlace y su ítem para tildar).
+
+## M24 — Decisiones  (10/10, 10 en revisión)
+
+Ver qué decidió el agente al trabajar, sobre todo lo que decidió sin preguntar: decisiones registradas en la tarea, revisables desde la web, el Inicio y el dock.
+
+**Hecho cuando:**
+- La tarea guarda sus decisiones (qué, por qué, alternativas, quién, si se consultó y su revisión) y la CLI y el MCP las escriben y revisan, con hub y sin hub.
+- AGENTS.md pide registrar cada decisión tomada sin consultar, en el template, el addon y compass/.
+- La web muestra las decisiones en la tarea con OK y Revertir, y una vista del proyecto filtra las tomadas sin consultar y sin revisar.
+- El Inicio cuenta las decisiones sin revisar por proyecto y Hoy muestra las preguntas esperando respuesta.
+
+### 24.1 Spec y decisión de las decisiones · Revisión
+
+Sección §31 en la spec con los criterios de aceptación de M24 y D42 en decisiones.md. Las decisiones viven en la tarea (campo decisions), no en una colección aparte: nacen de una tarea y viajan con ella en git, el export y history. Definir el modelo ({ text, why?, alternatives?, by: agent|user, asked, review: pending|ok|revert, answer?, at }), qué cuenta como decisión (elegir entre alternativas que el usuario podría querer distinto) y cómo se representa una pregunta abierta (asked sin respuesta). Relación con decisiones.md: D-n son las de diseño, escritas a mano; las de la tarea son las chicas. Promover a D-n choca con D33 (la app no escribe documentos): decidirlo acá.
+
+**Decisiones:**
+- ✓ Sin campo by: alcanza con asked
+  Por qué: lo que importa es si el usuario participó; una decisión del usuario es una pregunta respondida
+  Descartado: by: agent | user, como en la propuesta
+- ✓ review sin valor pending, y con reverted para cerrar las revertidas
+  Por qué: sin review ya es sin revisar, como playtest sin result; reverted deja la historia sin borrar la decisión
+  Descartado: review: pending | ok | revert
+- ✓ La app puede escribir documentos, pero solo Promover por ahora; nunca commitea
+  Por qué: pediste que pueda escribir; editar desde la web duplica el editor y queda para M26
+  Descartado: habilitar ya la edición de documentos desde la web
+
+**Prueba:** Leer §31 de la spec y D42 en decisiones.md: el modelo, los estados calculados, la CLI, el MCP, Promover y lo que queda fuera de M24 alcanzan para hacer 24.2 a 24.10 sin volver a decidir nada.
+
+**Notas:** Cambios respecto de la propuesta: sin campo by (asked alcanza: una decisión del usuario es una pregunta respondida); review sin valor pending (sin review = sin revisar, como playtest sin result) y con reverted para cerrar las revertidas; reply sirve para la respuesta a una pregunta y para decir qué hacer al revertir. D42 cambia D33: la app puede escribir documentos (primero solo Promover; editar desde la web, después). Que el agente se entere de que un documento cambió quedó en "Fuera de M24".
+
+**Bloquea a:** 24.2 Campo decisions en la tarea; 24.10 Promover una decisión a D-n
+
+### 24.2 Campo decisions en la tarea · Revisión
+
+Modelo, validación y JSON Schema del campo decisions (opcional; sin decisiones el campo no está). El store pone at al agregar. El export markdown las lista debajo de la tarea marcando las tomadas sin consultar y sin revisar. Tests del store y del export.
+
+**Prueba:** cd hub && node --test test/store.test.js test/history.test.js test/export-md.test.js: el store pone at a las decisiones nuevas y rechaza las inválidas; el historial dice agregadas, quitadas y cambios de estado; el export las lista debajo de los pasos con ? ! ↺ ✓.
+
+**Notas:** hub/src/decisions.js calcula el estado (open, pending, revert, resolved) para el export, el historial y lo que sigue (CLI, Inicio). El store pone at = updated_at a las que llegan sin at. schema/task.schema.json copiado a compass/schema/ y al fixture (lo exigen m1-criteria y la bandeja). La identidad de una decisión en el historial es at + texto. AGENTS.md (las tres copias) y §4.2 describen el campo; los comandos y la regla van en 24.3 y 24.5.
+
+**Bloquea a:** 24.3 CLI: registrar y revisar decisiones
+
+**Bloqueada por:** 24.1 Spec y decisión de las decisiones
+
+### 24.3 CLI: registrar y revisar decisiones · Revisión
+
+Los comandos de §31: scompass decide <id> "<texto>" [--why] [--alternatives] [--ask]; decision ok|revert|reverted <id> <n> [--reply]; decision reply <id> <n> "<respuesta>"; decision rm <id> <n>; scompass decisions [--open|--pending|--revert] [--milestone] [--json]; list --decisions open|pending|revert; show las lista debajo de los pasos. Escriben como los pasos: leen la tarea y la escriben entera con PATCH e If-Match. (promote es 24.10.)
+
+**Decisiones:**
+- ✓ Las preguntas se responden, no se revisan con ok/revert
+  Por qué: el usuario ya las decidió al responder; revisar su propia respuesta no agrega nada
+  Descartado: permitir ok/revert también en las respondidas
+
+**Prueba:** cd hub && node --test test/cli.test.js test/cli-hub.test.js: decide, decision ok/revert/reverted/reply/rm, show, list --decisions y decisions, con los errores (pregunta revisada, decisión respondida, revertir sin marcar) y la misma salida con y sin hub.
+
+**Notas:** decide guarda why/alternatives solo si no están vacíos. decision ok/revert/reverted rechaza las preguntas (se responden con reply) y reply rechaza las que no son preguntas; reverted exige que esté marcada para revertir y conserva el reply (qué hacer). Quitar la última decisión borra el campo. list muestra "· N sin revisar / preguntas abiertas / a revertir" en la línea de la tarea. filterTasks suma decisions (el filtro de la web, cuando llegue, repite la regla). AGENTS.md (las tres copias) con los comandos; la regla de cuándo registrar es 24.5.
+
+**Bloquea a:** 24.4 MCP: herramientas de decisiones
+
+**Bloqueada por:** 24.2 Campo decisions en la tarea
+
+### 24.4 MCP: herramientas de decisiones · Revisión
+
+add_decision, review_decision, reply_decision y list_decisions sobre los comandos de 24.3 (promote_decision con 24.10), y el filtro decisions en list_tasks, con etag. Casos en mcp.test.js con y sin hub.
+
+**Decisiones:**
+- ✓ Sumé remove_decision al MCP
+  Por qué: es decision rm, y sin él un agente no puede corregir una que registró mal
+  Descartado: solo las cuatro herramientas de la propuesta
+
+**Prueba:** cd hub && node --test test/mcp.test.js: add_decision, reply_decision, review_decision (una pregunta revisada da error), remove_decision, list_decisions y list_tasks con decisions, igual que la CLI.
+
+**Notas:** Sumé remove_decision (no estaba en la propuesta; es decision rm). list_decisions toma states [open, pending, revert] y los pasa como --open/--pending/--revert. promote_decision llega con 24.10.
+
+**Bloquea a:** 24.5 AGENTS.md: registrar las decisiones; 25.8 Responder una pregunta abierta retoma la sesión
+
+**Bloqueada por:** 24.3 CLI: registrar y revisar decisiones
+
+### 24.5 AGENTS.md: registrar las decisiones · Revisión
+
+Regla en el template, el addon y compass/: cada vez que el agente elige entre alternativas sin preguntar, lo registra con add_decision (asked false); si pregunta, también, con asked true y la respuesta. Qué no hace falta registrar (detalles sin alternativa razonable). Las instrucciones del servidor MCP lo repiten. Sin esto el resto del hito queda vacío.
+
+**Prueba:** Leer la sección "Decisiones" de compass/AGENTS.md (igual en hub/templates y el addon) y las instrucciones de scompass mcp: dicen qué registrar, qué no, que las preguntas también, y que antes de seguir una tarea se miran las que hay que revertir.
+
+**Notas:** Los comandos de decisiones se movieron de Leer/Escribir a la sección propia, después de Vínculos. La sección MCP mapea decide → add_decision y decision ok → review_decision. Las instrucciones del servidor MCP (lo que Claude Code ve siempre) llevan la regla en un renglón.
+
+**Bloqueada por:** 24.4 MCP: herramientas de decisiones
+
+### 24.6 Web: decisiones en la tarea · Revisión
+
+Sección Decisiones en el detalle de la tarea: texto, por qué y alternativas plegados, quién y si se consultó. Las tomadas sin consultar y sin revisar van marcadas, con OK y Revertir; las preguntas abiertas, con un campo para responder. La tarjeta muestra un indicador si tiene decisiones sin revisar.
+
+**Prueba:** cd hub && node --test test/ui-decisions.test.js: la tarjeta marca ? N / ! N; en el detalle, OK, Revertir con qué hacer, Deshacer, Responder una pregunta y Promover (D-n en el documento, sin botón después).
+
+**Notas:** Sección Decisiones debajo de Pasos. El estado se calcula en la web igual que hub/src/decisions.js (comentado). Cada decisión se identifica por at + texto, así una escritura en fila no toca otra si se quitó una de antes. Revertir y Responder abren un textarea (#d-dreply, conserva lo escrito al redibujar). Deshacer vuelve una a revertir a sin revisar. Promover usa POST /api/tasks/:id/decisions/:n/promote (24.10). Pendiente fuera de esta tarea: un filtro de decisiones en Filtros del tablero.
+
+### 24.7 Web: vista Decisiones del proyecto · Revisión
+
+Línea de tiempo de todas las decisiones del proyecto con su tarea e hito, filtros por hito, quién, consultada o no y revisión. Por defecto: tomadas sin consultar y sin revisar, como bandeja. OK y Revertir desde la lista; un clic lleva a la tarea.
+
+**Decisiones:**
+- ✓ La pestaña Decisiones se ve por defecto en todos los proyectos
+  Por qué: el tablero es de agentes primero; un proyecto con config.views elegido no la ve hasta agregarla
+  Descartado: solo con decisions en config.views
+
+**Prueba:** cd hub && node --test test/ui-decisions.test.js: la pestaña Decisiones cuenta las que esperan; filtros Esperan/Preguntas abiertas/Sin revisar/A revertir/Todas; responder desde la vista; filtro por hito; un clic en la tarea la abre encima. En el teléfono las pestañas se desplazan de costado sin scroll de página.
+
+**Notas:** Pestaña nueva `decisions` en config.views (schema, VIEWS del hub, web, README/AGENTS), después de Playtest; sin views se ve. La pestaña lleva un globito con cuántas esperan. Agrupada por día, la más nueva arriba; el filtro y el hito se recuerdan en el navegador (pref). decisionItem sirve al detalle y a la vista (where), así las acciones son las mismas. Con seis pestañas, en el teléfono la fila de pestañas se desplaza de costado.
+
+### 24.8 Inicio: decisiones sin revisar y preguntas abiertas · Revisión
+
+Cada tarjeta de proyecto cuenta sus decisiones sin revisar (enlace a la vista 24.7). Hoy muestra las preguntas esperando respuesta, porque bloquean al agente. Worktrees: una sola vez, como las tareas (23.2).
+
+**Prueba:** cd hub && node --test test/home.test.js test/ui-home.test.js: Hoy pone las preguntas abiertas arriba (las de todos los proyectos, una vez por repo) con un enlace a la tarea; la tarjeta dice "Decisiones: N preguntas abiertas · N sin revisar · N a revertir" con enlace a #decisions.
+
+**Notas:** summarize suma decisions { open, pending, revert }; todayOf agrega { kind: 'question', id, n, etag, text, task, at }. El orden de Hoy (byToday en summary.js) lo comparten todayOf y /api/today: preguntas, vencido, hoy, en curso. En la web, las preguntas van sueltas arriba, con ? y el tag "pregunta · <código>"; se responden en la tarea (no desde Hoy). Con worktrees, una pregunta se junta por id + at + texto.
+
+### 24.9 Dock: decisiones en el detalle · Revisión
+
+El detalle de la tarea en el dock de Godot muestra sus decisiones y marca las sin revisar; con hub, OK y Revertir escriben como la web. La lista marca las tareas con decisiones sin revisar.
+
+**Decisiones:**
+- ✓ En el dock solo OK y Revertir; responder y escribir qué hacer, en el navegador
+  Por qué: el dock es para mirar sin salir del editor; un campo de texto ahí suma poco y mucho código
+  Descartado: responder preguntas y escribir qué hacer desde el dock
+
+**Prueba:** cd hub && node --test test/dock.test.js (con Godot): la lista marca ? / ! y el tooltip dice cuántas; el detalle muestra las decisiones con su estado, porqué y respuesta; OK / Revertir solo en las sin revisar, deshabilitados sin hub; con hub, Revertir escribe review: revert.
+
+**Notas:** board.gd: decisions_of, decision_state, decision_counts (las reglas de hub/src/decisions.js). compass_reader valida que decisions sea una lista de objetos (sin hub nadie valida el schema). En el dock no se responden preguntas ni se escribe qué hacer al revertir: eso va en el navegador (lo dicen el estado y el tooltip). Se busca la decisión por at + texto, como la web.
+
+### 24.10 Promover una decisión a D-n · Revisión
+
+Pasar una decisión de tarea que resultó ser de diseño a una entrada nueva al final de decisiones.md (config.json › decisions_doc; sin él, el alias decisiones). D42 habilita que la app escriba documentos. Primero el documento (relee, escritura atómica), después la tarea con promoted. Con hub, POST /api/tasks/:id/decisions/:n/promote; sin hub, la CLI. scompass decision promote, promote_decision en el MCP y Promover en la web. Formato y numeración en §31.
+
+**Decisiones:**
+- ✓ La entrada D-n no lleva Qué: el título ya lo dice
+  Por qué: repetir el texto en Qué no agrega; en una pregunta el título es la respuesta y va Pregunta debajo
+  Descartado: Qué, Por qué y Descartado como decía la spec
+- ✓ Promover solo las resueltas (OK o respondidas), una vez
+  Por qué: una sin revisar o a revertir todavía puede cambiar; una revertida no es una decisión vigente
+  Descartado: promover cualquiera
+
+**Prueba:** cd hub && node --test test/cli.test.js test/cli-hub.test.js test/ui-decisions.test.js: decision promote agrega D<n> (el más alto + 1) al documento de decisiones, con y sin hub; solo resueltas y una vez; config.json › decisions_doc elige el documento; en la web, Promover en las resueltas.
+
+**Notas:** hub/src/promote.js: lo comparten la CLI (sin hub) y POST /api/tasks/:id/decisions/:n/promote (con hub; responde la tarea con x-promoted y x-promoted-path). Primero el documento (relee, escritura atómica), después la tarea con If-Match; si la tarea falla, el error dice qué D-n quedó. config.decisions_doc en el schema (copiado a compass/schema y al fixture). promote_decision en el MCP.
+
+**Bloquea a:** 26.1 Spec y decisión: documentos al día
+
+**Bloqueada por:** 24.1 Spec y decisión de las decisiones
+
+## M25 — Chat  (0/8)
+
+Un chat chico sobre el tablero, desde la web, que habla con el Claude Code local: preguntar por tareas, cargarlas y responder las preguntas del agente sin abrir una terminal.
+
+**Hecho cuando:**
+- El hub lanza el claude instalado con stream-json en la carpeta del proyecto, con el MCP scompass y las herramientas permitidas fijadas de antemano, sin dependencias nuevas.
+- Las conversaciones se retoman con --resume y se listan por proyecto.
+- El chat solo atiende a 127.0.0.1, también con --lan.
+- La web tiene un panel de chat con el texto en vivo, las herramientas que usa y la tarea abierta como contexto.
+- Responder una pregunta abierta de M24 puede retomar la sesión que la hizo.
+- Un test de punta a punta corre con un claude falso, sin gastar tokens.
+
+### 25.1 Spec y decisión del chat · Pendiente
+
+Sección §32 en la spec con los criterios de M25 y D43 en decisiones.md: el chat lanza el claude instalado con -p --input-format/--output-format stream-json, sin dependencias, con el login y la config del usuario. Permisos fijados de antemano (MCP scompass y herramientas de lectura), sin aprobar desde la web. Solo 127.0.0.1 aunque haya --lan, porque no hay login. Descartado por ahora: ACP con @agentclientprotocol/claude-agent-acp (trae el Agent SDK, zod y otro Claude Code; conviene si el chat crece a consola de trabajo, por los pedidos de permiso) y el Agent SDK directo.
+
+**Bloquea a:** 25.2 Proceso de Claude Code en el hub
+
+### 25.2 Proceso de Claude Code en el hub · Pendiente
+
+Un módulo del hub que lanza claude con stream-json en la carpeta del proyecto, con --mcp-config para scompass, --allowedTools y --permission-mode, y --include-partial-messages para el texto en vivo. Un proceso por conversación: manda los mensajes del usuario por stdin, lee los eventos línea por línea, cierra el proceso tras un rato sin uso. Avisa si claude no está instalado. La ruta del ejecutable se puede configurar (para el test y para Windows).
+
+**Bloquea a:** 25.3 Conversaciones: retomar y listar; 25.5 Test del chat con un claude falso
+
+**Bloqueada por:** 25.1 Spec y decisión del chat
+
+### 25.3 Conversaciones: retomar y listar · Pendiente
+
+Guarda el session_id de cada conversación con un título y la fecha, por proyecto, fuera de compass/ (es de la máquina, no va a git), y la retoma con --resume. El historial lo tiene Claude Code; el hub solo guarda qué conversaciones hay. Borrar una conversación la saca de la lista.
+
+**Bloquea a:** 25.4 API y WebSocket del chat; 25.8 Responder una pregunta abierta retoma la sesión
+
+**Bloqueada por:** 25.2 Proceso de Claude Code en el hub
+
+### 25.4 API y WebSocket del chat · Pendiente
+
+Endpoints para listar, crear, mandar un mensaje, cortar y borrar conversaciones, y eventos por el WebSocket con el texto en vivo, las herramientas que usa y el fin del turno. Rechaza los pedidos que no vienen de 127.0.0.1, también con --lan. Con varias pestañas abiertas, todas ven la misma conversación.
+
+**Bloquea a:** 25.7 Web: panel de chat
+
+**Bloqueada por:** 25.3 Conversaciones: retomar y listar
+
+### 25.5 Test del chat con un claude falso · Pendiente
+
+Un script que imita a claude en stream-json (init con session_id, texto en partes, una herramienta, resultado), para probar proceso, --resume, API, WebSocket y el rechazo fuera de 127.0.0.1 sin gastar tokens ni depender de la red.
+
+**Bloqueada por:** 25.2 Proceso de Claude Code en el hub
+
+### 25.6 Documentar el chat · Pendiente
+
+AGENTS.md (template, addon y compass/): que hay un chat, que el agente que corre ahí es Claude Code con el MCP scompass y qué puede hacer. README e instalar.md: requiere claude instalado y con login; qué herramientas tiene permitidas y por qué solo anda en local.
+
+### 25.7 Web: panel de chat · Pendiente
+
+Un panel lateral plegable en el tablero: la conversación con el texto en vivo, las herramientas que usa (plegadas), Cortar, y la lista de conversaciones. Con una tarea abierta, la adjunta como contexto (compass://task/<id>). Fuera de 127.0.0.1 el panel no aparece.
+
+**Bloqueada por:** 25.4 API y WebSocket del chat
+
+### 25.8 Responder una pregunta abierta retoma la sesión · Pendiente
+
+La decisión de M24 guarda la sesión de Claude que hizo la pregunta (session, opcional, desde CLAUDE_SESSION_ID o lo que exponga Claude Code; investigar). Al responderla en la web se ofrece retomar esa sesión en el chat con la respuesta, así el agente sigue sin volver a leer la tarea.
+
+**Bloqueada por:** 24.4 MCP: herramientas de decisiones; 25.3 Conversaciones: retomar y listar
+
+## M26 — Documentos al día para el agente  (0/5)
+
+Que la app pueda escribir documentos (D42) sin que el agente trabaje sobre una versión vieja: saber qué cambió desde que los leyó.
+
+**Hecho cuando:**
+- El agente sabe qué documentos cambiaron (por la app, a mano o por git) desde la última vez que los leyó, y qué secciones.
+- El MCP lo avisa en los resultados y con notificaciones de recursos.
+- AGENTS.md dice cuándo volver a leer un documento.
+
+### 26.1 Spec y decisión: documentos al día · Pendiente
+
+Sección en la spec y decisión: cómo sabe el agente que un documento cambió desde que lo leyó (por Promover, a mano o por git). Opciones: etag del documento en show_doc y un "cambió desde <etag>" con las secciones tocadas; notificaciones resources/updated del MCP con suscripción; un aviso en los resultados de las herramientas. Sin estado por sesión en el hub si se puede evitar.
+
+**Bloquea a:** 26.2 Qué cambió en un documento desde una versión
+
+**Bloqueada por:** 24.10 Promover una decisión a D-n
+
+### 26.2 Qué cambió en un documento desde una versión · Pendiente
+
+El documento lleva un etag (hash del contenido) en la API y en doc show --json. Un comando y un endpoint devuelven si cambió desde un etag dado y qué secciones, reusando el cálculo de secciones tocadas del diff (M12).
+
+**Bloquea a:** 26.3 MCP: avisar documentos cambiados
+
+**Bloqueada por:** 26.1 Spec y decisión: documentos al día
+
+### 26.3 MCP: avisar documentos cambiados · Pendiente
+
+show_doc devuelve el etag y las herramientas aceptan el que el agente tiene; resources/subscribe y notifications/resources/updated para compass://doc/<alias> si Claude Code las atiende (verificar). Casos en mcp.test.js.
+
+**Bloquea a:** 26.4 AGENTS.md: volver a leer documentos
+
+**Bloqueada por:** 26.2 Qué cambió en un documento desde una versión
+
+### 26.4 AGENTS.md: volver a leer documentos · Pendiente
+
+Cuándo volver a leer un documento antes de basarse en él, cómo preguntar si cambió, en el template, el addon y compass/.
+
+**Bloqueada por:** 26.3 MCP: avisar documentos cambiados
+
+### 26.5 Editar documentos desde la web · Pendiente
+
+**Prioridad:** baja
+
+D42 deja que la app escriba documentos y posterga editarlos desde la web. Decidir si vale la pena (D33 lo descartaba por duplicar el editor y perder cambios sin git) y cómo: por sección, con etag del documento para no pisar una edición hecha en el editor.

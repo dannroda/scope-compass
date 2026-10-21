@@ -20,6 +20,13 @@ test('taskChanges: un renglón por campo, con los pasos y las listas por element
     'Pasos: +«c», −«b», tildado «a»', 'Etiquetas: +audio −arte', 'Prioridad: — → alta'
   ]);
   assert.deepEqual(taskChanges({ description: 'x' }, {}), ['Descripción: quitada']);
+  // Decisiones (§31): agregadas, quitadas y cambios de estado.
+  const d = { text: 'Usar X', at: '1' }, q = { text: '¿A o B?', asked: true, at: '2' };
+  assert.deepEqual(taskChanges({}, { decisions: [d, q] }), ['Decisiones: +«Usar X», +«¿A o B?»']);
+  assert.deepEqual(taskChanges({ decisions: [d, q] }, { decisions: [{ ...d, review: 'revert' }, { ...q, reply: 'A' }] }),
+    ['Decisiones: «Usar X» sin revisar → a revertir, «¿A o B?» pregunta abierta → respondida']);
+  assert.deepEqual(taskChanges({ decisions: [{ ...d, review: 'ok' }] }, { decisions: [{ ...d, review: 'ok', promoted: 'D43' }] }), ['Decisiones: «Usar X» → D43']);
+  assert.deepEqual(taskChanges({ decisions: [d] }, {}), ['Decisiones: −«Usar X»']);
   assert.deepEqual(taskChanges({}, { playtest: { result: 'pass' } }), ['Playtest: sin probar → anda']);
   assert.deepEqual(taskChanges({ playtest: { result: 'pass' } }, { playtest: { result: 'fail', note: 'x' } }), ['Playtest: anda → falla, nota agregada']);
   assert.deepEqual(taskChanges({ playtest: { note: 'x' } }, { playtest: { note: 'y' } }), ['Playtest: nota editada']);

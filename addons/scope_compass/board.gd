@@ -250,6 +250,28 @@ static func next_playtest(cur, change: Dictionary):
 	return null if out.is_empty() else out
 
 
+## Decisiones de la tarea (§31, D42). El estado se calcula como en hub/src/decisions.js: open (pregunta sin
+## respuesta), pending (tomada sin consultar, sin revisar), revert (a revertir) o resolved.
+static func decisions_of(t) -> Array:
+	var d = t.get("decisions", []) if t is Dictionary else []
+	return (d if d is Array else []).filter(func(x): return x is Dictionary)
+
+
+static func decision_state(d: Dictionary) -> String:
+	if d.get("asked", false):
+		return "resolved" if str(d.get("reply", "")) != "" else "open"
+	var review := str(d.get("review", ""))
+	return "pending" if review == "" else "revert" if review == "revert" else "resolved"
+
+
+## { open, pending, revert, resolved }: cuántas decisiones de la tarea hay en cada estado.
+static func decision_counts(t) -> Dictionary:
+	var n := { "open": 0, "pending": 0, "revert": 0, "resolved": 0 }
+	for d in decisions_of(t):
+		n[decision_state(d)] += 1
+	return n
+
+
 static func steps(t: Dictionary) -> Array:
 	var cl = t.get("checklist", [])
 	cl = cl if cl is Array else []

@@ -2,6 +2,7 @@
 // listas; y lo de "Hoy" (vencido, de hoy y en curso). Funciones puras sobre lo que devuelve loadCompass.
 import { dueState, milestoneDueState } from './dates.js';
 import { listLists, listMilestones, listTasks, STATUSES } from './views.js';
+import { decisionCounts, decisionState } from './decisions.js';
 
 const label = (t) => [t.code, t.title].filter(Boolean).join(' ');
 
@@ -18,7 +19,10 @@ function currentMilestone(milestones, tasks, now) {
     ...(m.due && { due: m.due, due_state: milestoneDueState(m, tasks, now) }) };
 }
 
-/** { milestone, counts, doing, next, lists, done_week } para la tarjeta del proyecto. done_week: terminadas en los últimos 7 días. */
+/**
+ * { milestone, counts, doing, next, lists, done_week, decisions } para la tarjeta del proyecto. done_week: terminadas en
+ * los últimos 7 días. decisions (§31): cuántas esperan al usuario, { open, pending, revert }.
+ */
 export function summarize(all, now = new Date()) {
   const tasks = listTasks(all);
   const milestone = currentMilestone(all.milestones, tasks, now);
@@ -33,12 +37,21 @@ export function summarize(all, now = new Date()) {
   });
   const week = now.getTime() - 7 * 864e5;
   const done_week = tasks.filter((t) => t.status === 'done' && t.done_at && Date.parse(t.done_at) >= week).length;
-  return { milestone, counts, doing, next, lists, done_week };
+  const decisions = { open: 0, pending: 0, revert: 0 };
+  for (const t of tasks) { const n = decisionCounts(t); for (const k of Object.keys(decisions)) decisions[k] += n[k]; }
+  return { milestone, counts, doing, next, lists, done_week, decisions };
 }
 
+// Orden de Hoy: las preguntas abiertas primero (bloquean a un agente), después lo vencido, lo de hoy y lo que solo
+// está en curso; dentro de cada grupo, por fecha.
+const RANK = { overdue: 1, today: 2 };
+const rankOf = (x) => (x.kind === 'question' ? 0 : RANK[x.due_state] ?? 3);
+export const byToday = (a, b) => rankOf(a) - rankOf(b) || String(a.due ?? a.at ?? '~').localeCompare(String(b.due ?? b.at ?? '~'));
+
 /**
- * Lo de hoy en un proyecto: ítems de lista y tareas vencidos o que vencen hoy (sin terminar), y tareas en curso.
- * Cada entrada dice cómo actuar sobre ella: { kind: 'item', list, n, etag } o { kind: 'task', id, etag }.
+ * Lo de hoy en un proyecto: preguntas abiertas de los agentes (§31), ítems de lista y tareas vencidos o que vencen
+ * hoy (sin terminar), y tareas en curso. Cada entrada dice cómo actuar sobre ella: { kind: 'item', list, n, etag },
+ * { kind: 'task', id, etag } o { kind: 'question', id, n, etag } (n: la decisión, desde 1).
  */
 export function todayOf(all, now = new Date()) {
   const out = [];
@@ -51,13 +64,14 @@ export function todayOf(all, now = new Date()) {
     });
   }
   for (const t of listTasks(all)) {
+    (t.decisions ?? []).forEach((d, i) => {
+      if (decisionState(d) === 'open') out.push({ kind: 'question', id: t.id, n: i + 1, etag: t.etag, text: d.text, task: label(t), milestone: t.milestone, at: d.at });
+    });
     if (t.status === 'done') continue;
     const s = dueState(t.due, now);
     if (t.status === 'doing' || s === 'overdue' || s === 'today') {
       out.push({ kind: 'task', id: t.id, etag: t.etag, text: label(t), status: t.status, milestone: t.milestone, ...(t.due && { due: t.due, due_state: s }) });
     }
   }
-  // Vencido primero, después hoy, después lo que solo está en curso; dentro de cada grupo, por fecha.
-  const rank = { overdue: 0, today: 1 };
-  return out.sort((a, b) => (rank[a.due_state] ?? 2) - (rank[b.due_state] ?? 2) || String(a.due ?? '~').localeCompare(String(b.due ?? '~')));
+  return out.sort(byToday);
 }

@@ -888,6 +888,9 @@ func _build_tree() -> void:
 			# Cómo salió el playtest (21.3): ✓ anda, ✗ falla; sin marca, sin probar.
 			var pt := Board.playtest_of(t)
 			var mark: String = { "pass": "✓ ", "fail": "✗ " }.get(pt.get("result"), "")
+			# Decisiones que esperan al usuario (§31): ? si hay preguntas abiertas, ! si hay sin revisar o a revertir.
+			var dc := Board.decision_counts(t)
+			mark = ("? " if dc.open else "! " if dc.pending + dc.revert else "") + mark
 			it.set_text(0, mark + ((code + "  " if code != "" else "") + str(t.title)).replace("`", "") + "".join(marks.map(func(m): return " · " + m)))
 			var st := Board.steps(t)
 			var col1 := "%d/%d" % st if st[1] > 0 else ""
@@ -904,6 +907,9 @@ func _build_tree() -> void:
 			var tip := str(t.title)
 			if not pt.is_empty():
 				tip += "\nPlaytest: %s%s" % [{ "pass": "anda", "fail": "falla" }.get(pt.get("result"), "sin probar"), (" · " + str(pt.note)) if pt.has("note") else ""]
+			var waiting := [("%d preguntas abiertas" % dc.open) if dc.open else "", ("%d sin revisar" % dc.pending) if dc.pending else "", ("%d a revertir" % dc.revert) if dc.revert else ""].filter(func(x): return x != "")
+			if not waiting.is_empty():
+				tip += "\nDecisiones: " + ", ".join(waiting)
 			it.set_tooltip_text(0, tip)
 			var blockers := board.open_blockers(t.id)
 			if not blockers.is_empty():

@@ -4,7 +4,7 @@
 //   GET    /api/projects                     registro + estado del hub + resumen de cada proyecto
 //   POST   /api/projects        { path }     importar (anotar sin levantar el hub)
 //   DELETE /api/projects?path=…              quitar del registro (no toca los datos)
-//   GET    /api/today                        vencido, de hoy y en curso, de todos los proyectos
+//   GET    /api/today                        preguntas abiertas, vencido, de hoy y en curso, de todos los proyectos
 //   POST   /api/projects/check-item  { path, list, n, etag? }   tildar un ítem (los que se repiten avanzan)
 //   POST   /api/projects/move-task   { path, id, status, etag? }
 //   POST   /api/projects/start   { path }          levanta su hub como hijo del Inicio (muere con él)
@@ -32,7 +32,7 @@ import { localOnly, VERSION, WEB_DIR } from './server.js';
 import { createHttpStore, detectHub } from './store/http.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { loadCompass } from './store/load.js';
-import { summarize, todayOf } from './summary.js';
+import { byToday, summarize, todayOf } from './summary.js';
 import { registerProjectRoutes } from './home-serve.js';
 import { outdatedFiles, updateCompass } from './update.js';
 import { boardStatus, repoWorktree } from './git.js';
@@ -235,8 +235,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
       const [all, worktree] = await Promise.all([loadCompass(compassOf(p.path), validators), repoWorktree(p.path)]);
       for (const x of todayOf(all, now())) items.push({ ...x, project: { path: p.path, name: all.config?.project ?? p.name, worktree } });
     }
-    const rank = { overdue: 0, today: 1 };
-    return { items: items.sort((a, b) => (rank[a.due_state] ?? 2) - (rank[b.due_state] ?? 2) || String(a.due ?? '~').localeCompare(String(b.due ?? '~'))) };
+    return { items: items.sort(byToday) };
   });
 
   app.post('/api/projects/check-item', async (req) => {

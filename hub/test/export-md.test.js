@@ -40,8 +40,8 @@ for (const [name, dir] of [['Scope Compass', join(REPO, 'compass')], ['Project E
     if (expected === null) return t.skip('sin python3');
     // El prototipo de Python es anterior a los vínculos (D22), las listas (D25), las fechas (D26), a etiquetas, prioridad y
     // responsable (D32), a los archivos de la tarea (15.1), a la descripción (D37), a done_at (18.1), al tamaño (18.3), a las
-    // capturas (D38) y al playtest (D39): la paridad se mide sin ellos.
-    const noLinks = { ...all, lists: [], playtests: [], tasks: [...all.tasks].map(([id, { links, due, tags, priority, assignee, description, done_at, size, files, images, playtest, ...doc }]) => [id, doc]) };
+    // capturas (D38), al playtest (D39) y a las decisiones (D42): la paridad se mide sin ellos.
+    const noLinks = { ...all, lists: [], playtests: [], tasks: [...all.tasks].map(([id, { links, due, tags, priority, assignee, description, done_at, size, files, images, playtest, decisions, ...doc }]) => [id, doc]) };
     assert.equal(renderMarkdown(noLinks, { title: name, board, date: dateOf(expected) }), expected);
   });
 }
@@ -137,4 +137,22 @@ test('referencias: con sección "ruta#id"; al documento entero, solo la ruta (12
     tasks: [['a', { milestone: 'm00', code: '0.1', title: 'Con refs', status: 'todo', refs: [{ doc: 'docs/gdd.md', section: 'combate' }, { doc: 'docs/enemigos.md' }] }]]
   }, { title: 'T', date: '2026-10-08' });
   assert.match(md, /\*\*Referencias:\*\* `docs\/gdd\.md#combate`, `docs\/enemigos\.md`/);
+});
+
+test('decisiones (§31): debajo de los pasos, con una marca por estado y el porqué sangrado', () => {
+  const md = renderMarkdown({ milestones: [['m00', { code: 'M0', order: 0, title: 'Cero' }]],
+    tasks: [['a', { milestone: 'm00', title: 'A', status: 'doing', checklist: [{ text: 'p', done: true }], test: 'probar', decisions: [
+      { text: 'Usar X', why: 'porque\nsí', alternatives: 'Y', at: '1' },
+      { text: '¿A o B?', asked: true, at: '2' },
+      { text: '¿C o D?', asked: true, reply: 'C', at: '3' },
+      { text: 'Z', review: 'revert', reply: 'hacer W', at: '4' },
+      { text: 'Q', review: 'ok', promoted: 'D43', at: '5' },
+      { text: 'R', review: 'reverted', at: '6' }] }]] }, { title: 'P', date: '2026-01-01' });
+  assert.ok(md.includes(['- [x] p', '', '**Decisiones:**',
+    '- ! Usar X · sin revisar', '  Por qué: porque', '  sí', '  Descartado: Y',
+    '- ? ¿A o B? · pregunta abierta',
+    '- ✓ ¿C o D?', '  Respuesta: C',
+    '- ↺ Z · a revertir', '  Qué hacer: hacer W',
+    '- ✓ Q · D43',
+    '- ✓ R · revertida', '', '**Prueba:** probar'].join('\n')), md);
 });

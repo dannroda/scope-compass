@@ -8,6 +8,7 @@ import { writeAtomic } from './store/atomic.js';
 import { linkView } from './links.js';
 import { EVERY, localDay, milestoneDueState } from './dates.js';
 import { PRIORITY_LABEL } from './filters.js';
+import { decisionState, MARK } from './decisions.js';
 
 const ST = { todo: 'Pendiente', paused: 'Pausado', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
 
@@ -19,6 +20,16 @@ const byOrderCode = (a, b) => cmp(a.order ?? 0, b.order ?? 0) || cmp(a.code ?? '
 // de un texto largo que empieza con # no se vuelve un encabezado que rompa la estructura del export.
 const line = (s) => String(s ?? '').replace(/\s*\n\s*/g, ' ').trim();
 const block = (s) => String(s).split('\n').map((l) => l.replace(/^(\s{0,3})#/, '$1\\#')).join('\n');
+
+// Decisiones (§31): una marca por estado; el porqué, lo descartado y la respuesta van sangrados debajo.
+const STATE_NOTE = { open: ' · pregunta abierta', pending: ' · sin revisar', revert: ' · a revertir', resolved: '' };
+const indented = (label, s) => block(s).split('\n').map((l, k) => (k ? (l ? `  ${l}` : '') : `  ${label}: ${l}`));
+function decisionLines(d) {
+  const st = decisionState(d);
+  return [`- ${MARK[st]} ${line(d.text)}${STATE_NOTE[st]}${d.review === 'reverted' ? ' · revertida' : ''}${d.promoted ? ` · ${d.promoted}` : ''}`,
+    ...(d.why ? indented('Por qué', d.why) : []), ...(d.alternatives ? indented('Descartado', d.alternatives) : []),
+    ...(d.reply ? indented(d.asked ? 'Respuesta' : 'Qué hacer', d.reply) : [])];
+}
 
 const today = () => {
   const d = new Date();
@@ -55,6 +66,7 @@ export function renderMarkdown({ milestones, tasks, lists = [], playtests = [] }
       // El detalle de un paso va sangrado debajo, como continuación del ítem de la lista.
       L.push(...cl.flatMap((c) => [`- [${c.done ? 'x' : ' '}] ${line(c.text)}`, ...(c.detail ? c.detail.split('\n').map((l) => (l ? `  ${l}` : '')) : [])]));
       if (cl.length) L.push('');
+      if (t.decisions?.length) L.push('**Decisiones:**', ...t.decisions.flatMap(decisionLines), '');
       if (t.test) L.push(`**Prueba:** ${block(t.test)}`, '');
       if (t.notes) L.push(`**Notas:** ${block(t.notes)}`, '');
       if (t.refs?.length) L.push('**Referencias:** ' + t.refs.map((r) => `\`${r.section ? `${r.doc}#${r.section}` : r.doc}\``).join(', '), '');

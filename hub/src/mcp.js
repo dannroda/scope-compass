@@ -4,6 +4,7 @@
 import { createInterface } from 'node:readline';
 import { run } from './cli.js';
 import { VERSION } from './server.js';
+import { DECISION_STATES } from './decisions.js';
 
 // La más nueva primero: si el cliente pide una que no está, se le ofrece esa.
 const PROTOCOLS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
@@ -12,6 +13,7 @@ const INSTRUCTIONS = `Tablero de tareas del proyecto (compass/, formato de Scope
 - Hitos con id m00, m01…; tareas con id m5-12 (o ids viejos al azar). Estados: todo (Pendiente), paused, doing, review, done.
 - Al empezar una tarea, move_task a doing; al avanzar, check_step (pasos desde 1, como los muestra show_task); al terminar, completá test y notes con update_task y pasala a review.
 - Trabajo nuevo que aparece: add_task con description (qué y por qué). Si una tarea depende de otra, add_link en lugar de anotarlo.
+- Cada vez que elijas entre alternativas razonables que el usuario podría haber querido distinto (formato, nombre visible, dejar algo afuera, una dependencia, un comportamiento por defecto), registralo con add_decision (why, alternatives); si le preguntaste, con ask y después reply_decision con la respuesta. Antes de seguir una tarea, mirá si tiene decisiones a revertir (list_decisions con states revert): deshacelas y marcalas reverted con review_decision.
 - Las escrituras devuelven la tarea con su etag; pasalo en etag para no pisar un cambio ajeno (si cambió, falla con conflicto: volvé a leerla).
 - Los cambios quedan como archivos modificados en compass/: commitealos solo si te lo piden.
 - dir opera sobre otro proyecto (la carpeta que tiene compass/).`;
@@ -42,8 +44,9 @@ const TOOLS = [
     props: { milestone: str('id del hito (m05)'), status: strs('estados', { enum: STATUSES }), q: str('todas las palabras en código, título o id, sin tildes ni mayúsculas'),
       due: str('vencimiento', { enum: ['overdue', 'today', 'week', 'none'] }), blocked: bool('true: solo bloqueadas; false: solo sin bloquear'),
       pending_steps: bool('solo con pasos sin tildar'), with_refs: bool('solo con referencias a documentos'), tags: strs('con alguna de estas etiquetas'),
-      priority: strs('prioridades', { enum: ['high', 'medium', 'low', 'none'] }), size: strs('estimaciones', { enum: ['s', 'm', 'l', 'none'] }), assignee: strs('responsables (none: sin responsable)') },
-    argv: (a) => [[...opts(a, [...named('milestone', 'status', 'q', 'due', 'pending_steps', 'with_refs', 'priority', 'size', 'assignee'), ['tags', 'tag']]),
+      priority: strs('prioridades', { enum: ['high', 'medium', 'low', 'none'] }), size: strs('estimaciones', { enum: ['s', 'm', 'l', 'none'] }), assignee: strs('responsables (none: sin responsable)'),
+      decisions: strs('con alguna decisión en estos estados: open (pregunta sin respuesta), pending (tomada sin consultar, sin revisar), revert (a revertir)', { enum: DECISION_STATES }) },
+    argv: (a) => [[...opts(a, [...named('milestone', 'status', 'q', 'due', 'pending_steps', 'with_refs', 'priority', 'size', 'assignee', 'decisions'), ['tags', 'tag']]),
       ...(a.blocked === true ? ['--blocked'] : a.blocked === false ? ['--unblocked'] : [])], ['list']] },
   { name: 'show_task', read: true, description: 'Una tarea entera, con su etag.', props: { id: ID }, required: ['id'], argv: (a) => [[], ['show', a.id]] },
   { name: 'task_history', read: true, description: 'Qué cambió en la tarea en cada commit de git, y lo que hay sin commitear.', props: { id: ID }, required: ['id'], argv: (a) => [[], ['history', a.id]] },
@@ -54,6 +57,9 @@ const TOOLS = [
   { name: 'list_playtests', read: true, description: 'Sesiones de playtest.', props: {}, argv: () => [[], ['playtest', 'list']] },
   { name: 'show_playtest', read: true, description: 'Una sesión de playtest: las tareas en el orden de prueba (el resultado está en cada tarea, en playtest).',
     props: { session: str('id de la sesión') }, required: ['session'], argv: (a) => [[], ['playtest', 'show', a.session]] },
+  { name: 'list_decisions', read: true, description: 'Decisiones de todo el proyecto, la más nueva primero, con su tarea, su número (n) y su estado. Sin states, todas.',
+    props: { states: strs('open (pregunta sin respuesta), pending (tomada sin consultar, sin revisar), revert (a revertir)', { enum: DECISION_STATES }), milestone: str('id del hito (m05)') },
+    argv: (a) => [[...opts(a, named('milestone')), ...(a.states ?? []).map((x) => `--${x}`)], ['decisions']] },
   { name: 'list_docs', read: true, description: 'Documentos del proyecto (los de config.json) con su índice de secciones.', props: {}, argv: () => [[], ['doc', 'list']] },
   { name: 'search_docs', read: true, description: 'Líneas de los documentos con todas las palabras (sin tildes ni mayúsculas), con la sección donde está cada una.',
     props: { text: str('texto a buscar') }, required: ['text'], argv: (a) => [[], ['doc', 'search', a.text]] },
@@ -81,6 +87,18 @@ const TOOLS = [
     required: ['id', 'n'], argv: (a) => [opts(a, named('etag')), ['step', 'rm', a.id, String(a.n)]] },
   { name: 'check_step', description: 'Tilda un paso (undo: lo destilda).', props: { id: ID, n: int('número de paso, desde 1'), undo: bool('destildarlo'), etag: ETAG },
     required: ['id', 'n'], argv: (a) => [opts(a, named('undo', 'etag')), ['check', a.id, String(a.n)]] },
+  { name: 'add_decision', description: 'Registra una decisión en la tarea: sin ask, la tomaste sin consultar (queda sin revisar hasta que el usuario la revisa); con ask, es una pregunta al usuario (queda abierta hasta que responde).',
+    props: { id: ID, text: str('qué decidiste, en una línea; con ask, la pregunta'), why: str('por qué'), alternatives: str('qué descartaste'), ask: bool('es una pregunta al usuario'), etag: ETAG },
+    required: ['id', 'text'], argv: (a) => [opts(a, named('why', 'alternatives', 'ask', 'etag')), ['decide', a.id, a.text]] },
+  { name: 'review_decision', description: 'Revisa una decisión tomada sin consultar: ok, revert (a revertir; reply dice qué hacer) o reverted (ya la deshiciste). Las preguntas se responden con reply_decision.',
+    props: { id: ID, n: int('número de decisión, desde 1'), review: str('revisión', { enum: ['ok', 'revert', 'reverted'] }), reply: str('qué hacer en su lugar'), etag: ETAG },
+    required: ['id', 'n', 'review'], argv: (a) => [opts(a, named('reply', 'etag')), ['decision', a.review, a.id, String(a.n)]] },
+  { name: 'reply_decision', description: 'Responde una pregunta abierta de la tarea.', props: { id: ID, n: int('número de decisión, desde 1'), reply: str('la respuesta'), etag: ETAG },
+    required: ['id', 'n', 'reply'], argv: (a) => [opts(a, named('etag')), ['decision', 'reply', a.id, String(a.n), a.reply]] },
+  { name: 'promote_decision', description: 'Agrega una decisión resuelta (revisada con ok o pregunta respondida) como entrada D-n al final del documento de decisiones del proyecto, y la marca en la tarea. Solo si el usuario lo pide o si es una decisión de diseño que cambia la spec.',
+    props: { id: ID, n: int('número de decisión, desde 1') }, required: ['id', 'n'], argv: (a) => [[], ['decision', 'promote', a.id, String(a.n)]] },
+  { name: 'remove_decision', description: 'Quita una decisión de la tarea.', props: { id: ID, n: int('número de decisión, desde 1'), etag: ETAG },
+    required: ['id', 'n'], argv: (a) => [opts(a, named('etag')), ['decision', 'rm', a.id, String(a.n)]] },
   { name: 'add_link', description: 'Vincula dos tareas (reemplaza el vínculo que tuvieran). blocked-by: id no puede avanzar hasta que other esté hecha.',
     props: { id: ID, type: str('tipo', { enum: ['blocks', 'blocked-by', 'related'] }), other: str('id de la otra tarea') },
     required: ['id', 'type', 'other'], argv: (a) => [[], ['link', 'add', a.id, a.type, a.other]] },

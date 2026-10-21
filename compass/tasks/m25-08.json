@@ -1,0 +1,14 @@
+{
+  "checklist": [],
+  "code": "25.8",
+  "created_at": "2026-10-21T04:01:05.467Z",
+  "description": "La decisión de M24 guarda la sesión de Claude que hizo la pregunta (session, opcional, desde CLAUDE_SESSION_ID o lo que exponga Claude Code; investigar). Al responderla en la web se ofrece retomar esa sesión en el chat con la respuesta, así el agente sigue sin volver a leer la tarea.",
+  "milestone": "m25",
+  "notes": "",
+  "order": 8,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Responder una pregunta abierta retoma la sesión",
+  "updated_at": "2026-10-21T04:01:05.467Z"
+}

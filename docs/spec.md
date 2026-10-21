@@ -177,6 +177,7 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `files` | string[] | Opcional. Archivos del repo que la tarea toca (§23, D35) |
 | `images` | string[] | Opcional. Capturas: rutas del repo a imágenes PNG, JPEG, GIF o WebP; las pegadas van a `compass/images/` (§26, D38) |
 | `playtest` | `{ result?: "pass" \| "fail", note?: string }` | Opcional. Cómo salió al probarla en una sesión de playtest; el mismo en todas las sesiones que la tienen (§28, D40) |
+| `decisions` | `{ text, why?, alternatives?, asked?: true, reply?, review?: "ok" \| "revert" \| "reverted", promoted?, at }[]` | Opcional. Decisiones tomadas al trabajarla, en orden; el store pone `at` a las nuevas (§31, D42) |
 | `done_at` | ISO 8601 | Opcional. Cuándo pasó a Hecho: el store lo pone al pasarla a `done` y lo quita si sale (§26) |
 | `created_at` / `updated_at` | ISO 8601 | `updated_at` es opcional en ediciones a mano; la app lo completa en su próxima escritura |
 
@@ -675,7 +676,7 @@ Solo dos fechas importan (D26): **cuándo se creó** (`created_at`, que ya exist
 ### 16.6 Vistas y plantillas
 <!-- id: v3-plantillas -->
 
-- **`views` en `config.json`:** las pestañas del proyecto, en orden; la primera es la que abre. Valores: `board`, `lists`, `docs`, desde M14 `files` (§22) y desde M20 `playtest` (§28). Sin `views`, se ven todas con el tablero primero.
+- **`views` en `config.json`:** las pestañas del proyecto, en orden; la primera es la que abre. Valores: `board`, `lists`, `docs`, desde M14 `files` (§22), desde M20 `playtest` (§28) y desde M24 `decisions` (§31). Sin `views`, se ven todas con el tablero primero.
 - **Plantillas:** `scompass init --template juego|personal|vacio`. Una plantilla es un `config.json` prearmado más datos iniciales; no tiene código propio. Cada una es un archivo `hub/templates/proyectos/<nombre>.json` con `{ description, config?, milestones?, lists?, files? }`: `config` se mezcla con la config base, hitos y listas se escriben con el Store, y `files` crea archivos del proyecto solo si no existen. Una plantilla desconocida no crea nada.
   - `juego`: `views` = board, lists, docs, files; hito M0 "Prototipo"; listas "Ideas sueltas" y "Assets a conseguir"; el documento `gdd` (`docs/gdd.md`, con un esqueleto con ids si no existe).
   - `personal`: `views` = lists, board; listas "Pendientes" y "Compras"; un hito "General" para el tablero (en vez de hacer opcionales los hitos).
@@ -1212,3 +1213,57 @@ Que Claude Code opere el tablero con herramientas tipadas en lugar de armar coma
 Tests: `mcp.test.js` (lanza `scompass mcp`, compara con la CLI con y sin hub).
 
 - **Fuera de M22:** transporte HTTP (`/mcp` en el hub) para clientes sin shell; listas e ítems; sesiones de playtest más allá del resultado (crear, ordenar).
+
+## 31. Decisiones (M24)
+<!-- id: decisiones-tareas -->
+
+Ver qué decidió el agente al trabajar una tarea, sobre todo lo que decidió sin preguntar (D42). Las decisiones de diseño grandes siguen en `decisiones.md` (D-n); estas son las chicas, las que salen al trabajar.
+
+- **Qué cuenta como decisión:** elegir entre alternativas razonables que el usuario podría haber querido distinto (un formato, un nombre visible, dejar algo afuera, una dependencia, un comportamiento por defecto). No cuenta lo que tiene una sola respuesta razonable (seguir el estilo del código, arreglar un typo). Ante la duda, se registra: revisar una de más cuesta un clic.
+- **Dónde vive:** en la tarea, `decisions`, una lista en el orden en que se tomaron. Se numeran desde 1, como los pasos. Sin decisiones, el campo no está.
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `text` | string | Qué se decidió, en una línea. Si es una pregunta (`asked`), la pregunta |
+| `why` | string | Opcional. Por qué |
+| `alternatives` | string | Opcional. Qué se descartó |
+| `asked` | `true` | Opcional. Se le preguntó al usuario en lugar de decidir solo |
+| `reply` | string | Opcional. Lo que dijo el usuario: la respuesta a la pregunta, o qué hacer en lugar de lo que revierte |
+| `review` | `"ok" \| "revert" \| "reverted"` | Opcional. La revisión del usuario: de acuerdo, a revertir, o ya revertida (lo marca quien la revierte) |
+| `promoted` | string | Opcional. La entrada de `decisiones.md` a la que se promovió (`"D43"`) |
+| `at` | ISO 8601 | Cuándo se registró; lo pone el store |
+
+- **Estados (calculados, no se guardan):**
+  - *Pregunta abierta*: `asked` sin `reply`. Espera al usuario y bloquea al agente: va en Hoy.
+  - *Sin revisar*: sin `asked` y sin `review`. Es la bandeja: lo que el agente decidió solo y nadie miró.
+  - *A revertir*: `review: "revert"`. El agente la ve con `list --decisions revert`, la deshace (con `reply` como guía), la marca `reverted` y, si en su lugar decide otra cosa, la registra como decisión nueva. La revertida queda como historia.
+  - *Resuelta*: respondida, `ok` o `reverted`.
+- **Escritura:** como los pasos, la CLI lee la tarea, cambia la lista y la escribe entera con `PATCH` e `If-Match`. No hay endpoints nuevos para registrar ni revisar.
+- **CLI (24.3):**
+  ```
+  scompass decide <id> "<texto>" [--why "…"] [--alternatives "…"] [--ask]   # imprime el número
+  scompass decision ok|revert|reverted <id> <n> [--reply "…"]
+  scompass decision reply <id> <n> "<respuesta>"
+  scompass decision rm <id> <n>
+  scompass decision promote <id> <n>
+  scompass decisions [--open | --pending | --revert] [--milestone m00] [--json]   # las de todo el proyecto
+  scompass list --decisions open|pending|revert                                  # tareas con alguna así
+  ```
+  `show` las lista debajo de los pasos, con su número y su estado.
+- **MCP (24.4):** `add_decision`, `review_decision`, `reply_decision`, `remove_decision`, `list_decisions` y `promote_decision`, sobre esos comandos; `list_tasks` suma el filtro `decisions`. Las instrucciones del servidor repiten la regla de AGENTS.md (24.5): registrar cada decisión tomada sin consultar y cada pregunta, y mirar las que hay que revertir antes de seguir.
+- **Export:** cada tarea con decisiones las lista debajo de sus pasos: `✓` resuelta, `?` pregunta abierta, `!` sin revisar, `↺` a revertir, con el porqué sangrado.
+- **Promover a D-n (24.10):** pasa una decisión que resultó ser de diseño a una entrada nueva al final de `decisiones.md` (el documento de `config.json › decisions_doc`, un alias; sin él, `decisiones` si está declarado). Solo una resuelta (revisada con *OK* o una pregunta respondida) y una sola vez. La entrada sigue el formato del documento: `## D<n> · <text>` (en una pregunta, la respuesta, con *Pregunta* debajo), la fecha y `vigente`, la tarea de origen (`tarea 24.3 (m24-03)`), y *Por qué* (`why`) y *Descartado* (`alternatives`) si los tiene. `n` es el número más alto del documento más uno. Primero se escribe el documento (relee el archivo justo antes, escritura atómica) y después la tarea con `promoted`; si la tarea falla por conflicto, el error dice qué D-n se agregó. Con hub lo hace `POST /api/tasks/:id/decisions/:n/promote`, que responde la tarea (con `x-promoted: D<n>` y `x-promoted-path`) y la publica; el watcher de documentos avisa el cambio del documento. Sin hub, la CLI. Nunca commitea.
+- **Web (24.6, 24.7):** en el detalle de la tarea, la sección *Decisiones*: texto, quién la tomó (*sola* / *consultada*), porqué y alternativas plegados; *OK* y *Revertir* (con un campo opcional para decir qué hacer) en las sin revisar, un campo para responder en las preguntas abiertas, *Promover* en las resueltas. La tarjeta lleva una marca si tiene preguntas abiertas o decisiones sin revisar. La vista *Decisiones* del proyecto (pestaña `decisions` en `config.views`, después de Playtest; la pestaña cuenta las que esperan) es una línea de tiempo por día, la más nueva arriba, con su tarea e hito, filtrable por hito y por estado: *Esperan* (por defecto: preguntas abiertas, sin revisar y a revertir), *Preguntas abiertas*, *Sin revisar*, *A revertir* y *Todas*. Tiene las mismas acciones que el detalle, y un clic en la tarea la abre encima.
+- **Inicio (24.8):** cada proyecto cuenta sus decisiones sin revisar y sus preguntas abiertas (enlace a la vista). Hoy muestra las preguntas abiertas. Con worktrees, una sola vez, como las tareas (tarea 23.2).
+- **Dock (24.9):** el detalle de la tarea muestra sus decisiones con su estado; con hub, *OK* y *Revertir* escriben como la web. La lista marca las tareas con preguntas abiertas o decisiones sin revisar.
+
+### 31.1 Criterios de aceptación de M24
+<!-- id: criterios-decisiones -->
+
+- [ ] La tarea guarda sus decisiones y la CLI y el MCP las registran, revisan, responden y listan, con hub y sin hub.
+- [ ] AGENTS.md pide registrar cada decisión tomada sin consultar y cada pregunta hecha, en el template, el addon y `compass/`.
+- [ ] La web muestra las decisiones en la tarea con *OK* y *Revertir*, y la vista del proyecto filtra las sin revisar.
+- [ ] El Inicio cuenta las decisiones sin revisar por proyecto y Hoy muestra las preguntas abiertas.
+- [ ] *Promover* agrega una entrada D-n al documento de decisiones y la tarea guarda cuál.
+
+- **Fuera de M24:** que el agente se entere de que un documento cambió (por la app o a mano) desde la última vez que lo leyó; editar documentos desde la web; que el agente reciba la respuesta a una pregunta abierta sin volver a leer la tarea.

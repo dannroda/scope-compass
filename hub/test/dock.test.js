@@ -567,6 +567,20 @@ test('21.3: dock sin hub: la lista marca anda / falla y el detalle muestra el re
   expectOk(await godot('playtest', dir, 'm1-05', 'm1-04', 'm1-03'), 'playtest');
 });
 
+test('24.9: dock sin hub: la lista marca las decisiones que esperan y el detalle las muestra', { skip }, async () => {
+  await setTask('m1-05', { decisions: [{ text: 'Usar X', why: 'porque', at: '2026-10-01T00:00:00Z' }, { text: '¿A o B?', asked: true, at: '2026-10-01T00:00:01Z' }, { text: 'Y', review: 'ok', at: '2026-10-01T00:00:02Z' }] });
+  expectOk(await godot('decisions', dir, 'm1-05', 'm1-04'), 'decisions');
+});
+
+test('24.9: con hub: Revertir en el dock marca la decisión a revertir', { skip }, async () => {
+  await setTask('m1-05', { decisions: [{ text: 'Usar X', at: '2026-10-01T00:00:00Z' }, { text: '¿A o B?', asked: true, at: '2026-10-01T00:00:01Z' }] });
+  const hub = await startHub();
+  const r = await godotLive(['decisions_online', dir, 'm1-05']);
+  await hub.app.close();
+  expectOk(r, 'decisions_online');
+  assert.deepEqual((await task('m1-05')).decisions.map((d) => d.review), ['revert', undefined]);
+});
+
 test('21.3: con hub: Anda / Falla del dock escriben en la tarea, conservan la nota y otro clic lo quita', { skip }, async () => {
   await setTask('m1-05', { playtest: { result: 'fail', note: 'Se traba' } });
   await setTask('m1-04', { playtest: { result: 'pass' } });

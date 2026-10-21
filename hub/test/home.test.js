@@ -73,7 +73,11 @@ test('summarize: hito actual, en curso, lo que sigue y listas', async () => {
   assert.ok(s.next.length <= 3);
   assert.deepEqual(s.lists, [{ id: 'compras', title: 'Compras', left: 2, total: 2, today: 1, overdue: 0 }]);
   const empty = summarize({ milestones: new Map(), tasks: new Map(), lists: new Map() }, TODAY);
-  assert.deepEqual(empty, { milestone: null, counts: { todo: 0, paused: 0, doing: 0, review: 0, done: 0 }, doing: [], next: [], lists: [], done_week: 0 });
+  assert.deepEqual(empty, { milestone: null, counts: { todo: 0, paused: 0, doing: 0, review: 0, done: 0 }, doing: [], next: [], lists: [], done_week: 0, decisions: { open: 0, pending: 0, revert: 0 } });
+  // El hito actual cuenta las de Revisión como hechas, y sigue siendo el actual hasta que estén en Hecho.
+  const rv = summarize({ lists: new Map(), milestones: new Map([['m0', { code: 'M0', order: 0, title: 'Cero' }], ['m1', { code: 'M1', order: 1, title: 'Uno' }]]),
+    tasks: new Map([['a', { milestone: 'm0', title: 'A', status: 'done' }], ['b', { milestone: 'm0', title: 'B', status: 'review' }], ['c', { milestone: 'm1', title: 'C', status: 'todo' }]]) }, TODAY);
+  assert.deepEqual([rv.milestone.code, rv.milestone.done, rv.milestone.review, rv.milestone.total], ['M0', 2, 1, 2]);
   // Terminadas en los últimos 7 días (18.1): por done_at; sin el campo no cuentan.
   const day = (n) => new Date(TODAY.getTime() - n * 864e5).toISOString();
   const week = summarize({ milestones: new Map(), lists: new Map(), tasks: new Map([
@@ -93,6 +97,23 @@ test('todayOf: vencido antes que hoy, y las tareas en curso al final', () => {
     lists: new Map([['l', { title: 'L', order: 1, items: [{ text: 'Vencido', done: false, due: '2026-10-01' }, { text: 'Mañana', done: false, due: '2026-10-05' }, { text: 'Tildado', done: true, due: '2026-10-01' }] }]])
   };
   assert.deepEqual(todayOf(all, TODAY).map((x) => x.text), ['Vencido', 'Vence', 'En curso']);
+});
+
+test('decisiones (§31): las preguntas abiertas van primero en Hoy; el resumen cuenta las que esperan', () => {
+  const all = {
+    milestones: new Map([['m00', { code: 'M0', order: 0, title: 'Cero' }]]),
+    tasks: new Map([['t1', { milestone: 'm00', code: '0.1', title: 'En curso', status: 'doing', decisions: [
+      { text: '¿A o B?', asked: true, at: '2026-10-02T10:00:00Z' }, { text: '¿C?', asked: true, reply: 'sí', at: '2026-10-02T11:00:00Z' }, { text: 'X', at: '2026-10-02T12:00:00Z' }] }],
+    ['t2', { milestone: 'm00', title: 'Hecha', status: 'done', decisions: [{ text: '¿D?', asked: true, at: '2026-10-01T10:00:00Z' }, { text: 'Y', review: 'revert', at: '2026-10-01T11:00:00Z' }] }],
+    ['t3', { milestone: 'm00', title: 'Vence', status: 'todo', due: '2026-10-01' }]]),
+    lists: new Map()
+  };
+  const today = todayOf(all, TODAY);
+  assert.deepEqual(today.map((x) => [x.kind, x.text]), [['question', '¿D?'], ['question', '¿A o B?'], ['task', 'Vence'], ['task', '0.1 En curso']]);
+  const { etag, ...q } = today[1];
+  assert.match(etag, /^[0-9a-f]{16}$/);
+  assert.deepEqual(q, { kind: 'question', id: 't1', n: 1, text: '¿A o B?', task: '0.1 En curso', milestone: 'm00', at: '2026-10-02T10:00:00Z' });
+  assert.deepEqual(summarize(all, TODAY).decisions, { open: 2, pending: 1, revert: 1 });
 });
 
 test('GET /api/projects: los dos proyectos, con el estado de su hub y su resumen', async () => {

@@ -164,6 +164,25 @@ test('playtest: el resultado queda en la tarea', async () => {
   assert.equal(data(await s.tool('show_playtest', { session: 'build-1' })).items[0].task, 'm1-04');
 });
 
+test('decisiones (§31): registrar, responder, revisar, listar y filtrar, igual que la CLI', async () => {
+  const s = mcp();
+  const a = await s.tool('add_decision', { id: 'm1-04', text: 'Usar X', why: 'porque', alternatives: 'Y' });
+  assert.deepEqual(a.structuredContent.decisions.map(({ at, ...d }) => d), [{ text: 'Usar X', why: 'porque', alternatives: 'Y' }]);
+  await s.tool('add_decision', { id: 'm1-04', text: '-¿A o B?', ask: true });
+  assert.deepEqual(data(await s.tool('list_tasks', { decisions: ['open'] })).tasks.map((t) => t.id), ['m1-04']);
+  assert.deepEqual(data(await s.tool('list_decisions', { states: ['open', 'pending'] })), await cli(['decisions', '--open', '--pending', '--json']));
+  // Una pregunta no se revisa: se responde.
+  const wrong = await s.tool('review_decision', { id: 'm1-04', n: 2, review: 'ok' });
+  assert.equal(wrong.isError, true);
+  assert.match(wrong.content[0].text, /es una pregunta/);
+  await s.tool('reply_decision', { id: 'm1-04', n: 2, reply: 'A' });
+  const r = await s.tool('review_decision', { id: 'm1-04', n: 1, review: 'revert', reply: 'hacer W' });
+  assert.deepEqual(r.structuredContent.decisions.map((d) => [d.text, d.review, d.reply]), [['Usar X', 'revert', 'hacer W'], ['-¿A o B?', undefined, 'A']]);
+  assert.deepEqual(data(await s.tool('list_decisions', { states: ['revert'] })).decisions.map((d) => [d.task, d.n]), [['m1-04', 1]]);
+  await s.tool('remove_decision', { id: 'm1-04', n: 2 });
+  assert.equal((await task('m1-04')).decisions.length, 1);
+});
+
 test('recursos: hitos, tareas y documentos', async () => {
   const s = mcp();
   const { resources } = (await s.request('resources/list')).result;

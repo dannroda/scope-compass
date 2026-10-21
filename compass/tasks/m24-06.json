@@ -1,0 +1,14 @@
+{
+  "checklist": [],
+  "code": "24.6",
+  "created_at": "2026-10-21T03:52:54.554Z",
+  "description": "Sección Decisiones en el detalle de la tarea: texto, por qué y alternativas plegados, quién y si se consultó. Las tomadas sin consultar y sin revisar van marcadas, con OK y Revertir; las preguntas abiertas, con un campo para responder. La tarjeta muestra un indicador si tiene decisiones sin revisar.",
+  "milestone": "m24",
+  "notes": "Sección Decisiones debajo de Pasos. El estado se calcula en la web igual que hub/src/decisions.js (comentado). Cada decisión se identifica por at + texto, así una escritura en fila no toca otra si se quitó una de antes. Revertir y Responder abren un textarea (#d-dreply, conserva lo escrito al redibujar). Deshacer vuelve una a revertir a sin revisar. Promover usa POST /api/tasks/:id/decisions/:n/promote (24.10). Pendiente fuera de esta tarea: un filtro de decisiones en Filtros del tablero.",
+  "order": 6,
+  "refs": [],
+  "status": "review",
+  "test": "cd hub && node --test test/ui-decisions.test.js: la tarjeta marca ? N / ! N; en el detalle, OK, Revertir con qué hacer, Deshacer, Responder una pregunta y Promover (D-n en el documento, sin botón después).",
+  "title": "Web: decisiones en la tarea",
+  "updated_at": "2026-10-21T04:18:02.528Z"
+}

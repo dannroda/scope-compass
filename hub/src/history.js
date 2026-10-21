@@ -3,12 +3,13 @@
 import { execFile, spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { decisionLabel } from './decisions.js';
 
 const STATUS = { todo: 'Pendiente', paused: 'Pausado', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
 const PRIORITY = { high: 'alta', medium: 'media', low: 'baja' };
 const LABEL = { title: 'Título', status: 'Estado', milestone: 'Hito', code: 'Código', due: 'Vence', priority: 'Prioridad', size: 'Tamaño',
   assignee: 'Responsable', description: 'Descripción', notes: 'Notas', test: 'Cómo probarlo', checklist: 'Pasos', tags: 'Etiquetas',
-  refs: 'Referencias', files: 'Archivos', images: 'Capturas', links: 'Vínculos', playtest: 'Playtest' };
+  refs: 'Referencias', files: 'Archivos', images: 'Capturas', links: 'Vínculos', playtest: 'Playtest', decisions: 'Decisiones' };
 const RESULT = { pass: 'anda', fail: 'falla' };
 // Lo que cambia solo, o que ya cuenta otro campo: no es historia.
 const SKIP = new Set(['updated_at', 'created_at', 'done_at', 'order']);
@@ -70,6 +71,21 @@ function checklistChange(a = [], b = []) {
   return parts.join(', ');
 }
 
+// Decisiones (§31): agregadas, quitadas y cambios de estado, por cuándo se registraron y su texto.
+function decisionsChange(a = [], b = []) {
+  const id = (d) => `${d.at}|${d.text}`;
+  const before = new Map(a.map((d) => [id(d), d])), after = new Map(b.map((d) => [id(d), d]));
+  const parts = [];
+  for (const d of b) if (!before.has(id(d))) parts.push('+' + quote(d.text));
+  for (const d of a) if (!after.has(id(d))) parts.push('−' + quote(d.text));
+  for (const d of b) {
+    const o = before.get(id(d));
+    if (o && decisionLabel(o) !== decisionLabel(d)) parts.push(`${quote(d.text)} ${decisionLabel(o)} → ${decisionLabel(d)}`);
+    if (o && o.promoted !== d.promoted && d.promoted) parts.push(`${quote(d.text)} → ${d.promoted}`);
+  }
+  return parts.join(', ') || 'editadas';
+}
+
 /** Los cambios entre dos versiones de la tarea, como líneas de texto ("Estado: Pendiente → En curso"). */
 export function taskChanges(a, b) {
   const out = [];
@@ -80,6 +96,7 @@ export function taskChanges(a, b) {
     const label = LABEL[field] ?? field;
     if (TEXTS[field]) out.push(`${label}: ${TEXTS[field][!x ? 0 : !y ? 1 : 2]}`);
     else if (field === 'checklist') out.push(`${label}: ${checklistChange(x, y)}`);
+    else if (field === 'decisions') out.push(`${label}: ${decisionsChange(x, y)}`);
     else if (field === 'playtest') {
       // Resultado (sin probar, anda, falla) y la nota, como los textos largos.
       const parts = [];

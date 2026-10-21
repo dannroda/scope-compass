@@ -1,0 +1,23 @@
+{
+  "checklist": [],
+  "code": "24.7",
+  "created_at": "2026-10-21T03:52:54.652Z",
+  "decisions": [
+    {
+      "alternatives": "solo con decisions en config.views",
+      "at": "2026-10-21T04:21:03.842Z",
+      "review": "ok",
+      "text": "La pestaña Decisiones se ve por defecto en todos los proyectos",
+      "why": "el tablero es de agentes primero; un proyecto con config.views elegido no la ve hasta agregarla"
+    }
+  ],
+  "description": "Línea de tiempo de todas las decisiones del proyecto con su tarea e hito, filtros por hito, quién, consultada o no y revisión. Por defecto: tomadas sin consultar y sin revisar, como bandeja. OK y Revertir desde la lista; un clic lleva a la tarea.",
+  "milestone": "m24",
+  "notes": "Pestaña nueva `decisions` en config.views (schema, VIEWS del hub, web, README/AGENTS), después de Playtest; sin views se ve. La pestaña lleva un globito con cuántas esperan. Agrupada por día, la más nueva arriba; el filtro y el hito se recuerdan en el navegador (pref). decisionItem sirve al detalle y a la vista (where), así las acciones son las mismas. Con seis pestañas, en el teléfono la fila de pestañas se desplaza de costado.",
+  "order": 7,
+  "refs": [],
+  "status": "review",
+  "test": "cd hub && node --test test/ui-decisions.test.js: la pestaña Decisiones cuenta las que esperan; filtros Esperan/Preguntas abiertas/Sin revisar/A revertir/Todas; responder desde la vista; filtro por hito; un clic en la tarea la abre encima. En el teléfono las pestañas se desplazan de costado sin scroll de página.",
+  "title": "Web: vista Decisiones del proyecto",
+  "updated_at": "2026-10-21T05:03:44.030Z"
+}

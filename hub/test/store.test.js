@@ -190,3 +190,17 @@ test('done_at (18.1): se pone al pasar a Hecho, se conserva mientras sigue hecha
   const old = await s.create('tasks', { milestone: 'm00', title: 'Importada', status: 'done', done_at: '2026-01-01T00:00:00.000Z' });
   assert.equal(old.doc.done_at, '2026-01-01T00:00:00.000Z', 'la que trae el documento se respeta');
 });
+
+test('decisiones (§31): la nueva toma at de la escritura, las de antes lo conservan y el schema rechaza lo inválido', async () => {
+  let t = 0;
+  const at = (n) => `2026-10-0${n}T12:00:00.000Z`;
+  const s = createJsonFilesStore(compass, { validators: V, now: () => at(++t) });
+  const id = 'm0-05';
+  const one = (await s.patch('tasks', id, { decisions: [{ text: 'Usar X', why: 'porque' }] })).doc.decisions;
+  assert.deepEqual(one, [{ text: 'Usar X', why: 'porque', at: at(1) }]);
+  const two = (await s.patch('tasks', id, { decisions: [{ ...one[0], review: 'ok' }, { text: '¿Y o Z?', asked: true }] })).doc.decisions;
+  assert.deepEqual(two.map((d) => d.at), [at(1), at(2)]);
+  for (const bad of [{ text: '' }, { text: 'a', asked: false }, { text: 'a', review: 'maybe' }, { text: 'a', promoted: '43' }, { text: 'a', extra: 1 }]) {
+    await assert.rejects(s.patch('tasks', id, { decisions: [bad] }), assertStoreError('invalid_argument'), JSON.stringify(bad));
+  }
+});

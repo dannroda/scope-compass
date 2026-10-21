@@ -1,0 +1,14 @@
+{
+  "checklist": [],
+  "code": "25.6",
+  "created_at": "2026-10-21T04:01:05.347Z",
+  "description": "AGENTS.md (template, addon y compass/): que hay un chat, que el agente que corre ahí es Claude Code con el MCP scompass y qué puede hacer. README e instalar.md: requiere claude instalado y con login; qué herramientas tiene permitidas y por qué solo anda en local.",
+  "milestone": "m25",
+  "notes": "",
+  "order": 6,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Documentar el chat",
+  "updated_at": "2026-10-21T04:01:05.347Z"
+}

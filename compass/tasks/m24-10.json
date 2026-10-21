@@ -1,0 +1,36 @@
+{
+  "checklist": [],
+  "code": "24.10",
+  "created_at": "2026-10-21T03:52:56.036Z",
+  "decisions": [
+    {
+      "alternatives": "Qué, Por qué y Descartado como decía la spec",
+      "at": "2026-10-21T04:21:04.571Z",
+      "review": "ok",
+      "text": "La entrada D-n no lleva Qué: el título ya lo dice",
+      "why": "repetir el texto en Qué no agrega; en una pregunta el título es la respuesta y va Pregunta debajo"
+    },
+    {
+      "alternatives": "promover cualquiera",
+      "at": "2026-10-21T04:21:05.604Z",
+      "review": "ok",
+      "text": "Promover solo las resueltas (OK o respondidas), una vez",
+      "why": "una sin revisar o a revertir todavía puede cambiar; una revertida no es una decisión vigente"
+    }
+  ],
+  "description": "Pasar una decisión de tarea que resultó ser de diseño a una entrada nueva al final de decisiones.md (config.json › decisions_doc; sin él, el alias decisiones). D42 habilita que la app escriba documentos. Primero el documento (relee, escritura atómica), después la tarea con promoted. Con hub, POST /api/tasks/:id/decisions/:n/promote; sin hub, la CLI. scompass decision promote, promote_decision en el MCP y Promover en la web. Formato y numeración en §31.",
+  "links": [
+    {
+      "task": "m26-01",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m24",
+  "notes": "hub/src/promote.js: lo comparten la CLI (sin hub) y POST /api/tasks/:id/decisions/:n/promote (con hub; responde la tarea con x-promoted y x-promoted-path). Primero el documento (relee, escritura atómica), después la tarea con If-Match; si la tarea falla, el error dice qué D-n quedó. config.decisions_doc en el schema (copiado a compass/schema y al fixture). promote_decision en el MCP.",
+  "order": 10,
+  "refs": [],
+  "status": "review",
+  "test": "cd hub && node --test test/cli.test.js test/cli-hub.test.js test/ui-decisions.test.js: decision promote agrega D<n> (el más alto + 1) al documento de decisiones, con y sin hub; solo resueltas y una vez; config.json › decisions_doc elige el documento; en la web, Promover en las resueltas.",
+  "title": "Promover una decisión a D-n",
+  "updated_at": "2026-10-21T05:03:40.839Z"
+}

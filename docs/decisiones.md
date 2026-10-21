@@ -412,3 +412,17 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
 - **Descartado:**
   - Lanzar `scompass` como proceso aparte por cada llamada: más lento y lo mismo que llamar a `run()`.
   - Un servidor MCP dentro del hub: haría falta un hub corriendo, y la CLI anda sin él.
+
+## D42 · Decisiones de las tareas: un campo en la tarea, revisable; y la app puede escribir documentos
+**2026-10-21 · vigente** · spec §31 · cambia D33 en un punto
+
+- **Qué:** las decisiones que se toman al trabajar una tarea van en la tarea, `decisions: [{ text, why?, alternatives?, asked?, reply?, review?, promoted?, at }]`. Lo que el agente decide sin preguntar queda *sin revisar* hasta que el usuario dice *OK* o *Revertir*; lo que pregunta queda como *pregunta abierta* hasta la respuesta.
+- **Por qué:** el tablero ya es de agentes primero. Lo que el agente pregunta, el usuario ya lo vio; lo que decide solo se pierde en `notes`, mezclado con hallazgos, y no se puede filtrar ni contar. Separar *sola* de *consultada* es lo que dice qué revisar.
+- **Por qué en la tarea y no en una colección aparte:** la decisión nace de una tarea, viaja con ella en git, en el export y en `history`, y se escribe como los pasos (`PATCH` con `If-Match`). Una colección aparte (como las sesiones de playtest, D39) serviría para ordenar cosas de varias tareas, y acá no hay orden que mantener: la vista del proyecto junta las de todas las tareas.
+- **Por qué `asked` y no `by: agent | user`:** lo que importa es si el usuario participó. Una decisión que el usuario tomó por su cuenta es una pregunta respondida.
+- **Revertir no deshace nada solo:** marca la decisión; el agente la deshace y la marca `reverted`. La decisión vieja no se borra, porque es la historia de por qué la tarea quedó como quedó.
+- **Lo que cambia de D33:** la app ya puede escribir documentos. El primer uso es *Promover*, que agrega una entrada al final del documento de decisiones; editar documentos desde la web queda para después. Sigue sin commitear: el cambio queda en el árbol de trabajo, a la vista en la biblioteca, como un cambio del tablero. Que el agente se entere de que un documento cambió desde que lo leyó es un problema aparte y viene después.
+- **Descartado:**
+  - Escribirlas en `notes` con una convención (`Decisión: …`): no se puede revisar una por una ni contar las pendientes.
+  - Una colección `compass/decisions/`: más archivos, más API y un vínculo a la tarea que mantener, sin ganar nada.
+  - Que *Promover* devuelva solo el texto para pegar: con un clic alcanza, y la app ya vigila y muestra los cambios de los documentos.

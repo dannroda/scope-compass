@@ -5,6 +5,7 @@ import { StoreError } from './store/json-files.js';
 import { flat, listLists, listMilestones, listPlaytests, listTasks, STATUSES } from './views.js';
 import { checkItem, freeId, slugify } from './lists.js';
 import { dropImage, MAX_IMAGE, saveImage } from './images.js';
+import { promoteDecision } from './promote.js';
 import { taskHistory } from './history.js';
 
 const quote = (etag) => `"${etag}"`;
@@ -71,6 +72,13 @@ export function registerApi(app, { store, projectDir, publish }) {
   // Merge de primer nivel: los arrays se reemplazan enteros y null borra el campo.
   app.patch('/api/tasks/:id', async (req, reply) =>
     send(reply, wrote('tasks', await store.patch('tasks', req.params.id, body(req), preconditions(req)))));
+
+  // Promover una decisión a una entrada D-n del documento de decisiones (§31): agrega al final del documento y marca
+  // la decisión. El watcher de documentos avisa el cambio del documento.
+  app.post('/api/tasks/:id/decisions/:n/promote', async (req, reply) => {
+    const r = await promoteDecision(projectDir, store, req.params.id, Number(req.params.n));
+    return send(reply.header('x-promoted', r.promoted).header('x-promoted-path', encodeURIComponent(r.doc.path)), wrote('tasks', r.task));
+  });
 
   // Historial desde git (18.5): los commits que tocaron la tarea y qué cambió en cada uno.
   app.get('/api/tasks/:id/history', async (req) => {

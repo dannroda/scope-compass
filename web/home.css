@@ -8,6 +8,9 @@ header.top h1 { flex: 1 1 auto; }
 .tag.live { color: var(--s-done); }
 .tag.overdue { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, var(--surface)); }
 .tag.today { color: var(--s-review); background: color-mix(in srgb, var(--s-review) 14%, var(--surface)); }
+.tag.ask { color: var(--accent); background: var(--accent-soft); text-decoration: none; }
+a.tag:hover { text-decoration: underline; }
+.hoy-row.question .mark { color: var(--accent); font-weight: 700; }
 .tag.doing { color: var(--s-doing); background: color-mix(in srgb, var(--s-doing) 14%, var(--surface)); }
 
 .hoy-list { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }

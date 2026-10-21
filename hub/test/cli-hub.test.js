@@ -2,7 +2,7 @@
 import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -80,7 +80,17 @@ test('la misma secuencia da la misma salida con y sin hub', async () => {
       await cli(cwd, ['set', 'm0-01', '--file', bad]),
       await cli(cwd, ['milestone', 'set', 'm08', '--file', m8, '--json']),
       await cli(cwd, ['milestone', 'list', '--json']),
-      await cli(cwd, ['add', 'x', '--milestone', 'm99'])
+      await cli(cwd, ['add', 'x', '--milestone', 'm99']),
+      // Decisiones (§31): se escriben como los pasos, con la lista entera e If-Match.
+      await cli(cwd, ['decide', 'm1-07', 'Usar X', '--why', 'porque', '--json']),
+      await cli(cwd, ['decide', 'm1-07', '¿A o B?', '--ask']),
+      await cli(cwd, ['decision', 'reply', 'm1-07', '2', 'A', '--json']),
+      await cli(cwd, ['decision', 'revert', 'm1-07', '1', '--reply', 'hacer W']),
+      await cli(cwd, ['decision', 'ok', 'm1-07', '2']),
+      await cli(cwd, ['decisions', '--json']),
+      await cli(cwd, ['list', '--decisions', 'revert', '--json']),
+      await cli(cwd, ['decision', 'promote', 'm1-07', '2']),
+      await cli(cwd, ['decision', 'promote', 'm1-07', '1'])
     ];
   };
   const a = await steps(disk);
@@ -182,4 +192,16 @@ test('scompass restart sin hub: error claro', async () => {
   const r = await cli(disk, ['restart']);
   assert.equal(r.code, 1);
   assert.match(r.err, /no hay un hub de este proyecto/);
+});
+
+test('decision promote con hub: lo hace el hub, que publica la tarea', async () => {
+  await mkdir(join(hubDir, 'docs'), { recursive: true });
+  await writeFile(join(hubDir, 'docs', 'decisiones.md'), '# Decisiones\n\n## D3 · Algo\n');
+  await cli(hubDir, ['decide', 'm1-07', 'Usar X']);
+  await cli(hubDir, ['decision', 'ok', 'm1-07', '1']);
+  events.length = 0;
+  const r = await cli(hubDir, ['decision', 'promote', 'm1-07', '1']);
+  assert.equal(r.out, 'm1-07: decisión 1 promovida a D4 (docs/decisiones.md)\n');
+  assert.deepEqual(events.filter((e) => e.type === 'upsert').map((e) => [e.id, e.doc.decisions[0].promoted]), [['m1-07', 'D4']]);
+  assert.match(await readFile(join(hubDir, 'docs', 'decisiones.md'), 'utf8'), /^# Decisiones\n\n## D3 · Algo\n\n## D4 · Usar X\n\*\*\d{4}-\d\d-\d\d · vigente\*\* · tarea 1\.7 \(m1-07\)\n$/);
 });

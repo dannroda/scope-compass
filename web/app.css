@@ -189,6 +189,33 @@ nav.views a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--
 .card .refmark { font-family: var(--font-mono); font-size: 11px; color: var(--muted); align-self: flex-start; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
 .card .refmark.bad { color: var(--danger); border-color: var(--danger); }
 
+/* Decisiones (§31): lo que espera al usuario va marcado; las preguntas abiertas, en el color de acento. */
+.card .decmark, .tasks .decmark { font-size: 11px; font-weight: 700; color: var(--s-review); align-self: flex-start; border: 1px solid var(--s-review); border-radius: 4px; padding: 0 5px; white-space: nowrap; }
+.card .decmark.open, .tasks .decmark.open { color: var(--accent); border-color: var(--accent); }
+.decisions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.decision { display: flex; gap: 10px; align-items: flex-start; padding: 6px 8px; border-radius: 6px; border-left: 3px solid var(--line); }
+.decision.pending, .decision.revert { border-left-color: var(--s-review); background: color-mix(in srgb, var(--s-review) 8%, transparent); }
+.decision.open { border-left-color: var(--accent); background: var(--accent-soft); }
+.decision .dmark { font-weight: 700; width: 1.2em; text-align: center; flex: none; color: var(--muted); }
+.decision.pending .dmark, .decision.revert .dmark { color: var(--s-review); }
+.decision.open .dmark { color: var(--accent); }
+.decision .dbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.decision.resolved .dtext { color: var(--muted); }
+.decision .dmeta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px; color: var(--muted); }
+.decision .dstate { font-weight: 700; }
+.decision .dmore summary { font-size: 13px; color: var(--accent); cursor: pointer; }
+.decision .dmore p { margin: 4px 0 0; font-size: 15px; white-space: pre-wrap; }
+.row-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.decisions-view { max-width: 920px; }
+.dec-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.dec-head .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dec-head select { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 6px 10px; min-height: 36px; max-width: 100%; }
+.dec-day h3 { margin: 6px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.decision .dtask { display: inline-flex; align-items: baseline; gap: 6px; font-size: 14px; color: var(--muted); text-decoration: none; min-width: 0; }
+.decision .dtask:hover { color: var(--accent); }
+.decision .dtask .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; align-self: center; }
+/* Cuántas decisiones esperan, en la pestaña. */
+#tab-decisions[data-count]:not([data-count=""])::after { content: attr(data-count); margin-left: 6px; font-size: 12px; font-weight: 700; color: var(--on-accent); background: var(--s-review); border-radius: 999px; padding: 0 6px; }
 .card .blockmark, .tasks .blockmark { font-size: 11px; font-weight: 700; color: var(--danger); align-self: flex-start; border: 1px solid var(--danger); border-radius: 4px; padding: 0 5px; }
 .link-row { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 4px 6px 4px 10px; flex-wrap: wrap; }
 .link-row.broken, .link-row.blocking { border-color: var(--danger); }
@@ -580,7 +607,9 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
   .wrap { padding-top: 12px; gap: 12px; }
   header.top { justify-content: flex-start; gap: 4px 8px; padding-bottom: 4px; }
   .brand { display: contents; }
-  nav.views { order: 1; gap: 14px; }
+  /* Seis pestañas no entran en 390 px (24.7): la fila se desplaza de costado, como la de los hitos. */
+  nav.views { order: 1; gap: 14px; flex: 1 1 100%; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  nav.views a { flex: none; }
   /* Nueva tarea flota abajo a la derecha: con cuatro pestañas no entra en su fila (14.2). El detalle la tapa. */
   #new-btn { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 5; box-shadow: 0 6px 18px rgba(0, 0, 0, .22); }
   .wrap { padding-bottom: 80px; }

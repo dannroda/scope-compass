@@ -1,0 +1,14 @@
+{
+  "checklist": [],
+  "code": "24.8",
+  "created_at": "2026-10-21T03:52:54.881Z",
+  "description": "Cada tarjeta de proyecto cuenta sus decisiones sin revisar (enlace a la vista 24.7). Hoy muestra las preguntas esperando respuesta, porque bloquean al agente. Worktrees: una sola vez, como las tareas (23.2).",
+  "milestone": "m24",
+  "notes": "summarize suma decisions { open, pending, revert }; todayOf agrega { kind: 'question', id, n, etag, text, task, at }. El orden de Hoy (byToday en summary.js) lo comparten todayOf y /api/today: preguntas, vencido, hoy, en curso. En la web, las preguntas van sueltas arriba, con ? y el tag \"pregunta · <código>\"; se responden en la tarea (no desde Hoy). Con worktrees, una pregunta se junta por id + at + texto.",
+  "order": 8,
+  "refs": [],
+  "status": "review",
+  "test": "cd hub && node --test test/home.test.js test/ui-home.test.js: Hoy pone las preguntas abiertas arriba (las de todos los proyectos, una vez por repo) con un enlace a la tarea; la tarjeta dice \"Decisiones: N preguntas abiertas · N sin revisar · N a revertir\" con enlace a #decisions.",
+  "title": "Inicio: decisiones sin revisar y preguntas abiertas",
+  "updated_at": "2026-10-21T04:22:46.472Z"
+}

@@ -1,0 +1,20 @@
+{
+  "checklist": [],
+  "code": "26.3",
+  "created_at": "2026-10-21T04:01:05.645Z",
+  "description": "show_doc devuelve el etag y las herramientas aceptan el que el agente tiene; resources/subscribe y notifications/resources/updated para compass://doc/<alias> si Claude Code las atiende (verificar). Casos en mcp.test.js.",
+  "links": [
+    {
+      "task": "m26-04",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m26",
+  "notes": "",
+  "order": 3,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "MCP: avisar documentos cambiados",
+  "updated_at": "2026-10-21T04:01:23.486Z"
+}

@@ -20,6 +20,10 @@ const FAIL_COLOR := Color("#e8806e")
 const RESULTS := [["pass", "✓ Anda"], ["fail", "✗ Falla"]]
 const PRIORITIES := { "high": "Alta", "medium": "Media", "low": "Baja" }
 const LINK_KINDS := [["blocked_by", "Bloqueada por"], ["blocks", "Bloquea a"], ["related", "Relacionada con"]]
+## Decisiones (§31): la marca de cada estado, y el color de lo que espera al usuario.
+const DECISION_MARKS := { "open": "?", "pending": "!", "revert": "↺", "resolved": "✓" }
+const WAITING_COLOR := Color("#e0a95a")
+const QUESTION_COLOR := Color("#d9a441")
 
 ## La vista del dock (dock_view.gd).
 var view: Control
@@ -42,6 +46,9 @@ var playtest_box: VBoxContainer
 var result_buttons := {}
 var playtest_note: Label
 var steps_box: VBoxContainer
+## Decisiones de la tarea (§31): las sin revisar se revisan acá con OK / Revertir (con hub); responder una pregunta,
+## en el navegador.
+var decisions_box: VBoxContainer
 ## Vínculos con otras tareas (solo lectura: se editan en la web o con `scompass link`).
 var links_box: VBoxContainer
 var refs_box: VBoxContainer
@@ -75,7 +82,7 @@ func _init(v: Control) -> void:
 	web_button.pressed.connect(func(): OS.shell_open(view.web_url("#task/" + view.selected_task.uri_encode())))
 	trow.add_child(web_button)
 	hint = _wrapping_label()
-	hint.text = "Acá se cambian el estado, los pasos y el resultado del playtest; lo demás, en el navegador (↗)."
+	hint.text = "Acá se cambian el estado, los pasos, el resultado del playtest y la revisión de las decisiones; lo demás, en el navegador (↗)."
 	hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.45))
 	hint.add_theme_font_size_override("font_size", 11)
 	box.add_child(hint)
@@ -119,6 +126,8 @@ func _init(v: Control) -> void:
 	box.add_child(images_box)
 	steps_box = VBoxContainer.new()
 	box.add_child(steps_box)
+	decisions_box = VBoxContainer.new()
+	box.add_child(decisions_box)
 	links_box = VBoxContainer.new()
 	box.add_child(links_box)
 	refs_box = VBoxContainer.new()
@@ -204,6 +213,7 @@ func render() -> void:
 	description_label.text = description.replace("`", "")
 	_render_images(t)
 	_render_steps(t)
+	_render_decisions(t)
 	_render_links(t)
 	_render_refs(t)
 	_render_files(t)
@@ -318,6 +328,103 @@ static func _toggled(t: Dictionary, index: int, on: bool) -> Array:
 ## El checkbox del paso i (para los tests).
 func step_checkbox(i: int) -> CheckBox:
 	return steps_box.get_child(i).get_child(0).get_child(0).get_child(0)
+
+
+# --- Decisiones (§31, D42) -----------------------------------------------------------------------
+
+func _render_decisions(t: Dictionary) -> void:
+	_clear(decisions_box)
+	var list := Board.decisions_of(t)
+	decisions_box.visible = not list.is_empty()
+	if list.is_empty():
+		return
+	var n := Board.decision_counts(t)
+	var waiting := []
+	if n.open: waiting.append("%d abiertas" % n.open)
+	if n.pending: waiting.append("%d sin revisar" % n.pending)
+	if n.revert: waiting.append("%d a revertir" % n.revert)
+	decisions_box.add_child(_section_label("Decisiones" + (" (" + ", ".join(waiting) + ")" if not waiting.is_empty() else "")))
+	var id: String = t.id
+	for d in list:
+		var st := Board.decision_state(d)
+		var row := VBoxContainer.new()
+		var line := HBoxContainer.new()
+		row.add_child(line)
+		var mark := Label.new()
+		mark.text = DECISION_MARKS[st]
+		mark.custom_minimum_size.x = 16
+		mark.size_flags_vertical = SIZE_SHRINK_BEGIN
+		if st == "open":
+			mark.add_theme_color_override("font_color", QUESTION_COLOR)
+		elif st != "resolved":
+			mark.add_theme_color_override("font_color", WAITING_COLOR)
+		line.add_child(mark)
+		var text := _wrapping_label()
+		text.size_flags_horizontal = SIZE_EXPAND_FILL
+		text.text = str(d.get("text", "")).replace("`", "")
+		if st == "resolved":
+			text.add_theme_color_override("font_color", MUTED_COLOR)
+		line.add_child(text)
+		# Debajo, en chico: el estado, si se consultó, y el porqué, lo descartado y la respuesta.
+		var meta := [_decision_label(d), "consultada" if d.get("asked", false) else "sin consultar"]
+		if str(d.get("promoted", "")) != "":
+			meta.append(str(d.promoted))
+		var lines := [" · ".join(meta)]
+		var reply_label := "Respuesta" if d.get("asked", false) else "Qué hacer"
+		for pair in [["Por qué", d.get("why", "")], ["Descartado", d.get("alternatives", "")], [reply_label, d.get("reply", "")]]:
+			if str(pair[1]) != "":
+				lines.append("%s: %s" % [pair[0], str(pair[1]).replace("`", "")])
+		for s in lines:
+			var l := _wrapping_label()
+			l.text = s
+			l.add_theme_color_override("font_color", MUTED_COLOR)
+			l.add_theme_font_size_override("font_size", 12)
+			row.add_child(_indented(l))
+		if st == "pending":
+			var acts := HBoxContainer.new()
+			row.add_child(_indented(acts))
+			var key := str(d.get("at", "")) + "|" + str(d.get("text", ""))
+			for r in [["ok", "OK"], ["revert", "Revertir"]]:
+				var b := Button.new()
+				b.text = r[1]
+				b.disabled = not view.online
+				b.tooltip_text = "Qué hacer en su lugar se escribe en el navegador" if r[0] == "revert" else ""
+				b.pressed.connect(review_decision.bind(id, key, r[0]))
+				acts.add_child(b)
+		decisions_box.add_child(row)
+
+
+static func _indented(c: Control) -> MarginContainer:
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_child(c)
+	return margin
+
+
+static func _decision_label(d: Dictionary) -> String:
+	if d.get("asked", false):
+		return "Respondida" if str(d.get("reply", "")) != "" else "Pregunta abierta (se responde en el navegador)"
+	return { "ok": "OK", "revert": "A revertir", "reverted": "Revertida" }.get(str(d.get("review", "")), "Sin revisar")
+
+
+## OK o Revertir una decisión sin revisar, sobre la versión más reciente de la tarea. Se busca por cuándo se registró
+## y su texto (como la web): el número cambia si alguien quitó una de antes.
+func review_decision(id: String, key: String, review: String) -> void:
+	view.update_task(id, func(cur):
+		var out := []
+		for d in Board.decisions_of(cur):
+			var x: Dictionary = d.duplicate()
+			if str(d.get("at", "")) + "|" + str(d.get("text", "")) == key and not d.get("asked", false):
+				x["review"] = review
+			out.append(x)
+		return { "decisions": out })
+
+
+## Los botones OK / Revertir de la decisión n (desde 1; vacío si no está sin revisar), para los tests.
+func decision_buttons(n: int) -> Array:
+	var row := decisions_box.get_child(n)
+	var last := row.get_child(row.get_child_count() - 1).get_child(0)
+	return last.get_children() if last is HBoxContainer else []
 
 
 # --- Capturas (18.4) -----------------------------------------------------------------------------

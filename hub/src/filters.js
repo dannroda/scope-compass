@@ -2,6 +2,7 @@
 // reglas; si cambian acá, cambian allá.
 import { dueState, parseDue } from './dates.js';
 import { openBlockers } from './links.js';
+import { decisionState } from './decisions.js';
 
 export const DUE_FILTERS = ['overdue', 'today', 'week', 'none'];
 export const PRIORITIES = ['high', 'medium', 'low'];
@@ -32,7 +33,8 @@ export const isBlocked = (all, t) => t.status !== 'done' && openBlockers(all, t.
 
 /**
  * Las tareas que pasan el filtro f (todas las condiciones a la vez; un campo vacío no filtra):
- * { q, status: [], due, blocked: true | false, pendingSteps, withRefs, tags: [], priority: [], size: [], assignee: [] }.
+ * { q, status: [], due, blocked: true | false, pendingSteps, withRefs, tags: [], priority: [], size: [], assignee: [],
+ *   decisions: [] }. decisions: estados de decisión (open, pending, revert); pasa si tiene alguna en esos estados.
  * En priority, size y assignee, "none" es "sin el campo". Las etiquetas pasan si la tarea tiene alguna.
  */
 export function filterTasks(tasks, f = {}, { all = tasks, now = new Date() } = {}) {
@@ -53,6 +55,7 @@ export function filterTasks(tasks, f = {}, { all = tasks, now = new Date() } = {
     if (has(f.priority) && !f.priority.includes(t.priority ?? 'none')) return false;
     if (has(f.size) && !f.size.includes(t.size ?? 'none')) return false;
     if (assignees && !assignees.includes(t.assignee ? norm(t.assignee) : 'none')) return false;
+    if (has(f.decisions) && !(t.decisions ?? []).some((d) => f.decisions.includes(decisionState(d)))) return false;
     return true;
   });
 }

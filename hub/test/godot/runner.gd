@@ -769,6 +769,41 @@ func test_playtest_online(a: Array) -> void:
 	_check(c, await _until(func(): return v._queues.is_empty() and not v.board.task(a[2]).has("playtest")), "sin resultado ni nota no se borró playtest")
 
 
+# 24.9: las decisiones (§31) en el dock. La lista marca ? (preguntas abiertas) o ! (sin revisar) y lo dice el tooltip;
+# el detalle las muestra con su estado, y OK / Revertir solo en las sin revisar, deshabilitados sin hub.
+func test_decisions(a: Array) -> void:
+	var c := "decisions"
+	var v := await _view(a[0])
+	v.current_milestone = "m01"
+	_select(v, a[1])
+	var row: TreeItem = v.tree.get_selected()
+	if not _check(c, row != null and row.get_text(0).begins_with("? ") and row.get_tooltip_text(0).contains("Decisiones: 1 preguntas abiertas, 1 sin revisar"), "fila: %s / %s" % [row.get_text(0) if row else "", row.get_tooltip_text(0) if row else ""]): return
+	var d = v.detail
+	if not _check(c, d.decisions_box.visible and d.decisions_box.get_child_count() == 4, "detalle: %d hijos" % d.decisions_box.get_child_count()): return
+	if not _check(c, d.decisions_box.get_child(0).text == "Decisiones (1 abiertas, 1 sin revisar)", "título: " + d.decisions_box.get_child(0).text): return
+	var buttons: Array = d.decision_buttons(1)
+	if not _check(c, buttons.size() == 2 and buttons[0].text == "OK" and buttons[0].disabled, "OK de la sin revisar, deshabilitado sin hub"): return
+	if not _check(c, d.decision_buttons(2).is_empty() and d.decision_buttons(3).is_empty(), "la pregunta y la revisada no tienen botones"): return
+	_select(v, a[2])
+	row = v.tree.get_selected()
+	_check(c, not d.decisions_box.visible and not row.get_text(0).begins_with("? ") and not row.get_text(0).begins_with("! "), "sin decisiones no muestra nada")
+
+
+# 24.9, con hub: OK y Revertir escriben la revisión de la decisión, buscándola por cuándo se registró y su texto.
+func test_decisions_online(a: Array) -> void:
+	var c := "decisions_online"
+	var v = await _online_view(a[0], c)
+	if v == null: return
+	v.current_milestone = "m01"
+	_select(v, a[1])
+	var d = v.detail
+	var buttons: Array = d.decision_buttons(1)
+	if not _check(c, buttons.size() == 2 and not buttons[1].disabled, "con hub Revertir tendría que andar"): return
+	buttons[1].pressed.emit()
+	if not _check(c, await _until(func(): return v._queues.is_empty() and Board.decisions_of(v.board.task(a[1]))[0].get("review") == "revert"), "no quedó a revertir"): return
+	_check(c, d.decision_buttons(1).is_empty() and v.tree.get_selected().get_text(0).begins_with("? "), "después de revertir: sin botones, la fila sigue con la pregunta")
+
+
 # 21.5: la caja de búsqueda filtra por código, título o id en todos los hitos, con todas las palabras y sin tildes;
 # lo de otro hito lleva su código, Hecho se despliega, y vacía vuelve a la lista del hito.
 func test_search(a: Array) -> void:
