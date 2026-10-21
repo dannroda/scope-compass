@@ -426,3 +426,17 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Escribirlas en `notes` con una convención (`Decisión: …`): no se puede revisar una por una ni contar las pendientes.
   - Una colección `compass/decisions/`: más archivos, más API y un vínculo a la tarea que mantener, sin ganar nada.
   - Que *Promover* devuelva solo el texto para pegar: con un clic alcanza, y la app ya vigila y muestra los cambios de los documentos.
+
+## D43 · Chat: el `claude` instalado en stream-json, con permisos fijos y solo en el equipo
+**2026-10-21 · vigente** · spec §32
+
+- **Qué:** el hub lanza el Claude Code instalado con `-p --input-format stream-json --output-format stream-json`, un proceso por conversación, en la carpeta del proyecto, con el MCP `scompass` y permisos fijados de antemano (el tablero y las herramientas de lectura). La web muestra la conversación; el hub solo guarda qué conversaciones hay y una copia para mostrarlas.
+- **Por qué el `claude` instalado:** usa el login, la suscripción, el modelo y la config que el usuario ya tiene, y no suma dependencias: es un proceso hijo que habla JSON por línea, como el MCP (D41). Las conversaciones son sesiones normales de Claude Code, que se pueden seguir en la terminal con `claude --resume`.
+- **Por qué permisos fijos:** con `-p` no hay forma de pedir permiso a la web sin un servidor de permisos propio. Con el tablero y la lectura alcanza para preguntar, cargar tareas y responder decisiones; editar y correr comandos siguen en la terminal, donde el usuario mira cada paso.
+- **Por qué solo 127.0.0.1:** el chat corre un agente con la cuenta del usuario y lee el repo. Sin login, abrirlo a la red (`--lan`, D36) sería darle eso a cualquiera en la casa. Se mira la dirección del socket y no el Host, que lo pone el cliente.
+- **Por qué una copia propia de la conversación:** los archivos donde Claude Code guarda las sesiones son internos y pueden cambiar; la copia es lo que la web mostró y alcanza para volver a mostrarlo.
+- **Descartado:**
+  - ACP con `@agentclientprotocol/claude-agent-acp`: trae el Agent SDK, zod y otro Claude Code aparte del instalado. Su ventaja es pedir permisos al cliente; conviene si el chat crece a consola de trabajo con edición desde la web.
+  - El Agent SDK directo: las mismas dependencias, para lo que ya hace el `claude` instalado.
+  - La API de mensajes con una clave propia: otra cuenta, otro costo, y habría que rehacer las herramientas y el contexto que Claude Code ya tiene.
+  - Leer las sesiones de Claude Code (`~/.claude/projects/…`) para mostrar el historial: formato interno, sin garantías.

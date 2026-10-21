@@ -1267,3 +1267,43 @@ Ver qué decidió el agente al trabajar una tarea, sobre todo lo que decidió si
 - [ ] *Promover* agrega una entrada D-n al documento de decisiones y la tarea guarda cuál.
 
 - **Fuera de M24:** que el agente se entere de que un documento cambió (por la app o a mano) desde la última vez que lo leyó; editar documentos desde la web; que el agente reciba la respuesta a una pregunta abierta sin volver a leer la tarea.
+
+## 32. Chat (M25)
+<!-- id: chat -->
+
+Un chat en la web con el Claude Code instalado en el equipo, que trabaja sobre el proyecto con el MCP `scompass` (D43). Sirve para preguntar por el tablero, cargar tareas o responder decisiones sin abrir una terminal.
+
+- **El proceso (25.2):** el hub (o el Inicio, si sirve el proyecto, D29) lanza `claude` en la carpeta del proyecto con `-p --input-format stream-json --output-format stream-json --verbose --include-partial-messages`. Un proceso por conversación mientras se usa: cada mensaje del usuario es una línea `{"type":"user","message":{"role":"user","content":"…"}}` en stdin, y los eventos se leen línea por línea de stdout. Se cierra tras 10 minutos sin uso y al cerrar el hub; el siguiente mensaje lo vuelve a lanzar con `--resume`. Sin dependencias nuevas.
+  - **Ejecutable:** `claude` del PATH (en Windows, también `claude.cmd` y `claude.exe`), o el de `SCOMPASS_CLAUDE` (para el test y para instalaciones fuera del PATH). Si no está, la API responde `claude_missing` y la web dice cómo instalarlo.
+  - **Cuenta y config:** las del usuario: su login, su modelo por defecto, su `CLAUDE.md` y su `settings.json`. El hub no guarda claves.
+  - **MCP:** `--mcp-config` con un solo servidor, `scompass` (`node <scope-compass>/hub/bin/scompass.js mcp --dir <proyecto>`), y `--strict-mcp-config`, para que las herramientas sean siempre las mismas aunque el usuario tenga otros servidores o ya haya registrado `scompass`.
+  - **Permisos fijados de antemano:** `--allowedTools` con `mcp__scompass` (todas sus herramientas) y las de lectura (`Read`, `Grep`, `Glob`). Con `-p` y sin herramienta de permisos, lo que no está permitido se niega sin preguntar y el agente lo dice; la web no aprueba nada. Editar archivos y correr comandos quedan para la terminal.
+  - **Instrucciones:** `--append-system-prompt` dice que es el chat de Scope Compass del proyecto, que el tablero se opera con `scompass` y que valen las reglas de AGENTS.md (registrar las decisiones, pasar las tareas a `review`).
+- **Conversaciones (25.3):** el hub elige el `session_id` al crearla (`--session-id <uuid>`) y la retoma con `--resume <uuid>`. Claude Code guarda la conversación de verdad; el hub guarda qué conversaciones hay y una copia liviana de lo que se mostró (los mensajes del usuario, el texto de cada respuesta y el nombre y resumen de las herramientas usadas), para volver a mostrarla sin leer los archivos internos de Claude Code. Vive fuera de `compass/`, porque es de la máquina y no va a git: `<config>/scope-compass/chats/<sha1 de la ruta del proyecto>/`, con `index.json` (`{ chats: [{ id, title, created_at, last_at }] }`, el título es el comienzo del primer mensaje) y un `<id>.jsonl` por conversación. `<config>` es la carpeta de `projects.json` (D23). Borrar una conversación la saca de la lista y borra la copia; la de Claude Code queda.
+- **API (25.4):**
+  ```
+  GET    /api/chats                  # { chats, claude: true|false }
+  POST   /api/chats                  # { text, task? } → crea y manda el primer mensaje; responde { id }
+  GET    /api/chats/:id              # la copia de la conversación y si hay un turno en curso
+  POST   /api/chats/:id/messages     # { text, task? }; 409 si hay un turno en curso
+  POST   /api/chats/:id/interrupt    # corta el turno en curso
+  DELETE /api/chats/:id
+  ```
+  `task` es el id de la tarea abierta en la web: el mensaje lleva delante `Tarea abierta: <code> <título> (compass://task/<id>)`, y el agente la lee con `show_task`. Cortar manda la interrupción del protocolo stream-json; si el proceso no termina el turno en 5 segundos, se mata y la conversación sigue con `--resume`.
+- **Eventos (25.4):** por el WebSocket del proyecto, `{ type: 'chat', chat, event, … }` con `event`: `turn` (empieza un turno, con el mensaje del usuario), `text` (un pedazo de texto), `tool` (nombre y resumen de los argumentos), `tool_result` (ok o error), `end` (fin del turno, con costo y duración si vienen) y `error`. Todas las pestañas abiertas ven la misma conversación.
+- **Solo en el equipo:** sin login, el chat es una terminal con permisos de lectura y de tablero. Los endpoints responden 403 si el pedido no viene de 127.0.0.1 o `::1` (la dirección del socket, no el Host), también con `--lan` (D36); los eventos `chat` solo van a los WebSocket locales. Con token (hosting, §12) el chat está apagado.
+- **Test (25.5):** un `claude` falso (un script de Node que se pasa por `SCOMPASS_CLAUDE`) imita el stream-json: `system/init` con el `session_id`, texto en partes, una herramienta y su resultado, y `result`. Prueba el proceso, `--resume`, la API, el WebSocket, cortar y el 403 fuera de 127.0.0.1, sin gastar tokens ni depender de la red.
+- **Web (25.7):** un panel lateral plegable en el tablero: la conversación con el texto en vivo, las herramientas plegadas, *Cortar* durante un turno, *Nueva* y la lista de conversaciones. Con una tarea abierta, el campo dice que la adjunta. Fuera de 127.0.0.1 el panel no aparece; sin `claude`, dice cómo instalarlo.
+- **Preguntas abiertas (25.8):** la decisión guarda la sesión de Claude Code que la hizo (`session`, opcional). Al responderla en la web se ofrece seguir esa sesión en el chat con la respuesta, así el agente continúa sin volver a leer la tarea. De dónde sale la sesión (una variable de entorno de Claude Code o lo que exponga) se investiga en la tarea.
+
+### 32.1 Criterios de aceptación de M25
+<!-- id: criterios-chat -->
+
+- [ ] Desde la web se conversa con el Claude Code instalado, en la carpeta del proyecto, con el texto en vivo y las herramientas a la vista, sin dependencias nuevas.
+- [ ] El agente del chat lee y escribe el tablero con `scompass`, lee archivos, y no edita ni corre comandos.
+- [ ] Las conversaciones se listan, se retoman después de cerrar el hub y se borran.
+- [ ] Fuera de 127.0.0.1 el chat no responde ni aparece, también con `--lan`.
+- [ ] Un test con un `claude` falso cubre el proceso, `--resume`, la API, el WebSocket, cortar y el rechazo fuera del equipo.
+- [ ] AGENTS.md, el README e `instalar.md` explican el chat, qué necesita y qué puede hacer.
+
+- **Fuera de M25:** aprobar permisos desde la web (ACP, D43); editar archivos y correr comandos desde el chat; el chat desde el teléfono; el chat en el dock; adjuntar documentos o imágenes.

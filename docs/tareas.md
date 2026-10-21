@@ -2723,7 +2723,7 @@ Pasar una decisión de tarea que resultó ser de diseño a una entrada nueva al 
 
 **Bloqueada por:** 24.1 Spec y decisión de las decisiones
 
-## M25 — Chat  (0/8)
+## M25 — Chat  (1/8, 1 en revisión)
 
 Un chat chico sobre el tablero, desde la web, que habla con el Claude Code local: preguntar por tareas, cargarlas y responder las preguntas del agente sin abrir una terminal.
 
@@ -2735,9 +2735,26 @@ Un chat chico sobre el tablero, desde la web, que habla con el Claude Code local
 - Responder una pregunta abierta de M24 puede retomar la sesión que la hizo.
 - Un test de punta a punta corre con un claude falso, sin gastar tokens.
 
-### 25.1 Spec y decisión del chat · Pendiente
+### 25.1 Spec y decisión del chat · Revisión
 
 Sección §32 en la spec con los criterios de M25 y D43 en decisiones.md: el chat lanza el claude instalado con -p --input-format/--output-format stream-json, sin dependencias, con el login y la config del usuario. Permisos fijados de antemano (MCP scompass y herramientas de lectura), sin aprobar desde la web. Solo 127.0.0.1 aunque haya --lan, porque no hay login. Descartado por ahora: ACP con @agentclientprotocol/claude-agent-acp (trae el Agent SDK, zod y otro Claude Code; conviene si el chat crece a consola de trabajo, por los pedidos de permiso) y el Agent SDK directo.
+
+**Decisiones:**
+- ! Con --strict-mcp-config, el chat solo ve el MCP scompass y no los otros servidores del usuario · sin revisar
+  Por qué: las herramientas son siempre las mismas y no choca con un scompass ya registrado
+  Descartado: sumar los MCP del usuario
+- ! El hub guarda una copia liviana de cada conversación para mostrarla · sin revisar
+  Por qué: las sesiones de Claude Code son un formato interno
+  Descartado: leer ~/.claude/projects
+- ! Herramientas permitidas: mcp__scompass, Read, Grep y Glob; nada de Edit ni Bash · sin revisar
+  Por qué: sin pedidos de permiso desde la web, solo lo que no cambia el repo
+- ! El proceso se cierra tras 10 minutos sin uso; cortar mata el proceso si no termina en 5 s · sin revisar
+- ! Las conversaciones viven en <config>/scope-compass/chats/<sha1 de la ruta>/ junto a projects.json · sin revisar
+  Por qué: son de la máquina, no van a git
+
+**Prueba:** docs/spec.md §32 y docs/decisiones.md D43; la suite sigue pasando (432)
+
+**Notas:** Claude Code 2.1.306 tiene --session-id <uuid>: el hub elige el id al crear la conversación y no hace falta esperar al init. stream-json de salida pide --verbose.
 
 **Bloquea a:** 25.2 Proceso de Claude Code en el hub
 
