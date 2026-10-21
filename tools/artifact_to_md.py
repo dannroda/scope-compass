@@ -18,8 +18,11 @@ L = [f'# Tareas — {a.title}', '',
      f'> Generado: {datetime.date.today().isoformat()}', '']
 for mid, m in sorted(ms.items(), key=lambda kv: kv[1].get('order', 0)):
     mt = sorted([t for t in ts.values() if t.get('milestone') == mid], key=key)
-    done = sum(t.get('status') == 'done' for t in mt)
-    L += [f"## {m['code']} — {m['title']}" + (f"  ({done}/{len(mt)})" if mt else ''), '', m.get('goal', ''), '']
+    # Las de Revisión cuentan como hechas en el avance, y se dice cuántas son.
+    review = sum(t.get('status') == 'review' for t in mt)
+    done = sum(t.get('status') == 'done' for t in mt) + review
+    rv = f', {review} en revisión' if review else ''
+    L += [f"## {m['code']} — {m['title']}" + (f"  ({done}/{len(mt)}{rv})" if mt else ''), '', m.get('goal', ''), '']
     if m.get('done_when'):
         L += ['**Hecho cuando:**'] + [f'- {x}' for x in m['done_when']] + ['']
     for t in mt:

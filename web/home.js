@@ -168,12 +168,14 @@
     const body = [];
     if (s?.milestone) {
       const m = s.milestone;
+      const pct = (n) => (m.total ? Math.round(100 * n / m.total) : 0);
       body.push(h('div', { class: 'ms' },
         h('div', { class: 'row' }, h('span', null, h('b', null, m.code), ' · ', rich(m.title)),
           h('span', null, m.due_state === 'overdue' ? h('span', { class: 'tag overdue', title: 'Fecha objetivo del hito' }, 'atrasado · ' + showDue(m.due)) : m.due_state === 'today' ? h('span', { class: 'tag today' }, 'objetivo hoy') : null,
-            ' ', h('span', { class: 'n' }, m.done + '/' + m.total))),
-        h('div', { class: 'bar', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': m.total, 'aria-valuenow': m.done, 'aria-label': 'Avance de ' + m.code },
-          h('i', { style: 'width:' + (m.total ? Math.round(100 * m.done / m.total) : 0) + '%' }))));
+            ' ', h('span', { class: 'n', title: m.review ? m.review + ' en revisión' : null }, m.done + '/' + m.total))),
+        // m.done incluye las de Revisión (m.review), que van en su color al final de la barra.
+        h('div', { class: 'bar', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': m.total, 'aria-valuenow': m.done, 'aria-label': 'Avance de ' + m.code + (m.review ? ', ' + m.review + ' en revisión' : '') },
+          h('i', { style: 'width:' + pct(m.done - (m.review ?? 0)) + '%' }), m.review ? h('i', { class: 'rev', style: 'width:' + pct(m.review) + '%' }) : null)));
     }
     if (s?.done_week) body.push(h('p', { class: 'muted week', style: 'margin:0' }, s.done_week === 1 ? '1 tarea terminada en los últimos 7 días' : s.done_week + ' tareas terminadas en los últimos 7 días'));
     const tasks = [...(s?.doing ?? []).map((t) => ['en curso', t, 'doing']), ...(s?.next ?? []).map((t) => ['sigue', t, ''])].slice(0, 4);

@@ -3,12 +3,13 @@
   "code": "20.3",
   "created_at": "2026-10-14T00:48:58.607Z",
   "description": "Vista Playtest (#playtest/<id>): crear sesiones, cargar tareas (una a una o todas las de Revisión), arrastrar para ordenar, marcar anda/falla con nota y pasar la tarea a Hecho o En curso.",
+  "done_at": "2026-10-16T06:40:19.514Z",
   "milestone": "m20",
   "notes": "Reusa las clases de Listas (lists-grid, list-side, list-panel), así los bordes de fantasía aplican. Anda/Falla no mueve la tarea: ofrece Pasar a Hecho / Volver a En curso.",
-  "order": 3,
+  "order": 1.5,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "hub/test/ui-playtest.test.js",
   "title": "Pestaña Playtest en la web",
-  "updated_at": "2026-10-14T01:02:26.685Z"
+  "updated_at": "2026-10-16T06:40:19.514Z"
 }

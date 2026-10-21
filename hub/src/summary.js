@@ -12,7 +12,9 @@ function currentMilestone(milestones, tasks, now) {
   const m = ms.find((x) => of(x).some((t) => t.status !== 'done')) ?? ms.filter((x) => of(x).length).at(-1);
   if (!m) return null;
   const ts = of(m);
-  return { id: m.id, code: m.code, title: m.title, done: ts.filter((t) => t.status === 'done').length, total: ts.length,
+  // done cuenta también las de Revisión, que ya están hechas aunque falte comprobarlas; review dice cuántas son.
+  const n = (st) => ts.filter((t) => t.status === st).length;
+  return { id: m.id, code: m.code, title: m.title, done: n('done') + n('review'), review: n('review'), total: ts.length,
     ...(m.due && { due: m.due, due_state: milestoneDueState(m, tasks, now) }) };
 }
 

@@ -82,17 +82,23 @@ func search(q: String) -> Array:
 	return out
 
 
-## [hechas, total] del hito.
+## [hechas, total, en revisión] del hito. Las de Revisión cuentan como hechas (falta comprobarlas, como en la web).
 func progress(milestone_id: String) -> Array:
 	var ts := tasks_of(milestone_id)
-	return [ts.filter(func(t): return t.status == "done").size(), ts.size()]
+	var review := ts.filter(func(t): return t.status == "review").size()
+	return [ts.filter(func(t): return t.status == "done").size() + review, ts.size(), review]
+
+
+## Terminado: tiene tareas y están todas en Hecho.
+static func complete(p: Array) -> bool:
+	return p[1] > 0 and p[0] == p[1] and p[2] == 0
 
 
 ## El primer hito (por order) que tiene tareas sin terminar; si no hay, el primero.
 func default_milestone() -> String:
 	for m in milestones:
 		var p := progress(m.id)
-		if p[1] > 0 and p[0] < p[1]:
+		if p[1] > 0 and not complete(p):
 			return m.id
 	return milestones[0].id if milestones.size() > 0 else ""
 

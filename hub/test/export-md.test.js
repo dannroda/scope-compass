@@ -58,6 +58,10 @@ test('orden: por order y después code como texto, como en Python', () => {
   }, { title: 'P', date: '2026-01-01' });
   assert.deepEqual(md.match(/^###.*$/gm), ['### 0.2 C · En curso', '### 0.10 B · Pendiente', '### 0.9 A · Hecho']);
   assert.ok(md.indexOf('## M0 — Cero  (1/3)') < md.indexOf('## M1 — Uno'));
+  // Las de Revisión cuentan como hechas en el avance del hito, y se dice cuántas son.
+  const rv = renderMarkdown({ milestones: [['m00', { code: 'M0', order: 0, title: 'Cero' }]],
+    tasks: [['a', { milestone: 'm00', title: 'A', status: 'done' }], ['b', { milestone: 'm00', title: 'B', status: 'review' }], ['c', { milestone: 'm00', title: 'C', status: 'todo' }]] }, { title: 'P', date: '2026-01-01' });
+  assert.match(rv, /^## M0 — Cero {2}\(2\/3, 1 en revisión\)$/m);
   assert.match(md, /Export de `compass\/`, que es la fuente de verdad/);
   assert.ok(!md.includes('Huérfana'));
   assert.ok(md.endsWith('## M1 — Uno\n'));

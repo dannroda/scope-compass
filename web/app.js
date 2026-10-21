@@ -484,24 +484,32 @@
     box.replaceChildren(h('div', { class: 'table-wrap' }, h('table', { class: 'tasks' }, h('thead', null, head), h('tbody', null, rows))));
   }
 
+  // Avance de unas tareas: las de Revisión cuentan como hechas (ya están hechas, falta comprobarlas) y se dice cuántas son.
+  function progressOf(ts) {
+    const review = ts.filter((t) => t.status === 'review').length;
+    const done = ts.filter((t) => t.status === 'done').length + review;
+    return { done, review, total: ts.length, note: done + ' de ' + ts.length + ' hechas' + (review ? ', ' + review + ' en revisión' : '') };
+  }
+
   function renderMiles() {
     const nav = document.getElementById('miles');
     const wasOpen = !!nav.querySelector('details[open]');
     const scrolled = nav.scrollLeft; // en el teléfono la fila se desplaza de costado (13.4)
     nav.replaceChildren();
-    const all = S.tasks.length, allDone = S.tasks.filter((t) => t.status === 'done').length;
-    nav.append(h('button', { class: 'chip', type: 'button', 'aria-pressed': S.filter === 'all' ? 'true' : 'false', onclick: () => setFilter('all') },
-      'Todos', h('span', { class: 'n' }, allDone + '/' + all)));
+    const all = progressOf(S.tasks);
+    nav.append(h('button', { class: 'chip', type: 'button', title: all.note, 'aria-pressed': S.filter === 'all' ? 'true' : 'false', onclick: () => setFilter('all') },
+      'Todos', h('span', { class: 'n' }, all.done + '/' + all.total)));
     // Los hitos terminados van juntos en "Terminados (n)", salvo el elegido, que queda a la vista (13.2).
     const done = [];
     for (const m of S.milestones) {
       const ts = S.tasks.filter((t) => t.milestone === m.id);
-      const d = ts.filter((t) => t.status === 'done').length;
-      const complete = ts.length > 0 && d === ts.length;
+      const p = progressOf(ts);
+      // Terminado es todo en Hecho: con alguna en Revisión todavía queda comprobarla.
+      const complete = ts.length > 0 && p.done === ts.length && !p.review;
       const late = !complete && dueGroup(m.due) === 'overdue';
-      const chip = h('button', { class: 'chip' + (complete ? ' complete' : '') + (late ? ' late' : ''), type: 'button', title: m.title + (late ? ' · atrasado: la fecha objetivo era ' + showDue(m.due) : ''), 'aria-pressed': S.filter === m.id ? 'true' : 'false',
+      const chip = h('button', { class: 'chip' + (complete ? ' complete' : '') + (late ? ' late' : ''), type: 'button', title: m.title + ' · ' + p.note + (late ? ' · atrasado: la fecha objetivo era ' + showDue(m.due) : ''), 'aria-pressed': S.filter === m.id ? 'true' : 'false',
         onclick: (e) => { const dd = e.currentTarget.closest('details'); if (dd) dd.open = false; setFilter(m.id); } },
-        m.code, h('span', { class: 'n' }, ts.length ? d + '/' + ts.length : '—'));
+        m.code, h('span', { class: 'n' }, ts.length ? p.done + '/' + ts.length : '—'));
       if (complete && S.filter !== m.id) { chip.append(h('span', { class: 'ms-title' }, m.title)); done.push(chip); } else nav.append(chip);
     }
     if (done.length) nav.insertBefore(h('details', { class: 'fdrop ms-done', open: wasOpen },
@@ -542,8 +550,8 @@
       return;
     }
     const ts = visibleTasks();
-    const d = ts.filter((t) => t.status === 'done').length;
-    const pct = ts.length ? Math.round((d / ts.length) * 100) : 0;
+    const p = progressOf(ts);
+    const pct = (n) => (ts.length ? Math.round((n / ts.length) * 100) : 0);
     const hidden = ts.length - ts.filter((t) => taskMatches(t)).length;
     const m = S.filter === 'all' ? null : msById(S.filter);
     // Una línea (13.2): título, barra y contador. El objetivo y "Hecho cuando" se despliegan, y eso se recuerda.
@@ -554,7 +562,9 @@
       h('h2', null, m ? m.code + ' · ' + m.title : 'Todos los hitos'),
       m && m.due ? msDueMark(m, ts) : null,
       sizeLoad(ts),
-      h('div', { class: 'progress' }, h('div', { class: 'bar', role: 'img', 'aria-label': pct + '% hecho' }, h('i', { style: 'width:' + pct + '%' })), d + '/' + ts.length + ' tareas',
+      h('div', { class: 'progress' }, h('div', { class: 'bar', role: 'img', 'aria-label': p.note },
+        h('i', { style: 'width:' + pct(p.done - p.review) + '%' }), p.review ? h('i', { class: 'rev', style: 'width:' + pct(p.review) + '%' }) : null),
+        p.done + '/' + ts.length + ' tareas', p.review ? h('span', { class: 'rev-n' }, '· ' + p.review + ' en revisión') : null,
         hidden ? h('span', { class: 'hidden-n' }, '· ' + (hidden === 1 ? '1 oculta' : hidden + ' ocultas') + ' por los filtros') : null),
       more ? h('button', { type: 'button', class: 'sum-more', id: 'sum-more', 'aria-expanded': open ? 'true' : 'false', 'aria-controls': 'sum-body',
         onclick: () => { pref(SUM_KEY, open ? '' : '1'); renderSummary(); } }, when.length ? 'Hecho cuando' : 'Objetivo', h('span', { 'aria-hidden': 'true' }, open ? ' ▾' : ' ▸')) : null));

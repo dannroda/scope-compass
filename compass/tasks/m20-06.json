@@ -19,12 +19,13 @@
   "code": "20.6",
   "created_at": "2026-10-14T01:06:58.099Z",
   "description": "Pedido: al abrir una tarea desde Playtest, el panel tapaba Anda/Falla y la nota; después: que Playtest sea una vista dividida.",
+  "done_at": "2026-10-16T06:40:23.849Z",
   "milestone": "m20",
   "notes": "En escritorio (≥900 px, matchMedia SPLIT) Playtest es vista dividida: .wrap toma margin-right = --pt-detail-w = max(360px, min(--detail-w, 100vw − 600px)), así la sesión no baja de ~560 px (con un panel agrandado a ~1000 px quedaba de ~50 px y el texto en columna). Sin tarea abierta, #pt-empty ocupa el panel con Abrir la primera sin probar. Un clic en la sesión no cierra el detalle. ptDetail() pone ← Siguiente →, resultado, seguimiento y nota arriba en el detalle. #playtest es container: angosta, la barra de sesiones va arriba. La nota de la fila se conserva al re-armar solo si tiene cambios sin guardar (data-orig): con data-keep pisaba la nota escrita en el detalle.",
-  "order": 6,
+  "order": 1.375,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "ui-playtest.test.js: botones y nota de la fila a la izquierda del panel; Falla y nota desde el detalle llegan a la sesión y a la fila",
   "title": "Vista dividida en Playtest",
-  "updated_at": "2026-10-14T19:25:16.887Z"
+  "updated_at": "2026-10-16T06:40:23.849Z"
 }

@@ -60,7 +60,7 @@ Recrear el tablero del artifact como **app local propia**: un servidor Node que 
 ### v1: paridad con el artifact
 <!-- id: v1-paridad -->
 
-- Hitos como pestañas, con objetivo, criterio de "Hecho cuando" y progreso (tareas hechas / total).
+- Hitos como pestañas, con objetivo, criterio de "Hecho cuando" y progreso (tareas hechas / total). Las de Revisión cuentan como hechas en el progreso, porque ya están hechas y solo falta comprobarlas; se dice cuántas son y van en ámbar al final de la barra. Un hito está terminado cuando todas están en Hecho.
 - Vista "Todos" con conteo por estado.
 - Tablero de 4 columnas: Pendiente, En curso, Revisión, Hecho (5 desde M20, con Pausado al lado de Pendiente: §28).
 - Tarjetas con código, título, hito (en vista "Todos") y progreso de pasos.

@@ -824,8 +824,9 @@ func _render() -> void:
 	for m in board.milestones:
 		var p := board.progress(m.id)
 		# Fecha objetivo (18.2): atrasado si pasó con tareas sin terminar.
-		var late: bool = str(m.get("due", "")) != "" and Board.due_state({ "due": m.due, "status": "done" if p[1] > 0 and p[0] == p[1] else "todo" }) == "overdue"
-		milestone_select.add_item("%s · %s (%d/%d)%s" % [m.code, m.title, p[0], p[1], (" · atrasado " + Board.show_due(m.due)) if late else ""])
+		var late: bool = str(m.get("due", "")) != "" and Board.due_state({ "due": m.due, "status": "done" if Board.complete(p) else "todo" }) == "overdue"
+		var review: String = (", %d en revisión" % p[2]) if p[2] > 0 else ""
+		milestone_select.add_item("%s · %s (%d/%d%s)%s" % [m.code, m.title, p[0], p[1], review, (" · atrasado " + Board.show_due(m.due)) if late else ""])
 		milestone_select.set_item_metadata(milestone_select.item_count - 1, m.id)
 		if m.id == current_milestone:
 			milestone_select.select(milestone_select.item_count - 1)

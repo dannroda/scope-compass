@@ -37,8 +37,9 @@ export function renderMarkdown({ milestones, tasks, lists = [], playtests = [] }
   const ms = [...milestones].sort(([, a], [, b]) => cmp(a.order ?? 0, b.order ?? 0));
   for (const [mid, m] of ms) {
     const mt = ts.filter((t) => t.milestone === mid).sort(byOrderCode);
-    const done = mt.filter((t) => t.status === 'done').length;
-    L.push(`## ${m.code} — ${line(m.title)}` + (mt.length ? `  (${done}/${mt.length})` : ''), '', block(m.goal ?? ''), '');
+    // Las de Revisión cuentan como hechas en el avance, y se dice cuántas son.
+    const review = mt.filter((t) => t.status === 'review').length, done = mt.filter((t) => t.status === 'done').length + review;
+    L.push(`## ${m.code} — ${line(m.title)}` + (mt.length ? `  (${done}/${mt.length}${review ? `, ${review} en revisión` : ''})` : ''), '', block(m.goal ?? ''), '');
     if (m.due) L.push(`**Fecha objetivo:** ${m.due.replace('T', ' ')}${milestoneDueState({ id: mid, ...m }, ts) === 'overdue' ? ' (atrasado)' : ''}`, '');
     if (m.done_when?.length) L.push('**Hecho cuando:**', ...m.done_when.map((x) => `- ${line(x)}`), '');
     for (const t of mt) {
