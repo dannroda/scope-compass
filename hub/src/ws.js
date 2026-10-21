@@ -1,8 +1,9 @@
 // WebSocket del hub (spec §5.5): reenvía los eventos de app.events y acepta `update` de tareas.
-// Servidor → cliente: hello, upsert, delete, warning, ack, error, focus. Cliente → servidor: update, presence.
+// Servidor → cliente: hello, upsert, delete, warning, ack, error, focus, chat. Cliente → servidor: update, presence.
 import websocket from '@fastify/websocket';
 import { StoreError } from './store/json-files.js';
 import { flat } from './views.js';
+import { isLoopback } from './chat-api.js';
 
 // Plugin de Fastify: app.register(registerWs, { store, publish, version, boards }).
 // boards: Set con el `send` de cada pestaña del tablero que puede notificar (ver app.focusBoard).
@@ -15,17 +16,18 @@ export async function registerWs(app, { store, publish, version, boards = new Se
     }
   });
 
-  app.get('/ws', { websocket: true }, (socket) => attachSocket(socket, { app, store, publish, version, boards }));
+  app.get('/ws', { websocket: true }, (socket, req) => attachSocket(socket, { app, store, publish, version, boards, local: isLoopback(req.socket.remoteAddress) }));
 }
 
 /**
  * Atiende un WebSocket del protocolo de §5.5 contra un hub: le manda sus eventos y recibe `update` y `presence`.
  * Lo usan el hub suelto (/ws) y el Inicio, que sirve el hub de cada proyecto en /p/<clave>/ws sin que el hub
- * escuche en un puerto propio (D29). app: la app del hub (sus `events` y su log).
+ * escuche en un puerto propio (D29). app: la app del hub (sus `events` y su log). local: si el cliente está en este
+ * equipo; si no, no recibe los eventos del chat (§32).
  */
-export function attachSocket(socket, { app, store, publish, version, boards }) {
+export function attachSocket(socket, { app, store, publish, version, boards, local = false }) {
   const send = (msg) => { if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(msg)); };
-  const forward = (evt) => send(evt);
+  const forward = (evt) => { if (evt.type !== 'chat' || local) send(evt); };
   app.events.on('event', forward);
   socket.on('close', () => { app.events.off('event', forward); boards.delete(send); });
   send({ type: 'hello', server_version: version });

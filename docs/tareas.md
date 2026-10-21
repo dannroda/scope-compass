@@ -2723,7 +2723,7 @@ Pasar una decisión de tarea que resultó ser de diseño a una entrada nueva al 
 
 **Bloqueada por:** 24.1 Spec y decisión de las decisiones
 
-## M25 — Chat  (3/8, 3 en revisión)
+## M25 — Chat  (4/8, 4 en revisión)
 
 Un chat chico sobre el tablero, desde la web, que habla con el Claude Code local: preguntar por tareas, cargarlas y responder las preguntas del agente sin abrir una terminal.
 
@@ -2800,9 +2800,23 @@ Guarda el session_id de cada conversación con un título y la fecha, por proyec
 
 **Bloqueada por:** 25.2 Proceso de Claude Code en el hub
 
-### 25.4 API y WebSocket del chat · Pendiente
+### 25.4 API y WebSocket del chat · Revisión
 
 Endpoints para listar, crear, mandar un mensaje, cortar y borrar conversaciones, y eventos por el WebSocket con el texto en vivo, las herramientas que usa y el fin del turno. Rechaza los pedidos que no vienen de 127.0.0.1, también con --lan. Con varias pestañas abiertas, todas ven la misma conversación.
+
+**Decisiones:**
+- ! Si no se sabe si la sesión existe, ChatProcess prueba una vez con la otra opción (--resume o --session-id) según el error de claude · sin revisar
+  Por qué: cerrar el hub a mitad del primer turno dejaba la conversación sin poder retomarse
+  Descartado: marcar started al mandar el primer mensaje (falla si claude muere antes de crear la sesión)
+- ! claude_missing responde 503 · sin revisar
+  Por qué: es el servicio que falta, no un error del pedido
+  Descartado: 424 o 500
+- ! El corte fuera del equipo también se hace en el Inicio (HTTP y WebSocket) · sin revisar
+  Por qué: el hub del proyecto ve al Inicio como 127.0.0.1
+
+**Prueba:** hub/test/chat-api.test.js (9 tests con el claude falso: conversar, pedidos inválidos, sin claude, 403 fuera del equipo y con token, WebSocket con dos pestañas locales y una por la IP de la red, cerrar el hub a mitad de un turno y retomar, el Inicio). chat.test.js suma probar al revés --resume/--session-id.
+
+**Notas:** chat-api.js: /api/chats con su propio manejo de errores; los eventos salen como { type: 'chat', chat, event, … } por app.events. attachSocket recibe local. El Inicio corta /api/chats y los eventos chat para clientes de la red.
 
 **Bloquea a:** 25.7 Web: panel de chat
 

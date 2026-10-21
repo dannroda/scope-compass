@@ -10,6 +10,7 @@ import Fastify from 'fastify';
 import { registerApi } from './api.js';
 import { registerDocsApi } from './docs-api.js';
 import { registerFilesApi } from './files-api.js';
+import { registerChatApi } from './chat-api.js';
 import { createDocWatcher } from './doc-watcher.js';
 import { createAutoExport } from './auto-export.js';
 import { registerWs } from './ws.js';
@@ -55,7 +56,8 @@ const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, inva
 // onRestart: si se pasa, POST /api/restart lo llama (serve cierra y se vuelve a lanzar).
 // onShutdown: si se pasa, POST /api/shutdown lo llama (serve cierra ordenado). Es la forma de apagar un hub en
 // todas las plataformas: en Windows no hay SIGTERM y `kill` lo mata en seco, sin darse de baja (§18).
-export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null, gitPollMs = 3000 }) {
+// chatEnv: el entorno con que se lanza claude en el chat (§32; los tests ponen SCOMPASS_CLAUDE).
+export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null, gitPollMs = 3000, chatEnv = process.env }) {
   // Al cerrar se cortan todas las conexiones: con la UI abierta (que reintenta cada 0,5 s) el cierre
   // podía quedar esperando una conexión nueva o el cierre educado de un WebSocket.
   const app = Fastify({ logger, forceCloseConnections: true });
@@ -151,6 +153,7 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   // Un documento agregado o quitado (12.2): se miran los documentos nuevos y la UI recarga la lista.
   registerDocsApi(app, { store, projectDir, validators, onDocsChanged: async (alias) => { await watchDocs(); emit({ type: 'doc_changed', alias }); } });
   registerFilesApi(app, { projectDir });
+  registerChatApi(app, { projectDir, store, emit, token, env: chatEnv });
   app.register(registerWs, { store, publish, version: VERSION, boards });
 
   // Cambios sin commitear (4.4): GET /api/git, y un evento `git` cuando el número cambia después de una escritura

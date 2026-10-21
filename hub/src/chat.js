@@ -120,7 +120,8 @@ export class ChatProcess extends EventEmitter {
       throw e;
     }
     this.emit('event', { event: 'turn', text });
-    this.child.stdin.write(`${JSON.stringify({ type: 'user', message: { role: 'user', content: text } })}\n`);
+    this.message = `${JSON.stringify({ type: 'user', message: { role: 'user', content: text } })}\n`;
+    this.child.stdin.write(this.message);
   }
 
   /** Corta el turno en curso; si claude no lo termina en interruptMs, se mata y el próximo mensaje lo retoma. */
@@ -166,14 +167,17 @@ export class ChatProcess extends EventEmitter {
     const child = spawn(js ? process.execPath : exe, js ? [exe, ...args] : cmd ? args.map((a) => `"${a}"`) : args,
       { cwd: this.projectDir, env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, shell: cmd });
     this.child = child;
-    let stderr = '';
-    child.stderr.on('data', (d) => { stderr = (stderr + d).slice(-2000); });
+    // Lo que dijo claude fuera del protocolo (y el error de un resultado antes del init), para el mensaje de error.
+    let said = '';
+    let inited = false;
+    child.stderr.on('data', (d) => { said = (said + d).slice(-2000); });
     child.stdin.on('error', () => {});
     createInterface({ input: child.stdout }).on('line', (line) => {
       let msg;
-      try { msg = JSON.parse(line); } catch { return; }
+      try { msg = JSON.parse(line); } catch { said = (said + line + '\n').slice(-2000); return; }
       for (const e of chatEvents(msg)) {
-        if (e.event === 'init') { this.resume = true; continue; }
+        if (e.event === 'init') { inited = true; this.resume = true; this.retried = false; continue; }
+        if (e.event === 'end' && !inited) { if (e.error) said += `${e.error}\n`; continue; }
         if (e.event === 'end') this.#endTurn(e);
         else if (this.child === child) this.emit('event', e);
       }
@@ -186,14 +190,27 @@ export class ChatProcess extends EventEmitter {
       });
     });
     // close y no exit: llega después de leer toda la salida, así un resultado que llegó al final no se pierde.
-    child.once('close', (code) => {
+    child.once('close', async (code) => {
       if (this.child !== child) return;
       this.child = null;
       clearTimeout(this.idle);
-      if (this.busy) {
-        this.emit('event', { event: 'error', code: 'claude_exit', message: stderr.trim() || `claude terminó (código ${code})` });
-        this.#endTurn({ event: 'end', ok: false, interrupted: false });
+      if (!this.busy) return;
+      // Si el hub se cerró antes de que claude confirmara la sesión, no se sabe si existe: claude dice que el id
+      // ya está en uso (había que retomarla) o que no la encuentra (había que crearla). Se prueba una vez al revés.
+      const wrong = !inited && !this.retried && /already in use|No conversation found/i.test(said);
+      if (wrong) {
+        this.retried = true;
+        this.resume = !this.resume;
+        try {
+          await this.#start();
+          this.child.stdin.write(this.message);
+          return;
+        } catch (e) {
+          said = e.message;
+        }
       }
+      this.emit('event', { event: 'error', code: 'claude_exit', message: said.trim() || `claude terminó (código ${code})` });
+      this.#endTurn({ event: 'end', ok: false, interrupted: false });
     });
   }
 

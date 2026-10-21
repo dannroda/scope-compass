@@ -1,0 +1,79 @@
+// API del chat (M25, spec §32, 25.4): conversaciones con el Claude Code instalado. Los eventos de cada turno salen
+// por el WebSocket del proyecto como { type: 'chat', chat, event, … }. Solo para pedidos desde el mismo equipo
+// (la dirección del socket, no el Host): el chat corre un agente con la cuenta del usuario y lee el repo, y sin
+// login no se abre a la red aunque haya --lan (D43). Con token (hosting) está apagado.
+import { basename } from 'node:path';
+import { ChatError, findClaude } from './chat.js';
+import { ChatManager } from './chats.js';
+import { StoreError } from './store/json-files.js';
+
+/** Si una dirección es del mismo equipo (127.0.0.1, ::1 o 127.0.0.1 escrita como IPv6). */
+export const isLoopback = (addr) => addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
+
+const STATUS = { busy: 409, not_found: 404, claude_missing: 503, forbidden: 403, invalid_argument: 400 };
+
+export function registerChatApi(app, { projectDir, store, emit, token = null, env = process.env }) {
+  let manager = null;
+  const chats = async () => {
+    if (!manager) {
+      const { config } = await store.loadAll();
+      manager = new ChatManager({ projectDir, name: config?.project ?? basename(projectDir), env });
+      manager.on('event', (e) => emit({ type: 'chat', ...e }));
+    }
+    return manager;
+  };
+  app.addHook('onClose', async () => manager?.close());
+
+  // La tarea abierta en la web, para nombrarla en el mensaje.
+  const taskOf = async (id) => {
+    if (id === undefined || id === null) return undefined;
+    if (typeof id !== 'string') throw new ChatError('invalid_argument', 'task tiene que ser el id de una tarea');
+    const r = await store.get('tasks', id).catch(() => null);
+    if (!r) throw new ChatError('invalid_argument', `no existe la tarea ${id}`);
+    return { id: r.id, code: r.doc.code, title: r.doc.title };
+  };
+  const textOf = (body) => {
+    const text = body?.text;
+    if (typeof text !== 'string' || !text.trim()) throw new ChatError('invalid_argument', 'falta text');
+    return text;
+  };
+
+  app.register(async (scope) => {
+    scope.addHook('onRequest', async (req) => {
+      if (token) throw new ChatError('forbidden', 'el chat está apagado en un hub con token');
+      if (!isLoopback(req.socket.remoteAddress)) throw new ChatError('forbidden', 'el chat solo anda en este equipo (127.0.0.1)');
+    });
+    scope.setErrorHandler((err, req, reply) => {
+      if (err instanceof ChatError || err instanceof StoreError) {
+        return reply.code(STATUS[err.code] ?? 500).send({ error: { code: err.code, message: err.message } });
+      }
+      if (err.statusCode >= 400 && err.statusCode < 500) {
+        return reply.code(err.statusCode).send({ error: { code: 'invalid_argument', message: err.message } });
+      }
+      req.log.error(err);
+      return reply.code(500).send({ error: { code: 'io_error', message: err.message } });
+    });
+
+    scope.get('/api/chats', async () => ({ chats: await (await chats()).list(), claude: findClaude(env) !== null }));
+    scope.post('/api/chats', async (req, reply) => {
+      const text = textOf(req.body);
+      const chat = await (await chats()).create(text, { task: await taskOf(req.body.task) });
+      return reply.code(201).send(chat);
+    });
+    scope.get('/api/chats/:id', async (req) => (await chats()).get(req.params.id));
+    scope.post('/api/chats/:id/messages', async (req, reply) => {
+      const text = textOf(req.body);
+      await (await chats()).send(req.params.id, text, { task: await taskOf(req.body.task) });
+      return reply.code(202).send({ ok: true });
+    });
+    scope.post('/api/chats/:id/interrupt', async (req) => {
+      const m = await chats();
+      await m.get(req.params.id);
+      return { interrupted: m.interrupt(req.params.id) };
+    });
+    scope.delete('/api/chats/:id', async (req, reply) => {
+      await (await chats()).remove(req.params.id);
+      return reply.code(204).send();
+    });
+  });
+}

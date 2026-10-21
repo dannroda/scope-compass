@@ -207,3 +207,30 @@ test('el hijo no hereda que corre adentro de Claude Code', async () => {
   await say(c, 'hola');
   assert.equal((await launches())[0].claudecode, null);
 });
+
+test('si no se sabe si la sesión existe, prueba una vez al revés: retomarla o crearla', async () => {
+  // Creada, pero la conversación cree que no: --session-id da "already in use" y se retoma.
+  const c = chat();
+  await say(c, 'uno');
+  c.close();
+  await until(() => !c.alive);
+  const d = chat({ session: c.session, resume: false });
+  assert.equal((await say(d, 'dos')).ok, true);
+  assert.equal(text(d), 'eco: dos');
+  let l = (await launches()).filter((x) => x.argv.includes(c.session));
+  assert.deepEqual(l.map((x) => x.argv.includes('--resume')), [false, false, true]);
+  // Nunca llegó a existir y la conversación cree que sí: --resume no la encuentra y se crea.
+  const e = chat({ resume: true });
+  assert.equal((await say(e, 'tres')).ok, true);
+  l = (await launches()).filter((x) => x.argv.includes(e.session));
+  assert.deepEqual(l.map((x) => x.argv.includes('--resume')), [true, false]);
+  assert.ok(!e.events.some((x) => x.event === 'error'));
+});
+
+test('si tampoco anda al revés, el error dice lo que dijo claude', async () => {
+  const c = chat({ resume: true, env: { ...env, FAKE_CLAUDE_STATE: join(root, 'solo-lectura') } });
+  await writeFile(join(root, 'solo-lectura'), '');
+  const end = await say(c, 'hola');
+  assert.equal(end.ok, false);
+  assert.ok(c.events.some((x) => x.event === 'error'));
+});

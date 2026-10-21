@@ -106,6 +106,7 @@ export class ChatManager extends EventEmitter {
     this.procs = new Map();
     this.turns = new Map();
     this.saving = new Map();
+    this.pending = new Set();
   }
 
   list() { return this.store.list(); }
@@ -150,9 +151,11 @@ export class ChatManager extends EventEmitter {
     if (!await this.store.remove(id)) throw new ChatError('not_found', `no hay una conversación ${id}`);
   }
 
-  close() {
+  /** Cierra los procesos; termina cuando está guardado lo que quedó de los turnos cortados. */
+  async close() {
     for (const p of this.procs.values()) p.close();
     this.procs.clear();
+    await Promise.all(this.pending);
   }
 
   #proc(chat) {
@@ -186,8 +189,10 @@ export class ChatManager extends EventEmitter {
         if (error) entry.error = error;
         if (e.cost !== undefined) entry.cost = e.cost;
         const save = (this.saving.get(id) ?? Promise.resolve()).then(() => this.store.append(id, entry)).then(() => this.store.touch(id, { started: proc.resume }));
-        save.catch((err) => this.emit('event', { chat: id, event: 'error', code: 'io_error', message: err.message }))
+        const done = save.catch((err) => this.emit('event', { chat: id, event: 'error', code: 'io_error', message: err.message }))
           .then(() => this.emit('event', { chat: id, ...e }));
+        this.pending.add(done);
+        done.finally(() => this.pending.delete(done));
         return;
       }
     }

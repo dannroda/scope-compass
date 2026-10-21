@@ -17,10 +17,16 @@ if (process.env.FAKE_CLAUDE_LOG) {
 const resume = opt('--resume');
 const session = resume ?? opt('--session-id');
 const state = process.env.FAKE_CLAUDE_STATE;
+// Los errores del real: el id ya usado con --session-id, o --resume de una sesión que no existe.
 if (state) {
   mkdirSync(state, { recursive: true });
+  if (!resume && existsSync(join(state, session))) {
+    process.stderr.write(`Error: Session ID ${session} is already in use.\n`);
+    process.exit(1);
+  }
   if (resume && !existsSync(join(state, resume))) {
-    process.stderr.write(`No conversation found with session ID: ${resume}\n`);
+    process.stdout.write(`No conversation found with session ID: ${resume}\n`);
+    process.stdout.write(`${JSON.stringify({ type: 'result', subtype: 'error_during_execution', is_error: true, session_id: resume, total_cost_usd: 0 })}\n`);
     process.exit(1);
   }
   writeFileSync(join(state, session), '');

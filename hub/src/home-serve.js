@@ -8,6 +8,7 @@ import { hubsOf, registerServed, unregisterServed } from './registry.js';
 import { createServer } from './server.js';
 import { createJsonFilesStore } from './store/json-files.js';
 import { attachSocket } from './ws.js';
+import { isLoopback } from './chat-api.js';
 
 /**
  * Clave de cada proyecto en la URL (/p/<clave>/): el nombre de su carpeta como slug, sin repetir, en orden. keys: las
@@ -71,6 +72,11 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
     if (!p) return missing(reply, req.params.key);
     const q = req.url.indexOf('?');
     const url = '/' + req.params['*'] + (q >= 0 ? req.url.slice(q) : '');
+    // El chat solo desde este equipo (§32): el hub del proyecto ve al Inicio como 127.0.0.1, así que se mira acá.
+    const local = isLoopback(req.socket.remoteAddress);
+    if (!local && /^\/api\/chats(\/|\?|$)/.test(url)) {
+      return reply.code(403).send({ error: { code: 'forbidden', message: 'el chat solo anda en este equipo (127.0.0.1)' } });
+    }
     const headers = Object.fromEntries(IN.filter((h) => req.headers[h] !== undefined).map((h) => [h, req.headers[h]]));
     const payload = req.body === undefined || req.body === null ? undefined : typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
     const base = `/p/${encodeURIComponent(p.key)}`;
@@ -84,7 +90,7 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
       body = Buffer.from(await r.arrayBuffer());
     } else {
       const hub = await activate(p);
-      const r = await hub.inject({ method: req.method, url, headers, payload });
+      const r = await hub.inject({ method: req.method, url, headers, payload, remoteAddress: req.socket.remoteAddress });
       status = r.statusCode;
       outHeaders = Object.fromEntries(OUT.filter((h) => r.headers[h] !== undefined).map((h) => [h, r.headers[h]]));
       body = r.rawPayload;
@@ -99,15 +105,21 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
       const p = find(req.params.key);
       if (!p) { socket.close(4404, 'no existe el proyecto'); return; }
       const proxy = route(p);
+      const local = isLoopback(req.socket.remoteAddress);
       if (!proxy) {
         const hub = await activate(p);
-        attachSocket(socket, { app: hub, ...hub.hub });
+        attachSocket(socket, { app: hub, ...hub.hub, local });
         return;
       }
       const up = new WebSocket(`ws://127.0.0.1:${proxy.port}/ws`);
       const pending = [];
       up.addEventListener('open', () => { for (const m of pending.splice(0)) up.send(m); });
-      up.addEventListener('message', (m) => { if (socket.readyState === socket.OPEN) socket.send(String(m.data)); });
+      // El hub suelto ve al Inicio como local: los eventos del chat se filtran acá.
+      up.addEventListener('message', (m) => {
+        const data = String(m.data);
+        if (!local && data.startsWith('{"type":"chat"')) return;
+        if (socket.readyState === socket.OPEN) socket.send(data);
+      });
       up.addEventListener('close', () => socket.close());
       up.addEventListener('error', () => socket.close());
       socket.on('message', (d) => (up.readyState === WebSocket.OPEN ? up.send(String(d)) : pending.push(String(d))));
