@@ -2922,3 +2922,40 @@ Cuándo volver a leer un documento antes de basarse en él, cómo preguntar si c
 **Prioridad:** baja
 
 D42 deja que la app escriba documentos y posterga editarlos desde la web. Decidir si vale la pena (D33 lo descartaba por duplicar el editor y perder cambios sin git) y cómo: por sección, con etag del documento para no pisar una edición hecha en el editor.
+
+## M27 — Chat con otros agentes (agy)  (0/4)
+
+Que el chat no dependa de un solo agente: agy (Antigravity CLI, el reemplazo de Gemini CLI) además de Claude Code.
+
+**Hecho cuando:**
+- El chat puede hablar con agy (Antigravity CLI) además de Claude Code, con el MCP scompass y permisos acotados.
+- Se elige el agente por conversación; las conversaciones se retoman con el agente que las empezó.
+- Lo que agy no permite (texto en vivo, herramientas a la vista, solo lectura) está dicho en el panel y en la spec.
+
+### 27.1 Investigar agy para el chat · Pendiente
+
+Gemini CLI se retiró el 18/6/2026 para cuentas personales; su reemplazo es Antigravity CLI (agy), cerrado, en Go. agy 1.0 (instalado): solo --print con texto, --conversation <id> para retomar, permisos todo o nada (--dangerously-skip-permissions, --sandbox), y MCP por su config (ver ~/.gemini/antigravity-cli/builtin/skills/agy-customizations/docs/mcp_servers.md). Averiguar: si hay salida estructurada o ACP (para texto en vivo y herramientas), cómo registrar scompass solo para el chat, cómo limitar a lectura, y dónde guarda las conversaciones (~/.gemini/antigravity-cli/conversations).
+
+**Bloquea a:** 27.2 Spec y decisión del chat con varios agentes
+
+### 27.2 Spec y decisión del chat con varios agentes · Pendiente
+
+Sección en la spec y decisión: cómo entra un agente con menos que Claude Code (sin stream-json, permisos todo o nada) sin bajar lo que se promete en §32, y si conviene un adaptador por agente en el hub (sin dependencias) o un protocolo común. Analizarlo con el usuario antes de cambiar el camino de D43.
+
+**Bloquea a:** 27.3 Adaptador de agy en el hub
+
+**Bloqueada por:** 27.1 Investigar agy para el chat
+
+### 27.3 Adaptador de agy en el hub · Pendiente
+
+Como ChatProcess para claude: lanzar agy en la carpeta del proyecto con el MCP scompass y los permisos que decida la 27.2, pasar lo que dé a los eventos del chat (al menos texto y fin del turno), cortar y retomar con --conversation.
+
+**Bloquea a:** 27.4 Elegir el agente en el chat
+
+**Bloqueada por:** 27.2 Spec y decisión del chat con varios agentes
+
+### 27.4 Elegir el agente en el chat · Pendiente
+
+La conversación guarda con qué agente se hizo (index.json); Nueva deja elegir entre los instalados; el panel muestra cuál es. Un fake por agente para los tests.
+
+**Bloqueada por:** 27.3 Adaptador de agy en el hub

@@ -1,0 +1,20 @@
+{
+  "checklist": [],
+  "code": "27.1",
+  "created_at": "2026-10-21T05:54:15.745Z",
+  "description": "Gemini CLI se retiró el 18/6/2026 para cuentas personales; su reemplazo es Antigravity CLI (agy), cerrado, en Go. agy 1.0 (instalado): solo --print con texto, --conversation <id> para retomar, permisos todo o nada (--dangerously-skip-permissions, --sandbox), y MCP por su config (ver ~/.gemini/antigravity-cli/builtin/skills/agy-customizations/docs/mcp_servers.md). Averiguar: si hay salida estructurada o ACP (para texto en vivo y herramientas), cómo registrar scompass solo para el chat, cómo limitar a lectura, y dónde guarda las conversaciones (~/.gemini/antigravity-cli/conversations).",
+  "links": [
+    {
+      "task": "m27-02",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m27",
+  "notes": "",
+  "order": 1,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Investigar agy para el chat",
+  "updated_at": "2026-10-21T05:55:58.770Z"
+}

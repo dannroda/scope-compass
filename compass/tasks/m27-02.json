@@ -1,0 +1,20 @@
+{
+  "checklist": [],
+  "code": "27.2",
+  "created_at": "2026-10-21T05:54:17.869Z",
+  "description": "Sección en la spec y decisión: cómo entra un agente con menos que Claude Code (sin stream-json, permisos todo o nada) sin bajar lo que se promete en §32, y si conviene un adaptador por agente en el hub (sin dependencias) o un protocolo común. Analizarlo con el usuario antes de cambiar el camino de D43.",
+  "links": [
+    {
+      "task": "m27-03",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m27",
+  "notes": "",
+  "order": 2,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Spec y decisión del chat con varios agentes",
+  "updated_at": "2026-10-21T05:55:59.758Z"
+}

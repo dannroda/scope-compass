@@ -1,0 +1,20 @@
+{
+  "checklist": [],
+  "code": "27.3",
+  "created_at": "2026-10-21T05:54:18.275Z",
+  "description": "Como ChatProcess para claude: lanzar agy en la carpeta del proyecto con el MCP scompass y los permisos que decida la 27.2, pasar lo que dé a los eventos del chat (al menos texto y fin del turno), cortar y retomar con --conversation.",
+  "links": [
+    {
+      "task": "m27-04",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m27",
+  "notes": "",
+  "order": 3,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Adaptador de agy en el hub",
+  "updated_at": "2026-10-21T05:56:00.432Z"
+}

@@ -1,0 +1,14 @@
+{
+  "checklist": [],
+  "code": "27.4",
+  "created_at": "2026-10-21T05:54:18.676Z",
+  "description": "La conversación guarda con qué agente se hizo (index.json); Nueva deja elegir entre los instalados; el panel muestra cuál es. Un fake por agente para los tests.",
+  "milestone": "m27",
+  "notes": "",
+  "order": 4,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Elegir el agente en el chat",
+  "updated_at": "2026-10-21T05:54:37.430Z"
+}
