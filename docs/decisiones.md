@@ -440,3 +440,17 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - El Agent SDK directo: las mismas dependencias, para lo que ya hace el `claude` instalado.
   - La API de mensajes con una clave propia: otra cuenta, otro costo, y habría que rehacer las herramientas y el contexto que Claude Code ya tiene.
   - Leer las sesiones de Claude Code (`~/.claude/projects/…`) para mostrar el historial: formato interno, sin garantías.
+
+## D44 · Chat: perfiles de Claude Code por conversación, y la cuenta y el uso a la vista
+**2026-10-21 · vigente** · spec §33
+
+- **Qué:** el chat puede usar cualquier perfil de Claude Code del equipo (`~/.claude` y las carpetas de `~/.claude-profiles/`), elegido al crear cada conversación. El panel muestra la cuenta del perfil, el uso de sus límites y los tokens de cada respuesta.
+- **Por qué:** el hub lanza `claude` con su propio entorno, que puede no ser el de la terminal: el chat usaba otra cuenta que la sesión del agente sin que se viera. Con varias cuentas (personal, trabajo, un proveedor propio), saber cuál gasta es lo primero.
+- **Por qué el perfil es de la conversación:** la sesión de Claude Code vive en la carpeta del perfil; retomarla desde otro no la encuentra.
+- **Por qué el predeterminado es siempre `~/.claude`:** si fuera el `CLAUDE_CONFIG_DIR` del hub, cambiaría según desde dónde se levantó (el Inicio desde la bandeja o un `serve` desde una sesión de agente).
+- **Por qué `~/.claude-profiles`:** es la carpeta que usa el usuario para sus perfiles; Claude Code no tiene una lista de perfiles. `SCOMPASS_CLAUDE_PROFILES` apunta a otra.
+- **Por qué mirar si existe el archivo de la sesión:** es la única forma de saber en qué perfil está una pregunta sin guardar rutas de la máquina en `compass/`. Solo se mira el nombre, no el contenido (D43).
+- **Descartado:**
+  - Guardar el perfil en la decisión: es una ruta de la máquina dentro de git.
+  - Leer el uso de la cuenta con otra llamada: Claude Code no tiene un comando para eso; el `rate_limit_event` llega gratis con cada turno.
+  - Iniciar sesión desde la web: `claude auth login` abre el navegador y es de la terminal.

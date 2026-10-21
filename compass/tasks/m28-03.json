@@ -1,0 +1,20 @@
+{
+  "checklist": [],
+  "code": "28.3",
+  "created_at": "2026-10-21T05:58:26.771Z",
+  "description": "Del stream-json: rate_limit_event (uso y renovación de las ventanas de 5 horas y de la semana) como evento del chat y guardado por perfil; los tokens del result (entrada, salida, caché) en el fin del turno y en la copia de la conversación.",
+  "links": [
+    {
+      "task": "m28-04",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m28",
+  "notes": "",
+  "order": 3,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Límites y tokens",
+  "updated_at": "2026-10-21T05:58:29.219Z"
+}

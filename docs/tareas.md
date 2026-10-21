@@ -2959,3 +2959,54 @@ Como ChatProcess para claude: lanzar agy en la carpeta del proyecto con el MCP s
 La conversación guarda con qué agente se hizo (index.json); Nueva deja elegir entre los instalados; el panel muestra cuál es. Un fake por agente para los tests.
 
 **Bloqueada por:** 27.3 Adaptador de agy en el hub
+
+## M28 — Cuenta, perfiles y uso del chat  (1/5, 1 en revisión)
+
+Saber qué cuenta usa el chat y cuánto gasta, y poder usar varias cuentas (perfiles de Claude Code).
+
+**Hecho cuando:**
+- El chat dice con qué cuenta de Claude habla (email, organización, plan) y deja elegir el perfil entre los del equipo.
+- Cada conversación recuerda su perfil; una pregunta se retoma en el perfil donde está su sesión.
+- El panel muestra el uso de los límites (5 horas y semana) y los tokens y el costo estimado de cada respuesta.
+
+### 28.1 Spec y decisión: perfiles, cuenta y uso del chat · Revisión
+
+§33 en la spec y D44: perfiles de Claude Code (~/.claude y las carpetas de ~/.claude-profiles), la cuenta de cada uno con claude auth status, el perfil por conversación y por defecto del proyecto, los límites del rate_limit_event y los tokens del result.
+
+**Decisiones:**
+- ! El perfil predeterminado es siempre ~/.claude, sin CLAUDE_CONFIG_DIR, aunque el hub lo tenga · sin revisar
+  Por qué: si dependiera del entorno del hub, cambiaría según desde dónde se levantó
+  Descartado: usar el CLAUDE_CONFIG_DIR del hub
+- ! El perfil de una pregunta se encuentra buscando su sesión en <perfil>/projects/*/<id>.jsonl · sin revisar
+  Por qué: no hay que guardar rutas de la máquina en compass/
+  Descartado: guardar el perfil en la decisión
+
+**Prueba:** docs/spec.md §33 y docs/decisiones.md D44
+
+**Bloquea a:** 28.2 Perfiles y cuenta en el hub
+
+### 28.2 Perfiles y cuenta en el hub · Pendiente
+
+Detectar los perfiles (~/.claude predeterminado y las carpetas de ~/.claude-profiles con .claude.json o settings.json; SCOMPASS_CLAUDE_PROFILES para otra carpeta), su cuenta con claude auth status --json (en caché), el perfil de cada conversación (CLAUDE_CONFIG_DIR al lanzar claude) y el predeterminado del proyecto. Una pregunta (25.8) se retoma en el perfil que tiene su sesión. API para listarlos y elegir.
+
+**Bloquea a:** 28.3 Límites y tokens
+
+**Bloqueada por:** 28.1 Spec y decisión: perfiles, cuenta y uso del chat
+
+### 28.3 Límites y tokens · Pendiente
+
+Del stream-json: rate_limit_event (uso y renovación de las ventanas de 5 horas y de la semana) como evento del chat y guardado por perfil; los tokens del result (entrada, salida, caché) en el fin del turno y en la copia de la conversación.
+
+**Bloquea a:** 28.4 Web: cuenta, perfil y uso en el panel
+
+**Bloqueada por:** 28.2 Perfiles y cuenta en el hub
+
+### 28.4 Web: cuenta, perfil y uso en el panel · Pendiente
+
+En el panel del chat: la cuenta del perfil (email, organización, plan), elegir el perfil para una conversación nueva, el uso de los límites con cuándo se renuevan, y los tokens y el costo estimado de cada respuesta y de la conversación.
+
+**Bloqueada por:** 28.3 Límites y tokens
+
+### 28.5 Documentar perfiles y uso · Pendiente
+
+AGENTS.md (las tres copias), instalar.md y el README del hub: perfiles de Claude Code en el chat, dónde se detectan, qué se muestra de la cuenta y del uso.

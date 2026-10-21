@@ -1310,3 +1310,35 @@ Un chat en la web con el Claude Code instalado en el equipo, que trabaja sobre e
 - [ ] AGENTS.md, el README e `instalar.md` explican el chat, qué necesita y qué puede hacer.
 
 - **Fuera de M25:** aprobar permisos desde la web (con `--permission-prompts host`, Claude Code manda los pedidos de permiso por el mismo stream-json; no hace falta ACP, D43); editar archivos y correr comandos desde el chat; el chat desde el teléfono; el chat en el dock; adjuntar documentos o imágenes.
+
+## 33. Cuenta, perfiles y uso del chat (M28)
+<!-- id: chat-perfiles -->
+
+Saber con qué cuenta de Claude habla el chat (§32) y cuánto gasta, y poder usar varias cuentas (D44).
+
+- **Perfiles (28.2):** un perfil es una carpeta de configuración de Claude Code (`CLAUDE_CONFIG_DIR`): tiene su login, su `settings.json` y sus sesiones.
+  - *Predeterminado*: `~/.claude`, el de `claude` sin nada más. Se lanza sin `CLAUDE_CONFIG_DIR`, aunque el hub lo tenga en su entorno, para que no dependa de cómo se levantó el hub.
+  - Los demás: cada carpeta de `~/.claude-profiles/` (o de `SCOMPASS_CLAUDE_PROFILES`) que tenga `.claude.json` o `settings.json`. El id y el nombre son el de la carpeta. Se lanza con `CLAUDE_CONFIG_DIR=<carpeta>`.
+- **Cuenta:** `claude auth status --json` con el `CLAUDE_CONFIG_DIR` de cada perfil (no gasta tokens), guardado 10 minutos: `email`, `orgName`, `subscriptionType` (`pro`, `max`, `team`…) y `authMethod`. Un perfil sin login (`loggedIn: false`) puede usar una clave o un proveedor propio en su `settings.json`: se muestra como *sin login de Claude*.
+- **Perfil de cada conversación:** se elige al crearla y no cambia, porque la sesión vive en ese perfil (`index.json › chats[].profile`; sin él, el predeterminado). El proyecto recuerda el último elegido para las nuevas (`index.json › profile`), en este equipo.
+- **Preguntas (25.8):** al retomar la sesión de una pregunta, el hub busca en qué perfil está (`<perfil>/projects/*/<session>.jsonl`; solo mira si el archivo existe) y la retoma ahí. Si no está en ninguno, usa el predeterminado y claude dice que no la encuentra.
+- **Límites (28.3):** cada turno trae un `rate_limit_event` con las ventanas de la cuenta: `five_hour` y `seven_day`, cada una con el uso (0 a 1) y cuándo se renueva, más el estado (`allowed`, …) y si se puede pasar del límite. El hub lo emite como evento `limits` del chat (`{ profile, limits: { five_hour: { used, resets_at }, seven_day: …, status }, at }`) y guarda el último de cada perfil en `<config>/scope-compass/chats/limits.json`. Solo se sabe después de un turno: la web dice de cuándo es el dato.
+- **Tokens (28.3):** el fin del turno trae `tokens: { input, output, cache_read, cache_write }` (del `usage` del `result`) junto al costo, y la copia de la conversación los guarda. El costo es el que calcula Claude Code: con una suscripción es un estimado, no un cobro.
+- **API (28.2, 28.3):**
+  ```
+  GET /api/chats/profiles      # { profiles: [{ id, label, dir, default?, account, limits }], profile }
+  PUT /api/chats/profile       # { profile }: el predeterminado del proyecto para las nuevas
+  POST /api/chats              # suma profile (si no, el del proyecto)
+  ```
+  `GET /api/chats` suma `profile`. Los mismos 403 que §32.
+- **Web (28.4):** el panel muestra la cuenta del perfil de la conversación (email, organización, plan); en una conversación nueva, un selector de perfil. Debajo, el uso de las dos ventanas con barras y cuándo se renuevan, con la hora del dato. Cada respuesta lleva, plegados, sus tokens y su costo estimado, y la cabecera de la conversación el total.
+
+### 33.1 Criterios de aceptación de M28
+<!-- id: criterios-chat-perfiles -->
+
+- [ ] El chat dice con qué cuenta habla y deja elegir el perfil entre los del equipo.
+- [ ] Cada conversación usa siempre su perfil; una pregunta se retoma en el perfil donde está su sesión.
+- [ ] El panel muestra el uso de los límites y los tokens y el costo estimado de cada respuesta.
+- [ ] Tests con el claude falso cubren perfiles, cuenta, límites y tokens.
+
+- **Fuera de M28:** iniciar o cerrar sesión desde la web (`claude auth login` sigue en la terminal); avisar antes de llegar al límite; otros agentes (M27).

@@ -1,0 +1,14 @@
+{
+  "checklist": [],
+  "code": "28.4",
+  "created_at": "2026-10-21T05:58:27.116Z",
+  "description": "En el panel del chat: la cuenta del perfil (email, organización, plan), elegir el perfil para una conversación nueva, el uso de los límites con cuándo se renuevan, y los tokens y el costo estimado de cada respuesta y de la conversación.",
+  "milestone": "m28",
+  "notes": "",
+  "order": 4,
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Web: cuenta, perfil y uso en el panel",
+  "updated_at": "2026-10-21T05:58:27.116Z"
+}
