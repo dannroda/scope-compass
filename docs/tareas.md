@@ -2723,7 +2723,7 @@ Pasar una decisión de tarea que resultó ser de diseño a una entrada nueva al 
 
 **Bloqueada por:** 24.1 Spec y decisión de las decisiones
 
-## M25 — Chat  (4/8, 4 en revisión)
+## M25 — Chat  (6/8, 6 en revisión)
 
 Un chat chico sobre el tablero, desde la web, que habla con el Claude Code local: preguntar por tareas, cargarlas y responder las preguntas del agente sin abrir una terminal.
 
@@ -2822,9 +2822,13 @@ Endpoints para listar, crear, mandar un mensaje, cortar y borrar conversaciones,
 
 **Bloqueada por:** 25.3 Conversaciones: retomar y listar
 
-### 25.5 Test del chat con un claude falso · Pendiente
+### 25.5 Test del chat con un claude falso · Revisión
 
 Un script que imita a claude en stream-json (init con session_id, texto en partes, una herramienta, resultado), para probar proceso, --resume, API, WebSocket y el rechazo fuera de 127.0.0.1 sin gastar tokens ni depender de la red.
+
+**Prueba:** hub/test/fake-claude.js, usado por chat.test.js (14), chats.test.js (11) y chat-api.test.js (9): proceso, --resume y sus errores, API, WebSocket, cortar, caída, sin claude y el 403 fuera del equipo, sin red ni tokens
+
+**Notas:** Se fue armando con 25.2–25.4. Imita los errores reales de claude: 'Session ID … is already in use' y 'No conversation found with session ID'.
 
 **Bloqueada por:** 25.2 Proceso de Claude Code en el hub
 
@@ -2832,9 +2836,21 @@ Un script que imita a claude en stream-json (init con session_id, texto en parte
 
 AGENTS.md (template, addon y compass/): que hay un chat, que el agente que corre ahí es Claude Code con el MCP scompass y qué puede hacer. README e instalar.md: requiere claude instalado y con login; qué herramientas tiene permitidas y por qué solo anda en local.
 
-### 25.7 Web: panel de chat · Pendiente
+### 25.7 Web: panel de chat · Revisión
 
 Un panel lateral plegable en el tablero: la conversación con el texto en vivo, las herramientas que usa (plegadas), Cortar, y la lista de conversaciones. Con una tarea abierta, la adjunta como contexto (compass://task/<id>). Fuera de 127.0.0.1 el panel no aparece.
+
+**Decisiones:**
+- ! El panel va a la izquierda y en pantallas anchas corre el tablero · sin revisar
+  Por qué: el detalle de la tarea está a la derecha y la tarea abierta es contexto del chat: tienen que verse juntos
+  Descartado: a la derecha encima del detalle; flotante abajo
+- ! La respuesta se muestra como texto con código en línea (rich), sin markdown completo · sin revisar
+  Por qué: la web no tiene un renderizador de markdown en el cliente
+  Descartado: renderizar markdown en el hub
+
+**Prueba:** hub/test/ui-chat.test.js (Playwright con el claude falso: conversar, herramientas plegadas, recargar, Nueva, lista y borrar; Cortar con dos pestañas en vivo; la tarea abierta como contexto y sacarla; sin claude; desde la red no aparece). Capturas en claro y oscuro.
+
+**Notas:** Panel #chat en index.html, la lógica al final de app.js (C, chatCheck, chatEvent, renderChat). De paso se arregló un 'null' suelto en el detalle de las tareas sin decisiones (M24), con su test en ui-decisions.test.js.
 
 **Bloqueada por:** 25.4 API y WebSocket del chat
 

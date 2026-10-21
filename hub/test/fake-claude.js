@@ -55,14 +55,16 @@ createInterface({ input: process.stdin }).on('line', (line) => {
   }
   if (msg.type !== 'user') return;
   const text = msg.message.content;
+  // La tarea abierta que el chat pone delante no cambia qué hacer.
+  const said = text.replace(/^Tarea abierta: [^\n]*\n\n/, '');
   out({ type: 'system', subtype: 'init', cwd: process.cwd(), tools: ['Read', 'Grep', 'Glob'] });
-  if (text === 'morir') {
+  if (said === 'morir') {
     process.stderr.write('se cayó\n');
     process.exit(3);
   }
-  if (text.startsWith('lento')) return slow(true);
-  if (text.startsWith('colgado')) return slow(false);
-  if (text.startsWith('herramienta')) {
+  if (said.startsWith('lento')) return slow(true);
+  if (said.startsWith('colgado')) return slow(false);
+  if (said.startsWith('herramienta')) {
     out({ type: 'assistant', parent_tool_use_id: null, message: { content: [{ type: 'tool_use', id: 'toolu_1', name: 'mcp__scompass__show_task', input: { id: 'm1-01' } }] } });
     out({ type: 'user', parent_tool_use_id: null, message: { content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: '{}' }] } });
     delta('listo');

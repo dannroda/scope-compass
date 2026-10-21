@@ -116,3 +116,10 @@ test('vista Decisiones: la pestaña cuenta las que esperan; filtros, acciones y 
   assert.equal(await page.evaluate(() => location.hash), '#task/m1-04');
   assert.equal(await page.isVisible('#decisions'), true);
 });
+
+test('una tarea sin decisiones no muestra la sección (ni un "null" suelto)', async () => {
+  const page = await open('#task/m1-01', '#detail:not([hidden])');
+  assert.equal(await page.$$eval('#detail .decisions', (els) => els.length), 0);
+  assert.equal(await page.$eval('#detail', (d) => [...d.childNodes].some((n) => n.nodeType === 3 && n.textContent === 'null')), false);
+});
+

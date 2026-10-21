@@ -29,6 +29,7 @@
     </div>
     <span class="conn" id="conn" role="status" hidden>Sin conexión con el hub · reintentando</span>
     <span class="gitmark" id="git" role="status" hidden></span>
+    <button class="btn ghost chat-btn" id="chat-btn" type="button" hidden aria-pressed="false" title="Chat con Claude Code">Chat</button>
     <button class="btn ghost settings-btn" id="settings-btn" type="button" aria-label="Ajustes" title="Ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     <button class="btn primary" id="new-btn" type="button">Nueva tarea</button>
   </header>
@@ -54,6 +55,7 @@
 </div>
 <aside class="detail" id="detail" hidden aria-label="Detalle de la tarea" tabindex="-1"></aside>
 <aside class="pt-empty" id="pt-empty" hidden aria-label="Tarea de la sesión"></aside>
+<aside class="chat" id="chat" hidden aria-label="Chat"></aside>
 <div class="toast" id="toast" role="status" hidden></div>
 </body>
 </html>

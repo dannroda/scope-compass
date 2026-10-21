@@ -98,7 +98,13 @@
     playtests: () => call('GET', '/api/playtests'),
     playtestCreate: (title, tasks) => call('POST', '/api/playtests', { title, tasks }),
     playtestPatch: (id, patch, etag) => call('PATCH', '/api/playtests/' + encodeURIComponent(id), patch, etag),
-    playtestDelete: (id, etag) => call('DELETE', '/api/playtests/' + encodeURIComponent(id), undefined, etag)
+    playtestDelete: (id, etag) => call('DELETE', '/api/playtests/' + encodeURIComponent(id), undefined, etag),
+    chats: () => call('GET', '/api/chats'),
+    chat: (id) => call('GET', '/api/chats/' + encodeURIComponent(id)),
+    chatCreate: (text, task) => call('POST', '/api/chats', { text, task }),
+    chatSend: (id, text, task) => call('POST', '/api/chats/' + encodeURIComponent(id) + '/messages', { text, task }),
+    chatInterrupt: (id) => call('POST', '/api/chats/' + encodeURIComponent(id) + '/interrupt'),
+    chatRemove: (id) => call('DELETE', '/api/chats/' + encodeURIComponent(id))
   };
 
   function pref(k, v) {
@@ -983,7 +989,8 @@
   }
   function renderDecisions(t) {
     const list = decisionsOf(t);
-    if (!list.length) return null;
+    // Va directo en el replaceChildren del detalle, que escribiría "null": sin decisiones, nada.
+    if (!list.length) return document.createDocumentFragment();
     const n = decisionCounts(t);
     const waiting = [n.open && n.open + ' abiertas', n.pending && n.pending + ' sin revisar', n.revert && n.revert + ' a revertir'].filter(Boolean);
     return h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
@@ -2390,6 +2397,7 @@
       tab.style.order = String(S.views.includes(v) ? S.views.indexOf(v) : 9);
     }
     nav.hidden = [...nav.children].filter((a) => !a.hidden).length < 2;
+    renderChatAttach();
   }
 
   function setFilter(id) { S.filter = id; pref('filter', id); render(); }
@@ -2421,8 +2429,9 @@
   // dónde empezó: arrastrar una selección desde las notas hasta afuera no lo cierra, y un botón del detalle que se
   // redibuja (y queda fuera del documento) tampoco.
   let openAtDown = null;
-  // En la vista dividida de Playtest el detalle es un panel fijo: un clic en la sesión no lo cierra.
-  document.addEventListener('pointerdown', (e) => { openAtDown = S.openId && !ptSplit() && !e.target.closest('#detail, dialog.lightbox') ? S.openId : null; });
+  // En la vista dividida de Playtest el detalle es un panel fijo: un clic en la sesión no lo cierra. El chat tampoco:
+  // la tarea abierta es la que va con el mensaje.
+  document.addEventListener('pointerdown', (e) => { openAtDown = S.openId && !ptSplit() && !e.target.closest('#detail, dialog.lightbox, #chat, #chat-btn') ? S.openId : null; });
   // Pegar o soltar una imagen con la tarea abierta la agrega como captura (18.4).
   document.addEventListener('paste', (e) => {
     const files = [...(e.clipboardData?.files ?? [])];
@@ -2497,6 +2506,7 @@
   document.addEventListener('keydown', (e) => {
     if (e.defaultPrevented) return;
     if (e.key === 'Escape') {
+      if (document.getElementById('chat').contains(document.activeElement)) return;
       const f = document.getElementById('new-form');
       if (!f.hidden && f.contains(document.activeElement)) { f.hidden = true; return; }
       if (S.openId) closeTask();
@@ -2556,7 +2566,8 @@
 
   // Eventos del hub (spec §5.5). El hello llega al abrir y en cada reconexión: dispara una carga completa.
   function onEvent(m) {
-    if (m.type === 'hello') { load(); return; }
+    if (m.type === 'hello') { load(); chatCheck(); return; }
+    if (m.type === 'chat') { chatEvent(m); return; }
     if (m.type === 'focus') { callAttention(); return; }
     if (loading) { eventsDuringLoad = true; return; }
     if (S.view === 'files') refreshFiles(); // cualquier cambio puede tocar el estado de git de algún archivo
@@ -2636,6 +2647,214 @@
     setInterval(checkHome, 10000);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkHome(); });
   }
+
+  // Chat (M25, §32): el Claude Code instalado, con el MCP scompass, en un panel a la izquierda (el detalle de la tarea
+  // sigue a la derecha). Solo aparece si /api/chats responde: fuera de 127.0.0.1 el hub dice 403 y no hay botón.
+  // La conversación se arma con la copia del hub (entries) más el turno en curso, que llega por el WebSocket.
+  const CHAT_OPEN = 'chatOpen:' + BASE, CHAT_ID = 'chatId:' + BASE;
+  const C = { available: false, claude: true, open: pref(CHAT_OPEN) === '1', chats: [], id: pref(CHAT_ID) || null, entries: [], turn: null,
+    listing: false, error: '', attach: null, confirmRemove: null };
+  const chatEl = document.getElementById('chat');
+  const chatInput = h('textarea', { id: 'chat-input', rows: 2, placeholder: 'Preguntá o pedí algo sobre el tablero', 'aria-label': 'Mensaje' });
+  const chatParts = { head: h('div', { class: 'chat-head' }), body: h('div', { class: 'chat-body', 'aria-live': 'polite' }), attach: h('div', { class: 'chat-attach' }), actions: h('div', { class: 'chat-actions' }) };
+  const chatForm = h('form', { class: 'chat-form', onsubmit: (e) => { e.preventDefault(); chatSendInput(); } }, chatParts.attach, chatInput, chatParts.actions);
+  chatEl.append(chatParts.head, chatParts.body, chatForm);
+  // Enter manda; Mayús+Enter es otra línea.
+  chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); chatSendInput(); } });
+  chatInput.addEventListener('input', () => renderChatActions());
+  // El texto de una pregunta lleva delante la tarea abierta (chats.js › withTask); en la conversación se muestra sin eso.
+  const chatPlain = (text) => String(text).replace(/^Tarea abierta: [^\n]*\n\n/, '');
+
+  async function chatCheck() {
+    try {
+      const r = await api.chats();
+      C.available = true;
+      C.claude = r.claude;
+      C.chats = r.chats;
+      if (C.id && !C.chats.some((c) => c.id === C.id)) chatSelect(null);
+      else if (C.id && C.open) await chatLoad();
+    } catch (e) {
+      C.available = false;
+    }
+    renderChat();
+  }
+  async function chatList() {
+    C.chats = (await api.chats().catch(() => null))?.chats ?? C.chats;
+    renderChat();
+  }
+  async function chatLoad() {
+    if (!C.id) return;
+    try {
+      const r = await api.chat(C.id);
+      C.entries = r.entries;
+      C.turn = r.busy ? { text: r.turn?.text ?? '', tools: r.turn?.tools ?? [], errors: [] } : null;
+    } catch (e) {
+      if (e.code === 'not_found') { chatSelect(null); return; }
+      C.error = e.message;
+    }
+  }
+  function chatSelect(id) {
+    C.id = id; C.entries = []; C.turn = null; C.error = ''; C.listing = false; C.confirmRemove = null;
+    pref(CHAT_ID, id ?? '');
+  }
+  async function chatOpen(id) {
+    chatSelect(id);
+    await chatLoad();
+    renderChat();
+    chatInput.focus();
+  }
+  function chatToggle(open = !C.open) {
+    C.open = open;
+    pref(CHAT_OPEN, open ? '1' : '0');
+    if (open && C.id) chatLoad().then(renderChat); else renderChat();
+    if (open) chatInput.focus();
+  }
+  // La tarea abierta en el detalle va con el mensaje, salvo que se la quite (vale hasta abrir otra).
+  const chatTask = () => (S.openId && C.attach !== S.openId ? S.tasks.find((t) => t.id === S.openId) ?? null : null);
+
+  async function chatSendInput() {
+    const text = chatInput.value.trim();
+    if (!text || C.turn || !C.claude) return;
+    const task = chatTask()?.id;
+    C.error = '';
+    chatInput.value = '';
+    try {
+      if (C.id) await api.chatSend(C.id, text, task);
+      else {
+        const chat = await api.chatCreate(text, task);
+        C.chats = [chat, ...C.chats.filter((c) => c.id !== chat.id)];
+        chatSelect(chat.id);
+        await chatLoad();
+      }
+    } catch (e) {
+      chatInput.value = text;
+      C.error = e.code === 'claude_missing' ? 'No se encontró Claude Code en este equipo.' : e.message;
+      if (e.code === 'claude_missing') C.claude = false;
+    }
+    renderChat();
+  }
+
+  function chatEvent(m) {
+    if (!C.available) return;
+    if (m.chat !== C.id) {
+      // Otra conversación (de esta pestaña o de otra): solo cambia la lista.
+      if (m.event === 'turn' || m.event === 'end') chatList();
+      return;
+    }
+    if (m.event === 'turn') {
+      C.entries = [...C.entries, { role: 'user', text: chatPlain(m.text) }];
+      C.turn = { text: '', tools: [], errors: [] };
+    } else if (!C.turn && m.event !== 'end') {
+      return;
+    } else if (m.event === 'text') {
+      C.turn.text += m.text;
+      // Solo el texto en vivo, sin rearmar el panel en cada pedazo.
+      const live = chatParts.body.querySelector('.msg.live .msg-text');
+      if (live) { const stick = chatAtBottom(); live.textContent = C.turn.text; if (stick) chatScroll(); return; }
+    } else if (m.event === 'tool') {
+      C.turn.tools.push({ id: m.id, name: m.name, brief: m.brief });
+    } else if (m.event === 'tool_result') {
+      const t = C.turn.tools.find((x) => x.id === m.id);
+      if (t) t.ok = m.ok;
+    } else if (m.event === 'error') {
+      C.turn.errors.push(m.message);
+    } else if (m.event === 'end') {
+      chatLoad().then(() => { C.turn = null; renderChat(); });
+      chatList();
+      return;
+    }
+    renderChat();
+  }
+
+  const chatAtBottom = () => chatParts.body.scrollHeight - chatParts.body.scrollTop - chatParts.body.clientHeight < 40;
+  const chatScroll = () => { chatParts.body.scrollTop = chatParts.body.scrollHeight; };
+
+  function chatTools(tools, open) {
+    if (!tools.length) return null;
+    return h('details', { class: 'chat-tools', open },
+      h('summary', null, tools.length === 1 ? '1 herramienta' : tools.length + ' herramientas'),
+      h('ul', null, tools.map((t) => h('li', { class: t.ok === false ? 'fail' : null },
+        h('span', { class: 'tmark', 'aria-label': t.ok === undefined ? 'en curso' : t.ok ? 'bien' : 'falló' }, t.ok === undefined ? '…' : t.ok ? '✓' : '✗'), ' ',
+        h('code', null, t.name), t.brief ? h('span', { class: 'tbrief' }, ' ' + t.brief) : null))));
+  }
+  function chatEntry(e) {
+    if (e.role === 'user') {
+      const task = e.task ? S.tasks.find((t) => t.id === e.task) : null;
+      return h('div', { class: 'msg user' }, h('div', { class: 'msg-text' }, e.text),
+        e.task ? h('div', { class: 'msg-task' }, 'con la tarea ', h('a', { href: '#task/' + encodeURIComponent(e.task), onclick: (ev) => { ev.preventDefault(); openTask(e.task); } }, task ? (task.code ? task.code + ' ' : '') + task.title : e.task)) : null);
+    }
+    return h('div', { class: 'msg bot' + (e.ok === false ? ' failed' : '') }, chatTools(e.tools ?? [], false),
+      e.text ? h('div', { class: 'msg-text' }, rich(e.text)) : null,
+      e.interrupted ? h('div', { class: 'msg-note' }, 'Cortado') : null,
+      e.error ? h('div', { class: 'msg-err' }, e.error) : null);
+  }
+  function renderChatHead() {
+    const current = C.chats.find((c) => c.id === C.id);
+    chatParts.head.replaceChildren(
+      h('h2', { title: current?.title }, C.listing || !current ? 'Chat' : current.title),
+      h('button', { class: 'btn ghost', type: 'button', 'aria-pressed': C.listing ? 'true' : 'false', onclick: () => { C.listing = !C.listing; C.confirmRemove = null; renderChat(); } }, 'Conversaciones'),
+      h('button', { class: 'btn ghost', type: 'button', disabled: !C.id && !C.listing, onclick: () => { chatSelect(null); renderChat(); chatInput.focus(); } }, 'Nueva'),
+      h('button', { class: 'btn ghost close', type: 'button', 'aria-label': 'Cerrar el chat', onclick: () => chatToggle(false) }, '×'));
+  }
+  function renderChatBody() {
+    const body = chatParts.body;
+    const stick = chatAtBottom();
+    if (C.listing) {
+      body.replaceChildren(C.chats.length ? h('ul', { class: 'chat-list' }, C.chats.map((c) => h('li', { 'aria-current': c.id === C.id ? 'true' : null },
+        h('button', { class: 'pick', type: 'button', onclick: () => chatOpen(c.id) }, h('span', { class: 'ctitle' }, c.title), stamp(c.last_at)),
+        C.confirmRemove === c.id
+          ? h('button', { class: 'btn danger', type: 'button', onclick: async () => {
+            await api.chatRemove(c.id).catch(() => {});
+            if (C.id === c.id) chatSelect(null);
+            C.confirmRemove = null; C.listing = true;
+            await chatList();
+          } }, '¿Borrar?')
+          : h('button', { class: 'rm', type: 'button', 'aria-label': 'Borrar la conversación ' + c.title, onclick: () => { C.confirmRemove = c.id; renderChat(); } }, '×'))))
+        : h('p', { class: 'chat-empty' }, 'Todavía no hay conversaciones.'));
+      return;
+    }
+    const kids = [];
+    if (!C.claude) {
+      kids.push(h('p', { class: 'chat-empty' }, 'El chat usa Claude Code, instalado en este equipo y con tu cuenta: instalalo (', h('code', null, 'npm i -g @anthropic-ai/claude-code'),
+        '), entrá una vez con ', h('code', null, 'claude'), ' y volvé a abrir el panel.'));
+    } else if (!C.id) {
+      kids.push(h('p', { class: 'chat-empty' }, 'Una conversación con Claude Code sobre este proyecto: lee y escribe el tablero y lee los archivos, pero no edita ni corre comandos.'));
+    }
+    kids.push(...C.entries.map(chatEntry));
+    if (C.turn) {
+      kids.push(h('div', { class: 'msg bot live' }, chatTools(C.turn.tools, true), h('div', { class: 'msg-text' }, C.turn.text),
+        C.turn.errors.length ? h('div', { class: 'msg-err' }, C.turn.errors.join('\n')) : null,
+        h('div', { class: 'msg-note typing' }, 'Escribiendo…')));
+    }
+    if (C.error) kids.push(h('p', { class: 'msg-err', role: 'alert' }, C.error));
+    body.replaceChildren(...kids);
+    if (stick || C.turn) chatScroll();
+  }
+  function renderChatAttach() {
+    if (!C.available) return;
+    if (C.attach && C.attach !== S.openId) C.attach = null;
+    const task = chatTask();
+    chatParts.attach.replaceChildren(...(task ? [h('span', null, 'Con la tarea ', h('b', null, (task.code ? task.code + ' ' : '') + task.title)),
+      h('button', { class: 'rm', type: 'button', 'aria-label': 'No mandar la tarea', onclick: () => { C.attach = S.openId; renderChatAttach(); } }, '×')] : []));
+    chatParts.attach.hidden = !task;
+  }
+  function renderChatActions() {
+    chatParts.actions.replaceChildren(C.turn
+      ? h('button', { class: 'btn', type: 'button', onclick: () => api.chatInterrupt(C.id).catch(() => {}) }, 'Cortar')
+      : h('button', { class: 'btn primary', type: 'submit', disabled: !chatInput.value.trim() || !C.claude }, 'Enviar'));
+  }
+  function renderChat() {
+    const btn = document.getElementById('chat-btn');
+    btn.hidden = !C.available;
+    btn.setAttribute('aria-pressed', C.open ? 'true' : 'false');
+    const show = C.available && C.open;
+    chatEl.hidden = !show;
+    document.body.classList.toggle('chat-open', show);
+    if (!show) return;
+    renderChatHead(); renderChatBody(); renderChatAttach(); renderChatActions();
+    chatInput.disabled = !C.claude;
+  }
+  document.getElementById('chat-btn').addEventListener('click', () => chatToggle());
 
   readHash();
   window.addEventListener('hashchange', () => { readHash(); if (S.loaded) dropMissingTask(); render(); scrollToSection(); });
