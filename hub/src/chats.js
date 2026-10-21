@@ -1,0 +1,196 @@
+// Conversaciones del chat (M25, spec §32, 25.3): qué conversaciones hay en un proyecto y una copia liviana de lo
+// que se mostró. Viven en la carpeta del chat del proyecto (chatDir), fuera de compass/: index.json
+// ({ chats: [{ id, title, created_at, last_at, started? }] }) y un <id>.jsonl por conversación. El id es el de la
+// sesión de Claude Code, que guarda la conversación de verdad y la retoma con --resume; started dice que ya existe.
+// ChatManager junta eso con un ChatProcess por conversación en uso.
+import { EventEmitter } from 'node:events';
+import { randomUUID } from 'node:crypto';
+import { appendFile, mkdir, readFile, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { ChatError, ChatProcess, chatDir } from './chat.js';
+import { writeAtomic } from './store/atomic.js';
+
+const TITLE = 60;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** El título de una conversación: el comienzo del primer mensaje, en una línea. */
+export function chatTitle(text) {
+  const t = text.replace(/\s+/g, ' ').trim();
+  return t.length > TITLE ? `${t.slice(0, TITLE - 1)}…` : t;
+}
+
+/** El mensaje que recibe claude: con una tarea abierta en la web, la nombra delante (el agente la lee con show_task). */
+export function withTask(text, task) {
+  if (!task) return text;
+  return `Tarea abierta: ${task.code ? `${task.code} ` : ''}${task.title} (compass://task/${task.id})\n\n${text}`;
+}
+
+export function chatStore(projectDir, { now = () => new Date().toISOString() } = {}) {
+  const dir = chatDir(projectDir);
+  const index = join(dir, 'index.json');
+  const copy = (id) => {
+    if (!UUID.test(id)) throw new ChatError('not_found', `no hay una conversación ${id}`);
+    return join(dir, `${id}.jsonl`);
+  };
+  // Las escrituras del índice, de a una (un solo proceso sirve el proyecto).
+  let queue = Promise.resolve();
+  const change = (fn) => {
+    const p = queue.then(async () => {
+      const chats = await list();
+      const out = fn(chats);
+      await mkdir(dir, { recursive: true });
+      await writeAtomic(index, `${JSON.stringify({ chats }, null, 2)}\n`);
+      return out;
+    });
+    queue = p.catch(() => {});
+    return p;
+  };
+  async function list() {
+    try {
+      const chats = JSON.parse(await readFile(index, 'utf8')).chats;
+      return Array.isArray(chats) ? chats : [];
+    } catch (e) {
+      if (e.code === 'ENOENT' || e instanceof SyntaxError) return [];
+      throw e;
+    }
+  }
+  return {
+    /** Las conversaciones, la última usada primero. */
+    async list() { return (await list()).sort((a, b) => b.last_at.localeCompare(a.last_at)); },
+    async get(id) { return (await list()).find((c) => c.id === id) ?? null; },
+    create(text) {
+      const at = now();
+      const chat = { id: randomUUID(), title: chatTitle(text), created_at: at, last_at: at };
+      return change((chats) => { chats.push(chat); return chat; });
+    },
+    /** Anota que se usó (y que la sesión de Claude Code ya existe, con started). */
+    touch(id, { started = false } = {}) {
+      return change((chats) => {
+        const c = chats.find((x) => x.id === id);
+        if (!c) return null;
+        c.last_at = now();
+        if (started) c.started = true;
+        return c;
+      });
+    },
+    async remove(id) {
+      const found = await change((chats) => {
+        const i = chats.findIndex((x) => x.id === id);
+        return i < 0 ? false : (chats.splice(i, 1), true);
+      });
+      if (found) await rm(copy(id), { force: true });
+      return found;
+    },
+    async append(id, entry) {
+      await mkdir(dir, { recursive: true });
+      await appendFile(copy(id), `${JSON.stringify({ ...entry, at: entry.at ?? now() })}\n`);
+    },
+    /** La copia de la conversación: [{ role: 'user', text, task?, at } | { role: 'assistant', text, tools, ok, … }]. */
+    async read(id) {
+      let text;
+      try { text = await readFile(copy(id), 'utf8'); } catch (e) { if (e.code === 'ENOENT') return []; throw e; }
+      return text.split('\n').filter(Boolean).flatMap((l) => { try { return [JSON.parse(l)]; } catch { return []; } });
+    },
+  };
+}
+
+/**
+ * Las conversaciones de un proyecto con sus procesos: crea, manda, corta y borra, guarda la copia al final de cada
+ * turno y emite 'event' con { chat, ...evento } (los de ChatProcess) para el WebSocket. close() cierra los procesos.
+ */
+export class ChatManager extends EventEmitter {
+  constructor({ projectDir, name, env = process.env, now, idleMs, interruptMs }) {
+    super();
+    Object.assign(this, { projectDir, name, env, idleMs, interruptMs });
+    this.store = chatStore(projectDir, { now });
+    this.procs = new Map();
+    this.turns = new Map();
+    this.saving = new Map();
+  }
+
+  list() { return this.store.list(); }
+
+  /** Una conversación con su copia, si hay un turno en curso y lo que va de él. */
+  async get(id) {
+    const chat = await this.store.get(id);
+    if (!chat) throw new ChatError('not_found', `no hay una conversación ${id}`);
+    const turn = this.turns.get(id);
+    return { chat, entries: await this.store.read(id), busy: !!turn, turn: turn ? { text: turn.text, tools: turn.tools } : null };
+  }
+
+  /** Crea una conversación y le manda el primer mensaje. task: { id, code, title } de la tarea abierta en la web. */
+  async create(text, { task } = {}) {
+    const chat = await this.store.create(text);
+    try {
+      await this.send(chat.id, text, { task });
+    } catch (e) {
+      await this.store.remove(chat.id);
+      throw e;
+    }
+    return chat;
+  }
+
+  async send(id, text, { task } = {}) {
+    const chat = await this.store.get(id);
+    if (!chat) throw new ChatError('not_found', `no hay una conversación ${id}`);
+    const proc = this.#proc(chat);
+    await proc.send(withTask(text, task));
+    // El fin del turno espera a que esté guardado el mensaje, así la copia queda en orden.
+    const saved = this.store.append(id, { role: 'user', text, ...(task ? { task: task.id } : {}) });
+    this.saving.set(id, saved.catch(() => {}));
+    await saved;
+  }
+
+  interrupt(id) { return this.procs.get(id)?.interrupt() ?? false; }
+
+  async remove(id) {
+    this.procs.get(id)?.close();
+    this.procs.delete(id);
+    this.turns.delete(id);
+    if (!await this.store.remove(id)) throw new ChatError('not_found', `no hay una conversación ${id}`);
+  }
+
+  close() {
+    for (const p of this.procs.values()) p.close();
+    this.procs.clear();
+  }
+
+  #proc(chat) {
+    let proc = this.procs.get(chat.id);
+    if (proc) return proc;
+    const opts = { projectDir: this.projectDir, name: this.name, session: chat.id, resume: !!chat.started, env: this.env };
+    if (this.idleMs !== undefined) opts.idleMs = this.idleMs;
+    if (this.interruptMs !== undefined) opts.interruptMs = this.interruptMs;
+    proc = new ChatProcess(opts);
+    proc.on('event', (e) => this.#event(chat.id, proc, e));
+    this.procs.set(chat.id, proc);
+    return proc;
+  }
+
+  // Arma la respuesta del turno con lo que va llegando y la guarda en la copia al terminar.
+  #event(id, proc, e) {
+    if (e.event === 'turn') this.turns.set(id, { text: '', tools: [], errors: [] });
+    const turn = this.turns.get(id);
+    if (turn) {
+      if (e.event === 'text') turn.text += e.text;
+      else if (e.event === 'tool') turn.tools.push({ id: e.id, name: e.name, brief: e.brief });
+      else if (e.event === 'tool_result') {
+        const t = turn.tools.find((x) => x.id === e.id);
+        if (t) t.ok = e.ok;
+      } else if (e.event === 'error') turn.errors.push(e.message);
+      else if (e.event === 'end') {
+        this.turns.delete(id);
+        const entry = { role: 'assistant', text: turn.text, tools: turn.tools.map(({ id: _, ...t }) => t), ok: e.ok };
+        if (e.interrupted) entry.interrupted = true;
+        const error = [e.error, ...turn.errors].filter(Boolean).join('\n');
+        if (error) entry.error = error;
+        if (e.cost !== undefined) entry.cost = e.cost;
+        const save = (this.saving.get(id) ?? Promise.resolve()).then(() => this.store.append(id, entry)).then(() => this.store.touch(id, { started: proc.resume }));
+        save.catch((err) => this.emit('event', { chat: id, event: 'error', code: 'io_error', message: err.message }))
+          .then(() => this.emit('event', { chat: id, ...e }));
+        return;
+      }
+    }
+    this.emit('event', { chat: id, ...e });
+  }
+}

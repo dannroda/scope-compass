@@ -2723,7 +2723,7 @@ Pasar una decisión de tarea que resultó ser de diseño a una entrada nueva al 
 
 **Bloqueada por:** 24.1 Spec y decisión de las decisiones
 
-## M25 — Chat  (2/8, 2 en revisión)
+## M25 — Chat  (3/8, 3 en revisión)
 
 Un chat chico sobre el tablero, desde la web, que habla con el Claude Code local: preguntar por tareas, cargarlas y responder las preguntas del agente sin abrir una terminal.
 
@@ -2781,9 +2781,20 @@ Un módulo del hub que lanza claude con stream-json en la carpeta del proyecto, 
 
 **Bloqueada por:** 25.1 Spec y decisión del chat
 
-### 25.3 Conversaciones: retomar y listar · Pendiente
+### 25.3 Conversaciones: retomar y listar · Revisión
 
 Guarda el session_id de cada conversación con un título y la fecha, por proyecto, fuera de compass/ (es de la máquina, no va a git), y la retoma con --resume. El historial lo tiene Claude Code; el hub solo guarda qué conversaciones hay. Borrar una conversación la saca de la lista.
+
+**Decisiones:**
+- ! El id de la conversación es el session_id de Claude Code; el índice suma started para saber si ya se puede usar --resume · sin revisar
+  Por qué: si el primer lanzamiento falla, --resume de una sesión que no existe da error
+  Descartado: un id propio y el session_id aparte
+- ! La respuesta se guarda en la copia al terminar el turno, no a medida que llega · sin revisar
+  Por qué: una sola línea por respuesta; lo que va del turno lo tiene la memoria del hub (get lo devuelve)
+
+**Prueba:** hub/test/chats.test.js (11 tests con el claude falso: índice, copia en orden, --resume tras cerrar el hub, turno en curso, cortar, caída, sin claude, borrar, varias a la vez)
+
+**Notas:** hub/src/chats.js: chatStore (index.json y <id>.jsonl en chatDir) y ChatManager (create, send, get, interrupt, remove, close; 'event' con { chat, … }). La 25.4 lo cuelga del server y del WebSocket.
 
 **Bloquea a:** 25.4 API y WebSocket del chat; 25.8 Responder una pregunta abierta retoma la sesión
 

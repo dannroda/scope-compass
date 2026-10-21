@@ -2,6 +2,19 @@
   "checklist": [],
   "code": "25.3",
   "created_at": "2026-10-21T04:01:04.066Z",
+  "decisions": [
+    {
+      "alternatives": "un id propio y el session_id aparte",
+      "at": "2026-10-21T05:22:16.202Z",
+      "text": "El id de la conversación es el session_id de Claude Code; el índice suma started para saber si ya se puede usar --resume",
+      "why": "si el primer lanzamiento falla, --resume de una sesión que no existe da error"
+    },
+    {
+      "at": "2026-10-21T05:22:17.499Z",
+      "text": "La respuesta se guarda en la copia al terminar el turno, no a medida que llega",
+      "why": "una sola línea por respuesta; lo que va del turno lo tiene la memoria del hub (get lo devuelve)"
+    }
+  ],
   "description": "Guarda el session_id de cada conversación con un título y la fecha, por proyecto, fuera de compass/ (es de la máquina, no va a git), y la retoma con --resume. El historial lo tiene Claude Code; el hub solo guarda qué conversaciones hay. Borrar una conversación la saca de la lista.",
   "links": [
     {
@@ -14,11 +27,11 @@
     }
   ],
   "milestone": "m25",
-  "notes": "",
+  "notes": "hub/src/chats.js: chatStore (index.json y <id>.jsonl en chatDir) y ChatManager (create, send, get, interrupt, remove, close; 'event' con { chat, … }). La 25.4 lo cuelga del server y del WebSocket.",
   "order": 3,
   "refs": [],
-  "status": "todo",
-  "test": "",
+  "status": "review",
+  "test": "hub/test/chats.test.js (11 tests con el claude falso: índice, copia en orden, --resume tras cerrar el hub, turno en curso, cortar, caída, sin claude, borrar, varias a la vez)",
   "title": "Conversaciones: retomar y listar",
-  "updated_at": "2026-10-21T04:01:20.154Z"
+  "updated_at": "2026-10-21T05:23:48.585Z"
 }
