@@ -16,3 +16,7 @@ npm-debug.log*
 
 # Python
 __pycache__/
+
+# Escrituras atómicas de scompass a medio terminar (.<archivo>.<hex>.tmp): un commit justo después de cambiar el
+# tablero puede encontrar la del export
+.*.tmp
