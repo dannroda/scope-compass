@@ -1,0 +1,25 @@
+{
+  "checklist": [],
+  "code": "29.1",
+  "created_at": "2026-10-21T06:21:35.821Z",
+  "description": "Hoy el chat solo atiende a 127.0.0.1, también con --lan (D43): sin login, cualquiera en la red usaría la cuenta y leería el repo. Pedido del usuario (2026-10-21): usar el chat desde el teléfono con el perfil de este equipo; no es urgente. Propuesta: en el Inicio de este equipo, Vincular teléfono muestra un QR con la dirección de la red y un código de un solo uso (vence en minutos); el teléfono lo canjea por un token propio que guarda en una cookie. El chat pasa a aceptar «local o vinculado». Escribir la sección de la spec (§34) y la D45: el token (largo, guardado con hash en la carpeta de config, junto a chats/), la cookie (HttpOnly, SameSite=Strict; sin TLS viaja en claro en la LAN, igual que hoy el tablero), revocar, qué pasa con un hub suelto contra el Inicio, y qué no cambia: los permisos del agente (tablero y lectura). Fuera de casa queda para Tailscale (m7-02), no para un servicio público: el teléfono habla con este equipo y no hace falta que compass/ tenga un espejo online.",
+  "links": [
+    {
+      "task": "m29-02",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m29",
+  "notes": "",
+  "order": 1,
+  "priority": "low",
+  "refs": [],
+  "size": "s",
+  "status": "todo",
+  "tags": [
+    "seguridad"
+  ],
+  "test": "",
+  "title": "Spec y decisión: vincular dispositivos para el chat",
+  "updated_at": "2026-10-21T06:21:42.193Z"
+}

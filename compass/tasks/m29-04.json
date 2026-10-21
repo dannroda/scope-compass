@@ -1,0 +1,22 @@
+{
+  "checklist": [],
+  "code": "29.4",
+  "created_at": "2026-10-21T06:21:39.138Z",
+  "description": "El panel del chat nunca se probó en pantalla chica: en el teléfono, a pantalla completa encima del tablero, con Atrás para cerrarlo (como el detalle de la tarea, M16), el cuadro de texto visible con el teclado abierto (visualViewport) y la cuenta y los límites plegados. Probar en un teléfono real por --lan, Android y, si se puede, iPhone.",
+  "links": [
+    {
+      "task": "m29-03",
+      "type": "related"
+    }
+  ],
+  "milestone": "m29",
+  "notes": "",
+  "order": 4,
+  "priority": "low",
+  "refs": [],
+  "size": "s",
+  "status": "todo",
+  "test": "",
+  "title": "Panel del chat en el teléfono",
+  "updated_at": "2026-10-21T06:21:44.370Z"
+}

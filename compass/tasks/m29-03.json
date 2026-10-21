@@ -1,0 +1,16 @@
+{
+  "checklist": [],
+  "code": "29.3",
+  "created_at": "2026-10-21T06:21:39.048Z",
+  "description": "En el Inicio de este equipo (solo local y con --lan): Vincular teléfono muestra el QR con la dirección de la red y el código, y también el enlace para copiar. El QR sin librería (preferir lo nativo): ver si alcanza un generador chico propio o si conviene mostrar solo el enlace con el código corto para escribir a mano; analizarlo con el usuario antes de sumar una dependencia. La lista de dispositivos con nombre, último uso y Quitar. En el teléfono, abrir el enlace guarda la cookie y muestra el botón Chat.",
+  "milestone": "m29",
+  "notes": "",
+  "order": 3,
+  "priority": "low",
+  "refs": [],
+  "size": "m",
+  "status": "todo",
+  "test": "",
+  "title": "Web: Vincular teléfono y lista de dispositivos",
+  "updated_at": "2026-10-21T06:21:39.048Z"
+}

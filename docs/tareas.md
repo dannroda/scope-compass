@@ -3042,3 +3042,55 @@ AGENTS.md (las tres copias), instalar.md y el README del hub: perfiles de Claude
 **Prueba:** Las tres copias de AGENTS.md iguales; suite 484.
 
 **Notas:** AGENTS.md (Chat): perfil por conversación y lo que muestra el panel. instalar.md: cuentas y perfiles en el chat, ~/.claude-profiles, SCOMPASS_CLAUDE_PROFILES, claude auth login. hub/README: profiles.js.
+
+## M29 — Chat desde el teléfono  (0/5)
+
+Usar el chat desde el teléfono por la red de casa (--lan), con el claude y los perfiles de este equipo, vinculando el teléfono en lugar de abrir el chat a toda la red (D43).
+
+**Hecho cuando:**
+- Con --lan, un teléfono vinculado desde este equipo usa el chat; sin vincular sigue dando 403 y sin el botón.
+- El Inicio lista los dispositivos vinculados y deja quitarlos, y uno quitado deja de poder usar el chat al instante.
+- Los eventos del chat por el WebSocket llegan solo a este equipo y a los vinculados, en el hub y en el Inicio.
+- El panel del chat se usa cómodo en un teléfono real, con el teclado abierto.
+
+### 29.1 Spec y decisión: vincular dispositivos para el chat · Pendiente
+
+**Prioridad:** baja · **Tamaño:** S · **Etiquetas:** `seguridad`
+
+Hoy el chat solo atiende a 127.0.0.1, también con --lan (D43): sin login, cualquiera en la red usaría la cuenta y leería el repo. Pedido del usuario (2026-10-21): usar el chat desde el teléfono con el perfil de este equipo; no es urgente. Propuesta: en el Inicio de este equipo, Vincular teléfono muestra un QR con la dirección de la red y un código de un solo uso (vence en minutos); el teléfono lo canjea por un token propio que guarda en una cookie. El chat pasa a aceptar «local o vinculado». Escribir la sección de la spec (§34) y la D45: el token (largo, guardado con hash en la carpeta de config, junto a chats/), la cookie (HttpOnly, SameSite=Strict; sin TLS viaja en claro en la LAN, igual que hoy el tablero), revocar, qué pasa con un hub suelto contra el Inicio, y qué no cambia: los permisos del agente (tablero y lectura). Fuera de casa queda para Tailscale (m7-02), no para un servicio público: el teléfono habla con este equipo y no hace falta que compass/ tenga un espejo online.
+
+**Bloquea a:** 29.2 Vincular y revocar dispositivos en el hub y el Inicio
+
+### 29.2 Vincular y revocar dispositivos en el hub y el Inicio · Pendiente
+
+**Prioridad:** baja · **Tamaño:** M · **Etiquetas:** `seguridad`
+
+Backend de 29.1. Crear el código de un solo uso (solo desde 127.0.0.1), canjearlo por el token del dispositivo (cookie), listar y quitar dispositivos (solo desde 127.0.0.1), con nombre y último uso. El onRequest de chat-api.js y el filtro de home-serve.js aceptan local o un token vinculado vigente; los eventos chat del WebSocket van a sockets locales o vinculados (ws.js local → permitido), también en el puente del Inicio a un hub suelto. Con token de hosting el chat sigue apagado. Sin dependencias nuevas (crypto de Node). Tests: sin vincular 403, vinculado 200, quitado 403 al instante, código usado o vencido falla, WebSocket no manda chat a un socket de la red sin vincular.
+
+**Bloquea a:** 29.3 Web: Vincular teléfono y lista de dispositivos
+
+**Bloqueada por:** 29.1 Spec y decisión: vincular dispositivos para el chat
+
+### 29.3 Web: Vincular teléfono y lista de dispositivos · Pendiente
+
+**Prioridad:** baja · **Tamaño:** M
+
+En el Inicio de este equipo (solo local y con --lan): Vincular teléfono muestra el QR con la dirección de la red y el código, y también el enlace para copiar. El QR sin librería (preferir lo nativo): ver si alcanza un generador chico propio o si conviene mostrar solo el enlace con el código corto para escribir a mano; analizarlo con el usuario antes de sumar una dependencia. La lista de dispositivos con nombre, último uso y Quitar. En el teléfono, abrir el enlace guarda la cookie y muestra el botón Chat.
+
+**Bloqueada por:** 29.2 Vincular y revocar dispositivos en el hub y el Inicio
+
+**Relacionadas:** 29.4 Panel del chat en el teléfono
+
+### 29.4 Panel del chat en el teléfono · Pendiente
+
+**Prioridad:** baja · **Tamaño:** S
+
+El panel del chat nunca se probó en pantalla chica: en el teléfono, a pantalla completa encima del tablero, con Atrás para cerrarlo (como el detalle de la tarea, M16), el cuadro de texto visible con el teclado abierto (visualViewport) y la cuenta y los límites plegados. Probar en un teléfono real por --lan, Android y, si se puede, iPhone.
+
+**Relacionadas:** 29.3 Web: Vincular teléfono y lista de dispositivos
+
+### 29.5 Documentar el chat desde el teléfono · Pendiente
+
+**Prioridad:** baja · **Tamaño:** S
+
+AGENTS.md (template, addon y compass/), instalar.md (el punto de --lan y el del chat) y los README: cómo vincular y quitar un teléfono, que el chat corre en este equipo con sus perfiles, y que fuera de casa es con Tailscale (m7-02).

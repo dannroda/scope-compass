@@ -1,0 +1,12 @@
+{
+  "code": "M29",
+  "done_when": [
+    "Con --lan, un teléfono vinculado desde este equipo usa el chat; sin vincular sigue dando 403 y sin el botón.",
+    "El Inicio lista los dispositivos vinculados y deja quitarlos, y uno quitado deja de poder usar el chat al instante.",
+    "Los eventos del chat por el WebSocket llegan solo a este equipo y a los vinculados, en el hub y en el Inicio.",
+    "El panel del chat se usa cómodo en un teléfono real, con el teclado abierto."
+  ],
+  "goal": "Usar el chat desde el teléfono por la red de casa (--lan), con el claude y los perfiles de este equipo, vinculando el teléfono en lugar de abrir el chat a toda la red (D43).",
+  "order": 29,
+  "title": "Chat desde el teléfono"
+}
