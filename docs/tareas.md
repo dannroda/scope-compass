@@ -840,13 +840,15 @@ Pedido del usuario: los pasos eran ambiguos cortos o demasiado largos para el do
 
 **Notas:** `checklist[].detail` opcional. Web: ▸ despliega, ✎ edita texto y detalle (vacío lo quita). Dock: ▸ debajo del checkbox. CLI: `step add|set|rm`, `show` con el detalle sangrado. Export md con el detalle sangrado (y `tools/artifact_to_md.py`, para seguir idénticos). Los enlaces del detalle cuentan en refs check, backlinks y refs suggest. `refs suggest` también reconoce "en el GDD (§4.3)".
 
-## M7 — Hosting privado  (1/2, 1 en revisión)
+## M7 — Hosting privado  (1/7, 1 en revisión)
 
-El mismo hub en un servidor privado para usarlo desde el teléfono, con git como almacenamiento (§12).
+El mismo hub en un servidor privado para usarlo desde el teléfono sin la PC prendida, con git como almacenamiento y espejo de compass/ (§12).
 
 **Hecho cuando:**
-- Desde el teléfono se ve y se edita el tablero (PWA).
+- Desde el teléfono se ve y se edita el tablero (PWA), también con la PC apagada: revisar tareas y decisiones.
 - Los cambios se commitean y se pushean solos, sin forzar nunca ante conflictos.
+- Cambios de los dos lados en la misma tarea se juntan solos salvo que toquen el mismo campo.
+- Este equipo trae los cambios del servidor con un aviso en el hub, sin commits automáticos en la rama de trabajo.
 - El hub pide token y no queda expuesto a internet sin login.
 
 ### 7.1 Investigar: abrir el hub desde el teléfono por la LAN · Revisión
@@ -888,6 +890,52 @@ La opción recomendada en D36 para cuando la red de casa no alcance: cifrado de 
 **Prueba:** Desde el teléfono, fuera de casa, el tablero se abre por HTTPS dentro de la tailnet, se instala como app y otro dispositivo fuera de la tailnet no llega.
 
 **Referencias:** `docs/spec.md#hosting`
+
+**Relacionadas:** 7.6 Servidor siempre prendido dentro de Tailscale
+
+### 7.3 Spec y decisión: compass/ espejado entre este equipo y el servidor · Pendiente
+
+**Prioridad:** baja · **Tamaño:** S · **Etiquetas:** `investigacion`
+
+Pedido del usuario (2026-10-21): revisar tareas y decisiones sin la PC prendida, con lo online y lo local como espejos, porque todo vive en el compass/ del proyecto. Rehacer §12.1 (dice que el repo no tiene remoto; ya tiene origin en GitHub) y registrar la D: merge driver propio para compass/ (7.4); el servidor pushea a una rama compass-sync y no a main, y toma lo que se pushea a main; este equipo la trae con aviso (7.5), sin commits automáticos en la rama de trabajo porque el tablero se commitea junto con el código; dónde corre (equipo siempre prendido en casa o VPS chico, siempre dentro de Tailscale) y cómo (systemd y scompass home contra Docker como dice §12: preferir lo nativo, decidirlo con el usuario); el chat queda solo en este equipo, sin cuenta de Claude en el servidor. Ver también qué pasa con varios proyectos (un clon por proyecto en el servidor) y con Epiphany.
+
+**Bloquea a:** 7.4 Merge driver de git para compass/
+
+### 7.4 Merge driver de git para compass/ · Pendiente
+
+**Prioridad:** baja · **Tamaño:** M · **Etiquetas:** `cli`
+
+Hoy dos cambios a la misma tarea (aprobar una decisión en el teléfono mientras el agente tilda pasos) dan conflicto de git aunque toquen campos distintos. scompass merge-json %O %A %B como driver (.gitattributes merge=scompass sobre compass/**/*.json; scompass init y update lo registran en .git/config del repo, sin pisar lo que haya): merge a tres bandas campo por campo; checklist, decisiones, archivos, capturas y vínculos se juntan por elemento (por id o por texto); updated_at toma el mayor; si los dos lados cambiaron el mismo campo, deja el archivo con marcadores de conflicto como hoy y el store lo marca inválido (§4.5). Sale en formato canónico y validado contra el schema. Sirve sin servidor: worktrees, Linux y Windows, ramas. Tests con repos git temporales: campos distintos se juntan, mismo campo conflicta, pasos tildados en los dos lados, tarea borrada de un lado.
+
+**Bloquea a:** 7.5 Rama compass-sync: commits del servidor y aviso en este equipo
+
+**Bloqueada por:** 7.3 Spec y decisión: compass/ espejado entre este equipo y el servidor
+
+### 7.5 Rama compass-sync: commits del servidor y aviso en este equipo · Pendiente
+
+**Prioridad:** baja · **Tamaño:** M · **Etiquetas:** `hub`
+
+El git-sync de §12.1 apuntando a la rama compass-sync: en el servidor, commits agrupados de compass/ con autor scompass-bot, pull de main y merge con el driver de 7.4 antes de cada push, sin forzar nunca; ante un conflicto no pushea y lo avisa en la UI. En este equipo, el hub o el Inicio hace fetch al arrancar y cada tanto, y avisa «hay N cambios del teléfono» (web, dock e Inicio); Traer los incorpora solo sobre compass/, con el driver, y quedan como archivos modificados para commitear con lo demás. Con cambios locales sin commitear en las mismas tareas, se junta igual campo por campo o se avisa sin tocar nada.
+
+**Bloquea a:** 7.6 Servidor siempre prendido dentro de Tailscale
+
+**Bloqueada por:** 7.4 Merge driver de git para compass/
+
+### 7.6 Servidor siempre prendido dentro de Tailscale · Pendiente
+
+**Prioridad:** baja · **Tamaño:** M · **Etiquetas:** `seguridad`
+
+Levantar el Inicio en el servidor según lo decidido en 7.3: clon de cada proyecto, git-sync de 7.5 encendido, token del hub, solo en la interfaz de Tailscale y con HTTPS por tailscale serve (lo de 7.2). Sin claude: el chat queda apagado ahí. Instrucciones para instalarlo y actualizarlo. Prueba: con la PC apagada, desde el teléfono se aprueba una decisión y se pasa una tarea de Revisión a Hecho; al prender la PC el hub avisa y los cambios llegan sin conflicto aunque el agente haya tocado la misma tarea.
+
+**Bloqueada por:** 7.5 Rama compass-sync: commits del servidor y aviso en este equipo
+
+**Relacionadas:** 7.2 Acceso fuera de casa con Tailscale
+
+### 7.7 Documentar el espejo de compass/ · Pendiente
+
+**Prioridad:** baja · **Tamaño:** S
+
+AGENTS.md (template, addon y compass/): que puede haber cambios del teléfono en compass-sync, que no se commitea en esa rama, y qué hacer con un conflicto que el driver no resolvió. instalar.md y los README: el merge driver, el servidor y el aviso de cambios.
 
 ## M8 — Inicio, listas y plantillas (v3)  (17/17)
 
