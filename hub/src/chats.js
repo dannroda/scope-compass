@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { appendFile, mkdir, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ChatError, ChatProcess, chatDir } from './chat.js';
+import { DEFAULT_PROFILE, listProfiles, sessionProfile } from './profiles.js';
 import { writeAtomic } from './store/atomic.js';
 
 const TITLE = 60;
@@ -32,36 +33,42 @@ export function chatStore(projectDir, { now = () => new Date().toISOString() } =
     if (!UUID.test(id)) throw new ChatError('not_found', `no hay una conversación ${id}`);
     return join(dir, `${id}.jsonl`);
   };
-  // Las escrituras del índice, de a una (un solo proceso sirve el proyecto).
+  // Las escrituras del índice, de a una (un solo proceso sirve el proyecto). fn recibe las conversaciones y el
+  // índice entero (para el perfil del proyecto, §33).
   let queue = Promise.resolve();
   const change = (fn) => {
     const p = queue.then(async () => {
-      const chats = await list();
-      const out = fn(chats);
+      const idx = await read();
+      const out = fn(idx.chats, idx);
       await mkdir(dir, { recursive: true });
-      await writeAtomic(index, `${JSON.stringify({ chats }, null, 2)}\n`);
+      await writeAtomic(index, `${JSON.stringify(idx, null, 2)}\n`);
       return out;
     });
     queue = p.catch(() => {});
     return p;
   };
-  async function list() {
+  async function read() {
     try {
-      const chats = JSON.parse(await readFile(index, 'utf8')).chats;
-      return Array.isArray(chats) ? chats : [];
+      const idx = JSON.parse(await readFile(index, 'utf8'));
+      return { ...idx, chats: Array.isArray(idx?.chats) ? idx.chats : [] };
     } catch (e) {
-      if (e.code === 'ENOENT' || e instanceof SyntaxError) return [];
+      if (e.code === 'ENOENT' || e instanceof SyntaxError) return { chats: [] };
       throw e;
     }
   }
+  const list = async () => (await read()).chats;
   return {
     /** Las conversaciones, la última usada primero. */
     async list() { return (await list()).sort((a, b) => b.last_at.localeCompare(a.last_at)); },
     async get(id) { return (await list()).find((c) => c.id === id) ?? null; },
-    /** Una conversación nueva; con session, una sesión de Claude Code que ya existe (started) y se creó afuera. */
-    create(text, { session } = {}) {
+    /**
+     * Una conversación nueva; con session, una sesión de Claude Code que ya existe (started) y se creó afuera.
+     * profile: su perfil (§33); el predeterminado no se anota.
+     */
+    create(text, { session, profile } = {}) {
       const at = now();
-      const chat = { id: session ?? randomUUID(), title: chatTitle(text), created_at: at, last_at: at, ...(session && { started: true, external: true }) };
+      const chat = { id: session ?? randomUUID(), title: chatTitle(text), created_at: at, last_at: at, ...(session && { started: true, external: true }),
+        ...(profile && profile !== DEFAULT_PROFILE && { profile }) };
       return change((chats) => { chats.push(chat); return chat; });
     },
     /** Anota que se usó (y que la sesión de Claude Code ya existe, con started). */
@@ -74,6 +81,9 @@ export function chatStore(projectDir, { now = () => new Date().toISOString() } =
         return c;
       });
     },
+    /** El perfil que el proyecto usa para las conversaciones nuevas (§33). */
+    async profile() { return (await read()).profile ?? DEFAULT_PROFILE; },
+    setProfile(profile) { return change((chats, idx) => { idx.profile = profile; return profile; }); },
     async remove(id) {
       const found = await change((chats) => {
         const i = chats.findIndex((x) => x.id === id);
@@ -125,14 +135,20 @@ export class ChatManager extends EventEmitter {
    * session: retomar una sesión de Claude Code de afuera (la que hizo una pregunta, §32); si ya está en la lista,
    * solo se le manda el mensaje.
    */
-  async create(text, { task, session } = {}) {
+  async create(text, { task, session, profile } = {}) {
     if (session && !UUID.test(session)) throw new ChatError('invalid_argument', 'session tiene que ser el id de una sesión de Claude Code');
     const known = session ? await this.store.get(session) : null;
     if (known) {
       await this.send(known.id, text, { task });
       return known;
     }
-    const chat = await this.store.create(text, { session });
+    // Una sesión de afuera, en el perfil donde está (§33); una nueva, en el elegido, que queda para las siguientes.
+    if (session) profile = sessionProfile(session, this.profiles())?.id ?? DEFAULT_PROFILE;
+    else if (profile !== undefined) {
+      this.profileOf(profile);
+      await this.store.setProfile(profile);
+    } else profile = await this.store.profile();
+    const chat = await this.store.create(text, { session, profile });
     try {
       await this.send(chat.id, text, { task });
     } catch (e) {
@@ -155,6 +171,18 @@ export class ChatManager extends EventEmitter {
 
   interrupt(id) { return this.procs.get(id)?.interrupt() ?? false; }
 
+  /** Los perfiles de Claude Code del equipo (§33). */
+  profiles() { return listProfiles(this.env); }
+  profileOf(id) {
+    const p = this.profiles().find((x) => x.id === (id ?? DEFAULT_PROFILE));
+    if (!p) throw new ChatError('invalid_argument', `no hay un perfil ${id} de Claude Code en este equipo`);
+    return p;
+  }
+  async setProfile(id) {
+    this.profileOf(id);
+    return this.store.setProfile(id);
+  }
+
   async remove(id) {
     this.procs.get(id)?.close();
     this.procs.delete(id);
@@ -172,7 +200,7 @@ export class ChatManager extends EventEmitter {
   #proc(chat) {
     let proc = this.procs.get(chat.id);
     if (proc) return proc;
-    const opts = { projectDir: this.projectDir, name: this.name, session: chat.id, resume: !!chat.started, retry: !chat.external, env: this.env };
+    const opts = { projectDir: this.projectDir, name: this.name, session: chat.id, resume: !!chat.started, retry: !chat.external, profile: this.profileOf(chat.profile), env: this.env };
     if (this.idleMs !== undefined) opts.idleMs = this.idleMs;
     if (this.interruptMs !== undefined) opts.interruptMs = this.interruptMs;
     proc = new ChatProcess(opts);

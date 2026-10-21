@@ -2960,7 +2960,7 @@ La conversación guarda con qué agente se hizo (index.json); Nueva deja elegir 
 
 **Bloqueada por:** 27.3 Adaptador de agy en el hub
 
-## M28 — Cuenta, perfiles y uso del chat  (1/5, 1 en revisión)
+## M28 — Cuenta, perfiles y uso del chat  (2/5, 2 en revisión)
 
 Saber qué cuenta usa el chat y cuánto gasta, y poder usar varias cuentas (perfiles de Claude Code).
 
@@ -2985,9 +2985,19 @@ Saber qué cuenta usa el chat y cuánto gasta, y poder usar varias cuentas (perf
 
 **Bloquea a:** 28.2 Perfiles y cuenta en el hub
 
-### 28.2 Perfiles y cuenta en el hub · Pendiente
+### 28.2 Perfiles y cuenta en el hub · Revisión
 
 Detectar los perfiles (~/.claude predeterminado y las carpetas de ~/.claude-profiles con .claude.json o settings.json; SCOMPASS_CLAUDE_PROFILES para otra carpeta), su cuenta con claude auth status --json (en caché), el perfil de cada conversación (CLAUDE_CONFIG_DIR al lanzar claude) y el predeterminado del proyecto. Una pregunta (25.8) se retoma en el perfil que tiene su sesión. API para listarlos y elegir.
+
+**Decisiones:**
+- ! El claude falso guarda las sesiones en la carpeta del perfil, como el real, pero nunca fuera de la carpeta temporal · sin revisar
+  Por qué: un test sin FAKE_CLAUDE_STATE no puede escribir en el ~/.claude de verdad
+- ! Elegir un perfil al crear una conversación lo deja como el del proyecto; retomar una pregunta no lo cambia · sin revisar
+  Por qué: la spec dice que el proyecto recuerda el último elegido
+
+**Prueba:** hub/test/profiles.test.js (6: lista, entorno, cuenta guardada, perfil por conversación y del proyecto, pregunta en su perfil, API y 403)
+
+**Notas:** hub/src/profiles.js (listProfiles, profileEnv, sessionProfile, accountOf, cleanEnv); claudeSpawn en chat.js lo comparten el chat y auth status. index.json suma profile (del proyecto) y chats[].profile.
 
 **Bloquea a:** 28.3 Límites y tokens
 

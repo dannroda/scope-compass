@@ -12,6 +12,7 @@ import { delimiter, dirname, join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { projectsFile } from './projects.js';
+import { cleanEnv, profileEnv } from './profiles.js';
 
 const WIN = process.platform === 'win32';
 const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
@@ -88,6 +89,13 @@ export function chatEvents(msg) {
   return [];
 }
 
+/** Lanza claude con estos argumentos: un .js con node (el claude falso de los tests), un .cmd de Windows por el shell. */
+export function claudeSpawn(exe, args, opts) {
+  const js = /\.m?js$/i.test(exe);
+  const cmd = WIN && /\.cmd$/i.test(exe);
+  return spawn(js ? process.execPath : exe, js ? [exe, ...args] : cmd ? args.map((a) => `"${a}"`) : args, { windowsHide: true, ...opts, shell: cmd });
+}
+
 export class ChatError extends Error {
   constructor(code, message) { super(message); this.code = code; }
 }
@@ -98,8 +106,10 @@ export class ChatError extends Error {
  * session es el id de la sesión de Claude Code (un uuid); resume, si ya existe.
  */
 export class ChatProcess extends EventEmitter {
-  constructor({ projectDir, name, session, resume = false, retry = true, env = process.env, idleMs = IDLE_MS, interruptMs = INTERRUPT_MS }) {
+  // profile: el de listProfiles (§33); sin él, el predeterminado.
+  constructor({ projectDir, name, session, resume = false, retry = true, profile = null, env = process.env, idleMs = IDLE_MS, interruptMs = INTERRUPT_MS }) {
     super();
+    this.profile = profile;
     // retry: false para una sesión que se creó afuera (una pregunta de una decisión): si --resume no la encuentra, no se
     // crea otra vacía con su id.
     Object.assign(this, { projectDir, name: name ?? projectDir, session, resume, env, idleMs, interruptMs, retried: !retry, retry });
@@ -161,13 +171,10 @@ export class ChatProcess extends EventEmitter {
     await writeFile(mcpConfig, JSON.stringify({ mcpServers: { scompass: { command: process.execPath, args: [BIN, 'mcp', '--dir', this.projectDir] } } }, null, 2));
     await writeFile(promptFile, PROMPT(this.name));
     const args = claudeArgs({ session: this.session, resume: this.resume, mcpConfig, promptFile });
-    // Si el hub corre adentro de una sesión de Claude Code, el hijo no tiene que creerse anidado.
-    const env = { ...this.env };
-    for (const k of Object.keys(env)) if (k === 'CLAUDECODE' || k.startsWith('CLAUDE_CODE_')) delete env[k];
-    const js = /\.m?js$/i.test(exe);
-    const cmd = WIN && /\.cmd$/i.test(exe);
-    const child = spawn(js ? process.execPath : exe, js ? [exe, ...args] : cmd ? args.map((a) => `"${a}"`) : args,
-      { cwd: this.projectDir, env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, shell: cmd });
+    // Si el hub corre adentro de una sesión de Claude Code, el hijo no tiene que creerse anidado; y va con el
+    // CLAUDE_CONFIG_DIR de su perfil (§33), o sin él en el predeterminado.
+    const env = profileEnv(this.profile, cleanEnv(this.env));
+    const child = claudeSpawn(exe, args, { cwd: this.projectDir, env, stdio: ['pipe', 'pipe', 'pipe'] });
     this.child = child;
     // Lo que dijo claude fuera del protocolo (y el error de un resultado antes del init), para el mensaje de error.
     let said = '';

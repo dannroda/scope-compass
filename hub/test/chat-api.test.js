@@ -58,7 +58,7 @@ test('isLoopback: 127.0.0.1, ::1 y 127.0.0.1 en IPv6; nada más', () => {
 
 test('conversar: crear, mandar, leer la copia, ocupada mientras responde, cortar y borrar', async () => {
   const app = hub();
-  assert.deepEqual(json(await app.inject('/api/chats')), { chats: [], claude: true });
+  assert.deepEqual(json(await app.inject('/api/chats')), { chats: [], claude: true, profile: 'default' });
   const created = await post(app, '/api/chats', { text: 'hola', task: 'm1-01' });
   assert.equal(created.statusCode, 201);
   const chat = json(created);
@@ -101,7 +101,7 @@ test('pedidos inválidos: sin texto, una tarea que no existe', async () => {
 test('sin claude: la lista lo dice y crear responde claude_missing', async () => {
   env.SCOMPASS_CLAUDE = join(root, 'no-está');
   const app = hub();
-  assert.deepEqual(json(await app.inject('/api/chats')), { chats: [], claude: false });
+  assert.deepEqual(json(await app.inject('/api/chats')), { chats: [], claude: false, profile: 'default' });
   const r = await post(app, '/api/chats', { text: 'hola' });
   assert.deepEqual([r.statusCode, json(r).error.code], [503, 'claude_missing']);
 });

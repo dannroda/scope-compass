@@ -5,6 +5,7 @@
 import { basename } from 'node:path';
 import { ChatError, findClaude } from './chat.js';
 import { ChatManager } from './chats.js';
+import { accountOf } from './profiles.js';
 import { StoreError } from './store/json-files.js';
 
 /** Si una dirección es del mismo equipo (127.0.0.1, ::1 o 127.0.0.1 escrita como IPv6). */
@@ -54,12 +55,28 @@ export function registerChatApi(app, { projectDir, store, emit, token = null, en
       return reply.code(500).send({ error: { code: 'io_error', message: err.message } });
     });
 
-    scope.get('/api/chats', async () => ({ chats: await (await chats()).list(), claude: findClaude(env) !== null }));
+    scope.get('/api/chats', async () => {
+      const m = await chats();
+      return { chats: await m.list(), claude: findClaude(env) !== null, profile: await m.store.profile() };
+    });
+    // Perfiles de Claude Code con su cuenta (§33): claude auth status por perfil, guardado un rato.
+    scope.get('/api/chats/profiles', async () => {
+      const m = await chats();
+      const profiles = await Promise.all(m.profiles().map(async (p) => ({ ...p, account: await accountOf(p, { env }) })));
+      return { profiles, profile: await m.store.profile() };
+    });
+    scope.put('/api/chats/profile', async (req) => {
+      const profile = req.body?.profile;
+      if (typeof profile !== 'string') throw new ChatError('invalid_argument', 'falta profile');
+      return { profile: await (await chats()).setProfile(profile) };
+    });
     scope.post('/api/chats', async (req, reply) => {
       const text = textOf(req.body);
       const session = req.body.session ?? undefined;
       if (session !== undefined && typeof session !== 'string') throw new ChatError('invalid_argument', 'session tiene que ser un texto');
-      const chat = await (await chats()).create(text, { task: await taskOf(req.body.task), session });
+      const profile = req.body.profile ?? undefined;
+      if (profile !== undefined && typeof profile !== 'string') throw new ChatError('invalid_argument', 'profile tiene que ser un texto');
+      const chat = await (await chats()).create(text, { task: await taskOf(req.body.task), session, profile });
       return reply.code(201).send(chat);
     });
     scope.get('/api/chats/:id', async (req) => (await chats()).get(req.params.id));
