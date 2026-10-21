@@ -10,6 +10,7 @@ Se desarrolla en Linux y se prueba también en Windows 10/11 (D30). Los pasos so
 - Git (los datos viven en git). En Windows, `winget install Git.Git`.
 - Godot 4.8 para el addon.
 - Conexión a internet la primera vez: `npm` descarga las dependencias del hub.
+- Para el chat de la web (opcional): Claude Code instalado (`npm i -g @anthropic-ai/claude-code`) y con tu login (correr `claude` una vez). Lo busca en el PATH; si está en otro lado, `SCOMPASS_CLAUDE=<ruta>` al levantar el hub o el Inicio.
 
 ## 1. Hub y CLI
 
@@ -41,14 +42,16 @@ Si `scompass` no está en el PATH del editor, indicá su ruta en Editor Settings
 - Tareas y código (M15): una tarea cita los scripts y escenas que toca. Se agregan con **+ Vincular** en el dock (el script o la escena que estás editando), con **+ Agregar** en la sección Archivos del detalle web o con `scompass file add <tarea> <ruta>`. En el dock, un clic en el archivo lo abre en el editor y, arriba de la lista, aparecen las tareas del script o la escena abiertos.
 - Todos los proyectos juntos: `scompass home --tray` levanta el Inicio, con un solo ícono en la bandeja (en Windows también: el área de notificación, junto al reloj). Sirve cada proyecto en `/p/<proyecto>/` sin procesos aparte; el dock y la CLI lo usan solos. `scompass home restart` (o "Reiniciar Inicio") carga una versión nueva.
 - Desde el teléfono, en casa: `scompass home --tray --lan`. Escribe en qué dirección abrirlo (`http://192.168.x.x:4700/`). No hay login: cualquiera en esa red puede ver y editar, así que solo en una red de confianza (D36). Con un firewall, hay que abrir el puerto. En Windows, la primera vez pregunta si deja a Node usar la red: sí, en redes privadas.
+- Chat con Claude Code: el botón **Chat** del tablero abre un panel a la izquierda. Corre el `claude` instalado en la carpeta del proyecto, con tu cuenta y tu configuración: lee y escribe el tablero (el MCP `scompass`) y lee los archivos (`Read`, `Grep`, `Glob`), pero no edita ni corre comandos, porque la web no puede aprobar permisos; eso sigue en la terminal. Con una tarea abierta, la manda como contexto. Solo aparece en el mismo equipo (`127.0.0.1`), también con `--lan`, porque no hay login y el chat usa tu cuenta y lee el repo (D43). Cada conversación es una sesión de Claude Code: se puede seguir en la terminal con `claude --resume <id>`.
 - Varios proyectos a la vez: cada hub usa el puerto de su `compass/config.json` (4711 por defecto); si está ocupado, toma el siguiente libre solo.
 - Tras actualizar Scope Compass: reiniciá los hubs que estuvieran corriendo (`scompass restart`, o "Reiniciar hub" en el dock); el dock y la CLI avisan si el hub es de otra versión.
 - Tras actualizar Scope Compass: si el dock avisa que `compass/` tiene archivos de una versión anterior, **Actualizar** (o `scompass update`, o "Actualizar compass/" en la bandeja).
 
 ## Windows
 
-- Dónde quedan las cosas: la lista de proyectos del Inicio en `%APPDATA%\scope-compass\projects.json`; los proyectos creados desde el Inicio, en `%LOCALAPPDATA%\scope-compass`; el registro de hubs vivos, en `%TEMP%\scope-compass`.
+- Dónde quedan las cosas: la lista de proyectos del Inicio en `%APPDATA%\scope-compass\projects.json` (y las conversaciones del chat al lado, en `chats\`); los proyectos creados desde el Inicio, en `%LOCALAPPDATA%\scope-compass`; el registro de hubs vivos, en `%TEMP%\scope-compass`.
 - Un mismo proyecto en Linux y en Windows: se sincroniza con git (push en uno, pull en el otro), no con una partición compartida. Los JSON de `compass/` usan LF en las dos plataformas (`.gitattributes`).
+- El chat busca `claude.exe` o `claude.cmd` en el PATH.
 - Los nombres de proyecto no pueden tener `\ / : * ? " < > |` ni ser `CON`, `NUL` y similares, tampoco en Linux, para que el mismo proyecto se abra en los dos sistemas.
 
 ## Para agentes de IA

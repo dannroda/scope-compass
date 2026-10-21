@@ -4,11 +4,11 @@
   "created_at": "2026-10-21T04:01:05.347Z",
   "description": "AGENTS.md (template, addon y compass/): que hay un chat, que el agente que corre ahí es Claude Code con el MCP scompass y qué puede hacer. README e instalar.md: requiere claude instalado y con login; qué herramientas tiene permitidas y por qué solo anda en local.",
   "milestone": "m25",
-  "notes": "",
+  "notes": "AGENTS.md: sección Chat (qué es, qué puede el agente de ahí, el prefijo 'Tarea abierta:') y dónde quedan las conversaciones. instalar.md: requisito, uso, por qué solo local, Windows. README: principio 3. hub/README: los módulos y SCOMPASS_CLAUDE.",
   "order": 6,
   "refs": [],
-  "status": "todo",
-  "test": "",
+  "status": "review",
+  "test": "Las tres copias de AGENTS.md iguales (los tests de update y del dock lo comparan); la suite pasa (472).",
   "title": "Documentar el chat",
-  "updated_at": "2026-10-21T04:01:05.347Z"
+  "updated_at": "2026-10-21T05:37:25.856Z"
 }
