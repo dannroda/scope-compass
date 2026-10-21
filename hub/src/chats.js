@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { appendFile, mkdir, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ChatError, ChatProcess, chatDir } from './chat.js';
-import { DEFAULT_PROFILE, listProfiles, sessionProfile } from './profiles.js';
+import { DEFAULT_PROFILE, listProfiles, saveLimits, sessionProfile } from './profiles.js';
 import { writeAtomic } from './store/atomic.js';
 
 const TITLE = 60;
@@ -113,6 +113,7 @@ export class ChatManager extends EventEmitter {
   constructor({ projectDir, name, env = process.env, now, idleMs, interruptMs }) {
     super();
     Object.assign(this, { projectDir, name, env, idleMs, interruptMs });
+    this.now = now ?? (() => new Date().toISOString());
     this.store = chatStore(projectDir, { now });
     this.procs = new Map();
     this.turns = new Map();
@@ -211,6 +212,16 @@ export class ChatManager extends EventEmitter {
 
   // Arma la respuesta del turno con lo que va llegando y la guarda en la copia al terminar.
   #event(id, proc, e) {
+    // Los límites son de la cuenta del perfil: se guardan y salen con el perfil, no con la respuesta.
+    if (e.event === 'limits') {
+      const profile = proc.profile?.id ?? DEFAULT_PROFILE;
+      const at = this.now();
+      const saved = saveLimits(profile, e.limits, at).catch(() => {});
+      this.pending.add(saved);
+      saved.finally(() => this.pending.delete(saved));
+      this.emit('event', { chat: id, event: 'limits', profile, limits: e.limits, at });
+      return;
+    }
     if (e.event === 'turn') this.turns.set(id, { text: '', tools: [], errors: [] });
     const turn = this.turns.get(id);
     if (turn) {
@@ -227,6 +238,7 @@ export class ChatManager extends EventEmitter {
         const error = [e.error, ...turn.errors].filter(Boolean).join('\n');
         if (error) entry.error = error;
         if (e.cost !== undefined) entry.cost = e.cost;
+        if (e.tokens) entry.tokens = e.tokens;
         const save = (this.saving.get(id) ?? Promise.resolve()).then(() => this.store.append(id, entry)).then(() => this.store.touch(id, { started: proc.resume }));
         const done = save.catch((err) => this.emit('event', { chat: id, event: 'error', code: 'io_error', message: err.message }))
           .then(() => this.emit('event', { chat: id, ...e }));

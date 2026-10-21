@@ -2,9 +2,12 @@
 // con su login, su settings.json y sus sesiones. El predeterminado es ~/.claude (claude sin CLAUDE_CONFIG_DIR); los
 // demás, las carpetas de ~/.claude-profiles (o de SCOMPASS_CLAUDE_PROFILES) con .claude.json o settings.json.
 import { existsSync, readdirSync, statSync } from 'node:fs';
+import { mkdir, readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { claudeSpawn, findClaude } from './chat.js';
+import { projectsFile } from './projects.js';
+import { writeAtomic } from './store/atomic.js';
 
 export const DEFAULT_PROFILE = 'default';
 const ACCOUNT_MS = 10 * 60 * 1000;
@@ -84,4 +87,23 @@ export function cleanEnv(env) {
   const out = { ...env };
   for (const k of Object.keys(out)) if (k === 'CLAUDECODE' || k.startsWith('CLAUDE_CODE_')) delete out[k];
   return out;
+}
+
+// El último uso de los límites de cada perfil (§33), de los rate_limit_event: es de la cuenta, no del proyecto, así
+// que vive junto a las carpetas de los chats. { <perfil>: { status, five_hour?, seven_day?, overage?, at } }.
+const limitsFile = () => join(dirname(projectsFile()), 'chats', 'limits.json');
+let limitsQueue = Promise.resolve();
+export async function loadLimits() {
+  try { return JSON.parse(await readFile(limitsFile(), 'utf8')) ?? {}; } catch { return {}; }
+}
+export function saveLimits(profile, limits, at) {
+  const p = limitsQueue.then(async () => {
+    const all = await loadLimits();
+    all[profile] = { ...limits, at };
+    await mkdir(dirname(limitsFile()), { recursive: true });
+    await writeAtomic(limitsFile(), `${JSON.stringify(all, null, 2)}\n`);
+    return all[profile];
+  });
+  limitsQueue = p.catch(() => {});
+  return p;
 }

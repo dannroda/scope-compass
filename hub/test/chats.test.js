@@ -8,6 +8,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chatDir } from '../src/chat.js';
 import { ChatManager, chatStore, chatTitle, withTask } from '../src/chats.js';
+import { loadLimits } from '../src/profiles.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 let root, dir, log, env, managers;
@@ -96,14 +97,18 @@ test('una conversación: se lista, guarda la copia en orden y los eventos llevan
   await end;
   assert.deepEqual((await m.list()).map((c) => [c.id, c.title, c.started]), [[chat.id, 'hola', true]]);
   assert.ok(m.events.every((e) => e.chat === chat.id));
-  assert.deepEqual(m.events.map((e) => e.event), ['turn', 'text', 'text', 'end']);
+  assert.deepEqual(m.events.map((e) => e.event), ['turn', 'text', 'text', 'limits', 'end']);
+  // Los límites salen con el perfil y quedan guardados para la próxima vez (§33).
+  const lim = m.events.find((e) => e.event === 'limits');
+  assert.deepEqual([lim.profile, lim.limits.five_hour.used], ['default', 0.25]);
+  assert.equal((await loadLimits()).default.five_hour.used, 0.25);
   const { entries, busy } = await m.get(chat.id);
   assert.equal(busy, false);
   // claude recibe la tarea delante; la copia guarda el mensaje como se escribió, y la tarea aparte.
   const answer = `eco: ${withTask('hola', { id: 'm1-01', code: '1.1', title: 'Algo' })}`;
   assert.deepEqual(entries.map(({ at: _, ...e }) => e), [
     { role: 'user', text: 'hola', task: 'm1-01' },
-    { role: 'assistant', text: answer, tools: [], ok: true, cost: 0.01 },
+    { role: 'assistant', text: answer, tools: [], ok: true, cost: 0.01, tokens: { input: 3, output: answer.length, cache_read: 100, cache_write: 20 } },
   ]);
   const end2 = turnEnd(m);
   await m.send(chat.id, 'herramienta');

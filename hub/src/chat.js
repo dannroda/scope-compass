@@ -60,8 +60,20 @@ const brief = (input) => {
   return typeof v === 'string' ? (v.length > 80 ? `${v.slice(0, 79)}…` : v) : '';
 };
 
+// El uso de los límites de la cuenta (§33): las ventanas de 5 horas y de la semana con su uso (0 a 1) y cuándo se
+// renuevan; resetsAt viene en segundos.
+const iso = (s) => (typeof s === 'number' ? new Date(s * 1000).toISOString() : null);
+export function limitsOf(info) {
+  const out = { status: info.status ?? null };
+  for (const [key, w] of Object.entries(info.unifiedWindows ?? {})) {
+    if (w && typeof w.utilization === 'number') out[key] = { used: w.utilization, resets_at: iso(w.resetsAt) };
+  }
+  if (info.isUsingOverage) out.overage = true;
+  return out;
+}
+
 /**
- * Un evento de stream-json, pasado a los del chat (§32): { event: 'init' | 'text' | 'tool' | 'tool_result' | 'end' },
+ * Un evento de stream-json, pasado a los del chat (§32): { event: 'init' | 'text' | 'tool' | 'tool_result' | 'limits' | 'end' },
  * o null si no hace falta mostrarlo. Lo de los subagentes (parent_tool_use_id) no se muestra.
  */
 export function chatEvents(msg) {
@@ -78,10 +90,15 @@ export function chatEvents(msg) {
   if (msg.type === 'user') {
     return content.filter((c) => c.type === 'tool_result').map((c) => ({ event: 'tool_result', id: c.tool_use_id, ok: !c.is_error }));
   }
+  if (msg.type === 'rate_limit_event' && msg.rate_limit_info) return [{ event: 'limits', limits: limitsOf(msg.rate_limit_info) }];
   if (msg.type === 'result') {
     const interrupted = msg.terminal_reason === 'aborted_streaming';
     const end = { event: 'end', ok: !msg.is_error, interrupted };
     if (msg.total_cost_usd !== undefined) end.cost = msg.total_cost_usd;
+    const u = msg.usage;
+    if (u && (u.input_tokens || u.output_tokens)) {
+      end.tokens = { input: u.input_tokens ?? 0, output: u.output_tokens ?? 0, cache_read: u.cache_read_input_tokens ?? 0, cache_write: u.cache_creation_input_tokens ?? 0 };
+    }
     if (msg.duration_ms !== undefined) end.ms = msg.duration_ms;
     if (msg.is_error && !interrupted) end.error = String(msg.result ?? msg.subtype ?? 'error');
     return [end];

@@ -5,7 +5,7 @@
 import { basename } from 'node:path';
 import { ChatError, findClaude } from './chat.js';
 import { ChatManager } from './chats.js';
-import { accountOf } from './profiles.js';
+import { accountOf, loadLimits } from './profiles.js';
 import { StoreError } from './store/json-files.js';
 
 /** Si una dirección es del mismo equipo (127.0.0.1, ::1 o 127.0.0.1 escrita como IPv6). */
@@ -62,7 +62,8 @@ export function registerChatApi(app, { projectDir, store, emit, token = null, en
     // Perfiles de Claude Code con su cuenta (§33): claude auth status por perfil, guardado un rato.
     scope.get('/api/chats/profiles', async () => {
       const m = await chats();
-      const profiles = await Promise.all(m.profiles().map(async (p) => ({ ...p, account: await accountOf(p, { env }) })));
+      const limits = await loadLimits();
+      const profiles = await Promise.all(m.profiles().map(async (p) => ({ ...p, account: await accountOf(p, { env }), limits: limits[p.id] ?? null })));
       return { profiles, profile: await m.store.profile() };
     });
     scope.put('/api/chats/profile', async (req) => {

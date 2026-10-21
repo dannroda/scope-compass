@@ -102,7 +102,11 @@ test('chatEvents: texto, herramientas, su resultado y el fin del turno; lo de lo
 
 test('una conversación: el texto en vivo, un proceso para varios mensajes, en la carpeta del proyecto', async () => {
   const c = chat();
-  assert.deepEqual(await say(c, 'hola'), { event: 'end', ok: true, interrupted: false, cost: 0.01, ms: 5 });
+  assert.deepEqual(await say(c, 'hola'), { event: 'end', ok: true, interrupted: false, cost: 0.01, ms: 5,
+    tokens: { input: 3, output: 'eco: hola'.length, cache_read: 100, cache_write: 20 } });
+  // El uso de los límites de la cuenta llega antes del fin del turno (§33).
+  assert.deepEqual(c.events.find((e) => e.event === 'limits'), { event: 'limits', limits: { status: 'allowed',
+    five_hour: { used: 0.25, resets_at: new Date(1792572000 * 1000).toISOString() }, seven_day: { used: 0.4, resets_at: new Date(1793062800 * 1000).toISOString() } } });
   assert.deepEqual(c.events.slice(0, 3), [{ event: 'turn', text: 'hola' }, { event: 'text', text: 'eco:' }, { event: 'text', text: ' hola' }]);
   await say(c, 'herramienta');
   assert.deepEqual(c.events.filter((e) => e.event.startsWith('tool')),

@@ -133,7 +133,7 @@ test('WebSocket: todas las pestañas locales ven la conversación; una de la red
   await Promise.all([a.open, b.open, far?.open]);
   const chat = json(await post(app, '/api/chats', { text: 'herramienta' }));
   await until(() => a.chat().some((m) => m.event === 'end') && b.chat().some((m) => m.event === 'end'));
-  assert.deepEqual(a.chat().map((m) => m.event), ['turn', 'tool', 'tool_result', 'text', 'end']);
+  assert.deepEqual(a.chat().map((m) => m.event), ['turn', 'tool', 'tool_result', 'text', 'limits', 'end']);
   assert.ok(a.chat().every((m) => m.chat === chat.id));
   assert.deepEqual(b.chat(), a.chat());
   assert.equal(a.chat()[1].name, 'show_task');

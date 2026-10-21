@@ -2960,7 +2960,7 @@ La conversación guarda con qué agente se hizo (index.json); Nueva deja elegir 
 
 **Bloqueada por:** 27.3 Adaptador de agy en el hub
 
-## M28 — Cuenta, perfiles y uso del chat  (2/5, 2 en revisión)
+## M28 — Cuenta, perfiles y uso del chat  (3/5, 3 en revisión)
 
 Saber qué cuenta usa el chat y cuánto gasta, y poder usar varias cuentas (perfiles de Claude Code).
 
@@ -3003,9 +3003,17 @@ Detectar los perfiles (~/.claude predeterminado y las carpetas de ~/.claude-prof
 
 **Bloqueada por:** 28.1 Spec y decisión: perfiles, cuenta y uso del chat
 
-### 28.3 Límites y tokens · Pendiente
+### 28.3 Límites y tokens · Revisión
 
 Del stream-json: rate_limit_event (uso y renovación de las ventanas de 5 horas y de la semana) como evento del chat y guardado por perfil; los tokens del result (entrada, salida, caché) en el fin del turno y en la copia de la conversación.
+
+**Decisiones:**
+- ! Los límites se guardan por perfil en chats/limits.json y salen en /api/chats/profiles, no en cada conversación · sin revisar
+  Por qué: son de la cuenta, no de la conversación ni del proyecto
+
+**Prueba:** chat.test.js (el evento limits y los tokens del fin del turno), chats.test.js (con el perfil y guardados; la copia guarda tokens), profiles.test.js (la API trae el último uso), chat-api.test.js (el WebSocket los manda)
+
+**Notas:** limitsOf en chat.js pasa unifiedWindows (utilization 0–1, resetsAt en segundos) a { used, resets_at }. El claude falso manda rate_limit_event y usage como el real (FAKE_CLAUDE_LIMITS cambia el uso).
 
 **Bloquea a:** 28.4 Web: cuenta, perfil y uso en el panel
 

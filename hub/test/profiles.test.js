@@ -141,4 +141,9 @@ test('API: /api/chats/profiles con la cuenta de cada uno, y elegir el del proyec
   assert.equal(away.statusCode, 403);
   const created = await app.inject({ method: 'POST', url: '/api/chats', payload: { text: 'hola', profile: 'otro' } });
   assert.equal(JSON.parse(created.payload).profile, 'otro');
+  // Después de un turno, el perfil trae el último uso de sus límites.
+  for (let i = 0; i < 100 && !JSON.parse((await app.inject('/api/chats/profiles')).payload).profiles.find((p) => p.id === 'otro').limits; i++) await new Promise((r) => setTimeout(r, 20));
+  const otro = JSON.parse((await app.inject('/api/chats/profiles')).payload).profiles.find((p) => p.id === 'otro');
+  assert.equal(otro.limits.seven_day.used, 0.4);
+  assert.match(otro.limits.at, /^\d{4}-/);
 });

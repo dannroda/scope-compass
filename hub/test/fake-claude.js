@@ -47,7 +47,14 @@ if (state) {
 
 const out = (msg) => process.stdout.write(`${JSON.stringify({ ...msg, session_id: session })}\n`);
 const delta = (text) => out({ type: 'stream_event', parent_tool_use_id: null, event: { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text } } });
-const result = (text) => out({ type: 'result', subtype: 'success', is_error: false, terminal_reason: 'completed', result: text, total_cost_usd: 0.01, duration_ms: 5 });
+// Antes del resultado, el uso de los límites de la cuenta, como el real (FAKE_CLAUDE_LIMITS: uso de las 5 horas).
+const limits = () => out({ type: 'rate_limit_event', rate_limit_info: { status: 'allowed', resetsAt: 1792572000, rateLimitType: 'five_hour', isUsingOverage: false,
+  unifiedWindows: { five_hour: { utilization: Number(process.env.FAKE_CLAUDE_LIMITS ?? 0.25), resetsAt: 1792572000 }, seven_day: { utilization: 0.4, resetsAt: 1793062800 } } } });
+const result = (text) => {
+  limits();
+  out({ type: 'result', subtype: 'success', is_error: false, terminal_reason: 'completed', result: text, total_cost_usd: 0.01, duration_ms: 5,
+    usage: { input_tokens: 3, output_tokens: text.length, cache_read_input_tokens: 100, cache_creation_input_tokens: 20 } });
+};
 let writing = null;
 
 function slow(obey) {
