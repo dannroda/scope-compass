@@ -436,7 +436,7 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
 - **Por qué solo 127.0.0.1:** el chat corre un agente con la cuenta del usuario y lee el repo. Sin login, abrirlo a la red (`--lan`, D36) sería darle eso a cualquiera en la casa. Se mira la dirección del socket y no el Host, que lo pone el cliente.
 - **Por qué una copia propia de la conversación:** los archivos donde Claude Code guarda las sesiones son internos y pueden cambiar; la copia es lo que la web mostró y alcanza para volver a mostrarlo.
 - **Descartado:**
-  - ACP con `@agentclientprotocol/claude-agent-acp`: trae el Agent SDK, zod y otro Claude Code aparte del instalado. Su ventaja es pedir permisos al cliente; conviene si el chat crece a consola de trabajo con edición desde la web.
+  - ACP con `@agentclientprotocol/claude-agent-acp`: trae el Agent SDK, zod y otro Claude Code aparte del instalado. Su ventaja era pedir permisos al cliente, pero el `claude` instalado también los manda por stream-json con `--permission-prompts host` (según `claude --help`, 25.2): si el chat crece a consola de trabajo con edición desde la web, se hace sobre el mismo proceso.
   - El Agent SDK directo: las mismas dependencias, para lo que ya hace el `claude` instalado.
   - La API de mensajes con una clave propia: otra cuenta, otro costo, y habría que rehacer las herramientas y el contexto que Claude Code ya tiene.
   - Leer las sesiones de Claude Code (`~/.claude/projects/…`) para mostrar el historial: formato interno, sin garantías.

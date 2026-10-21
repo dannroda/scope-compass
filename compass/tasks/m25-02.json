@@ -2,6 +2,29 @@
   "checklist": [],
   "code": "25.2",
   "created_at": "2026-10-21T04:01:03.213Z",
+  "decisions": [
+    {
+      "alternatives": "solo --allowedTools, con Bash visible pero negado",
+      "at": "2026-10-21T05:15:59.813Z",
+      "text": "Además de --allowedTools, --tools Read,Grep,Glob: el agente ni ve Bash ni Edit",
+      "why": "en la prueba con el real no intenta usarlas y dice que no puede"
+    },
+    {
+      "alternatives": "JSON y prompt en línea",
+      "at": "2026-10-21T05:16:01.377Z",
+      "text": "mcp.json y prompt.md se escriben en la carpeta del chat y se pasan como archivos",
+      "why": "ningún argumento con JSON ni espacios; claude.cmd en Windows va por el shell"
+    },
+    {
+      "at": "2026-10-21T05:16:02.249Z",
+      "text": "Un segundo mensaje durante un turno falla con busy en vez de encolarse",
+      "why": "la spec pide 409; stream-json encola, pero la web no tendría cómo mostrar la cola"
+    },
+    {
+      "at": "2026-10-21T05:16:03.252Z",
+      "text": "El claude falso (test/fake-claude.js) se hizo ya en 25.2; la 25.5 lo usa para API y WebSocket"
+    }
+  ],
   "description": "Un módulo del hub que lanza claude con stream-json en la carpeta del proyecto, con --mcp-config para scompass, --allowedTools y --permission-mode, y --include-partial-messages para el texto en vivo. Un proceso por conversación: manda los mensajes del usuario por stdin, lee los eventos línea por línea, cierra el proceso tras un rato sin uso. Avisa si claude no está instalado. La ruta del ejecutable se puede configurar (para el test y para Windows).",
   "links": [
     {
@@ -14,11 +37,11 @@
     }
   ],
   "milestone": "m25",
-  "notes": "",
+  "notes": "ChatProcess en hub/src/chat.js: send/interrupt/close y el evento 'event' (turn, text, tool, tool_result, end, error). Falta el que las administra (una por conversación, cerrarlas con el hub): va con 25.3/25.4. El primer mensaje cuesta ~0,1 USD por crear la caché del prompt de Claude Code.",
   "order": 2,
   "refs": [],
-  "status": "todo",
-  "test": "",
+  "status": "review",
+  "test": "hub/test/chat.test.js (12 tests con test/fake-claude.js: argumentos, eventos, --resume, cortar, sin uso, sin claude, caída, la config del MCP levanta scompass). Probado una vez con el claude real: usó list_tasks y no intentó Bash.",
   "title": "Proceso de Claude Code en el hub",
-  "updated_at": "2026-10-21T04:01:18.806Z"
+  "updated_at": "2026-10-21T05:17:36.176Z"
 }
