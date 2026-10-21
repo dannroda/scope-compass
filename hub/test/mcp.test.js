@@ -230,3 +230,11 @@ test('con hub, las escrituras pasan por su API y la UI se entera', async () => {
     await app.close();
   }
 });
+
+test('add_decision con ask guarda la sesión de Claude Code del servidor (CLAUDE_CODE_SESSION_ID, §32)', async () => {
+  const s = mcp(dir, { CLAUDE_CODE_SESSION_ID: '6f0c4c1e-1111-4222-8333-444455556666' });
+  const r = await s.tool('add_decision', { id: 'm1-04', text: '¿A o B?', ask: true });
+  assert.equal(r.structuredContent.decisions.at(-1).session, '6f0c4c1e-1111-4222-8333-444455556666');
+  const r2 = await s.tool('add_decision', { id: 'm1-04', text: 'Usar X' });
+  assert.equal(r2.structuredContent.decisions.at(-1).session, undefined);
+});

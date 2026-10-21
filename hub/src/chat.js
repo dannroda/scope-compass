@@ -98,9 +98,11 @@ export class ChatError extends Error {
  * session es el id de la sesión de Claude Code (un uuid); resume, si ya existe.
  */
 export class ChatProcess extends EventEmitter {
-  constructor({ projectDir, name, session, resume = false, env = process.env, idleMs = IDLE_MS, interruptMs = INTERRUPT_MS }) {
+  constructor({ projectDir, name, session, resume = false, retry = true, env = process.env, idleMs = IDLE_MS, interruptMs = INTERRUPT_MS }) {
     super();
-    Object.assign(this, { projectDir, name: name ?? projectDir, session, resume, env, idleMs, interruptMs });
+    // retry: false para una sesión que se creó afuera (una pregunta de una decisión): si --resume no la encuentra, no se
+    // crea otra vacía con su id.
+    Object.assign(this, { projectDir, name: name ?? projectDir, session, resume, env, idleMs, interruptMs, retried: !retry, retry });
     this.child = null;
     this.busy = false;
     this.idle = null;
@@ -176,7 +178,7 @@ export class ChatProcess extends EventEmitter {
       let msg;
       try { msg = JSON.parse(line); } catch { said = (said + line + '\n').slice(-2000); return; }
       for (const e of chatEvents(msg)) {
-        if (e.event === 'init') { inited = true; this.resume = true; this.retried = false; continue; }
+        if (e.event === 'init') { inited = true; this.resume = true; this.retried = !this.retry; continue; }
         if (e.event === 'end' && !inited) { if (e.error) said += `${e.error}\n`; continue; }
         if (e.event === 'end') this.#endTurn(e);
         else if (this.child === child) this.emit('event', e);

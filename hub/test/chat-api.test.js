@@ -183,3 +183,16 @@ test('a través del Inicio: el chat del proyecto anda desde este equipo y da 403
     if (saved === undefined) delete process.env.SCOMPASS_CLAUDE; else process.env.SCOMPASS_CLAUDE = saved;
   }
 });
+
+test('POST /api/chats con session retoma esa sesión de Claude Code', async () => {
+  const app = hub();
+  const { mkdir, writeFile } = await import('node:fs/promises');
+  await mkdir(env.FAKE_CLAUDE_STATE, { recursive: true });
+  await writeFile(join(env.FAKE_CLAUDE_STATE, '6f0c4c1e-1111-4222-8333-444455556666'), '');
+  const r = await post(app, '/api/chats', { text: 'Respuesta: A', session: '6f0c4c1e-1111-4222-8333-444455556666' });
+  assert.equal(r.statusCode, 201);
+  assert.equal(json(r).id, '6f0c4c1e-1111-4222-8333-444455556666');
+  await until(async () => json(await app.inject(`/api/chats/${json(r).id}`)).entries.length === 2);
+  const bad = await post(app, '/api/chats', { text: 'x', session: 3 });
+  assert.deepEqual([bad.statusCode, json(bad).error.code], [400, 'invalid_argument']);
+});

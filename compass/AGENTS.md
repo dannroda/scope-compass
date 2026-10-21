@@ -129,7 +129,7 @@ scompass decisions --revert                          # las de todo el proyecto (
 ```
 
 - Las decisiones se numeran desde 1, como los pasos, y `show` las lista con su estado: `?` pregunta abierta, `!` sin revisar, `↺` a revertir, `✓` resuelta.
-- Las preguntas también se registran (`--ask`), con la respuesta cuando llega: así queda por qué la tarea quedó como quedó.
+- Las preguntas también se registran (`--ask`), con la respuesta cuando llega: así queda por qué la tarea quedó como quedó. Desde Claude Code, `--ask` guarda solo la sesión que pregunta (`CLAUDE_CODE_SESSION_ID`): si el usuario responde en la web, puede mandarte la respuesta a esa misma sesión por el chat.
 - Revisar (`decision ok`, `revert`) es del usuario. Antes de seguir con una tarea, mirá si tiene alguna a revertir: deshacela siguiendo `reply`, marcala `reverted` y, si en su lugar decidiste otra cosa, registrala como decisión nueva.
 - Las de diseño grandes del proyecto (las que cambian la spec) van además al documento de decisiones: `scompass decision promote m5-02 1` agrega una resuelta como entrada `D<n>` al final del documento `decisiones` (o el de `config.json › decisions_doc`) y la marca en la tarea. Hacelo cuando te lo pidan o cuando la decisión cambie la spec; no commitea.
 

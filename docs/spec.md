@@ -177,7 +177,7 @@ Es el mismo que el del artifact, más `created_at`. **Los archivos no guardan un
 | `files` | string[] | Opcional. Archivos del repo que la tarea toca (§23, D35) |
 | `images` | string[] | Opcional. Capturas: rutas del repo a imágenes PNG, JPEG, GIF o WebP; las pegadas van a `compass/images/` (§26, D38) |
 | `playtest` | `{ result?: "pass" \| "fail", note?: string }` | Opcional. Cómo salió al probarla en una sesión de playtest; el mismo en todas las sesiones que la tienen (§28, D40) |
-| `decisions` | `{ text, why?, alternatives?, asked?: true, reply?, review?: "ok" \| "revert" \| "reverted", promoted?, at }[]` | Opcional. Decisiones tomadas al trabajarla, en orden; el store pone `at` a las nuevas (§31, D42) |
+| `decisions` | `{ text, why?, alternatives?, asked?: true, reply?, review?: "ok" \| "revert" \| "reverted", promoted?, session?, at }[]` | Opcional. Decisiones tomadas al trabajarla, en orden; el store pone `at` a las nuevas (§31, D42) |
 | `done_at` | ISO 8601 | Opcional. Cuándo pasó a Hecho: el store lo pone al pasarla a `done` y lo quita si sale (§26) |
 | `created_at` / `updated_at` | ISO 8601 | `updated_at` es opcional en ediciones a mano; la app lo completa en su próxima escritura |
 
@@ -1231,6 +1231,7 @@ Ver qué decidió el agente al trabajar una tarea, sobre todo lo que decidió si
 | `reply` | string | Opcional. Lo que dijo el usuario: la respuesta a la pregunta, o qué hacer en lugar de lo que revierte |
 | `review` | `"ok" \| "revert" \| "reverted"` | Opcional. La revisión del usuario: de acuerdo, a revertir, o ya revertida (lo marca quien la revierte) |
 | `promoted` | string | Opcional. La entrada de `decisiones.md` a la que se promovió (`"D43"`) |
+| `session` | string (uuid) | Opcional. La sesión de Claude Code que hizo la pregunta, para seguirla desde el chat con la respuesta (M25, §32) |
 | `at` | ISO 8601 | Cuándo se registró; lo pone el store |
 
 - **Estados (calculados, no se guardan):**
@@ -1296,7 +1297,7 @@ Un chat en la web con el Claude Code instalado en el equipo, que trabaja sobre e
 - **Solo en el equipo:** sin login, el chat es una terminal con permisos de lectura y de tablero. Los endpoints responden 403 si el pedido no viene de 127.0.0.1 o `::1` (la dirección del socket, no el Host), también con `--lan` (D36); los eventos `chat` solo van a los WebSocket locales. El Inicio hace el mismo corte en `/p/<clave>/api/chats` y en el WebSocket de cada proyecto, porque el hub del proyecto lo ve a él como 127.0.0.1 (le pasa la dirección del navegador a `inject` y, si reenvía a un hub suelto, filtra los eventos `chat`). Con token (hosting, §12) el chat está apagado.
 - **Test (25.5):** un `claude` falso (un script de Node que se pasa por `SCOMPASS_CLAUDE`) imita el stream-json: `system/init` con el `session_id`, texto en partes, una herramienta y su resultado, y `result`. Prueba el proceso, `--resume`, la API, el WebSocket, cortar y el 403 fuera de 127.0.0.1, sin gastar tokens ni depender de la red.
 - **Web (25.7):** un panel plegable a la izquierda (el detalle de la tarea sigue a la derecha; en pantallas anchas el tablero se corre), que se abre con *Chat* en la cabecera: la conversación con el texto en vivo, las herramientas plegadas (nombre, resumen y si anduvieron), *Cortar* durante un turno, *Nueva* y *Conversaciones* (la lista, con borrar). Enter manda, Mayús+Enter es otra línea. Con una tarea abierta, el campo dice que la adjunta y se puede sacar; un clic en el chat no cierra la tarea. El navegador recuerda si el panel está abierto y la conversación. Fuera de 127.0.0.1 el botón no aparece (`/api/chats` da 403); sin `claude`, el panel dice cómo instalarlo.
-- **Preguntas abiertas (25.8):** la decisión guarda la sesión de Claude Code que la hizo (`session`, opcional). Al responderla en la web se ofrece seguir esa sesión en el chat con la respuesta, así el agente continúa sin volver a leer la tarea. De dónde sale la sesión (una variable de entorno de Claude Code o lo que exponga) se investiga en la tarea.
+- **Preguntas abiertas (25.8):** la decisión guarda la sesión de Claude Code que la hizo (`session`). Claude Code pone `CLAUDE_CODE_SESSION_ID` en el entorno de Bash y de los servidores MCP que lanza, así que `scompass decide --ask` (y `add_decision` con `ask`) la toman de ahí sin que el agente haga nada; `--session <uuid>` la da a mano y `--session ""` no la guarda. Una pregunta respondida que tiene sesión muestra *Seguir en el chat* en la web: `POST /api/chats` con `session` retoma esa sesión con `--resume` (si ya está en la lista de conversaciones, le manda el mensaje a esa) y le manda `Respuesta a tu pregunta en la tarea <código> (<id>): «<pregunta>»` con la respuesta, así el agente sigue sin volver a leer la tarea. Una sesión de afuera no se crea vacía si `--resume` no la encuentra (pasa si se hizo en otra carpeta, como un worktree): el chat muestra el error de claude. Si esa sesión sigue abierta en una terminal, conviene responder ahí.
 
 ### 32.1 Criterios de aceptación de M25
 <!-- id: criterios-chat -->

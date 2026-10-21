@@ -5,6 +5,9 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+// Corridos desde Claude Code, los tests no son parte de su sesión: decide --ask la guardaría (§32).
+delete process.env.CLAUDE_CODE_SESSION_ID;
+
 if (!process.env.SCOMPASS_CONFIG) {
   const dir = mkdtempSync(join(tmpdir(), 'scompass-test-'));
   process.env.SCOMPASS_REGISTRY ??= join(dir, 'registry');

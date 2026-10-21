@@ -19,10 +19,10 @@ beforeEach(async () => {
 });
 afterEach(() => rm(dir, { recursive: true, force: true, maxRetries: 10 }));
 
-async function cli(argv, { cwd = dir, stdin = '' } = {}) {
+async function cli(argv, { cwd = dir, stdin = '', env = process.env } = {}) {
   let out = '', err = '';
   const code = await run(argv, {
-    cwd, now: () => NOW, stdin: Readable.from([stdin]),
+    cwd, now: () => NOW, stdin: Readable.from([stdin]), env,
     out: { write: (s) => { out += s; } }, err: { write: (s) => { err += s; } }
   });
   return { code, out, err, json: () => JSON.parse(out) };
@@ -477,4 +477,18 @@ test('decision promote (§31): agrega D-n al documento de decisiones y la marca;
     `## D8 · Usar X\n**${day} · vigente** · tarea 1.7 (m1-07)\n\n- **Por qué:** porque\n  sí\n- **Descartado:** Y\n\n` +
     `## D9 · A\n**${day} · vigente** · tarea 1.7 (m1-07)\n\n- **Pregunta:** ¿A o B?\n`);
   assert.match((await cli(['show', 'm1-07'])).out, /1\. ✓ Usar X · ok · D8/);
+});
+
+test('decide --ask guarda la sesión de Claude Code que pregunta (§32): de CLAUDE_CODE_SESSION_ID o --session', async () => {
+  const env = { ...process.env, CLAUDE_CODE_SESSION_ID: '6f0c4c1e-1111-4222-8333-444455556666' };
+  await cli(['decide', 'm1-07', '¿A o B?', '--ask'], { env });
+  await cli(['decide', 'm1-07', 'Usar X'], { env });
+  await cli(['decide', 'm1-07', '¿C?', '--ask', '--session', ''], { env });
+  await cli(['decide', 'm1-07', '¿D?', '--ask', '--session', '0f0f0f0f-0000-4000-8000-000000000000']);
+  await cli(['decide', 'm1-07', '¿E?', '--ask'], { env: { ...process.env, CLAUDE_CODE_SESSION_ID: 'otra-cosa' } });
+  const t = JSON.parse(await readFile(join(dir, 'compass', 'tasks', 'm1-07.json'), 'utf8'));
+  assert.deepEqual(t.decisions.map((d) => d.session), ['6f0c4c1e-1111-4222-8333-444455556666', undefined, undefined, '0f0f0f0f-0000-4000-8000-000000000000', undefined]);
+  const bad = await cli(['decide', 'm1-07', '¿F?', '--ask', '--session', 'x']);
+  assert.equal(bad.code, 2);
+  assert.match(bad.err, /--session tiene que ser/);
 });

@@ -58,9 +58,10 @@ export function chatStore(projectDir, { now = () => new Date().toISOString() } =
     /** Las conversaciones, la última usada primero. */
     async list() { return (await list()).sort((a, b) => b.last_at.localeCompare(a.last_at)); },
     async get(id) { return (await list()).find((c) => c.id === id) ?? null; },
-    create(text) {
+    /** Una conversación nueva; con session, una sesión de Claude Code que ya existe (started) y se creó afuera. */
+    create(text, { session } = {}) {
       const at = now();
-      const chat = { id: randomUUID(), title: chatTitle(text), created_at: at, last_at: at };
+      const chat = { id: session ?? randomUUID(), title: chatTitle(text), created_at: at, last_at: at, ...(session && { started: true, external: true }) };
       return change((chats) => { chats.push(chat); return chat; });
     },
     /** Anota que se usó (y que la sesión de Claude Code ya existe, con started). */
@@ -119,9 +120,19 @@ export class ChatManager extends EventEmitter {
     return { chat, entries: await this.store.read(id), busy: !!turn, turn: turn ? { text: turn.text, tools: turn.tools } : null };
   }
 
-  /** Crea una conversación y le manda el primer mensaje. task: { id, code, title } de la tarea abierta en la web. */
-  async create(text, { task } = {}) {
-    const chat = await this.store.create(text);
+  /**
+   * Crea una conversación y le manda el primer mensaje. task: { id, code, title } de la tarea abierta en la web.
+   * session: retomar una sesión de Claude Code de afuera (la que hizo una pregunta, §32); si ya está en la lista,
+   * solo se le manda el mensaje.
+   */
+  async create(text, { task, session } = {}) {
+    if (session && !UUID.test(session)) throw new ChatError('invalid_argument', 'session tiene que ser el id de una sesión de Claude Code');
+    const known = session ? await this.store.get(session) : null;
+    if (known) {
+      await this.send(known.id, text, { task });
+      return known;
+    }
+    const chat = await this.store.create(text, { session });
     try {
       await this.send(chat.id, text, { task });
     } catch (e) {
@@ -161,7 +172,7 @@ export class ChatManager extends EventEmitter {
   #proc(chat) {
     let proc = this.procs.get(chat.id);
     if (proc) return proc;
-    const opts = { projectDir: this.projectDir, name: this.name, session: chat.id, resume: !!chat.started, env: this.env };
+    const opts = { projectDir: this.projectDir, name: this.name, session: chat.id, resume: !!chat.started, retry: !chat.external, env: this.env };
     if (this.idleMs !== undefined) opts.idleMs = this.idleMs;
     if (this.interruptMs !== undefined) opts.interruptMs = this.interruptMs;
     proc = new ChatProcess(opts);

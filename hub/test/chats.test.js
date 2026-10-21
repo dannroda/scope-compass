@@ -186,3 +186,31 @@ test('varias conversaciones a la vez, cada una con su proceso', async () => {
   assert.equal((await m.get(b.id)).entries[1].text, 'eco: b');
   assert.equal((await launches()).length, 2);
 });
+
+test('retomar una sesión de afuera (la que hizo una pregunta): --resume directo, y si no existe no se crea otra', async () => {
+  const session = '6f0c4c1e-1111-4222-8333-444455556666';
+  await mkdir(env.FAKE_CLAUDE_STATE, { recursive: true });
+  await writeFile(join(env.FAKE_CLAUDE_STATE, session), '');
+  const m = manager();
+  const end = turnEnd(m);
+  const chat = await m.create('Respuesta: A', { session });
+  await end;
+  assert.equal(chat.id, session);
+  assert.deepEqual([chat.started, chat.external], [true, true]);
+  const l = await launches();
+  assert.equal(l[0].argv[l[0].argv.indexOf('--resume') + 1], session);
+  // Ya está en la lista: otro create con la misma sesión le manda el mensaje a esa.
+  const end2 = turnEnd(m);
+  assert.equal((await m.create('otra', { session })).id, session);
+  await end2;
+  assert.equal((await m.list()).length, 1);
+  assert.deepEqual((await m.get(session)).entries.map((e) => e.text), ['Respuesta: A', 'eco: Respuesta: A', 'otra', 'eco: otra']);
+  // Una sesión que no existe en este proyecto: error, sin crear una vacía con ese id.
+  const gone = '0f0f0f0f-0000-4000-8000-000000000000';
+  const end3 = turnEnd(m);
+  await m.create('hola', { session: gone });
+  assert.equal((await end3).ok, false);
+  assert.match(m.events.find((e) => e.chat === gone && e.event === 'error').message, /No conversation found/);
+  assert.equal((await launches()).filter((x) => x.argv.includes(gone)).length, 1);
+  await assert.rejects(m.create('x', { session: 'no-es-un-uuid' }), { code: 'invalid_argument' });
+});

@@ -101,7 +101,7 @@
     playtestDelete: (id, etag) => call('DELETE', '/api/playtests/' + encodeURIComponent(id), undefined, etag),
     chats: () => call('GET', '/api/chats'),
     chat: (id) => call('GET', '/api/chats/' + encodeURIComponent(id)),
-    chatCreate: (text, task) => call('POST', '/api/chats', { text, task }),
+    chatCreate: (text, task, session) => call('POST', '/api/chats', { text, task, session }),
     chatSend: (id, text, task) => call('POST', '/api/chats/' + encodeURIComponent(id) + '/messages', { text, task }),
     chatInterrupt: (id) => call('POST', '/api/chats/' + encodeURIComponent(id) + '/interrupt'),
     chatRemove: (id) => call('DELETE', '/api/chats/' + encodeURIComponent(id))
@@ -973,6 +973,10 @@
       : st === 'open' ? [h('button', { class: 'btn small primary', type: 'button', onclick: open('reply') }, 'Responder')]
         : st === 'revert' ? [h('button', { class: 'btn small', type: 'button', title: 'Volver a sin revisar', onclick: () => reviewDecision(t.id, key, null, '') }, 'Deshacer')]
           : d.review !== 'reverted' && !d.promoted ? [h('button', { class: 'btn small ghost', type: 'button', title: 'Agregarla como D-n al documento de decisiones', onclick: () => promoteDecision(t.id, key) }, 'Promover')] : [];
+    // Una pregunta respondida que guarda su sesión de Claude Code: la respuesta se le puede mandar por el chat (§32).
+    if (d.asked && d.reply && d.session && C.available) {
+      actions.push(h('button', { class: 'btn small', type: 'button', title: 'Retoma la sesión de Claude Code que hizo la pregunta y le manda la respuesta', onclick: () => chatAnswer(t, d) }, 'Seguir en el chat'));
+    }
     const more = [['Por qué', d.why], ['Descartado', d.alternatives], [d.asked ? 'Respuesta' : 'Qué hacer', d.reply]].filter(([, s]) => s);
     return h('li', { class: 'decision ' + st, 'data-key': key },
       h('span', { class: 'dmark', 'aria-hidden': 'true' }, DECISION_MARK[st]),
@@ -2853,6 +2857,21 @@
     if (!show) return;
     renderChatHead(); renderChatBody(); renderChatAttach(); renderChatActions();
     chatInput.disabled = !C.claude;
+  }
+  // Responder una pregunta en la sesión que la hizo (25.8): el hub la retoma con --resume y le manda la respuesta.
+  async function chatAnswer(t, d) {
+    const text = 'Respuesta a tu pregunta en la tarea ' + (t.code ? t.code + ' ' : '') + '(' + t.id + '): «' + d.text + '»\n\n' + d.reply;
+    C.open = true;
+    pref(CHAT_OPEN, '1');
+    try {
+      const chat = await api.chatCreate(text, undefined, d.session);
+      C.chats = [chat, ...C.chats.filter((c) => c.id !== chat.id)];
+      chatSelect(chat.id);
+      await chatLoad();
+    } catch (e) {
+      C.error = e.message;
+    }
+    renderChat();
   }
   document.getElementById('chat-btn').addEventListener('click', () => chatToggle());
 

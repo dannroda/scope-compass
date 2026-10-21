@@ -156,3 +156,19 @@ test('desde la red (--lan) no hay chat', { skip: !lanIp() && 'sin una IP de red'
   assert.equal(await page.isVisible('#chat-btn'), false);
   assert.equal(await page.isVisible('#chat'), false);
 });
+
+test('una pregunta respondida con su sesión: Seguir en el chat la retoma con la respuesta', async () => {
+  const { mkdir, writeFile } = await import('node:fs/promises');
+  await mkdir(env.FAKE_CLAUDE_STATE, { recursive: true });
+  await writeFile(join(env.FAKE_CLAUDE_STATE, '6f0c4c1e-1111-4222-8333-444455556666'), '');
+  await createJsonFilesStore(join(dir, 'compass'), { validators: V }).patch('tasks', 'm1-04', { decisions: [
+    { text: '¿A o B?', asked: true, reply: 'A', session: '6f0c4c1e-1111-4222-8333-444455556666' }, { text: '¿C?', asked: true, reply: 'sí' }] });
+  await serve();
+  const page = await open('127.0.0.1', '#task/m1-04');
+  await page.waitForSelector('.decision');
+  assert.equal(await page.$$eval('.decision button', (bs) => bs.filter((b) => b.textContent === 'Seguir en el chat').length), 1);
+  await page.click('.decision:has-text("¿A o B?") button:has-text("Seguir en el chat")');
+  await page.waitForSelector('#chat .msg.bot:not(.live) .msg-text');
+  assert.match(await page.textContent('#chat .msg.user .msg-text'), /^Respuesta a tu pregunta en la tarea .*«¿A o B\?»\n\nA$/);
+  assert.match(await page.textContent('#chat .msg.bot .msg-text'), /^eco: Respuesta a tu pregunta/);
+});

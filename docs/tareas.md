@@ -2723,7 +2723,7 @@ Pasar una decisión de tarea que resultó ser de diseño a una entrada nueva al 
 
 **Bloqueada por:** 24.1 Spec y decisión de las decisiones
 
-## M25 — Chat  (7/8, 7 en revisión)
+## M25 — Chat  (8/8, 8 en revisión)
 
 Un chat chico sobre el tablero, desde la web, que habla con el Claude Code local: preguntar por tareas, cargarlas y responder las preguntas del agente sin abrir una terminal.
 
@@ -2858,9 +2858,23 @@ Un panel lateral plegable en el tablero: la conversación con el texto en vivo, 
 
 **Bloqueada por:** 25.4 API y WebSocket del chat
 
-### 25.8 Responder una pregunta abierta retoma la sesión · Pendiente
+### 25.8 Responder una pregunta abierta retoma la sesión · Revisión
 
 La decisión de M24 guarda la sesión de Claude que hizo la pregunta (session, opcional, desde CLAUDE_SESSION_ID o lo que exponga Claude Code; investigar). Al responderla en la web se ofrece retomar esa sesión en el chat con la respuesta, así el agente sigue sin volver a leer la tarea.
+
+**Decisiones:**
+- ! La sesión se guarda solo en las preguntas (--ask), no en las decisiones tomadas solas · sin revisar
+  Por qué: es lo que se retoma con la respuesta; en las otras sería ruido
+  Descartado: guardarla siempre, para retomar también al revertir
+- ! Una sesión de afuera no se crea vacía si --resume no la encuentra: el chat muestra el error · sin revisar
+  Por qué: crearla con ese id le mandaría la respuesta a un agente sin contexto
+- ! Seguir en el chat es un botón en la pregunta respondida, no un paso automático al responder · sin revisar
+  Por qué: si la sesión sigue abierta en una terminal, es mejor responder ahí
+  Descartado: retomarla sola al responder
+
+**Prueba:** cli.test.js (decide --ask toma CLAUDE_CODE_SESSION_ID, --session, inválida), mcp.test.js (add_decision con ask desde el entorno del servidor), chats.test.js y chat-api.test.js (retomar una sesión de afuera, no crearla vacía), ui-chat.test.js (Seguir en el chat). Suite: 477.
+
+**Notas:** Investigado: Claude Code 2.1.306 pone CLAUDE_CODE_SESSION_ID en el entorno de Bash y de los servidores MCP que lanza (visto en /proc/<pid>/environ del scompass mcp). Los tests la borran en isolate.js para no heredar la sesión que los corre. Una sesión hecha en otra carpeta (worktree) no se encuentra con --resume desde el proyecto: el chat muestra el error.
 
 **Bloqueada por:** 24.4 MCP: herramientas de decisiones; 25.3 Conversaciones: retomar y listar
 

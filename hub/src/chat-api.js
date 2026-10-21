@@ -57,7 +57,9 @@ export function registerChatApi(app, { projectDir, store, emit, token = null, en
     scope.get('/api/chats', async () => ({ chats: await (await chats()).list(), claude: findClaude(env) !== null }));
     scope.post('/api/chats', async (req, reply) => {
       const text = textOf(req.body);
-      const chat = await (await chats()).create(text, { task: await taskOf(req.body.task) });
+      const session = req.body.session ?? undefined;
+      if (session !== undefined && typeof session !== 'string') throw new ChatError('invalid_argument', 'session tiene que ser un texto');
+      const chat = await (await chats()).create(text, { task: await taskOf(req.body.task), session });
       return reply.code(201).send(chat);
     });
     scope.get('/api/chats/:id', async (req) => (await chats()).get(req.params.id));

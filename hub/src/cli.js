@@ -81,9 +81,11 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   step add <id> "<texto>" [--detail "…"]     agrega un paso (texto corto; el detalle se despliega)
   step set <id> <n> [--text …] [--detail …]  cambia un paso (--detail "" lo quita)
   step rm <id> <n>                          quita un paso
-  decide <id> "<texto>" [--why "…"] [--alternatives "…"] [--ask]
+  decide <id> "<texto>" [--why "…"] [--alternatives "…"] [--ask] [--session <uuid>]
                                             registra una decisión (§31): sin --ask, tomada sin consultar (queda sin
-                                            revisar); con --ask, una pregunta al usuario (queda abierta)
+                                            revisar); con --ask, una pregunta al usuario (queda abierta) y la sesión de
+                                            Claude Code que la hace (--session, o CLAUDE_CODE_SESSION_ID), para
+                                            retomarla desde el chat al responder
   decision ok|revert|reverted <id> <n> [--reply "…"]
                                             revisa la decisión n (desde 1): de acuerdo, a revertir (--reply: qué
                                             hacer en su lugar) o ya revertida
@@ -183,7 +185,7 @@ const OPTIONS = {
   q: { type: 'string' }, blocked: { type: 'boolean' }, unblocked: { type: 'boolean' }, 'pending-steps': { type: 'boolean' }, 'with-refs': { type: 'boolean' },
   tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, size: { type: 'string' }, assignee: { type: 'string' },
   at: { type: 'string' }, review: { type: 'boolean' }, note: { type: 'string' },
-  why: { type: 'string' }, alternatives: { type: 'string' }, ask: { type: 'boolean' }, reply: { type: 'string' }, decisions: { type: 'string' },
+  why: { type: 'string' }, alternatives: { type: 'string' }, ask: { type: 'boolean' }, session: { type: 'string' }, reply: { type: 'string' }, decisions: { type: 'string' },
   pending: { type: 'boolean' }, revert: { type: 'boolean' },
   title: { type: 'string' }, description: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
@@ -200,7 +202,9 @@ export function findProject(cwd, dir) {
 
 
 // signal: corta `serve` (los tests lo usan); sin él, serve termina con SIGINT o SIGTERM.
-export async function run(argv, { cwd = process.cwd(), out = process.stdout, err = process.stderr, stdin = process.stdin, now, signal } = {}) {
+const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+export async function run(argv, { cwd = process.cwd(), out = process.stdout, err = process.stderr, stdin = process.stdin, now, signal, env = process.env } = {}) {
   const print = (s) => out.write(s + '\n');
   const warn = (s) => err.write(s + '\n');
   let args;
@@ -1069,7 +1073,12 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (!text) throw new UsageError('el texto de la decisión está vacío');
       const cur = await store.get('tasks', id);
       const list = cur.doc.decisions ?? [];
-      const d = { text, ...(o.why?.trim() && { why: o.why }), ...(o.alternatives?.trim() && { alternatives: o.alternatives }), ...(o.ask && { asked: true }) };
+      // Una pregunta guarda la sesión de Claude Code que la hace (Claude Code la pone en el entorno de Bash y del MCP),
+      // para retomarla desde el chat con la respuesta (§32). --session "" no la guarda.
+      const session = o.session ?? (o.ask ? env.CLAUDE_CODE_SESSION_ID : undefined);
+      if (o.session && !SESSION_ID.test(o.session)) throw new UsageError(`--session tiene que ser el id de una sesión de Claude Code (un uuid): ${o.session}`);
+      const d = { text, ...(o.why?.trim() && { why: o.why }), ...(o.alternatives?.trim() && { alternatives: o.alternatives }), ...(o.ask && { asked: true }),
+        ...(session && SESSION_ID.test(session) && { session }) };
       const r = await store.patch('tasks', id, { decisions: [...list, d] }, { ifMatch: o.etag ?? cur.etag });
       return written({ id: r.id, etag: r.etag, ...r.doc }, `${id}: decisión ${list.length + 1} registrada (${decisionLabel(d)})`);
     },
