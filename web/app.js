@@ -101,7 +101,8 @@
     playtestDelete: (id, etag) => call('DELETE', '/api/playtests/' + encodeURIComponent(id), undefined, etag),
     chats: () => call('GET', '/api/chats'),
     chat: (id) => call('GET', '/api/chats/' + encodeURIComponent(id)),
-    chatCreate: (text, task, session) => call('POST', '/api/chats', { text, task, session }),
+    chatCreate: (text, task, session, profile) => call('POST', '/api/chats', { text, task, session, profile }),
+    chatProfiles: () => call('GET', '/api/chats/profiles'),
     chatSend: (id, text, task) => call('POST', '/api/chats/' + encodeURIComponent(id) + '/messages', { text, task }),
     chatInterrupt: (id) => call('POST', '/api/chats/' + encodeURIComponent(id) + '/interrupt'),
     chatRemove: (id) => call('DELETE', '/api/chats/' + encodeURIComponent(id))
@@ -2657,12 +2658,14 @@
   // La conversación se arma con la copia del hub (entries) más el turno en curso, que llega por el WebSocket.
   const CHAT_OPEN = 'chatOpen:' + BASE, CHAT_ID = 'chatId:' + BASE;
   const C = { available: false, claude: true, open: pref(CHAT_OPEN) === '1', chats: [], id: pref(CHAT_ID) || null, entries: [], turn: null,
-    listing: false, error: '', attach: null, confirmRemove: null };
+    listing: false, error: '', attach: null, confirmRemove: null,
+    // Perfiles de Claude Code con su cuenta y sus límites (§33), el del proyecto y el elegido para una conversación nueva.
+    profiles: [], profile: 'default', newProfile: null };
   const chatEl = document.getElementById('chat');
   const chatInput = h('textarea', { id: 'chat-input', rows: 2, placeholder: 'Preguntá o pedí algo sobre el tablero', 'aria-label': 'Mensaje' });
-  const chatParts = { head: h('div', { class: 'chat-head' }), body: h('div', { class: 'chat-body', 'aria-live': 'polite' }), attach: h('div', { class: 'chat-attach' }), actions: h('div', { class: 'chat-actions' }) };
+  const chatParts = { head: h('div', { class: 'chat-head' }), meta: h('div', { class: 'chat-meta' }), body: h('div', { class: 'chat-body', 'aria-live': 'polite' }), attach: h('div', { class: 'chat-attach' }), actions: h('div', { class: 'chat-actions' }) };
   const chatForm = h('form', { class: 'chat-form', onsubmit: (e) => { e.preventDefault(); chatSendInput(); } }, chatParts.attach, chatInput, chatParts.actions);
-  chatEl.append(chatParts.head, chatParts.body, chatForm);
+  chatEl.append(chatParts.head, chatParts.meta, chatParts.body, chatForm);
   // Enter manda; Mayús+Enter es otra línea.
   chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); chatSendInput(); } });
   chatInput.addEventListener('input', () => renderChatActions());
@@ -2675,11 +2678,21 @@
       C.available = true;
       C.claude = r.claude;
       C.chats = r.chats;
+      C.profile = r.profile ?? 'default';
+      if (C.open) chatProfiles();
       if (C.id && !C.chats.some((c) => c.id === C.id)) chatSelect(null);
       else if (C.id && C.open) await chatLoad();
     } catch (e) {
       C.available = false;
     }
+    renderChat();
+  }
+  // Pedir los perfiles lanza claude auth status por cada uno (el hub los guarda un rato): solo con el panel abierto.
+  async function chatProfiles() {
+    const r = await api.chatProfiles().catch(() => null);
+    if (!r) return;
+    C.profiles = r.profiles;
+    C.profile = r.profile;
     renderChat();
   }
   async function chatList() {
@@ -2710,6 +2723,7 @@
   function chatToggle(open = !C.open) {
     C.open = open;
     pref(CHAT_OPEN, open ? '1' : '0');
+    if (open && !C.profiles.length) chatProfiles();
     if (open && C.id) chatLoad().then(renderChat); else renderChat();
     if (open) chatInput.focus();
   }
@@ -2725,7 +2739,9 @@
     try {
       if (C.id) await api.chatSend(C.id, text, task);
       else {
-        const chat = await api.chatCreate(text, task);
+        const chat = await api.chatCreate(text, task, undefined, C.newProfile ?? undefined);
+        if (C.newProfile) C.profile = C.newProfile;
+        C.newProfile = null;
         C.chats = [chat, ...C.chats.filter((c) => c.id !== chat.id)];
         chatSelect(chat.id);
         await chatLoad();
@@ -2740,6 +2756,12 @@
 
   function chatEvent(m) {
     if (!C.available) return;
+    // El uso de los límites es de la cuenta del perfil: vale para todas las conversaciones que lo usan.
+    if (m.event === 'limits') {
+      const p = C.profiles.find((x) => x.id === m.profile);
+      if (p) { p.limits = { ...m.limits, at: m.at }; renderChatMeta(); }
+      return;
+    }
     if (m.chat !== C.id) {
       // Otra conversación (de esta pestaña o de otra): solo cambia la lista.
       if (m.event === 'turn' || m.event === 'end') chatList();
@@ -2781,6 +2803,66 @@
         h('span', { class: 'tmark', 'aria-label': t.ok === undefined ? 'en curso' : t.ok ? 'bien' : 'falló' }, t.ok === undefined ? '…' : t.ok ? '✓' : '✗'), ' ',
         h('code', null, t.name), t.brief ? h('span', { class: 'tbrief' }, ' ' + t.brief) : null))));
   }
+  const NUM = new Intl.NumberFormat('es', { notation: 'compact', maximumFractionDigits: 1 });
+  const USD = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const tokensOf = (t) => (t ? t.input + t.output + t.cache_read + t.cache_write : 0);
+  // Tokens y costo de una respuesta, plegados: el costo lo calcula Claude Code, y con una suscripción es un estimado.
+  function chatUsage(e) {
+    if (!e.tokens && e.cost === undefined) return null;
+    const t = e.tokens;
+    return h('details', { class: 'chat-usage' }, h('summary', null, [t ? NUM.format(tokensOf(t)) + ' tokens' : null, e.cost !== undefined ? USD.format(e.cost) : null].filter(Boolean).join(' · ')),
+      t ? h('p', null, 'Entrada ' + NUM.format(t.input) + ' · salida ' + NUM.format(t.output) + ' · caché leída ' + NUM.format(t.cache_read) + ' · caché escrita ' + NUM.format(t.cache_write)) : null,
+      e.cost !== undefined ? h('p', null, 'Costo estimado por Claude Code; con una suscripción no se cobra aparte.') : null);
+  }
+  const PLANS = { pro: 'Pro', max: 'Max', team: 'Team', enterprise: 'Enterprise', free: 'Free' };
+  function accountLine(p) {
+    const a = p?.account;
+    if (!a) return 'Cuenta: sin datos';
+    if (!a.logged_in) return 'Sin login de Claude (usa su settings.json)';
+    return [a.email, a.org, a.plan ? PLANS[a.plan] ?? a.plan : null].filter(Boolean).join(' · ');
+  }
+  const WINDOWS = [['five_hour', '5 h'], ['seven_day', 'Semana']];
+  const resetText = (iso) => {
+    const d = new Date(iso);
+    const sameDay = d.toDateString() === new Date().toDateString();
+    return d.toLocaleString('es', sameDay ? { hour: '2-digit', minute: '2-digit' } : { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+  };
+  function limitsView(l) {
+    if (!l) return h('p', { class: 'chat-limits-none' }, 'El uso de los límites aparece después de la primera respuesta.');
+    return h('div', { class: 'chat-limits' }, WINDOWS.filter(([k]) => l[k]).map(([k, label]) => {
+      const pct = Math.round(l[k].used * 100);
+      return h('div', { class: 'lim' + (pct >= 90 ? ' high' : '') },
+        h('span', { class: 'lim-label' }, label),
+        h('span', { class: 'lim-bar', role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(pct), 'aria-label': 'Uso ' + label },
+          h('span', { style: 'width:' + Math.min(pct, 100) + '%' })),
+        h('span', { class: 'lim-n' }, pct + ' %'),
+        l[k].resets_at ? h('span', { class: 'lim-reset' }, 'se renueva ' + resetText(l[k].resets_at)) : null);
+    }), h('span', { class: 'lim-at' }, 'dato de ', stamp(l.at) ?? 'antes', l.overage ? ' · usando el excedente' : ''));
+  }
+  // La cuenta y el uso del perfil de la conversación; en una nueva, el selector de perfil.
+  function renderChatMeta() {
+    const meta = chatParts.meta;
+    if (C.listing) { meta.replaceChildren(); meta.hidden = true; return; }
+    meta.hidden = false;
+    const current = C.chats.find((c) => c.id === C.id);
+    const id = current ? current.profile ?? 'default' : C.newProfile ?? C.profile;
+    const p = C.profiles.find((x) => x.id === id);
+    const kids = [];
+    if (!current && C.profiles.length > 1) {
+      kids.push(h('label', { class: 'chat-profile' }, h('span', null, 'Perfil'),
+        h('select', { id: 'chat-profile', onchange: (e) => { C.newProfile = e.target.value; renderChatMeta(); } },
+          C.profiles.map((x) => h('option', { value: x.id, selected: x.id === id }, x.label + (x.account?.email ? ' · ' + x.account.email : ''))))));
+    } else if (p && C.profiles.length > 1) {
+      kids.push(h('div', { class: 'chat-profile' }, h('span', null, 'Perfil'), h('b', null, p.label)));
+    }
+    kids.push(h('div', { class: 'chat-account' }, accountLine(p)));
+    kids.push(limitsView(p?.limits));
+    if (current) {
+      const total = C.entries.reduce((n, e) => n + tokensOf(e.tokens), 0), cost = C.entries.reduce((n, e) => n + (e.cost ?? 0), 0);
+      if (total || cost) kids.push(h('div', { class: 'chat-total' }, 'Esta conversación: ' + NUM.format(total) + ' tokens · ' + USD.format(cost)));
+    }
+    meta.replaceChildren(...kids);
+  }
   function chatEntry(e) {
     if (e.role === 'user') {
       const task = e.task ? S.tasks.find((t) => t.id === e.task) : null;
@@ -2790,7 +2872,8 @@
     return h('div', { class: 'msg bot' + (e.ok === false ? ' failed' : '') }, chatTools(e.tools ?? [], false),
       e.text ? h('div', { class: 'msg-text' }, rich(e.text)) : null,
       e.interrupted ? h('div', { class: 'msg-note' }, 'Cortado') : null,
-      e.error ? h('div', { class: 'msg-err' }, e.error) : null);
+      e.error ? h('div', { class: 'msg-err' }, e.error) : null,
+      chatUsage(e));
   }
   function renderChatHead() {
     const current = C.chats.find((c) => c.id === C.id);
@@ -2855,7 +2938,7 @@
     chatEl.hidden = !show;
     document.body.classList.toggle('chat-open', show);
     if (!show) return;
-    renderChatHead(); renderChatBody(); renderChatAttach(); renderChatActions();
+    renderChatHead(); renderChatMeta(); renderChatBody(); renderChatAttach(); renderChatActions();
     chatInput.disabled = !C.claude;
   }
   // Responder una pregunta en la sesión que la hizo (25.8): el hub la retoma con --resume y le manda la respuesta.

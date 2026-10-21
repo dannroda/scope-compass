@@ -2960,7 +2960,7 @@ La conversación guarda con qué agente se hizo (index.json); Nueva deja elegir 
 
 **Bloqueada por:** 27.3 Adaptador de agy en el hub
 
-## M28 — Cuenta, perfiles y uso del chat  (3/5, 3 en revisión)
+## M28 — Cuenta, perfiles y uso del chat  (4/5, 4 en revisión)
 
 Saber qué cuenta usa el chat y cuánto gasta, y poder usar varias cuentas (perfiles de Claude Code).
 
@@ -3019,9 +3019,19 @@ Del stream-json: rate_limit_event (uso y renovación de las ventanas de 5 horas 
 
 **Bloqueada por:** 28.2 Perfiles y cuenta en el hub
 
-### 28.4 Web: cuenta, perfil y uso en el panel · Pendiente
+### 28.4 Web: cuenta, perfil y uso en el panel · Revisión
 
 En el panel del chat: la cuenta del perfil (email, organización, plan), elegir el perfil para una conversación nueva, el uso de los límites con cuándo se renuevan, y los tokens y el costo estimado de cada respuesta y de la conversación.
+
+**Decisiones:**
+- ! Los perfiles (y su claude auth status) se piden recién al abrir el panel · sin revisar
+  Por qué: pedirlos lanza un claude por perfil; con el panel cerrado no hace falta
+- ! Una ventana de límites al 90 % o más se pinta en rojo · sin revisar
+  Por qué: aviso visual simple; avisar antes de llegar quedó fuera de M28
+- ! Los tests de la UI del chat usan un HOME propio · sin revisar
+  Por qué: si no, mostrarían los perfiles reales de la máquina
+
+**Prueba:** hub/test/ui-chat.test.js (7): el selector de perfil en una nueva, la cuenta de cada uno, las barras (con una al 93 % en rojo), los tokens plegados y el total; la nueva recuerda el perfil del proyecto. Capturas en claro y oscuro.
 
 **Bloqueada por:** 28.3 Límites y tokens
 

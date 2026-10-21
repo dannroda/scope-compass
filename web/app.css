@@ -748,3 +748,22 @@ dialog.settings h2 { margin: 0 0 6px; font-family: var(--font-display); font-siz
 .chat-form textarea { width: 100%; min-height: 44px; max-height: 40vh; field-sizing: content; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 8px 10px; resize: none; }
 .chat-actions { display: flex; justify-content: flex-end; }
 
+/* Cuenta, perfil y uso del chat (M28, §33). */
+.chat-meta { padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.chat-profile { display: flex; align-items: center; gap: 8px; }
+.chat-profile select { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 4px 6px; min-height: 32px; font-size: 13px; }
+.chat-profile b { color: var(--fg); }
+.chat-account { overflow-wrap: anywhere; }
+.chat-limits { display: flex; flex-direction: column; gap: 4px; }
+.lim { display: grid; grid-template-columns: 52px 1fr 40px; align-items: center; gap: 2px 8px; }
+.lim-bar { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.lim-bar span { display: block; height: 100%; background: var(--s-doing); }
+.lim.high .lim-bar span { background: var(--danger); }
+.lim-n { text-align: right; font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+.lim-reset { grid-column: 2 / 4; font-size: 12px; }
+.lim-at, .chat-limits-none { font-size: 12px; margin: 0; }
+.chat-total { color: var(--fg); }
+.chat-usage { font-size: 12px; color: var(--muted); }
+.chat-usage summary { cursor: pointer; }
+.chat-usage p { margin: 2px 0 0; }
+

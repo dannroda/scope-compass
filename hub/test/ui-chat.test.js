@@ -23,9 +23,13 @@ beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'scompass-ui-chat-'));
   dir = join(root, 'p');
   await cp(join(HERE, 'fixtures', 'compass'), join(dir, 'compass'), { recursive: true });
-  env = { ...process.env, SCOMPASS_CLAUDE: join(HERE, 'fake-claude.js'), FAKE_CLAUDE_STATE: join(root, 'sessions') };
+  // Un HOME propio: los perfiles de Claude Code (§33) son los del test, no los de la máquina.
+  env = { ...process.env, HOME: join(root, 'home'), USERPROFILE: join(root, 'home'), SCOMPASS_CLAUDE: join(HERE, 'fake-claude.js'), FAKE_CLAUDE_STATE: join(root, 'sessions') };
+  delete env.SCOMPASS_CLAUDE_PROFILES;
   pageErrors = [];
   contexts = [];
+  // El uso de los límites se guarda por perfil en la carpeta de config (§33): cada test empieza sin datos.
+  await rm(join(process.env.SCOMPASS_CONFIG, 'chats', 'limits.json'), { force: true });
 });
 afterEach(async () => {
   for (const c of contexts) await c.close();
@@ -172,3 +176,36 @@ test('una pregunta respondida con su sesión: Seguir en el chat la retoma con la
   assert.match(await page.textContent('#chat .msg.user .msg-text'), /^Respuesta a tu pregunta en la tarea .*«¿A o B\?»\n\nA$/);
   assert.match(await page.textContent('#chat .msg.bot .msg-text'), /^eco: Respuesta a tu pregunta/);
 });
+
+test('cuenta, perfil y uso: el selector en una conversación nueva, las barras de los límites y los tokens', async () => {
+  const { mkdir, writeFile } = await import('node:fs/promises');
+  const home = join(root, 'home');
+  await mkdir(join(home, '.claude'), { recursive: true });
+  await mkdir(join(home, '.claude-profiles', 'trabajo'), { recursive: true });
+  await writeFile(join(home, '.claude', 'fake-account.json'), JSON.stringify({ loggedIn: true, authMethod: 'claude.ai', email: 'yo@casa', orgName: 'Casa', subscriptionType: 'pro' }));
+  await writeFile(join(home, '.claude-profiles', 'trabajo', '.claude.json'), '{}');
+  await writeFile(join(home, '.claude-profiles', 'trabajo', 'fake-account.json'), JSON.stringify({ loggedIn: true, authMethod: 'claude.ai', email: 'yo@team', orgName: 'Team', subscriptionType: 'team' }));
+  env.FAKE_CLAUDE_LIMITS = '0.93';
+  await serve();
+  const page = await open();
+  await page.click('#chat-btn');
+  await page.waitForSelector('#chat-profile option[value="trabajo"]', { state: 'attached' });
+  assert.match(await page.textContent('#chat .chat-account'), /yo@casa · Casa · Pro/);
+  assert.match(await page.textContent('#chat .chat-meta'), /después de la primera respuesta/);
+  await page.selectOption('#chat-profile', 'trabajo');
+  assert.match(await page.textContent('#chat .chat-account'), /yo@team · Team · Team/);
+  await send(page, 'hola');
+  await page.waitForSelector('#chat .msg.bot:not(.live) .chat-usage');
+  // La conversación ya no elige perfil: muestra el suyo, con el uso de su cuenta.
+  assert.equal(await page.$('#chat-profile'), null);
+  assert.match(await page.textContent('#chat .chat-profile'), /trabajo/);
+  await page.waitForSelector('#chat .lim');
+  assert.deepEqual(await page.$$eval('#chat .lim .lim-n', (els) => els.map((e) => e.textContent)), ['93 %', '40 %']);
+  assert.equal(await page.$$eval('#chat .lim.high', (els) => els.length), 1);
+  assert.match(await page.textContent('#chat .chat-usage summary'), /tokens · US\$\s?0,01/);
+  assert.match(await page.textContent('#chat .chat-total'), /Esta conversación: .* tokens/);
+  // Una nueva vuelve a ofrecer el selector, con el perfil que quedó para el proyecto.
+  await page.click('#chat .chat-head button:has-text("Nueva")');
+  assert.equal(await page.$eval('#chat-profile', (s) => s.value), 'trabajo');
+});
+
