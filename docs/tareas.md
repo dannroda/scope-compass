@@ -2960,7 +2960,7 @@ La conversación guarda con qué agente se hizo (index.json); Nueva deja elegir 
 
 **Bloqueada por:** 27.3 Adaptador de agy en el hub
 
-## M28 — Cuenta, perfiles y uso del chat  (4/5, 4 en revisión)
+## M28 — Cuenta, perfiles y uso del chat  (5/5, 5 en revisión)
 
 Saber qué cuenta usa el chat y cuánto gasta, y poder usar varias cuentas (perfiles de Claude Code).
 
@@ -3035,6 +3035,10 @@ En el panel del chat: la cuenta del perfil (email, organización, plan), elegir 
 
 **Bloqueada por:** 28.3 Límites y tokens
 
-### 28.5 Documentar perfiles y uso · Pendiente
+### 28.5 Documentar perfiles y uso · Revisión
 
 AGENTS.md (las tres copias), instalar.md y el README del hub: perfiles de Claude Code en el chat, dónde se detectan, qué se muestra de la cuenta y del uso.
+
+**Prueba:** Las tres copias de AGENTS.md iguales; suite 484.
+
+**Notas:** AGENTS.md (Chat): perfil por conversación y lo que muestra el panel. instalar.md: cuentas y perfiles en el chat, ~/.claude-profiles, SCOMPASS_CLAUDE_PROFILES, claude auth login. hub/README: profiles.js.
