@@ -1,0 +1,15 @@
+{
+  "checklist": [],
+  "code": "30.1",
+  "created_at": "2026-10-26T06:30:03.294Z",
+  "description": "config.json › forbidden: lista de regex por proyecto. Toda escritura de documento o tarea que tenga una coincidencia se rechaza en el store (CLI, API, MCP, web y dock), diciendo qué patrón y dónde. scompass lint revisa compass/ entero (archivos editados a mano) y sale con 1, para un pre-commit. Se rechaza en vez de avisar porque lo que entra a git queda en el historial.",
+  "milestone": "m30",
+  "notes": "Patrones (probados contra los ejemplos del techdemo; sin falsos positivos en project-epiphany, scope-compass ni limboai): \\b[A-Za-z0-9_]+\\.c\\b (archivo .c, con o sin :línea; genérico porque el ajuste de línea parte nombres, p. ej. \"(BFW_ScriptLang_\" + salto + \"Expr.c:159)\") y \\b[A-Z][A-Z0-9]{1,3}[rgi][A-Z][A-Za-z0-9]* (prefijo del motor: ONr, ONg, ONi, TRr, AI2r, WPr, OBJr, UUr, CAr, COr, OSi), distinguiendo mayúsculas. Deben rechazarse: \"Oni_Character.c:15983\", \"BFW_Totoro.c:2140\", \"Imp_Env2_OctTree2.c\", \"(AI2rKnowledge_Sound, Oni_AI2_Knowledge.c:536)\", \"TRrCollection_Lookup\", \"ONiCharacter_TestAndSetHit\", \"WPrPowerup_Give\", \"UUrMachineTime_Sixtieths\". No deben rechazarse: ai.current, r.collider, PhysicsRayQueryParameters3D.create (por eso \\b después de .c), tags de OniSplit (TRAM, ONCC Health, <AKEV>), funciones BSL (ai2_spawn, ai2_doalarm), \"AI2 alarm state\", OniSplit, Oni_Weapon, OniMoveTable, AnimationTree, CharacterBody3D, HTTPRequest, AABB, GDScript.",
+  "order": 1,
+  "priority": "high",
+  "refs": [],
+  "status": "todo",
+  "test": "",
+  "title": "Patrones prohibidos",
+  "updated_at": "2026-10-26T06:31:14.925Z"
+}

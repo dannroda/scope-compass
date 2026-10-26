@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-10-21
+> Generado: 2026-10-26
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -3142,3 +3142,47 @@ El panel del chat nunca se probó en pantalla chica: en el teléfono, a pantalla
 **Prioridad:** baja · **Tamaño:** S
 
 AGENTS.md (template, addon y compass/), instalar.md (el punto de --lan y el del chat) y los README: cómo vincular y quitar un teléfono, que el chat corre en este equipo con sus perfiles, y que fuera de casa es con Tailscale (m7-02).
+
+## M30 — Clean-room  (0/5)
+
+Soportar una clean-room (el spec de Oni para project-chrysalis): que el spec no se contamine con código ni nombres del fuente original, que las preguntas del lado limpio queden enlazadas a la sección que las responde y ver qué parte del spec falta cubrir.
+
+**Hecho cuando:**
+- Con patrones prohibidos en config.json, escribir un documento o una tarea que los contenga se rechaza por la CLI, la API, el MCP, la web y el dock, y scompass lint los encuentra en archivos editados a mano y sale con 1.
+- Una vista lista las secciones de los documentos que ninguna tarea referencia, y por sección las tareas cerradas que la cubren.
+- scompass init --template clean-room deja AGENTS.md con las reglas, los patrones en config.json y la lista de preguntas.
+- project-chrysalis usa el flujo con el spec de Oni: preguntas del lado limpio respondidas como secciones del spec.
+
+### 30.1 Patrones prohibidos · Pendiente
+
+**Prioridad:** alta
+
+config.json › forbidden: lista de regex por proyecto. Toda escritura de documento o tarea que tenga una coincidencia se rechaza en el store (CLI, API, MCP, web y dock), diciendo qué patrón y dónde. scompass lint revisa compass/ entero (archivos editados a mano) y sale con 1, para un pre-commit. Se rechaza en vez de avisar porque lo que entra a git queda en el historial.
+
+**Notas:** Patrones (probados contra los ejemplos del techdemo; sin falsos positivos en project-epiphany, scope-compass ni limboai): \b[A-Za-z0-9_]+\.c\b (archivo .c, con o sin :línea; genérico porque el ajuste de línea parte nombres, p. ej. "(BFW_ScriptLang_" + salto + "Expr.c:159)") y \b[A-Z][A-Z0-9]{1,3}[rgi][A-Z][A-Za-z0-9]* (prefijo del motor: ONr, ONg, ONi, TRr, AI2r, WPr, OBJr, UUr, CAr, COr, OSi), distinguiendo mayúsculas. Deben rechazarse: "Oni_Character.c:15983", "BFW_Totoro.c:2140", "Imp_Env2_OctTree2.c", "(AI2rKnowledge_Sound, Oni_AI2_Knowledge.c:536)", "TRrCollection_Lookup", "ONiCharacter_TestAndSetHit", "WPrPowerup_Give", "UUrMachineTime_Sixtieths". No deben rechazarse: ai.current, r.collider, PhysicsRayQueryParameters3D.create (por eso \b después de .c), tags de OniSplit (TRAM, ONCC Health, <AKEV>), funciones BSL (ai2_spawn, ai2_doalarm), "AI2 alarm state", OniSplit, Oni_Weapon, OniMoveTable, AnimationTree, CharacterBody3D, HTTPRequest, AABB, GDScript.
+
+### 30.2 Probar el canal de preguntas con listas · Pendiente
+
+**Prioridad:** media
+
+Sin código nuevo si alcanza: una lista 'preguntas' del lado limpio; al responder, el lado sucio actualiza una sección del spec y la tarea de la pregunta la referencia. Probarlo en project-chrysalis y anotar qué falta antes de pensar en un tipo nuevo.
+
+### 30.3 Cobertura del spec · Pendiente
+
+**Prioridad:** media
+
+La vista al revés de checkRefs/suggestRefs (hub/src/docs.js): secciones que ninguna tarea referencia y, por sección, qué tareas cerradas la cubren. En la web y por la CLI/MCP.
+
+### 30.4 Plantilla clean-room · Pendiente
+
+**Prioridad:** media
+
+init --template clean-room (M8): AGENTS.md con las reglas (no leer el fuente original, sus repos ni la memoria de esas sesiones; describir el comportamiento observable y los datos, nunca código ni nombres internos), forbidden de ejemplo en config.json y la lista de preguntas.
+
+**Notas:** AGENTS.md debe decir lo que ningún regex atrapa: nombres de campos internos del motor en camelCase (p. ej. lastAttack) y pseudocódigo traducido; eso queda para la revisión humana, con git y 30.1 como rastro.
+
+### 30.5 Revisión por sección del spec · Pendiente
+
+**Prioridad:** baja
+
+Estado por sección (borrador → revisado limpio, quién y cuándo) y marcar las tareas que referencian secciones sin revisar. Baja: esconder secciones al lado limpio no protege si leen la misma carpeta, y git más 30.1 ya dan el rastro de auditoría. Retomar si el uso real lo pide.
