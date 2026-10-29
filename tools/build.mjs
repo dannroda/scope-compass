@@ -54,7 +54,8 @@ const files = run('git', ['ls-files', 'addons/scope_compass']).split('\n');
 if (WIN) execFileSync('tar.exe', ['-a', '-c', '-f', join(DIST, zip), ...files], { cwd: REPO });
 else execFileSync('zip', ['-q', '-X', join(DIST, zip), ...files], { cwd: REPO });
 
+cpSync(join(REPO, 'tools', 'install.sh'), join(DIST, 'install.sh')); // Linux: npm install -g y el lanzador del menú
 writeFileSync(join(DIST, 'INSTALAR.md'), readFileSync(join(REPO, 'docs', 'instalar.md'), 'utf8')
   .replaceAll('<versión>', pkg.version) + `\n---\nBuild ${pkg.version} · commit ${commit}\n`);
 
-console.log(`dist/${tgz}\ndist/${zip}\ndist/INSTALAR.md\n(${pkg.version}, commit ${commit})`);
+console.log(`dist/${tgz}\ndist/${zip}\ndist/install.sh\ndist/INSTALAR.md\n(${pkg.version}, commit ${commit})`);

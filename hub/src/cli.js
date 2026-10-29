@@ -301,7 +301,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (free !== null && free !== port) { warn(`aviso: el puerto ${port} está ocupado; el Inicio usa el ${free}`); port = free; }
     }
     // Reiniciar (9.8): se cierra y se vuelve a lanzar el mismo comando en el mismo puerto (carga código nuevo).
-    let restart = false;
+    // withLan: con qué --lan vuelve al reiniciar; la bandeja lo cambia (una IP no se suma a un servidor que ya escucha).
+    let restart = false, withLan = !!o.lan;
     const app = createHomeServer({ validators, onRestart: () => { restart = true; ac.abort(); }, onShutdown: () => ac.abort() });
     let addr;
     try { addr = await listen(app, port, { lan: o.lan }); } catch (e) {
@@ -322,7 +323,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     if (o.tray) {
       try {
         tray = await startTray({ title: 'Scope Compass', tooltip: `Inicio · ${url}`, onActivate: () => openUrl(url),
-          items: () => homeTrayItems({ app, url, openUrl, warn, close: () => ac.abort(), restart: () => { restart = true; ac.abort(); }, refresh: () => tray?.refresh() }) });
+          items: () => homeTrayItems({ app, url, openUrl, warn, close: () => ac.abort(), restart: () => { restart = true; ac.abort(); },
+            lan, toggleLan: () => { withLan = !withLan; restart = true; ac.abort(); }, refresh: () => tray?.refresh() }) });
         // Recién con el ícono puesto los hubs esconden el suyo.
         registerHub({ port: addr.port, kind: 'home', tray: true, lan: o.lan });
         app.events.on('event', (e) => { if (e.type === 'hubs' || e.type === 'projects') tray?.refresh(); });
@@ -337,8 +339,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     await app.close();
     unregisterHub();
     if (restart) {
-      const again = argv.filter((x, i) => x !== '--port' && argv[i - 1] !== '--port' && !x.startsWith('--port=') && x !== '--open');
-      spawn(process.execPath, [BIN, ...again, '--port', String(addr.port)], { cwd, env: process.env, stdio: 'inherit', detached: true, windowsHide: true }).unref();
+      const again = argv.filter((x, i) => x !== '--port' && argv[i - 1] !== '--port' && !x.startsWith('--port=') && x !== '--open' && x !== '--lan');
+      spawn(process.execPath, [BIN, ...again, '--port', String(addr.port), ...(withLan ? ['--lan'] : [])], { cwd, env: process.env, stdio: 'inherit', detached: true, windowsHide: true }).unref();
       if (!o.json) print('Reiniciando el Inicio…');
     }
     return 0;
@@ -1428,7 +1430,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
 
 // Menú de la bandeja del Inicio (§16.3): un submenú por proyecto del registro, con lo mismo que la bandeja de un
 // hub (Abrir, Actualizar compass/ si hace falta, Reiniciar, Detener) o Prender si está apagado.
-function homeTrayItems({ app, url, openUrl, warn, close, restart, refresh }) {
+function homeTrayItems({ app, url, openUrl, warn, close, restart, lan, toggleLan, refresh }) {
   const act = (fn) => async () => { try { await fn(); } catch (e) { warn(`bandeja: ${e.message}`); } refresh(); };
   const projects = (() => { try { return projectsStatus(); } catch (e) { warn(`bandeja: ${e.message}`); return []; } })();
   // D29: el Inicio sirve los proyectos, así que no hay nada que prender; un hub suelto (el del dock) se puede detener.
@@ -1454,6 +1456,8 @@ function homeTrayItems({ app, url, openUrl, warn, close, restart, refresh }) {
     ...projects.map(project),
     ...(projects.length ? [{ separator: true }] : []),
     { label: 'Agregar proyecto…', onClick: () => openUrl(url) },
+    // Con --lan, el label dice dónde abrirlo desde el teléfono (lanzado desde el menú no hay terminal que lo muestre).
+    { label: lan ? `Desactivar acceso en la red (${lan.join(' ') || 'sin dirección'})` : 'Activar acceso en la red (teléfono)', onClick: toggleLan },
     { label: 'Reiniciar Inicio', onClick: restart },
     { label: 'Cerrar Inicio', onClick: close }
   ];
