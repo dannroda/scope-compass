@@ -777,7 +777,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         const r = await moveBoard(project, arg);
         const lines = [`Tablero movido a ${r.target}${r.shared ? ', en el repo de todos los tableros' : ''}${r.history ? `, con su historial${r.shared ? ' (en un commit)' : ''}` : ''}`, `compass/ es ahora un enlace${r.exclude ? `, excluido en ${r.exclude}` : ''}`];
         if (r.exportFrom) lines.push(`El export markdown pasó de ${r.exportFrom} a ${r.exportTo} (dentro del tablero)`);
-        if (r.history) lines.push('En el proyecto, compass/ quedó fuera del índice: commiteá ese cambio.');
+        if (r.history) lines.push('En el proyecto, compass/ quedó fuera del índice: commiteá ese cambio con `git commit` y sin `-- compass` (con la ruta, git lee los archivos a través del enlace y los vuelve a agregar).');
         lines.push(`Lo sin commitear quedó sin commitear en el tablero.${r.shared ? '' : ` Para un remoto: git -C ${r.target} remote add origin <url>`}`);
         return done(r, lines.join('\n'));
       }
