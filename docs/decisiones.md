@@ -532,3 +532,14 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Un lanzador en el plugin que lea `scompass.json`: necesita sh en Linux y otro en Windows, y `command` no varía por sistema.
   - Copiar el plugin a godot-agent-plugins: dos copias, y la versión ahí no seguiría a la de los releases.
   - Poner toda la guía en la skill: quedaría vieja respecto del `compass/AGENTS.md` de cada tablero.
+
+## D51 · Documentos al día: etag por contenido, caché de versiones y aviso desde el MCP
+
+- **Qué:** el etag de un documento es su id de blob de git. "Qué cambió desde un etag" compara por sección contra el texto viejo, que sale de una caché por contenido en la carpeta de datos o de git. El MCP recuerda en su proceso los documentos que mostró y avisa en el resultado de la herramienta siguiente si cambiaron (spec §41).
+- **Por qué:** no hay estado por sesión en el hub; lo único que guarda la caché es texto por su hash, igual para todos. Un id de blob coincide con lo que git ya tiene, así que una versión commiteada se recupera sin la caché. El proceso del MCP ya es uno por sesión: ahí recordar qué leyó el agente es gratis, y el aviso llega en la próxima respuesta que el modelo ve, sin depender de que el cliente maneje notificaciones.
+- **Descartado:**
+  - Guardar en el hub qué leyó cada sesión: estado por sesión, y se pierde al reiniciar el hub.
+  - Escribir el blob en el repo del proyecto (`git hash-object -w`) al entregar el etag: una lectura que escribe en `.git` del usuario. La caché queda fuera del repo.
+  - Un etag con el hash de cada sección adentro: largo, y sigue sin decir qué cambió adentro de una sección que el agente no leyó.
+  - Diff de líneas para las secciones tocadas: la comparación por id dice lo mismo para una sección y además distingue las nuevas y las quitadas.
+  - `resources/subscribe` y `notifications/resources/updated`: la documentación de Claude Code no dice que los atienda, y un MCP común no puede empujar nada a la sesión. Los channels sí pueden, pero son preview y piden `--channels`.

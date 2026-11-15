@@ -1501,3 +1501,36 @@ Hasta acá, para que Claude Code trabaje un tablero había que registrar el MCP 
 - [x] `claude plugin validate` pasa con el marketplace del repo y con el plugin.
 - [x] `release.mjs bump` sube la versión del plugin y `check` falla si no coincide; el repo tiene las tres versiones iguales.
 - [ ] Instalado desde el marketplace del repo y desde `godot-agent`, la skill aparece en un proyecto con `compass/` y, sin el MCP, el agente lo registra con `scompass mcp install`.
+
+## 41. Documentos al día para el agente (M26)
+<!-- id: documentos-al-dia -->
+
+Un agente lee el GDD (o una sección) al empezar y trabaja horas con esa copia. Mientras tanto el documento puede cambiar: el usuario lo edita, otra sesión lo cambia, llega un `git pull` o se promueve una decisión. Hoy el agente no tiene cómo enterarse y sigue con lo que leyó.
+
+- **Etag del documento:** es el id de blob de git del contenido (`git hash-object`, sha1 de `blob <bytes>\0<texto>`), calculado en JS, con o sin repo. Lo dan `doc show --json` (entero o una sección: siempre el del documento), `GET /api/docs/:alias`, `GET /api/docs/:alias/sections/:id` y `show_doc` del MCP. Es el mismo para el mismo texto en cualquier equipo, y un commit lo guarda tal cual.
+- **Qué cambió desde un etag:** `scompass doc changed <alias>[#sección] --since <etag>` y `GET /api/docs/:alias/changes?since=<etag>[&section=<id>]` devuelven `{ alias, path, etag, changed, known, sections: { changed, added, removed } }`.
+  - Para comparar hace falta el texto viejo. Se busca primero en la caché de versiones y después en git (`git cat-file blob <etag>` en el repo del documento): una versión commiteada siempre está.
+  - **Caché de versiones:** cada vez que se entrega un etag, el texto queda en `<datos>/doc-versions/<etag>.md` si no estaba. Va por contenido, no por sesión, y sirve igual para el hub, la CLI y el MCP. Se borran las de más de 30 días. Así también se encuentra la versión de un documento editado sin commitear.
+  - Las secciones se comparan por id: `changed` son las que existen en las dos versiones con otro texto (una sección incluye a las de adentro, así que también cambian las que la contienen), `added` las nuevas y `removed` las que ya no están. Con `section`, `changed` dice si cambió esa sección y la lista se limita a ella y lo que tiene adentro.
+  - Si el texto viejo no aparece (`known: false`), solo se sabe que cambió, sin las secciones: hay que leerlo de nuevo.
+- **MCP:**
+  - `show_doc` devuelve el etag y acepta `since`: si el documento no cambió, contesta solo eso, sin el texto; si cambió, el texto con lo que cambió.
+  - **Aviso en los resultados:** el servidor MCP es un proceso por sesión de Claude Code, así que recuerda los documentos que mostró y con qué etag, sin estado en el hub. Después de cada herramienta mira si alguno cambió (lee el archivo y calcula el hash, es barato) y, si cambió, agrega al resultado un aviso con el documento y las secciones. Avisa una vez por versión.
+  - **Sin `resources/subscribe`:** la documentación de Claude Code no dice que se suscriba a recursos ni que le muestre al modelo un `notifications/resources/updated` (revisado el 2026-11-15). Además, un servidor MCP común no empuja nada a la sesión; los *channels* sí, pero están en preview y piden `--channels` al arrancar. Por eso el aviso va en los resultados de las herramientas.
+- **AGENTS.md:** volver a leer un documento antes de basarse en él para una decisión o un cambio de código si pasó tiempo, si el MCP avisó o si se promovió una decisión. Para preguntar, `show_doc` con `since`, o `doc changed --since` por la CLI.
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/docs/:alias/changes?since=<etag>[&section=<id>]` | `{etag, changed, known, sections: {changed, added, removed}}` |
+
+```
+scompass doc changed <alias>[#sección] --since <etag> [--json]   # sale con 0 si no cambió y con 1 si cambió
+```
+
+### Criterios de aceptación
+
+- [ ] `doc show --json`, la API y `show_doc` dan el etag del documento, igual a `git hash-object` del archivo.
+- [ ] `doc changed --since` dice qué secciones cambiaron, cuáles son nuevas y cuáles se quitaron, con el texto viejo de la caché o de git; sin él, `known: false`.
+- [ ] `show_doc` con el mismo etag no repite el texto; con otro, lo da con las secciones cambiadas.
+- [ ] Un documento que el MCP mostró y después cambió genera un aviso, una sola vez, en el resultado de la herramienta siguiente.
+- [ ] AGENTS.md dice cuándo volver a leer un documento y cómo preguntar si cambió.
