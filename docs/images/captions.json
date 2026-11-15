@@ -1,0 +1,54 @@
+{
+  "es": {
+    "board": {
+      "alt": "Tablero de Scope Compass con columnas Pendiente, Pausado, En curso, Revisión y Hecho, y una tarea abierta al costado con pasos y decisiones.",
+      "caption": "El tablero en el navegador: cada tarea es un archivo JSON en compass/, y la abierta muestra sus pasos, la prueba y las decisiones del agente."
+    },
+    "phone": {
+      "alt": "Dos teléfonos: a la izquierda el tablero en columna, a la derecha una tarea con su hito, prioridad y pasos.",
+      "caption": "En el teléfono, con scompass serve --lan: el mismo tablero, para anotar o tildar desde el sillón."
+    },
+    "home": {
+      "alt": "El Inicio de Scope Compass: lo de hoy de todos los proyectos, la semana que viene y una tarjeta por proyecto.",
+      "caption": "El Inicio junta todos los proyectos del equipo: lo vencido y lo de hoy, la semana, y las preguntas de los agentes que esperan respuesta."
+    },
+    "playtest": {
+      "alt": "Una sesión de playtest con cuatro tareas marcadas Anda o Falla, con notas, y la tarea que falta probar abierta al costado.",
+      "caption": "Una sesión de playtest: se prueban las tareas en orden y cada resultado, con su nota, queda en la tarea."
+    },
+    "decisions": {
+      "alt": "La bandeja de decisiones con una decisión a revertir, una pregunta abierta y una decisión sin revisar.",
+      "caption": "Las decisiones que tomó el agente y las preguntas que te hizo, para revisarlas, revertirlas o responderlas en un lugar."
+    },
+    "dock": {
+      "alt": "El editor de Godot con una escena 2D y el dock Tablero a la derecha, con las tareas del hito por estado.",
+      "caption": "El dock Tablero dentro de Godot: las tareas del hito, conectadas al hub del proyecto, sin salir del editor."
+    }
+  },
+  "en": {
+    "board": {
+      "alt": "Scope Compass board with To do, Paused, In progress, Review and Done columns, and a task open on the side with steps and decisions.",
+      "caption": "The board in the browser: each task is a JSON file in compass/, and the open one shows its steps, its test and the agent's decisions."
+    },
+    "phone": {
+      "alt": "Two phones: on the left the board as a single column, on the right a task with its milestone, priority and steps.",
+      "caption": "On the phone, with scompass serve --lan: the same board, to jot things down or tick steps from the couch."
+    },
+    "home": {
+      "alt": "Scope Compass Home: today's items from every project, the coming week and one card per project.",
+      "caption": "Home brings every project on the machine together: what's overdue or due today, the week ahead, and agent questions waiting for an answer."
+    },
+    "playtest": {
+      "alt": "A playtest session with four tasks marked Works or Fails, with notes, and the task still to test open on the side.",
+      "caption": "A playtest session: tasks are tested in order and each result, with its note, is saved in the task."
+    },
+    "decisions": {
+      "alt": "The decisions inbox with a decision to revert, an open question and an unreviewed decision.",
+      "caption": "The decisions the agent made and the questions it asked you, in one place to review, revert or answer."
+    },
+    "dock": {
+      "alt": "The Godot editor with a 2D scene and the Board dock on the right, listing the milestone's tasks by status.",
+      "caption": "The Board dock inside Godot: the milestone's tasks, connected to the project's hub, without leaving the editor."
+    }
+  }
+}

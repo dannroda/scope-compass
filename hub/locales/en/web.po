@@ -1490,7 +1490,7 @@ msgid " herramientas"
 msgstr " tools"
 
 msgid "en curso"
-msgstr "running"
+msgstr "in progress"
 
 msgid "bien"
 msgstr "ok"
