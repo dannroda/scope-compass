@@ -1,9 +1,13 @@
 // Cada archivo de test lo importa primero: con `node --test test/x.test.js` (sin `npm test`) el registro de hubs,
 // projects.json y la carpeta de datos son temporales, y un tablero de prueba no queda anotado en el Inicio del
 // usuario. Con `npm test` ya vienen puestos (scripts/run-tests.js) y no se tocan.
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+// En Windows la carpeta temporal puede venir con nombres cortos (C:\Users\RUNNER~1) y el hub guarda las rutas reales,
+// largas: los tests arman sus rutas con la misma forma.
+if (process.platform === 'win32') process.env.TEMP = process.env.TMP = realpathSync.native(tmpdir());
 
 // Corridos desde Claude Code, los tests no son parte de su sesión: decide --ask la guardaría (§32).
 delete process.env.CLAUDE_CODE_SESSION_ID;

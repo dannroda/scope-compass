@@ -2,11 +2,14 @@
 // los del usuario. Es un script de Node y no variables de sh en package.json para que ande igual en Windows.
 // Los argumentos pasan tal cual: `npm test -- test/store.test.js`.
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// En Windows la carpeta temporal puede venir con nombres cortos (C:\Users\RUNNER~1); el hub guarda las rutas
+// reales, largas: los tests usan la misma forma (isolate.js hace lo mismo con node --test suelto).
+if (process.platform === 'win32') process.env.TEMP = process.env.TMP = realpathSync.native(tmpdir());
 const dir = mkdtempSync(join(tmpdir(), 'scompass-test-'));
 // Los tests buscan los textos en castellano (el texto fuente, §45): el idioma va fijo, sea cual sea el del equipo.
 const env = { ...process.env, SCOMPASS_LANG: 'es', SCOMPASS_REGISTRY: join(dir, 'registry'), SCOMPASS_CONFIG: join(dir, 'config'), SCOMPASS_DATA: join(dir, 'data') };
