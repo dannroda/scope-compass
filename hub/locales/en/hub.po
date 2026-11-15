@@ -166,6 +166,15 @@ msgstr "missing markdown: the section's text"
 msgid "falta etag: el del documento que se leyó"
 msgstr "missing etag: the one of the document you read"
 
+msgid "el código no sirve: ya se usó, venció o no existe; pedí otro en este equipo"
+msgstr "the code doesn't work: it was used, expired or doesn't exist; ask for another one on this computer"
+
+msgid "Teléfono"
+msgstr "Phone"
+
+msgid "no hay un documento \"{0}\""
+msgstr "there's no document \"{0}\""
+
 msgid "no existe {0}"
 msgstr "{0} doesn't exist"
 
@@ -526,6 +535,9 @@ msgstr "(invalid JSON in this commit)"
 msgid "Sin commitear"
 msgstr "Uncommitted"
 
+msgid "dispositivo desvinculado"
+msgstr "device unlinked"
+
 msgid "no hay un proyecto \"{0}\" en el Inicio"
 msgstr "there's no project \"{0}\" in Home"
 
@@ -546,6 +558,15 @@ msgstr "{0} isn't in the registry (import it first)"
 
 msgid "no se encuentra {0}"
 msgstr "{0} not found"
+
+msgid "los dispositivos se vinculan y se quitan solo desde este equipo"
+msgstr "devices are linked and removed only from this computer"
+
+msgid "el Inicio no está en la red: abrilo con --lan para vincular un teléfono"
+msgstr "Home isn't on the network: open it with --lan to link a phone"
+
+msgid "no hay un dispositivo {0}"
+msgstr "there's no device {0}"
 
 msgid "este Inicio no se puede reiniciar desde la API"
 msgstr "this Home can't be restarted from the API"

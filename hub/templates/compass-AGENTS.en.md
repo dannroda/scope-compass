@@ -30,7 +30,7 @@ Milestones (`compass://milestone/<id>`), tasks (`compass://task/<id>`) and docum
 
 ## Chat
 
-The board's web page has a chat (*Chat* button, only on the same computer) with the installed Claude Code. It launches `claude` in the project folder with the `scompass` MCP and the read tools (`Read`, `Grep`, `Glob`) allowed in advance: it doesn't edit files or run commands, and everything else is denied without asking. If you are that agent:
+The board's web page has a chat (*Chat* button, on the same computer or on a phone linked from Home) with the installed Claude Code. It launches `claude` in the project folder with the `scompass` MCP and the read tools (`Read`, `Grep`, `Glob`) allowed in advance: it doesn't edit files or run commands, and everything else is denied without asking. If you are that agent:
 
 - A message may start with `Open task: <code> <title> (compass://task/<id>)` (`Tarea abierta: …` with the interface in Spanish): it's the task the user has open; read it with `show_task` if needed.
 - Whatever needs editing or running, say so, to do it in the terminal.
@@ -248,7 +248,7 @@ scompass board link <name>       # on another computer, after cloning the board'
 
 ## Projects on this computer
 
-Every hub that starts records its project in `~/.config/scope-compass/projects.json` (on Windows, `%APPDATA%\scope-compass\projects.json`), so Home shows it even after it shuts down. Next to it, `chats/` keeps each project's chat conversations. You don't need to touch it to operate the board. A board in a temporary folder (`/tmp`, to try something out) isn't recorded on its own, and Home forgets, on startup, temporary ones that no longer exist; for tests, `SCOMPASS_CONFIG` and `SCOMPASS_REGISTRY` pointing to a folder of their own isolate everything.
+Every hub that starts records its project in `~/.config/scope-compass/projects.json` (on Windows, `%APPDATA%\scope-compass\projects.json`), so Home shows it even after it shuts down. Next to it, `chats/` keeps each project's chat conversations, and `devices.json` the phones linked to the chat, with the hash of their token (`scompass devices` lists them and `scompass devices rm <id>` unlinks one). You don't need to touch it to operate the board. A board in a temporary folder (`/tmp`, to try something out) isn't recorded on its own, and Home forgets, on startup, temporary ones that no longer exist; for tests, `SCOMPASS_CONFIG` and `SCOMPASS_REGISTRY` pointing to a folder of their own isolate everything.
 
 ```sh
 scompass home list --json   # { "file", "projects": [ { "path", "name", "found", "hubs": [ { "pid", "port" } ] } ] }

@@ -1731,25 +1731,26 @@ La CLI, el MCP, el hub (sus mensajes de error), la web del tablero, el Inicio, l
 Hoy el chat solo atiende a 127.0.0.1, también con `--lan` (§32, D43). Sin login, cualquiera en la red usaría la cuenta de Claude de este equipo y leería el repo con el agente. El pedido es usar el chat desde el teléfono, con el perfil de este equipo. La idea es vincular el teléfono una vez, desde este equipo, y que el chat acepte «local o vinculado». Es la opción (a) de D36, solo para el chat.
 
 - **Vincular:** en el Inicio de este equipo, *Vincular teléfono* (también en el menú de la bandeja) crea un código de un solo uso y muestra la dirección de la red con el código.
-  - La dirección es `http://<ip de la red>:<puerto>/vincular#<código>`, con un QR (D60). El código va en el fragmento, que el navegador no manda al servidor ni guarda en los logs de nadie.
+  - La dirección es `http://<ip de la red>:<puerto>/vincular#<código>`, con un QR hecho sin librería (D60). El código va en el fragmento, que el navegador no manda al servidor ni guarda en los logs de nadie.
   - Solo se puede pedir un código desde 127.0.0.1: desde la red no se vincula nada.
-  - Hace falta el Inicio con `--lan` (o la IP de Tailscale, m7-02). Si no está, el diálogo lo dice y no crea el código.
-  - El código vence a los pocos minutos (D60), sirve una sola vez y no queda guardado en el disco. Con 5 intentos fallidos seguidos se anulan los códigos pendientes.
-- **Canje:** la página `/vincular` del teléfono manda el código a `POST /api/devices/pair` con un nombre (por ejemplo «Teléfono», editable), y el Inicio le devuelve una cookie con un token propio de ese dispositivo.
+  - Hace falta el Inicio con `--lan` (o la IP de Tailscale, m7-02). Si no está, `POST /api/devices/code` da 409 y el diálogo lo dice.
+  - El código (12 bytes al azar, base64url) vence a los 5 minutos (D60), sirve una sola vez y vive solo en la memoria del Inicio. Con 5 intentos fallidos seguidos se anulan los códigos pendientes. Un código que no sirve da 403.
+- **Canje:** la página `/vincular` del teléfono manda el código a `POST /api/devices/pair` con un nombre (hasta 60 caracteres; sin nombre, «Teléfono»), y el Inicio le devuelve una cookie con un token propio de ese dispositivo.
   - El token: 32 bytes al azar (base64url).
   - Se guarda solo su SHA-256, en `<config>/scope-compass/devices.json`, junto a `chats/`: es de la máquina y no va a git. Cada entrada es `{ id, name, hash, created_at, last_seen }`.
   - La cookie: `scompass_device`, `HttpOnly`, `SameSite=Strict`, `Path=/`, por un año. Lleva `Secure` cuando el pedido llega por HTTPS (`tailscale serve`).
   - Sin TLS, la cookie viaja en claro por el wifi, igual que hoy el tablero con `--lan`. Fuera de casa va por Tailscale, que cifra.
 - **El chat acepta «local o vinculado»:**
   - `/p/<clave>/api/chats` y los eventos `chat` del WebSocket del proyecto atienden a 127.0.0.1 o a un pedido con una cookie válida. El WebSocket la revisa al abrirse y cada vez que se manda un evento `chat`.
+  - El chequeo lo hace el Inicio. Al hub de un proyecto que sirve él (sin puerto, por `inject`) le avisa que el pedido es de un vinculado con una cabecera interna que lleva un secreto de ese proceso; desde afuera no se puede mandar, porque el Inicio solo deja pasar las cabeceras que conoce. `createServer` recibe `chatAllow(req)`, que por defecto es solo 127.0.0.1.
   - Cada pedido válido anota `last_seen`, como mucho una vez por minuto.
   - Nada más cambia de permisos. El agente sigue con lectura y el tablero (§32), sin Bash ni Edit. El resto de la API con `--lan` ya estaba abierto a la red (D36) y no depende de la cookie.
   - Con token de hosting (§12) el chat sigue apagado.
 - **Revocar:**
   - En el Inicio, *Dispositivos vinculados* muestra el nombre, cuándo se vinculó y el último uso, con *Desvincular*. Por la CLI: `scompass devices` y `scompass devices rm <id>`.
-  - Desvincular borra la entrada: el próximo pedido da 403, y los WebSocket abiertos de ese dispositivo se cierran enseguida.
+  - Desvincular borra la entrada: el próximo pedido da 403, y los WebSocket abiertos de ese dispositivo se cierran enseguida (código 4403). El Inicio mira `devices.json` cada segundo, así que también los cierra si se desvinculó con la CLI, desde otro proceso.
   - Solo se administra desde 127.0.0.1.
-- **Hub suelto:** un proyecto que sirve un hub suelto, y no el Inicio, se usa desde el teléfono a través del Inicio, que ya reenvía a los hubs sueltos (§16). El chat pasa por el chequeo del Inicio. Falta decidir si un hub suelto abierto con su propio `--lan` acepta también los dispositivos del Inicio (D60).
+- **Hub suelto:** un proyecto que sirve un hub suelto, y no el Inicio, se usa desde el teléfono a través del Inicio, que ya reenvía a los hubs sueltos (§16). El chat pasa por el chequeo del Inicio, y el hub suelto lo atiende porque le llega desde 127.0.0.1. Un hub suelto abierto con su propio `--lan` no acepta dispositivos: su chat sigue solo local (D60).
 - **Lo que no cambia:**
   - Las conversaciones siguen siendo de este equipo, en `<config>/scope-compass/chats/`: el teléfono ve las mismas.
   - El perfil de Claude Code es el que elige el proyecto (§33).
@@ -1769,11 +1770,11 @@ scompass devices rm <id>    # desvincular
 
 ### Criterios de aceptación
 
-- [ ] Desde la red no se puede pedir un código ni administrar dispositivos.
-- [ ] Un código sirve una vez y vence; 5 intentos fallidos anulan los pendientes.
-- [ ] Con la cookie, el chat del proyecto anda desde el teléfono; sin ella, 403 como hoy.
-- [ ] Desvincular corta el próximo pedido y cierra los WebSocket abiertos.
-- [ ] `devices.json` guarda solo el hash del token.
+- [x] Desde la red no se puede pedir un código ni administrar dispositivos.
+- [x] Un código sirve una vez y vence; 5 intentos fallidos anulan los pendientes.
+- [x] Con la cookie, el chat del proyecto anda desde el teléfono; sin ella, 403 como hoy.
+- [x] Desvincular corta el próximo pedido y cierra los WebSocket abiertos.
+- [x] `devices.json` guarda solo el hash del token.
 
 ## 50. Editar una sección desde la web (M26)
 <!-- id: editar-seccion -->

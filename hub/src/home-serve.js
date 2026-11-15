@@ -2,6 +2,7 @@
 // hub (createServer), sin que esa app escuche en un puerto. Los pedidos HTTP le llegan con inject() y su WebSocket
 // lo atiende attachSocket. Un solo proceso escribe cada compass/: si el proyecto ya tiene un hub suelto (el del
 // dock, `scompass serve`), el Inicio le reenvía HTTP y WebSocket en lugar de servirlo él.
+import { randomBytes } from 'node:crypto';
 import { basename, join } from 'node:path';
 import { slugify, freeId } from './lists.js';
 import { hubsOf, registerServed, unregisterServed } from './registry.js';
@@ -26,12 +27,30 @@ const IN = ['content-type', 'if-match', 'if-none-match', 'accept', 'accept-langu
 // nosniff y la CSP con sandbox de /api/files/raw también pasan (19.8).
 const OUT = ['content-type', 'etag', 'location', 'cache-control', 'x-content-type-options', 'content-security-policy'];
 
+// Cabecera con que el Inicio le dice al hub de un proyecto que sirve él (sin puerto, solo por inject) que el pedido
+// es de un dispositivo vinculado (§49). Lleva un secreto de este proceso: no se puede mandar desde afuera, y además
+// IN no deja pasar cabeceras que no conoce.
+const LINKED = 'x-scompass-linked';
+
 /**
  * Registra /p/:key, /p/:key/* y /p/:key/ws en la app del Inicio. projects(): el registro con su estado
  * (projectsStatus). onChange(path, evt): un cambio en un proyecto que sirve el Inicio (para avisar a sus pestañas).
+ * devices: los dispositivos vinculados (createDevices, §49); sin él, el chat es solo de este equipo.
  * Devuelve { served(path), close() }.
  */
-export function registerProjectRoutes(app, { validators, projects, onChange, port: portOf = () => app.server?.address()?.port }) {
+export function registerProjectRoutes(app, { validators, projects, onChange, devices = null, port: portOf = () => app.server?.address()?.port }) {
+  const secret = randomBytes(24).toString('base64url');
+  const chatAllow = (req) => isLoopback(req.socket.remoteAddress) || req.headers[LINKED] === secret;
+  // Los WebSocket de dispositivos vinculados, para cerrarlos al desvincular.
+  const linkedSockets = new Map(); // id → Set(socket)
+  const onRemoved = (id) => { for (const s of linkedSockets.get(id) ?? []) s.close(4403, T('dispositivo desvinculado')); linkedSockets.delete(id); };
+  devices?.events.on('removed', onRemoved);
+  const linkSocket = (socket, device) => {
+    if (!device) return;
+    if (!linkedSockets.has(device.id)) linkedSockets.set(device.id, new Set());
+    linkedSockets.get(device.id).add(socket);
+    socket.on('close', () => linkedSockets.get(device.id)?.delete(socket));
+  };
   const live = new Map(); // path → { key, hub, ready }
   const given = new Map(); // path → clave, mientras viva el Inicio
   const keyed = () => {
@@ -49,7 +68,7 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
   async function activate(p) {
     let entry = live.get(p.path);
     if (!entry) {
-      const hub = createServer({ projectDir: p.path, store: createJsonFilesStore(join(p.path, 'compass'), { validators }), validators, watch: true, exportMd: true });
+      const hub = createServer({ projectDir: p.path, store: createJsonFilesStore(join(p.path, 'compass'), { validators }), validators, watch: true, exportMd: true, chatAllow });
       hub.events.on('event', (e) => onChange?.(p.path, e));
       entry = { key: p.key, hub, ready: hub.ready().then(() => registerServed({ port: portOf(), project: p.path, base: `/p/${p.key}`, key: p.key })) };
       live.set(p.path, entry);
@@ -73,10 +92,12 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
     if (!p) return missing(reply, req.params.key);
     // La ruta cruda, sin decodificar: params['*'] vuelve "docs%2Fspec%2Fia" en "docs/spec/ia" y el hub no la encuentra.
     const url = req.url.slice(req.url.indexOf('/', 3));
-    // El chat solo desde este equipo (§32): el hub del proyecto ve al Inicio como 127.0.0.1, así que se mira acá.
+    // El chat solo desde este equipo o un dispositivo vinculado (§32, §49): el hub del proyecto ve al Inicio como
+    // 127.0.0.1, así que se mira acá. Sobre la ruta decodificada, para que "/api/%63hats" no se saltee el chequeo.
     const local = isLoopback(req.socket.remoteAddress);
-    // Sobre la ruta decodificada, para que "/api/%63hats" no se saltee el chequeo.
-    if (!local && /^api\/chats(\/|$)/.test(req.params['*'])) {
+    const isChat = /^api\/chats(\/|$)/.test(req.params['*']);
+    const linked = isChat && !local && devices ? devices.of(req) : null;
+    if (isChat && !local && !linked) {
       return reply.code(403).send({ error: { code: 'forbidden', message: T('el chat solo anda en este equipo (127.0.0.1)') } });
     }
     const headers = Object.fromEntries(IN.filter((h) => req.headers[h] !== undefined).map((h) => [h, req.headers[h]]));
@@ -92,6 +113,8 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
       body = Buffer.from(await r.arrayBuffer());
     } else {
       const hub = await activate(p);
+      // Al hub suelto no: él atiende el chat porque el pedido le llega del Inicio, desde 127.0.0.1.
+      if (linked) headers[LINKED] = secret;
       const r = await hub.inject({ method: req.method, url, headers, payload, remoteAddress: req.socket.remoteAddress });
       status = r.statusCode;
       outHeaders = Object.fromEntries(OUT.filter((h) => r.headers[h] !== undefined).map((h) => [h, r.headers[h]]));
@@ -108,9 +131,13 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
       if (!p) { socket.close(4404, T('no existe el proyecto')); return; }
       const proxy = route(p);
       const local = isLoopback(req.socket.remoteAddress);
+      // Un dispositivo vinculado recibe los eventos del chat mientras siga vinculado (§49).
+      const device = !local && devices ? devices.of(req) : null;
+      linkSocket(socket, device);
+      const chat = () => local || (!!device && devices.has(device.id));
       if (!proxy) {
         const hub = await activate(p);
-        attachSocket(socket, { app: hub, ...hub.hub, local });
+        attachSocket(socket, { app: hub, ...hub.hub, chat });
         return;
       }
       const up = new WebSocket(`ws://127.0.0.1:${proxy.port}/ws`);
@@ -119,7 +146,7 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
       // El hub suelto ve al Inicio como local: los eventos del chat se filtran acá.
       up.addEventListener('message', (m) => {
         const data = String(m.data);
-        if (!local && data.startsWith('{"type":"chat"')) return;
+        if (data.startsWith('{"type":"chat"') && !chat()) return;
         if (socket.readyState === socket.OPEN) socket.send(data);
       });
       up.addEventListener('close', () => socket.close());
@@ -136,6 +163,6 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
     local: (path) => (live.has(path) ? { store: live.get(path).hub.hub.store, publish: live.get(path).hub.hub.publish } : null),
     // Activar un proyecto sin pedirle nada (el "Iniciar hub" del dock con el Inicio corriendo, 9.5).
     activate: async (path) => { const { list, keys } = keyed(); const p = list.find((x) => x.path === path); if (!p) return null; await activate({ ...p, key: keys.get(path) }); return `/p/${keys.get(path)}`; },
-    async close() { unregisterServed(); for (const e of live.values()) await e.hub.close().catch(() => {}); live.clear(); }
+    async close() { devices?.events.off('removed', onRemoved); unregisterServed(); for (const e of live.values()) await e.hub.close().catch(() => {}); live.clear(); }
   };
 }

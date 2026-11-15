@@ -25,11 +25,12 @@ export async function registerWs(app, { store, publish, version, boards = new Se
  * Atiende un WebSocket del protocolo de §5.5 contra un hub: le manda sus eventos y recibe `update` y `presence`.
  * Lo usan el hub suelto (/ws) y el Inicio, que sirve el hub de cada proyecto en /p/<clave>/ws sin que el hub
  * escuche en un puerto propio (D29). app: la app del hub (sus `events` y su log). local: si el cliente está en este
- * equipo; si no, no recibe los eventos del chat (§32).
+ * equipo; si no, no recibe los eventos del chat (§32). chat(): en lugar de local, si puede recibirlos ahora; el
+ * Inicio lo usa para un dispositivo vinculado (§49), que deja de recibirlos en cuanto se lo desvincula.
  */
-export function attachSocket(socket, { app, store, publish, version, boards, local = false }) {
+export function attachSocket(socket, { app, store, publish, version, boards, local = false, chat = () => local }) {
   const send = (msg) => { if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(msg)); };
-  const forward = (evt) => { if (evt.type !== 'chat' || local) send(evt); };
+  const forward = (evt) => { if (evt.type !== 'chat' || chat()) send(evt); };
   app.events.on('event', forward);
   socket.on('close', () => { app.events.off('event', forward); boards.delete(send); });
   send({ type: 'hello', server_version: version, protocol: PROTOCOL });

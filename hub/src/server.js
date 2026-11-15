@@ -60,7 +60,8 @@ const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, inva
 // onShutdown: si se pasa, POST /api/shutdown lo llama (serve cierra ordenado). Es la forma de apagar un hub en
 // todas las plataformas: en Windows no hay SIGTERM y `kill` lo mata en seco, sin darse de baja (§18).
 // chatEnv: el entorno con que se lanza claude en el chat (§32; los tests ponen SCOMPASS_CLAUDE).
-export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null, gitPollMs = 3000, chatEnv = process.env }) {
+// chatAllow(req): quién puede usar el chat; por defecto solo este equipo (el Inicio suma los vinculados, §49).
+export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null, gitPollMs = 3000, chatEnv = process.env, chatAllow }) {
   // Al cerrar se cortan todas las conexiones: con la UI abierta (que reintenta cada 0,5 s) el cierre
   // podía quedar esperando una conexión nueva o el cierre educado de un WebSocket.
   const app = Fastify({ logger, forceCloseConnections: true });
@@ -159,7 +160,7 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   // Un documento agregado o quitado (12.2): se miran los documentos nuevos y la UI recarga la lista.
   registerDocsApi(app, { store, projectDir, validators, onDocsChanged: async (alias) => { await watchDocs(); emit({ type: 'doc_changed', alias }); } });
   registerFilesApi(app, { projectDir });
-  registerChatApi(app, { projectDir, store, emit, token, env: chatEnv });
+  registerChatApi(app, { projectDir, store, emit, token, env: chatEnv, ...(chatAllow && { allow: chatAllow }) });
   app.register(registerWs, { store, publish, version: VERSION, boards });
 
   // Cambios sin commitear (4.4): GET /api/git, y un evento `git` cuando el número cambia después de una escritura

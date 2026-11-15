@@ -14,6 +14,10 @@
 //   GET    /api/templates                    plantillas para crear un proyecto
 //   POST   /api/projects/init  { name, template, path? }   crea compass/ con `scompass init` y lo anota (sin path:
 //                                            en la carpeta de datos del usuario, D28)
+//   POST   /api/devices/code                 solo local: código de un solo uso para vincular un teléfono (§49)
+//   POST   /api/devices/pair    { code, name }   canjea el código por el token del dispositivo, en una cookie
+//   GET    /api/devices                      solo local: los dispositivos vinculados
+//   DELETE /api/devices/:id                  solo local: desvincular (cierra sus WebSocket)
 //   GET    /ws                               { type: 'changed', path, collection?, id? } | { type: 'hubs' } | { type: 'projects' }
 // Las escrituras pasan por el hub del proyecto si está vivo (lo publica a sus pestañas y al dock); si no, van
 // directo a compass/ con etag, como la CLI, y regeneran el export markdown.
@@ -36,6 +40,8 @@ import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { loadCompass } from './store/load.js';
 import { byToday, summarize, todayOf, weekOf } from './summary.js';
 import { registerProjectRoutes } from './home-serve.js';
+import { isLoopback } from './chat-api.js';
+import { createDevices, deviceCookie, DeviceError } from './devices.js';
 import { outdatedFiles, updateAllCompasses, updateCompass } from './update.js';
 import { boardStatus, repoWorktree } from './git.js';
 import { listTemplates, loadTemplate } from './templates.js';
@@ -45,11 +51,13 @@ import { selfCommand } from './self.js';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
 
-const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, invalid_file: 409, invalid: 409, io_error: 500 };
+const HTTP_STATUS = { invalid_argument: 400, forbidden: 403, not_found: 404, conflict: 409, invalid_file: 409, invalid: 409, io_error: 500 };
 
 // now: función que devuelve la fecha "de hoy" (los tests la fijan). pollMs: cada cuánto mira el registro de hubs
-// (medio segundo: un hub que se levanta se ve en el Inicio en menos de 1 s, §16.8).
-export function createHomeServer({ validators, now = () => new Date(), pollMs = 500, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null }) {
+// (medio segundo: un hub que se levanta se ve en el Inicio en menos de 1 s, §16.8). lan(): las direcciones de la red
+// donde escucha (`--lan`, D36), para vincular un teléfono (§49); null si solo escucha en 127.0.0.1. devices: las
+// opciones de createDevices (los tests acortan los tiempos).
+export function createHomeServer({ validators, now = () => new Date(), pollMs = 500, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null, lan = () => null, devices: deviceOptions = {} }) {
   const app = Fastify({ logger, forceCloseConnections: true });
   langRoutes(app);
   localOnly(app);
@@ -60,9 +68,13 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   app.register(websocket, {
     preClose(done) { for (const c of this.websocketServer.clients) c.terminate(); this.websocketServer.close(done); }
   });
+  // Teléfonos vinculados para el chat (§49).
+  const devices = createDevices(deviceOptions);
+  app.addHook('onClose', async () => devices.close());
   // Multi-hub (D29): cada proyecto en /p/<clave>/, servido acá o reenviado a su hub suelto.
   const serving = registerProjectRoutes(app, {
     validators,
+    devices,
     projects: () => { try { return projectsStatus(); } catch { return []; } },
     onChange: (path, e) => { if (e.type === 'upsert' || e.type === 'delete') emit({ type: 'changed', path, collection: e.collection, id: e.id }); }
   });
@@ -70,6 +82,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   app.decorate('serving', serving);
 
   app.setErrorHandler((err, req, reply) => {
+    if (err instanceof DeviceError) return reply.code(HTTP_STATUS[err.code] ?? 500).send({ error: { code: err.code, message: err.message } });
     if (err instanceof StoreError || err instanceof ProjectsError) {
       const body = { error: { code: err.code, message: err.message } };
       if (err.current) body.error.current = err.current;
@@ -127,6 +140,30 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
       // schema/ o AGENTS.md de una versión anterior de Scope Compass (9.9): la tarjeta ofrece actualizarlos.
       outdated: outdatedFiles(compassOf(p.path)) };
   }
+
+  // Vincular un teléfono (§49). Pedir un código y administrar dispositivos, solo desde este equipo.
+  const onlyHere = (req) => {
+    if (!isLoopback(req.socket.remoteAddress)) throw new DeviceError('forbidden', T('los dispositivos se vinculan y se quitan solo desde este equipo'));
+  };
+  app.post('/api/devices/code', async (req) => {
+    onlyHere(req);
+    const urls = lan() ?? [];
+    if (!urls.length) throw new DeviceError('conflict', T('el Inicio no está en la red: abrilo con --lan para vincular un teléfono'));
+    const { code, expires_at } = devices.code();
+    return { code, expires_at, url: `${urls[0]}vincular#${code}`, urls: urls.map((u) => `${u}vincular#${code}`) };
+  });
+  app.post('/api/devices/pair', async (req, reply) => {
+    const { device, token } = await devices.pair(req.body?.code, req.body?.name);
+    const secure = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https';
+    reply.header('set-cookie', deviceCookie(token, { secure }));
+    return reply.code(201).send({ device });
+  });
+  app.get('/api/devices', async (req) => { onlyHere(req); return { devices: devices.list() }; });
+  app.delete('/api/devices/:id', async (req) => {
+    onlyHere(req);
+    if (!(await devices.remove(req.params.id))) throw new DeviceError('not_found', T`no hay un dispositivo ${req.params.id}`);
+    return { ok: true };
+  });
 
   app.get('/api/health', async () => ({ ok: true, name: 'scope-compass-home', version: VERSION, protocol: PROTOCOL, pid: process.pid, projects_file: projectsFile() }));
 

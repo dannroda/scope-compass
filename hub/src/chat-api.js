@@ -14,7 +14,9 @@ export const isLoopback = (addr) => addr === '127.0.0.1' || addr === '::1' || ad
 
 const STATUS = { busy: 409, not_found: 404, claude_missing: 503, forbidden: 403, invalid_argument: 400 };
 
-export function registerChatApi(app, { projectDir, store, emit, token = null, env = process.env }) {
+// allow(req): si el pedido puede usar el chat. Por defecto, solo desde este equipo; el Inicio suma los dispositivos
+// vinculados (§49) para los proyectos que sirve él.
+export function registerChatApi(app, { projectDir, store, emit, token = null, env = process.env, allow = (req) => isLoopback(req.socket.remoteAddress) }) {
   let manager = null;
   const chats = async () => {
     if (!manager) {
@@ -43,7 +45,7 @@ export function registerChatApi(app, { projectDir, store, emit, token = null, en
   app.register(async (scope) => {
     scope.addHook('onRequest', async (req) => {
       if (token) throw new ChatError('forbidden', T('el chat está apagado en un hub con token'));
-      if (!isLoopback(req.socket.remoteAddress)) throw new ChatError('forbidden', T('el chat solo anda en este equipo (127.0.0.1)'));
+      if (!allow(req)) throw new ChatError('forbidden', T('el chat solo anda en este equipo (127.0.0.1)'));
     });
     scope.setErrorHandler((err, req, reply) => {
       if (err instanceof ChatError || err instanceof StoreError) {

@@ -645,10 +645,10 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Un token fijo en la URL (un link para guardar): queda en el historial, en los favoritos y en lo que se comparta, y no se puede revocar sin cambiarlo para todos.
   - Abrir el chat a toda la red con `--lan`: cualquiera en el wifi usaría la cuenta de Claude y leería el repo con el agente.
   - Un servicio público o un espejo online para el teléfono: el teléfono habla con este equipo; fuera de casa, Tailscale (m7-02).
-- **Para decidir (preguntado):**
-  - **El QR:** sin librería, con un generador propio chico (modo byte, una sola versión y corrección M; un par de cientos de líneas en `web/`), o con una librería chica como `qrcode-generator`. La tercera opción es sin QR, con un código corto para escribir a mano. Propuesta: generador propio, por la regla de usar lo nativo antes que una dependencia.
-  - **Cuánto dura el código:** propuesta, 5 minutos.
-  - **Un hub suelto con su propio `--lan`:** si acepta los dispositivos del Inicio (leería el mismo `devices.json`) o si su chat sigue solo local. Propuesta: solo local; desde el teléfono, el proyecto se usa a través del Inicio.
+- **Decidido (2026-11-15, respuestas de Dann):**
+  - **El QR:** con un generador propio, sin librería (la regla de usar lo nativo antes que una dependencia). Se descartó `qrcode-generator` y el código para escribir a mano.
+  - **Cuánto dura el código:** 5 minutos.
+  - **Un hub suelto con su propio `--lan`:** su chat sigue solo local. Desde el teléfono, el proyecto se usa a través del Inicio.
 
 ## D61 · Editar documentos desde la web: por sección, con el etag del documento, sin commit
 **2026-11-15 · vigente** · spec §50 · cambia D33 en un punto

@@ -30,7 +30,7 @@ Los hitos (`compass://milestone/<id>`), las tareas (`compass://task/<id>`) y los
 
 ## Chat
 
-La web del tablero tiene un chat (botón *Chat*, solo en el mismo equipo) con el Claude Code instalado. Lanza `claude` en la carpeta del proyecto con el MCP `scompass` y las herramientas de lectura (`Read`, `Grep`, `Glob`), permitidas de antemano: no edita archivos ni corre comandos, y lo demás se niega sin preguntar. Si sos ese agente:
+La web del tablero tiene un chat (botón *Chat*, en el mismo equipo o en un teléfono vinculado desde el Inicio) con el Claude Code instalado. Lanza `claude` en la carpeta del proyecto con el MCP `scompass` y las herramientas de lectura (`Read`, `Grep`, `Glob`), permitidas de antemano: no edita archivos ni corre comandos, y lo demás se niega sin preguntar. Si sos ese agente:
 
 - Un mensaje puede empezar con `Tarea abierta: <código> <título> (compass://task/<id>)` (`Open task: …` con la interfaz en inglés): es la tarea que el usuario tiene abierta; leela con `show_task` si hace falta.
 - Lo que haya que editar o correr, decilo para hacerlo en la terminal.
@@ -248,7 +248,7 @@ scompass board link <nombre>     # en otro equipo, después de clonar el repo de
 
 ## Proyectos del equipo
 
-Cada hub que se levanta anota su proyecto en `~/.config/scope-compass/projects.json` (en Windows, `%APPDATA%\scope-compass\projects.json`), para que el Inicio lo muestre aunque después se apague. Al lado, `chats/` guarda las conversaciones del chat de cada proyecto. No hace falta tocarlo para operar el tablero. Un tablero en una carpeta temporal (`/tmp`, para probar algo) no se anota solo, y el Inicio olvida al arrancar los temporales que ya no existen; para tests, `SCOMPASS_CONFIG` y `SCOMPASS_REGISTRY` apuntando a una carpeta propia aíslan todo.
+Cada hub que se levanta anota su proyecto en `~/.config/scope-compass/projects.json` (en Windows, `%APPDATA%\scope-compass\projects.json`), para que el Inicio lo muestre aunque después se apague. Al lado, `chats/` guarda las conversaciones del chat de cada proyecto, y `devices.json` los teléfonos vinculados al chat, con el hash de su token (`scompass devices` los lista y `scompass devices rm <id>` desvincula uno). No hace falta tocarlo para operar el tablero. Un tablero en una carpeta temporal (`/tmp`, para probar algo) no se anota solo, y el Inicio olvida al arrancar los temporales que ya no existen; para tests, `SCOMPASS_CONFIG` y `SCOMPASS_REGISTRY` apuntando a una carpeta propia aíslan todo.
 
 ```sh
 scompass home list --json   # { "file", "projects": [ { "path", "name", "found", "hubs": [ { "pid", "port" } ] } ] }

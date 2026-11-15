@@ -31,6 +31,7 @@ import { dropImage, IMAGE_EXT, importImage, insideProject, isImagePath } from '.
 import { taskHistory } from './history.js';
 import { boardInfo, boardsDir, linkBoard, moveBoard, newBoard } from './board.js';
 import { promoteDecision } from './promote.js';
+import { listDevices, removeDevice } from './devices.js';
 import { forgetProject, isTempPath, projectsFile, projectsStatus, pruneTempProjects, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listPlaytests, listTasks } from './views.js';
 import { checkItem, freeId, newItem, repeatOf, slugify } from './lists.js';
@@ -73,6 +74,8 @@ const USAGE = T`Uso: scompass [--dir <proyecto>] <comando>
   mcp install                               registra este scompass en Claude Code (claude mcp add --scope user),
                                             con su ruta entera: no hace falta tenerlo en el PATH
   hubs                                      hubs activos de todos los proyectos
+  devices                                   teléfonos vinculados al chat de este equipo (§49), con su último uso
+  devices rm <id>                           desvincular uno: su próximo pedido al chat da 403
   lang [es|en|auto]                         el idioma de la CLI, la web y el Inicio (§45): sin argumento dice cuál se
                                             usa; auto sigue al sistema (LANG) y al navegador; SCOMPASS_LANG gana
   home [--port 4700] [--open] [--tray]      levanta el Inicio: todos los proyectos del equipo (uno solo por usuario;
@@ -262,7 +265,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const validators = loadValidators();
   let store = createJsonFilesStore(compass, { validators, ...(now && { now }) });
   // Con un hub de este proyecto corriendo, todo pasa por su API (eventos al instante, una sola cola de escritura).
-  if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'home', 'help', 'mcp', 'board', 'lint', 'lang'].includes(cmd)) {
+  if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'home', 'help', 'mcp', 'board', 'lint', 'lang', 'devices'].includes(cmd)) {
     const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
     const hub = await detectHub(project, cfg?.port);
     // Un hub de otro protocolo (§39) no se usa: la API pudo cambiar. Se escribe directo en compass/ y su watcher lo ve.
@@ -344,7 +347,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     // Reiniciar (9.8): se cierra y se vuelve a lanzar el mismo comando en el mismo puerto (carga código nuevo).
     // withLan: con qué --lan vuelve al reiniciar; la bandeja lo cambia (una IP no se suma a un servidor que ya escucha).
     let restart = false, withLan = !!o.lan;
-    const app = createHomeServer({ validators, onRestart: () => { restart = true; ac.abort(); }, onShutdown: () => ac.abort() });
+    // lan(): adónde apunta el QR de Vincular teléfono (§49); addr existe una vez que escucha.
+    const app = createHomeServer({ validators, lan: () => (o.lan && addr ? lanUrls(addr.port) : null), onRestart: () => { restart = true; ac.abort(); }, onShutdown: () => ac.abort() });
     let addr;
     try { addr = await listen(app, port, { lan: o.lan }); } catch (e) {
       await app.close();
@@ -794,6 +798,22 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const r = { lang: processLang(env), chosen: chosenLang() };
       const name = { es: 'Español', en: 'English' };
       return done(r, r.chosen ? T`Idioma: ${name[r.lang]} (elegido)` : T`Idioma: ${name[r.lang]} (el del sistema; scompass lang es|en lo fija)`);
+    },
+
+    // Teléfonos vinculados al chat (§49): se vinculan desde el Inicio; acá se listan y se quitan.
+    async devices() {
+      const [sub, id] = rest;
+      if (sub === 'rm') {
+        need(id, 'el id del dispositivo');
+        if (!(await removeDevice(id))) throw new StoreError('not_found', T`no hay un dispositivo ${id}`);
+        return done({ removed: id }, T`Desvinculado ${id}`);
+      }
+      if (sub !== undefined) throw new UsageError(T`subcomando desconocido: devices ${sub}`);
+      const devices = listDevices();
+      if (o.json) return done({ devices });
+      if (!devices.length) print(T('No hay dispositivos vinculados. Se vinculan desde el Inicio, con Vincular teléfono.'));
+      for (const d of devices) print(T`${d.id}  ${d.name}  (vinculado ${new Date(d.created_at).toLocaleString(locale())}; último uso ${new Date(d.last_seen).toLocaleString(locale())})`);
+      return 0;
     },
 
     async hubs() {
