@@ -11,6 +11,7 @@
     "bin",
     "src",
     "templates",
+    "locales",
     "assets",
     "web",
     "schema",

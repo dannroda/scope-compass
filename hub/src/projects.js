@@ -5,20 +5,25 @@
 // A diferencia del registro de hubs vivos (registry.js), no se limpia solo: una carpeta que ya no existe se
 // muestra como no encontrada y la quita el usuario. La excepción son las carpetas temporales (tableros de prueba):
 // no se anotan solas y el Inicio olvida al arrancar las que ya no existen.
-import { existsSync, mkdirSync, readFileSync, realpathSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, isAbsolute } from 'node:path';
 import { writeAtomic } from './store/atomic.js';
 import { canonical } from './store/canonical.js';
 import { hubsOf } from './registry.js';
+import { T } from './i18n.js';
 
 const WIN = process.platform === 'win32';
 
-export function projectsFile() {
-  const base = process.env.SCOMPASS_CONFIG ?? (WIN
+/** La carpeta de configuración del usuario: $XDG_CONFIG_HOME/scope-compass (en Windows, %APPDATA%\\scope-compass). */
+export function configDir() {
+  return process.env.SCOMPASS_CONFIG ?? (WIN
     ? join(process.env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'scope-compass')
     : join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'scope-compass'));
-  return join(base, 'projects.json');
+}
+
+export function projectsFile() {
+  return join(configDir(), 'projects.json');
 }
 
 /**
@@ -55,11 +60,27 @@ export function loadProjects() {
   let text;
   try { text = readFileSync(file, 'utf8'); } catch (e) { if (e.code === 'ENOENT') return []; throw e; }
   let data;
-  try { data = JSON.parse(text); } catch (e) { throw new ProjectsError('invalid', `${file}: JSON inválido (${e.message}); corregilo o borralo`); }
+  try { data = JSON.parse(text); } catch (e) { throw new ProjectsError('invalid', T`${file}: JSON inválido (${e.message}); corregilo o borralo`); }
   if (!Array.isArray(data?.projects) || !data.projects.every((p) => typeof p?.path === 'string')) {
-    throw new ProjectsError('invalid', `${file}: se esperaba { "projects": [{ "path", … }] }; corregilo o borralo`);
+    throw new ProjectsError('invalid', T`${file}: se esperaba { "projects": [{ "path", … }] }; corregilo o borralo`);
   }
   return data.projects;
+}
+
+// Varios procesos anotan a la vez (tres `serve` que arrancan juntos): leer, cambiar y guardar va con un candado
+// (una carpeta al lado del registro, que crea uno solo). Uno que quedó de un proceso muerto vence a los 5 s.
+async function locked(fn) {
+  const lock = projectsFile() + '.lock';
+  mkdirSync(dirname(lock), { recursive: true });
+  for (let i = 0; ; i++) {
+    try { mkdirSync(lock); break; } catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      try { if (Date.now() - statSync(lock).mtimeMs > 5000) { rmSync(lock, { recursive: true, force: true }); continue; } } catch { continue; }
+      if (i > 400) throw new ProjectsError('io_error', T`${lock} sigue tomado: si no corre otro scompass, borralo`);
+      await new Promise((r) => setTimeout(r, 15));
+    }
+  }
+  try { return await fn(); } finally { rmSync(lock, { recursive: true, force: true }); }
 }
 
 async function save(projects) {
@@ -79,10 +100,14 @@ export const isTempPath = (dir) => TEMP.some((t) => { const r = relative(t, real
  * `serve` sin que nadie lo pida; uno en una carpeta temporal no se anota (no queda basura en el Inicio).
  * Devuelve { entry, added } (entry null si no se anotó).
  */
-export async function recordProject(dir, { seen = false, auto = false, now = () => new Date().toISOString() } = {}) {
+export function recordProject(dir, opts) {
+  return locked(() => record(dir, opts));
+}
+
+async function record(dir, { seen = false, auto = false, now = () => new Date().toISOString() } = {}) {
   const path = real(dir);
   const config = configOf(path);
-  if (!config) throw new ProjectsError('not_found', `no hay ${join(path, 'compass', 'config.json')}`);
+  if (!config) throw new ProjectsError('not_found', T`no hay ${join(path, 'compass', 'config.json')}`);
   const projects = loadProjects();
   // Con un projects.json también temporal (tests aislados, SCOMPASS_CONFIG en /tmp) no hay basura que evitar.
   if (auto && isTempPath(path) && !isTempPath(projectsFile()) && !projects.some((p) => real(p.path) === path)) return { entry: null, added: false };
@@ -96,17 +121,25 @@ export async function recordProject(dir, { seen = false, auto = false, now = () 
 }
 
 /** Quita un proyecto del registro (no toca su carpeta). Devuelve la entrada quitada. */
-export async function forgetProject(dir) {
+export function forgetProject(dir) {
+  return locked(() => forget(dir));
+}
+
+async function forget(dir) {
   const projects = loadProjects();
   const path = real(dir);
   const i = projects.findIndex((p) => real(p.path) === path || p.path === resolve(dir));
-  if (i < 0) throw new ProjectsError('not_found', `${resolve(dir)} no está en el registro`);
+  if (i < 0) throw new ProjectsError('not_found', T`${resolve(dir)} no está en el registro`);
   await save(projects.toSpliced(i, 1));
   return projects[i];
 }
 
 /** Olvida los proyectos de carpetas temporales que ya no existen (al arrancar el Inicio). Devuelve cuántos. */
-export async function pruneTempProjects() {
+export function pruneTempProjects() {
+  return locked(prune);
+}
+
+async function prune() {
   const projects = loadProjects();
   if (isTempPath(projectsFile())) return 0;
   const keep = projects.filter((p) => !isTempPath(p.path) || existsSync(join(p.path, 'compass', 'config.json')));

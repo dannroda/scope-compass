@@ -7,7 +7,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const dir = mkdtempSync(join(tmpdir(), 'scompass-test-'));
-const env = { ...process.env, SCOMPASS_REGISTRY: join(dir, 'registry'), SCOMPASS_CONFIG: join(dir, 'config'), SCOMPASS_DATA: join(dir, 'data') };
+// Los tests buscan los textos en castellano (el texto fuente, §45): el idioma va fijo, sea cual sea el del equipo.
+const env = { ...process.env, SCOMPASS_LANG: 'es', SCOMPASS_REGISTRY: join(dir, 'registry'), SCOMPASS_CONFIG: join(dir, 'config'), SCOMPASS_DATA: join(dir, 'data') };
 const r = spawnSync(process.execPath, ['--test', ...process.argv.slice(2)], { stdio: 'inherit', env });
 rmSync(dir, { recursive: true, force: true });
 process.exit(r.status ?? 1);

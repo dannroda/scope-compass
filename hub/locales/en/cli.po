@@ -1,0 +1,1124 @@
+# hub/locales/en/cli.po: los textos de hub/src/cli.js en inglés (spec §45). msgid: el castellano del código.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid "Pendiente"
+msgstr "To do"
+
+msgid "Pausado"
+msgstr "Paused"
+
+msgid "En curso"
+msgstr "In progress"
+
+msgid "Revisión"
+msgstr "Review"
+
+msgid "Hecho"
+msgstr "Done"
+
+msgid "sin login: cualquiera en esta red puede ver y editar"
+msgstr "no login: anyone on this network can see and edit"
+
+msgid "Uso: scompass [--dir <proyecto>] <comando>\n\n  init [--project <nombre>] [--template juego|personal|vacio] [--board <nombre>] [--in-project] [--lang es|en]\n                                            crea el tablero (la plantilla trae vistas, hitos, listas y documentos\n                                            iniciales; por defecto vacio). Va a la carpeta de tableros del usuario\n                                            (--board: con otro nombre que el del proyecto) y compass/ queda como\n                                            enlace, fuera del git del proyecto; --in-project lo crea adentro, como\n                                            antes (también si el proyecto está en una carpeta temporal)\n  update [--check]                          pone al día los archivos generados de compass/ (schema/ y AGENTS.md,\n                                            la guía para agentes); --check solo avisa y sale con 1 si hay algo viejo\n  update --all [--check]                    lo mismo en todos los proyectos que conoce el Inicio\n  serve [--port 4711] [--open] [--force]    levanta el hub en 127.0.0.1 (uno por proyecto; Ctrl+C para cerrar)\n        [--lan]                             también en la red, para el teléfono (sin login: solo en una red de\n                                            confianza, como la de casa)\n        [--exit-on-stdin-close]             se cierra cuando se corta su entrada (lo usa el dock de Godot)\n        [--tray]                            ícono en la bandeja del sistema, con \"Detener hub\"\n        [--log <archivo>]                   agrega la salida a ese archivo (el dock en Windows)\n  restart                                   reinicia el hub de este proyecto (para cargar código nuevo)\n  mcp                                       servidor MCP por stdio para Claude Code (§30): las herramientas son\n                                            estos comandos; el proyecto es --dir o el de CLAUDE_PROJECT_DIR\n  mcp install                               registra este scompass en Claude Code (claude mcp add --scope user),\n                                            con su ruta entera: no hace falta tenerlo en el PATH\n  hubs                                      hubs activos de todos los proyectos\n  lang [es|en|auto]                         el idioma de la CLI, la web y el Inicio (§45): sin argumento dice cuál se\n                                            usa; auto sigue al sistema (LANG) y al navegador; SCOMPASS_LANG gana\n  home [--port 4700] [--open] [--tray]      levanta el Inicio: todos los proyectos del equipo (uno solo por usuario;\n       [--lan]                              si ya corre, dice dónde); --lan como en serve\n  home restart                              reinicia el Inicio (para cargar código nuevo), en el mismo puerto\n  home list                                 proyectos conocidos en este equipo, con el estado de su hub\n  board                                     dónde está el tablero: en el proyecto, enlazado a un tablero con su\n                                            propio git o en un submódulo (con su origin)\n  board move [<nombre>]                     saca compass/ a la carpeta de tableros del usuario, con su propio git y\n                                            su historial; compass/ queda como enlace y fuera del git del proyecto\n  board link <nombre|carpeta>               enlaza compass/ a un tablero ya clonado (en otro equipo)\n  home add [<carpeta>]                      anota un proyecto sin levantar su hub (por defecto, el de --dir)\n  home rm [<carpeta>]                       lo quita del registro (no toca sus datos)\n  list [--milestone m00] [--status doing,review] [filtros]\n                                            tareas (--json para agentes). Filtros (§19): --q \"texto\",\n                                            --due overdue|today|week|none, --blocked, --unblocked,\n                                            --pending-steps, --with-refs, --tag arte,audio,\n                                            --priority high,medium,low,none, --size s,m,l,none,\n                                            --assignee nombre|none, --decisions open,pending,revert\n  show <id>                                 una tarea, con los pasos numerados\n  history <id>                              qué cambió en la tarea en cada commit (y lo que hay sin commitear)\n  add \"<título>\" --milestone m00 [--code 0.11] [--status todo] [--due 2026-10-10]\n      [--tags arte,audio] [--priority high|medium|low] [--size s|m|l] [--assignee nombre] [--description \"…\"]\n  move <id> <todo|paused|doing|review|done>\n  rm <id>                                   borra la tarea (y sus capturas guardadas por la app que nadie más cita);\n                                            los vínculos de otras tareas hacia ella quedan rotos, como en la web\n  check <id> <n> [--undo]                   tilda el paso n (desde 1)\n  step add <id> \"<texto>\" [--detail \"…\"]     agrega un paso (texto corto; el detalle se despliega)\n  step set <id> <n> [--text …] [--detail …]  cambia un paso (--detail \"\" lo quita)\n  step rm <id> <n>                          quita un paso\n  decide <id> \"<texto>\" [--why \"…\"] [--alternatives \"…\"] [--ask] [--session <uuid>]\n                                            registra una decisión (§31): sin --ask, tomada sin consultar (queda sin\n                                            revisar); con --ask, una pregunta al usuario (queda abierta) y la sesión de\n                                            Claude Code que la hace (--session, o CLAUDE_CODE_SESSION_ID), para\n                                            retomarla desde el chat al responder\n  decision ok|revert|reverted <id> <n> [--reply \"…\"]\n                                            revisa la decisión n (desde 1): de acuerdo, a revertir (--reply: qué\n                                            hacer en su lugar) o ya revertida\n  decision reply <id> <n> \"<respuesta>\"     responde la pregunta n\n  decision rm <id> <n>                      quita la decisión n\n  decision promote <id> <n>                 la agrega como entrada D-n al documento de decisiones (el alias de\n                                            config.json › decisions_doc, o \"decisiones\"); no commitea\n  decisions [--open] [--pending] [--revert] [--milestone m00]\n                                            decisiones de todo el proyecto, la más nueva arriba (sin filtro, todas)\n  set <id> --file task.json                 reemplazo completo (--file - lee stdin; vale la salida de show --json)\n  set <id> [--title t] [--description d] [--notes n] [--test p] [--code c] [--milestone m] [--status s]\n      [--due d] [--tags a,b] [--priority p] [--size s|m|l] [--assignee a]\n                                            cambia solo esos campos (--due: fecha límite, YYYY-MM-DD o\n                                            YYYY-MM-DDTHH:MM; \"\" quita --description, --due, --tags,\n                                            --priority, --size o --assignee)\n  milestone list | show <id> | set <id> --file m.json\n  milestone set <id> --due 2026-11-01       fecha objetivo del hito (\"\" la quita); atrasado si pasa con tareas pendientes\n  lists                                     listas, con cuántos ítems quedan\n  lists show <lista>                        una lista, con los ítems numerados\n  lists add \"<título>\"                      crea una lista (el id sale del título: \"Libros para leer\" → libros-para-leer)\n  lists set <lista> --title \"…\"              le cambia el título\n  lists rm <lista>                          borra la lista\n  item add <lista> \"<texto>\" [--due 2026-10-10] [--repeat month] [--interval 2]\n                                            agrega un ítem (--due: fecha límite, YYYY-MM-DD o YYYY-MM-DDTHH:MM;\n                                            --repeat day|week|month|year, con --due; --interval: cada cuántos)\n  item check <lista> <n> [--undo]           tilda el ítem n (desde 1); si se repite, su fecha avanza un período\n  item set <lista> <n> [--text …] [--due …] [--repeat …] [--interval …]\n                                            cambia un ítem (--due \"\" quita la fecha; --repeat \"\" deja de repetirlo)\n  item rm <lista> <n>                       quita un ítem\n  item clear <lista>                        quita los ítems tildados\n  item task <lista> <n> --milestone m00 [--code 0.12]\n                                            pasa el ítem a una tarea nueva y lo deja enlazado\n  playtest                                  sesiones de playtest, con cuántas tareas faltan probar\n  playtest show <sesión>                    una sesión, con las tareas numeradas en el orden de prueba\n  playtest new \"<título>\" [--review] [--milestone m00]\n                                            crea una sesión (el id sale del título); --review la carga con las\n                                            tareas en Revisión (de ese hito, con --milestone)\n  playtest set <sesión> --title \"…\"          le cambia el título\n  playtest rm <sesión>                      borra la sesión (las tareas no se tocan)\n  playtest add <sesión> <tarea>… [--at n] [--review] [--milestone m00]\n                                            agrega tareas ya creadas al final (o desde la posición n); las que ya\n                                            están no se repiten; --review suma las que están en Revisión\n  playtest move <sesión> <n|tarea> <pos>    la lleva a la posición pos (desde 1)\n  playtest drop <sesión> <n|tarea>          la saca de la sesión\n  playtest pass|fail <sesión> <n|tarea> [--note \"…\"]\n                                            anda / falla, con lo que se vio (--note \"\" quita la nota); se guarda en\n                                            la tarea, así se ve igual en todas las sesiones que la tienen\n  playtest reset <sesión> <n|tarea>         vuelve a \"sin probar\" (la nota queda)\n  playtest migrate                          pasa las sesiones del formato anterior (resultado y nota en la sesión)\n                                            a las tareas\n  doc list                                  documentos de config.json con su índice de secciones\n  doc add <alias> <ruta|patrón>             declara un documento (un archivo, o un patrón como \"docs/**/*.md\")\n  doc rm <alias>                            deja de declararlo (el archivo no se toca)\n  doc show <alias>[#<id>] [--raw]           una sección, o el documento entero sin #<id> (--raw: solo el markdown)\n  doc stamp-ids <alias> [--dry-run]         agrega <!-- id: … --> a las secciones que no tienen\n  doc search \"<texto>\"                      líneas de los documentos con todas las palabras (sin tildes ni mayúsculas)\n  doc status                                estado de git de cada documento y su último commit\n  doc diff <alias>                          cambios sin commitear del documento (contra HEAD) y las secciones que toca\n  doc changed <alias>[#<id>] --since <etag> qué secciones cambiaron desde el etag que dio doc show (sale con 1 si cambió)\n  refs check                                referencias rotas (sale con 1 si hay) y frágiles; también archivos que ya no están\n  refs suggest                              propone refs a partir de citas \"gdd.md §4.3\" (no aplica nada)\n  ref add|rm <tarea> <alias>[#<id>]         agrega o quita una referencia (sin #<id>, al documento entero)\n  file add|rm <tarea> <ruta>                vincula un archivo del repo a la tarea (un script, una escena; acepta res://)\n  image add|rm <tarea> <ruta>               captura de la tarea: una imagen del repo, o una de afuera, que se copia a\n                                            compass/images/ (rm borra el archivo si lo guardó la app y nadie más lo cita)\n  link add <tarea> <blocks|blocked-by|related> <otra>\n                                            vincula dos tareas (reemplaza el vínculo que tuvieran)\n  link rm <tarea> <otra>                    quita el vínculo entre las dos\n  link list [<tarea>]                       vínculos de una tarea o de todas; avisa los rotos (sale con 1)\n  export md [--out docs/tareas.md]          regenera el markdown (también se hace solo al escribir)\n  import artifact <carpeta> [--dry-run] [--overwrite]\n                                            migra el export de ArtifactData (milestones/, tasks/)\n\n  --json      salida JSON en lecturas y escrituras\n  --etag <e>  en escrituras: falla con conflicto si el documento cambió (none: si ya existe)\n  --dir <p>   raíz del proyecto (por defecto: la carpeta con compass/ más cercana hacia arriba)\n  --direct    escribir directo en compass/ aunque haya un hub corriendo\n\nSi hay un hub de este proyecto en el puerto de config.json, las lecturas y escrituras pasan por su API."
+msgstr "Usage: scompass [--dir <project>] <command>\n\n  init [--project <name>] [--template juego|personal|vacio] [--board <name>] [--in-project] [--lang es|en]\n                                            creates the board (the template brings views, milestones, lists and\n                                            starter documents; vacio, empty, by default). It goes to the user's\n                                            boards folder (--board: with a name other than the project's) and\n                                            compass/ becomes a link, outside the project's git; --in-project creates\n                                            it inside, as before (also when the project is in a temporary folder)\n  update [--check]                          brings compass/ generated files up to date (schema/ and AGENTS.md, the\n                                            guide for agents); --check only reports and exits with 1 if something\n                                            is old\n  update --all [--check]                    the same in every project Home knows\n  serve [--port 4711] [--open] [--force]    starts the hub on 127.0.0.1 (one per project; Ctrl+C to close)\n        [--lan]                             also on the network, for the phone (no login: only on a trusted\n                                            network, like your home's)\n        [--exit-on-stdin-close]             closes when its input is cut (used by the Godot dock)\n        [--tray]                            system tray icon, with \"Stop hub\"\n        [--log <file>]                      appends the output to that file (the dock on Windows)\n  restart                                   restarts this project's hub (to load new code)\n  mcp                                       MCP server over stdio for Claude Code (§30): the tools are these\n                                            commands; the project is --dir or CLAUDE_PROJECT_DIR's\n  mcp install                               registers this scompass in Claude Code (claude mcp add --scope user),\n                                            with its full path: it doesn't need to be on the PATH\n  hubs                                      running hubs of every project\n  lang [es|en|auto]                         the language of the CLI, the web and Home (§45): without an argument it\n                                            says which one is used; auto follows the system (LANG) and the browser;\n                                            SCOMPASS_LANG wins\n  home [--port 4700] [--open] [--tray]      starts Home: every project on this computer (only one per user; if it's\n       [--lan]                              already running, says where); --lan as in serve\n  home restart                              restarts Home (to load new code), on the same port\n  home list                                 projects known on this computer, with their hub's state\n  board                                     where the board is: in the project, linked to a board with its own git\n                                            or in a submodule (with its origin)\n  board move [<name>]                       moves compass/ to the user's boards folder, with its own git and its\n                                            history; compass/ stays as a link, outside the project's git\n  board link <name|folder>                  links compass/ to an already cloned board (on another computer)\n  home add [<folder>]                       records a project without starting its hub (by default, --dir's)\n  home rm [<folder>]                        removes it from the registry (doesn't touch its data)\n  list [--milestone m00] [--status doing,review] [filters]\n                                            tasks (--json for agents). Filters (§19): --q \"text\",\n                                            --due overdue|today|week|none, --blocked, --unblocked,\n                                            --pending-steps, --with-refs, --tag art,audio,\n                                            --priority high,medium,low,none, --size s,m,l,none,\n                                            --assignee name|none, --decisions open,pending,revert\n  show <id>                                 a task, with numbered steps\n  history <id>                              what changed in the task in each commit (and what's uncommitted)\n  add \"<title>\" --milestone m00 [--code 0.11] [--status todo] [--due 2026-10-10]\n      [--tags art,audio] [--priority high|medium|low] [--size s|m|l] [--assignee name] [--description \"…\"]\n  move <id> <todo|paused|doing|review|done>\n  rm <id>                                   deletes the task (and its screenshots saved by the app that nobody\n                                            else cites); links from other tasks to it stay broken, as in the web\n  check <id> <n> [--undo]                   checks step n (from 1)\n  step add <id> \"<text>\" [--detail \"…\"]     adds a step (short text; the detail unfolds)\n  step set <id> <n> [--text …] [--detail …]  changes a step (--detail \"\" removes it)\n  step rm <id> <n>                          removes a step\n  decide <id> \"<text>\" [--why \"…\"] [--alternatives \"…\"] [--ask] [--session <uuid>]\n                                            records a decision (§31): without --ask, taken without asking (stays\n                                            unreviewed); with --ask, a question to the user (stays open) and the\n                                            Claude Code session asking it (--session, or CLAUDE_CODE_SESSION_ID),\n                                            to resume it from the chat when answering\n  decision ok|revert|reverted <id> <n> [--reply \"…\"]\n                                            reviews decision n (from 1): agreed, to revert (--reply: what to do\n                                            instead) or already reverted\n  decision reply <id> <n> \"<answer>\"        answers question n\n  decision rm <id> <n>                      removes decision n\n  decision promote <id> <n>                 adds it as entry D-n to the decisions document (the alias in\n                                            config.json › decisions_doc, or \"decisiones\"); doesn't commit\n  decisions [--open] [--pending] [--revert] [--milestone m00]\n                                            decisions of the whole project, newest first (without a filter, all)\n  set <id> --file task.json                 full replacement (--file - reads stdin; show --json's output works)\n  set <id> [--title t] [--description d] [--notes n] [--test p] [--code c] [--milestone m] [--status s]\n      [--due d] [--tags a,b] [--priority p] [--size s|m|l] [--assignee a]\n                                            changes only those fields (--due: due date, YYYY-MM-DD or\n                                            YYYY-MM-DDTHH:MM; \"\" removes --description, --due, --tags,\n                                            --priority, --size or --assignee)\n  milestone list | show <id> | set <id> --file m.json\n  milestone set <id> --due 2026-11-01       the milestone's target date (\"\" removes it); late if it passes with\n                                            pending tasks\n  lists                                     lists, with how many items are left\n  lists show <list>                         a list, with numbered items\n  lists add \"<title>\"                       creates a list (the id comes from the title: \"Books to read\" →\n                                            books-to-read)\n  lists set <list> --title \"…\"              changes its title\n  lists rm <list>                           deletes the list\n  item add <list> \"<text>\" [--due 2026-10-10] [--repeat month] [--interval 2]\n                                            adds an item (--due: due date, YYYY-MM-DD or YYYY-MM-DDTHH:MM;\n                                            --repeat day|week|month|year, with --due; --interval: every how many)\n  item check <list> <n> [--undo]            checks item n (from 1); if it repeats, its date moves one period ahead\n  item set <list> <n> [--text …] [--due …] [--repeat …] [--interval …]\n                                            changes an item (--due \"\" removes the date; --repeat \"\" stops repeating)\n  item rm <list> <n>                        removes an item\n  item clear <list>                         removes the checked items\n  item task <list> <n> --milestone m00 [--code 0.12]\n                                            turns the item into a new task and leaves it linked\n  playtest                                  playtest sessions, with how many tasks are left to test\n  playtest show <session>                   a session, with tasks numbered in test order\n  playtest new \"<title>\" [--review] [--milestone m00]\n                                            creates a session (the id comes from the title); --review fills it with\n                                            the tasks in Review (of that milestone, with --milestone)\n  playtest set <session> --title \"…\"        changes its title\n  playtest rm <session>                     deletes the session (the tasks aren't touched)\n  playtest add <session> <task>… [--at n] [--review] [--milestone m00]\n                                            adds existing tasks at the end (or from position n); the ones already\n                                            there aren't repeated; --review adds the ones in Review\n  playtest move <session> <n|task> <pos>    moves it to position pos (from 1)\n  playtest drop <session> <n|task>          takes it out of the session\n  playtest pass|fail <session> <n|task> [--note \"…\"]\n                                            works / fails, with what was seen (--note \"\" removes the note); it's\n                                            saved in the task, so it looks the same in every session that has it\n  playtest reset <session> <n|task>         back to \"untested\" (the note stays)\n  playtest migrate                          moves sessions in the old format (result and note in the session) to\n                                            the tasks\n  doc list                                  documents in config.json with their section index\n  doc add <alias> <path|pattern>            declares a document (a file, or a pattern like \"docs/**/*.md\")\n  doc rm <alias>                            stops declaring it (the file isn't touched)\n  doc show <alias>[#<id>] [--raw]           a section, or the whole document without #<id> (--raw: markdown only)\n  doc stamp-ids <alias> [--dry-run]         adds <!-- id: … --> to the sections that don't have one\n  doc search \"<text>\"                       document lines with all the words (ignoring accents and case)\n  doc status                                git state of each document and its last commit\n  doc diff <alias>                          uncommitted changes of the document (against HEAD) and the sections\n                                            they touch\n  doc changed <alias>[#<id>] --since <etag> which sections changed since the etag doc show gave (exits with 1 if it\n                                            changed)\n  refs check                                broken references (exits with 1 if any) and fragile ones; also files\n                                            that are gone\n  refs suggest                              proposes refs from citations like \"gdd.md §4.3\" (applies nothing)\n  ref add|rm <task> <alias>[#<id>]          adds or removes a reference (without #<id>, to the whole document)\n  file add|rm <task> <path>                 links a repo file to the task (a script, a scene; accepts res://)\n  image add|rm <task> <path>                task screenshot: an image from the repo, or one from outside, copied to\n                                            compass/images/ (rm deletes the file if the app saved it and nobody\n                                            else cites it)\n  link add <task> <blocks|blocked-by|related> <other>\n                                            links two tasks (replaces any link they had)\n  link rm <task> <other>                    removes the link between them\n  link list [<task>]                        links of one task or all of them; warns about broken ones (exits with 1)\n  export md [--out docs/tareas.md]          regenerates the markdown (also done on every write)\n  import artifact <folder> [--dry-run] [--overwrite]\n                                            migrates the ArtifactData export (milestones/, tasks/)\n\n  --json      JSON output for reads and writes\n  --etag <e>  on writes: fails with a conflict if the document changed (none: if it already exists)\n  --dir <p>   project root (by default: the nearest folder upwards with compass/)\n  --direct    write straight to compass/ even if a hub is running\n\nIf a hub for this project is running on config.json's port, reads and writes go through its API."
+
+msgid "{0} (no existe)"
+msgstr "{0} (doesn't exist)"
+
+msgid "Para que los agentes la usen, agregá al AGENTS.md o CLAUDE.md del proyecto: \"El tablero de tareas se maneja con scompass; leé compass/AGENTS.md antes de tocarlo.\""
+msgstr "For agents to use it, add to the project's AGENTS.md or CLAUDE.md: \"The task board is managed with scompass; read compass/AGENTS.md before touching it.\""
+
+msgid "anterior a §39"
+msgstr "older than §39"
+
+msgid "aviso: el hub en {0} es la versión {1} (protocolo {2}) y esta CLI la {3} (protocolo {4}): no se usa y se escribe directo en compass/. Reinicialo con la versión nueva"
+msgstr "warning: the hub at {0} is version {1} (protocol {2}) and this CLI is {3} (protocol {4}): it isn't used and writes go straight to compass/. Restart it with the new version"
+
+msgid "aviso: el hub en {0} es la versión {1} y esta CLI la {2}; reinicialo con `scompass restart`"
+msgstr "warning: the hub at {0} is version {1} and this CLI is {2}; restart it with `scompass restart`"
+
+msgid "aviso [{0}] {1}: {2}"
+msgstr "warning [{0}] {1}: {2}"
+
+msgid "falta {0}"
+msgstr "missing {0}"
+
+msgid "fecha inválida: {0} (YYYY-MM-DD o YYYY-MM-DDTHH:MM)"
+msgstr "invalid date: {0} (YYYY-MM-DD or YYYY-MM-DDTHH:MM)"
+
+msgid "prioridad inválida: {0} ({1})"
+msgstr "invalid priority: {0} ({1})"
+
+msgid "tamaño inválido: {0} ({1})"
+msgstr "invalid size: {0} ({1})"
+
+msgid "prioridad {0}"
+msgstr "priority {0}"
+
+msgid "tamaño {0}"
+msgstr "size {0}"
+
+msgid " (atrasado)"
+msgstr " (late)"
+
+msgid " (hoy)"
+msgstr " (today)"
+
+msgid "fecha objetivo {0}{1}"
+msgstr "target date {0}{1}"
+
+msgid " (vencida)"
+msgstr " (overdue)"
+
+msgid "vence {0}{1}"
+msgstr "due {0}{1}"
+
+msgid "{0}: JSON inválido: {1}"
+msgstr "{0}: invalid JSON: {1}"
+
+msgid "{0}: tiene que ser un objeto JSON"
+msgstr "{0}: must be a JSON object"
+
+msgid "{0} es de {1}, no de {2}"
+msgstr "{0} belongs to {1}, not {2}"
+
+msgid "Por qué"
+msgstr "Why"
+
+msgid "Descartado"
+msgstr "Rejected"
+
+msgid "Respuesta"
+msgstr "Answer"
+
+msgid "Qué hacer"
+msgstr "What to do"
+
+msgid "no se pudo abrir el navegador: {0}"
+msgstr "couldn't open the browser: {0}"
+
+msgid "el Inicio ya corre en {0} (PID {1}) sin --lan: cerralo (\"Salir\" en la bandeja o Ctrl+C) y volvé a correr este comando"
+msgstr "Home is already running at {0} (PID {1}) without --lan: close it (\"Quit\" in the tray or Ctrl+C) and run this command again"
+
+msgid "El Inicio ya corre en {0} (PID {1})"
+msgstr "Home is already running at {0} (PID {1})"
+
+msgid "puerto inválido: {0}"
+msgstr "invalid port: {0}"
+
+msgid "aviso: el puerto {0} está ocupado; el Inicio usa el {1}"
+msgstr "warning: port {0} is busy; Home uses {1}"
+
+msgid "el puerto {0} está ocupado"
+msgstr "port {0} is busy"
+
+msgid "Inicio de Scope Compass en {0} · {1} · Ctrl+C para cerrar"
+msgstr "Scope Compass Home at {0} · {1} · Ctrl+C to close"
+
+msgid "ninguna dirección"
+msgstr "no address"
+
+msgid "En la red ({0}): {1}"
+msgstr "On the network ({0}): {1}"
+
+msgid "Inicio · {0}"
+msgstr "Home · {0}"
+
+msgid "sin ícono en la bandeja: {0}"
+msgstr "no tray icon: {0}"
+
+msgid "Reiniciando el Inicio…"
+msgstr "Restarting Home…"
+
+msgid "el Inicio no está corriendo (scompass home lo levanta)"
+msgstr "Home isn't running (scompass home starts it)"
+
+msgid "sin respuesta"
+msgstr "no answer"
+
+msgid "el Inicio no aceptó reiniciarse ({0})"
+msgstr "Home didn't accept the restart ({0})"
+
+msgid "Inicio reiniciado en {0}/ (PID {1} → {2})"
+msgstr "Home restarted at {0}/ (PID {1} → {2})"
+
+msgid "el Inicio se cerró pero no volvió en 10 s"
+msgstr "Home closed but didn't come back within 10 s"
+
+msgid "aviso: no se anotó el proyecto en {0}: {1}"
+msgstr "warning: the project wasn't recorded in {0}: {1}"
+
+msgid "Creado {0}"
+msgstr "Created {0}"
+
+msgid "Ya existía {0}: no se tocó"
+msgstr "{0} already existed: left untouched"
+
+msgid "{0} (plantilla {1}), enlazado desde {2}"
+msgstr "{0} (template {1}), linked from {2}"
+
+msgid "{0} (plantilla {1})"
+msgstr "{0} (template {1})"
+
+msgid "ya existe {0}"
+msgstr "{0} already exists"
+
+msgid "idioma inválido: {0} (es o en)"
+msgstr "invalid language: {0} (es or en)"
+
+msgid "Desactualizados (corré `scompass update --all`):\n{0}"
+msgstr "Outdated (run `scompass update --all`):\n{0}"
+
+msgid "Todos los tableros están al día."
+msgstr "All boards are up to date."
+
+msgid "Actualizados:\n{0}{1}"
+msgstr "Updated:\n{0}{1}"
+
+msgid "Todos los tableros ya estaban al día."
+msgstr "All boards were already up to date."
+
+msgid "no hay {0}: corré `scompass --dir {1} init` para crearla"
+msgstr "there's no {0}: run `scompass --dir {1} init` to create it"
+
+msgid "Desactualizados (corré `scompass update`):\n{0}"
+msgstr "Outdated (run `scompass update`):\n{0}"
+
+msgid "compass/ está al día."
+msgstr "compass/ is up to date."
+
+msgid "compass/ ya estaba al día."
+msgstr "compass/ was already up to date."
+
+msgid "este proyecto lo sirve el Inicio en http://127.0.0.1:{0}{1}/ (D29): no hace falta otro hub"
+msgstr "this project is served by Home at http://127.0.0.1:{0}{1}/ (D29): no other hub is needed"
+
+msgid "ya hay un hub de este proyecto: PID {0} en http://127.0.0.1:{1}/ (scompass hubs lista todos; --force para levantar otro igual)"
+msgstr "there's already a hub for this project: PID {0} at http://127.0.0.1:{1}/ (scompass hubs lists them all; --force starts another one)"
+
+msgid "aviso: el puerto {0} está ocupado; este hub usa el {1}"
+msgstr "warning: port {0} is busy; this hub uses {1}"
+
+msgid "el puerto {0} está ocupado (¿ya hay un hub corriendo?)"
+msgstr "port {0} is busy (is a hub already running?)"
+
+msgid "Scope Compass en {0} · {1} · Ctrl+C para cerrar"
+msgstr "Scope Compass at {0} · {1} · Ctrl+C to close"
+
+msgid "Abrir tablero"
+msgstr "Open board"
+
+msgid "Actualizar compass/ ({0} archivo{1})"
+msgstr "Update compass/ ({0} file{1})"
+
+msgid "compass/ actualizado: {0}"
+msgstr "compass/ updated: {0}"
+
+msgid "no se pudo actualizar compass/: {0}"
+msgstr "couldn't update compass/: {0}"
+
+msgid "Reiniciar hub"
+msgstr "Restart hub"
+
+msgid "Detener hub"
+msgstr "Stop hub"
+
+msgid "Reiniciando el hub…"
+msgstr "Restarting the hub…"
+
+msgid "estado inválido: {0} (todo, paused, doing, review, done)"
+msgstr "invalid status: {0} (todo, paused, doing, review, done)"
+
+msgid "--due en list: {0}"
+msgstr "--due in list: {0}"
+
+msgid "--blocked y --unblocked no van juntos"
+msgstr "--blocked and --unblocked can't go together"
+
+msgid "prioridad inválida: {0} ({1}, none)"
+msgstr "invalid priority: {0} ({1}, none)"
+
+msgid "tamaño inválido: {0} ({1}, none)"
+msgstr "invalid size: {0} ({1}, none)"
+
+msgid "{0} · {1}{2}"
+msgstr "{0} · {1}{2}"
+
+msgid "\n{0}"
+msgstr "\n{0}"
+
+msgid "  [bloqueada por {0}]"
+msgstr "  [blocked by {0}]"
+
+msgid "  [desbloqueada, en revisión: {0}]"
+msgstr "  [unblocked, in review: {0}]"
+
+msgid "pregunta abierta"
+msgstr "open question"
+
+msgid "preguntas abiertas"
+msgstr "open questions"
+
+msgid "{0} sin revisar"
+msgstr "{0} not reviewed"
+
+msgid "{0} a revertir"
+msgstr "{0} to revert"
+
+msgid "Sin tareas."
+msgstr "No tasks."
+
+msgid "1 archivo"
+msgstr "1 file"
+
+msgid "{0} archivos"
+msgstr "{0} files"
+
+msgid "\n{0} del tablero sin commitear (git status -- {1})"
+msgstr "\n{0} of the board uncommitted (git status -- {1})"
+
+msgid "el id"
+msgstr "the id"
+
+msgid " el {0}"
+msgstr " on {0}"
+
+msgid " · Actualizada: "
+msgstr " · Updated: "
+
+msgid "Estado: {0}{1} · Hito: {2}{3}{4}"
+msgstr "Status: {0}{1} · Milestone: {2}{3}{4}"
+
+msgid "Decisiones:"
+msgstr "Decisions:"
+
+msgid "Prueba: {0}"
+msgstr "Test: {0}"
+
+msgid "Notas: {0}"
+msgstr "Notes: {0}"
+
+msgid "Referencias: {0}"
+msgstr "References: {0}"
+
+msgid "Archivos: {0}"
+msgstr "Files: {0}"
+
+msgid "Bloquea a"
+msgstr "Blocks"
+
+msgid "Bloqueada por"
+msgstr "Blocked by"
+
+msgid "Relacionadas"
+msgstr "Related"
+
+msgid "subcomando desconocido: link {0} (add, rm, list)"
+msgstr "unknown subcommand: link {0} (add, rm, list)"
+
+msgid "no hay una tarea \"{0}\""
+msgstr "there's no task \"{0}\""
+
+msgid "bloquea a"
+msgstr "blocks"
+
+msgid "bloqueada por"
+msgstr "blocked by"
+
+msgid "relacionada con"
+msgstr "related to"
+
+msgid "Sin vínculos."
+msgstr "No links."
+
+msgid "vínculo roto: {0} → {1} (la tarea no existe; quitalo con `scompass link rm {2} {3}`)"
+msgstr "broken link: {0} → {1} (the task doesn't exist; remove it with `scompass link rm {2} {3}`)"
+
+msgid "la tarea"
+msgstr "the task"
+
+msgid "el tipo (blocks, blocked-by, related)"
+msgstr "the type (blocks, blocked-by, related)"
+
+msgid "la otra tarea"
+msgstr "the other task"
+
+msgid "una tarea no se vincula consigo misma"
+msgstr "a task can't be linked to itself"
+
+msgid "tipo de vínculo inválido: {0} (blocks, blocked-by, related)"
+msgstr "invalid link type: {0} (blocks, blocked-by, related)"
+
+msgid "{0} y {1} no están vinculadas"
+msgstr "{0} and {1} aren't linked"
+
+msgid "{0} ya bloquea (directa o indirectamente) a {1}: sería un ciclo"
+msgstr "{0} already blocks {1} (directly or indirectly): that would be a cycle"
+
+msgid "{0} bloquea a {1}"
+msgstr "{0} blocks {1}"
+
+msgid "{0} queda bloqueada por {1}"
+msgstr "{0} is now blocked by {1}"
+
+msgid "{0} y {1} relacionadas"
+msgstr "{0} and {1} related"
+
+msgid "{0} y {1}: vínculo quitado"
+msgstr "{0} and {1}: link removed"
+
+msgid "no encontré Claude Code (claude); registralo a mano:\n  claude {0}"
+msgstr "couldn't find Claude Code (claude); register it by hand:\n  claude {0}"
+
+msgid "claude terminó con {0}; si ya estaba registrado, sacalo con `claude mcp remove --scope user scompass` y probá de nuevo"
+msgstr "claude exited with {0}; if it was already registered, remove it with `claude mcp remove --scope user scompass` and try again"
+
+msgid "MCP scompass registrado en Claude Code: {0} mcp"
+msgstr "scompass MCP registered in Claude Code: {0} mcp"
+
+msgid "no hay un hub de este proyecto en el puerto {0}"
+msgstr "there's no hub for this project on port {0}"
+
+msgid "este proyecto lo sirve el Inicio: reinicialo con scompass home restart"
+msgstr "this project is served by Home: restart it with scompass home restart"
+
+msgid "el hub no aceptó reiniciarse (HTTP {0})"
+msgstr "the hub didn't accept the restart (HTTP {0})"
+
+msgid "Hub reiniciado en {0} (PID {1} → {2})"
+msgstr "Hub restarted at {0} (PID {1} → {2})"
+
+msgid "el hub se cerró pero no volvió en 10 s: mirá su log"
+msgstr "the hub closed but didn't come back within 10 s: check its log"
+
+msgid "idioma inválido: {0} (es, en o auto)"
+msgstr "invalid language: {0} (es, en or auto)"
+
+msgid "Idioma: {0} (elegido)"
+msgstr "Language: {0} (chosen)"
+
+msgid "Idioma: {0} (el del sistema; scompass lang es|en lo fija)"
+msgstr "Language: {0} (the system's; scompass lang es|en sets it)"
+
+msgid "No hay hubs de Scope Compass corriendo."
+msgstr "No Scope Compass hubs running."
+
+msgid "Inicio (scompass home)"
+msgstr "Home (scompass home)"
+
+msgid "{0}  (lo sirve el Inicio)"
+msgstr "{0}  (served by Home)"
+
+msgid "PID {0} http://127.0.0.1:{1}{2}/  {3}  (desde {4})"
+msgstr "PID {0} http://127.0.0.1:{1}{2}/  {3}  (since {4})"
+
+msgid "aviso: más de un hub para {0}"
+msgstr "warning: more than one hub for {0}"
+
+msgid "en el proyecto (compass/, en su repo)"
+msgstr "in the project (compass/, in its repo)"
+
+msgid "enlazado a un tablero con su propio git"
+msgstr "linked to a board with its own git"
+
+msgid "con su propio git dentro del proyecto (submódulo)"
+msgstr "with its own git inside the project (submodule)"
+
+msgid "no hay tablero"
+msgstr "no board"
+
+msgid "enlazado, en el repo de todos los tableros"
+msgstr "linked, in the repo of all boards"
+
+msgid "Tablero: {0}"
+msgstr "Board: {0}"
+
+msgid "  sin repo de git"
+msgstr "  no git repo"
+
+msgid "repo {0} · "
+msgstr "repo {0} · "
+
+msgid "(HEAD suelto)"
+msgstr "(detached HEAD)"
+
+msgid "(ninguno: git -C {0} remote add origin <url>)"
+msgstr "(none: git -C {0} remote add origin <url>)"
+
+msgid "  {0}rama {1} · origin {2}"
+msgstr "  {0}branch {1} · origin {2}"
+
+msgid "Para sacarlo del repo del proyecto: scompass board move (va a {0})"
+msgstr "To take it out of the project's repo: scompass board move (goes to {0})"
+
+msgid "hay un hub de este proyecto corriendo: detenelo (o el Inicio) antes de mover el tablero"
+msgstr "a hub for this project is running: stop it (or Home) before moving the board"
+
+msgid ", en el repo de todos los tableros"
+msgstr ", in the repo of all boards"
+
+msgid " (en un commit)"
+msgstr " (in one commit)"
+
+msgid ", con su historial{0}"
+msgstr ", with its history{0}"
+
+msgid "Tablero movido a {0}{1}{2}"
+msgstr "Board moved to {0}{1}{2}"
+
+msgid ", excluido en {0}"
+msgstr ", excluded in {0}"
+
+msgid "compass/ es ahora un enlace{0}"
+msgstr "compass/ is now a link{0}"
+
+msgid "El export markdown pasó de {0} a {1} (dentro del tablero)"
+msgstr "The markdown export moved from {0} to {1} (inside the board)"
+
+msgid "En el proyecto, compass/ quedó fuera del índice: commiteá ese cambio con `git commit` y sin `-- compass` (con la ruta, git lee los archivos a través del enlace y los vuelve a agregar)."
+msgstr "In the project, compass/ left the index: commit that change with `git commit` and without `-- compass` (with the path, git reads the files through the link and adds them back)."
+
+msgid " Para un remoto: git -C {0} remote add origin <url>"
+msgstr " For a remote: git -C {0} remote add origin <url>"
+
+msgid "Lo sin commitear quedó sin commitear en el tablero.{0}"
+msgstr "Uncommitted changes stay uncommitted in the board.{0}"
+
+msgid "el nombre o la carpeta del tablero"
+msgstr "the board's name or folder"
+
+msgid " (excluido en {0})"
+msgstr " (excluded in {0})"
+
+msgid "compass/ → {0}{1}"
+msgstr "compass/ → {0}{1}"
+
+msgid "subcomando desconocido: board {0} (move, link)"
+msgstr "unknown subcommand: board {0} (move, link)"
+
+msgid "No hay proyectos anotados en {0}."
+msgstr "No projects recorded in {0}."
+
+msgid "no encontrado"
+msgstr "not found"
+
+msgid "apagado"
+msgstr "off"
+
+msgid "Quitado del registro: {0} ({1})"
+msgstr "Removed from the registry: {0} ({1})"
+
+msgid "Anotado"
+msgstr "Recorded"
+
+msgid "Ya estaba anotado"
+msgstr "Already recorded"
+
+msgid "{0}: {1} ({2})"
+msgstr "{0}: {1} ({2})"
+
+msgid "subcomando desconocido: home {0} (restart, list, add, rm)"
+msgstr "unknown subcommand: home {0} (restart, list, add, rm)"
+
+msgid "el alias"
+msgstr "the alias"
+
+msgid "la ruta o el patrón (docs/**/*.md)"
+msgstr "the path or pattern (docs/**/*.md)"
+
+msgid "Agregado {0}: {1}"
+msgstr "Added {0}: {1}"
+
+msgid "Quitado {0} de compass/config.json (el archivo no se toca)"
+msgstr "Removed {0} from compass/config.json (the file is untouched)"
+
+msgid "Sin documentos: agregalos con scompass doc add <alias> <ruta>."
+msgstr "No documents: add them with scompass doc add <alias> <path>."
+
+msgid " · {0} sin id (frágiles)"
+msgstr " · {0} without id (fragile)"
+
+msgid "{0} {1}  {2} secciones{3}"
+msgstr "{0} {1}  {2} sections{3}"
+
+msgid "no hay un documento \"{0}\" (doc list muestra los que hay)"
+msgstr "there's no document \"{0}\" (doc list shows the existing ones)"
+
+msgid "{0} · {1}, {2} líneas · etag {3}"
+msgstr "{0} · {1}, {2} lines · etag {3}"
+
+msgid "no hay una sección \"{0}\" en {1}"
+msgstr "there's no section \"{0}\" in {1}"
+
+msgid " · sin id (frágil)"
+msgstr " · no id (fragile)"
+
+msgid "{0}#{1} · {2}, líneas {3}–{4}{5} · etag {6}"
+msgstr "{0}#{1} · {2}, lines {3}–{4}{5} · etag {6}"
+
+msgid "--since <etag> (el que dio doc show)"
+msgstr "--since <etag> (the one doc show gave)"
+
+msgid "{0}: sin cambios desde {1}."
+msgstr "{0}: no changes since {1}."
+
+msgid "{0} cambió desde {1}, pero esa versión no está en la caché ni en git: volvé a leerlo entero (etag actual {2})."
+msgstr "{0} changed since {1}, but that version isn't in the cache or in git: read it whole again (current etag {2})."
+
+msgid "{0} cambió desde {1} (etag actual {2})."
+msgstr "{0} changed since {1} (current etag {2})."
+
+msgid "Cambiaron"
+msgstr "Changed"
+
+msgid "Nuevas"
+msgstr "New"
+
+msgid "Quitadas"
+msgstr "Removed"
+
+msgid "Ninguna sección: cambió el texto antes del primer título."
+msgstr "No section: the text before the first heading changed."
+
+msgid "sin cambios"
+msgstr "unchanged"
+
+msgid "modificado"
+msgstr "modified"
+
+msgid "nuevo (agregado)"
+msgstr "new (added)"
+
+msgid "nuevo sin seguir"
+msgstr "new, untracked"
+
+msgid "borrado"
+msgstr "deleted"
+
+msgid "renombrado"
+msgstr "renamed"
+
+msgid "El proyecto no está en un repo de git."
+msgstr "The project isn't in a git repo."
+
+msgid " · sin commits"
+msgstr " · no commits"
+
+msgid "{0} {1}  {2}{3}"
+msgstr "{0} {1}  {2}{3}"
+
+msgid "el alias del documento"
+msgstr "the document's alias"
+
+msgid "no hay un documento \"{0}\""
+msgstr "there's no document \"{0}\""
+
+msgid "el proyecto no está en un repo de git"
+msgstr "the project isn't in a git repo"
+
+msgid "{0}: sin cambios contra HEAD."
+msgstr "{0}: no changes against HEAD."
+
+msgid "Secciones tocadas: {0}"
+msgstr "Sections touched: {0}"
+
+msgid "el texto a buscar"
+msgstr "the text to search for"
+
+msgid "{0}{1} coincidencias."
+msgstr "{0}{1} matches."
+
+msgid "Ninguna coincidencia."
+msgstr "No matches."
+
+msgid "Se estamparían"
+msgstr "Would stamp"
+
+msgid "Estampados"
+msgstr "Stamped"
+
+msgid "{0} {1} ids en {2}: {3}"
+msgstr "{0} {1} ids in {2}: {3}"
+
+msgid "{0} ya tiene ids en todas sus secciones."
+msgstr "{0} already has ids in all its sections."
+
+msgid "subcomando desconocido: doc {0}"
+msgstr "unknown subcommand: doc {0}"
+
+msgid "subcomando desconocido: refs {0} (check, suggest)"
+msgstr "unknown subcommand: refs {0} (check, suggest)"
+
+msgid "ya está"
+msgstr "already there"
+
+msgid "propuesta"
+msgstr "proposed"
+
+msgid "           scompass ref add {0} {1}"
+msgstr "           scompass ref add {0} {1}"
+
+msgid "{0} por revisar, {1} ya referenciadas."
+msgstr "{0} to review, {1} already referenced."
+
+msgid "No hay citas por número de sección."
+msgstr "No citations by section number."
+
+msgid "no existe el documento"
+msgstr "the document doesn't exist"
+
+msgid "no existe la sección"
+msgstr "the section doesn't exist"
+
+msgid "el archivo ya no está en el repo"
+msgstr "the file is no longer in the repo"
+
+msgid "sin id explícito (frágil)"
+msgstr "no explicit id (fragile)"
+
+msgid "Todas las referencias resuelven."
+msgstr "All references resolve."
+
+msgid "subcomando desconocido: ref {0} (add, rm)"
+msgstr "unknown subcommand: ref {0} (add, rm)"
+
+msgid "{0} ya referencia {1}"
+msgstr "{0} already references {1}"
+
+msgid "{0} no referencia {1}"
+msgstr "{0} doesn't reference {1}"
+
+msgid "{0}: agregada {1}"
+msgstr "{0}: added {1}"
+
+msgid "{0}: quitada {1}"
+msgstr "{0}: removed {1}"
+
+msgid "subcomando desconocido: file {0} (add, rm)"
+msgstr "unknown subcommand: file {0} (add, rm)"
+
+msgid "{0} ya cita {1}"
+msgstr "{0} already cites {1}"
+
+msgid "{0} no cita {1}"
+msgstr "{0} doesn't cite {1}"
+
+msgid "{0}: agregado {1}"
+msgstr "{0}: added {1}"
+
+msgid "{0}: quitado {1}"
+msgstr "{0}: removed {1}"
+
+msgid "Sin historial: el proyecto no está en un repo de git."
+msgstr "No history: the project isn't in a git repo."
+
+msgid "sin commitear"
+msgstr "uncommitted"
+
+msgid "Creada"
+msgstr "Created"
+
+msgid "Borrada"
+msgstr "Deleted"
+
+msgid "La tarea todavía no tiene commits."
+msgstr "The task has no commits yet."
+
+msgid "subcomando desconocido: image {0} (add, rm)"
+msgstr "unknown subcommand: image {0} (add, rm)"
+
+msgid "{0} no tiene la captura {1}"
+msgstr "{0} doesn't have the screenshot {1}"
+
+msgid " (y borrado el archivo, que había guardado la app)"
+msgstr " (and deleted the file, which the app had saved)"
+
+msgid "{0}: quitada {1}{2}"
+msgstr "{0}: removed {1}{2}"
+
+msgid "{0} no es una imagen ({1})"
+msgstr "{0} isn't an image ({1})"
+
+msgid "{0} ya tiene {1}"
+msgstr "{0} already has {1}"
+
+msgid "formato de export desconocido: {0} (md)"
+msgstr "unknown export format: {0} (md)"
+
+msgid "Exportado {0}"
+msgstr "Exported {0}"
+
+msgid "origen de import desconocido: {0} (artifact)"
+msgstr "unknown import source: {0} (artifact)"
+
+msgid "la carpeta del export"
+msgstr "the export folder"
+
+msgid "no hay {0}: corré `scompass init` primero"
+msgstr "there's no {0}: run `scompass init` first"
+
+msgid "{0}: {1} en el export · "
+msgstr "{0}: {1} in the export · "
+
+msgid "{0} nuevos, {1} sin cambios, {2} actualizados, "
+msgstr "{0} new, {1} unchanged, {2} updated, "
+
+msgid "{0} distintos (no importados), {1} inválidos"
+msgstr "{0} different (not imported), {1} invalid"
+
+msgid "Simulación: no se escribió nada."
+msgstr "Dry run: nothing was written."
+
+msgid "Hitos"
+msgstr "Milestones"
+
+msgid "Tareas"
+msgstr "Tasks"
+
+msgid "Distintos en {0}: {1} (--overwrite para reemplazarlos)"
+msgstr "Different in {0}: {1} (--overwrite to replace them)"
+
+msgid "aviso {0}: {1}"
+msgstr "warning {0}: {1}"
+
+msgid "{0} citas por número de sección pueden pasar a referencias: scompass refs suggest"
+msgstr "{0} citations by section number can become references: scompass refs suggest"
+
+msgid "el título"
+msgstr "the title"
+
+msgid "Creada {0}: {1}"
+msgstr "Created {0}: {1}"
+
+msgid "el estado"
+msgstr "the status"
+
+msgid "aviso: quedan vínculos rotos hacia {0} en {1} (scompass link rm <tarea> {2} los quita)"
+msgstr "warning: there are still broken links to {0} in {1} (scompass link rm <task> {2} removes them)"
+
+msgid "Borrada {0}: {1}"
+msgstr "Deleted {0}: {1}"
+
+msgid "el número de paso"
+msgstr "the step number"
+
+msgid "paso inexistente: {0} (la tarea tiene {1})"
+msgstr "no such step: {0} (the task has {1})"
+
+msgid "{0} paso {1} desmarcado: {2}"
+msgstr "{0} step {1} unchecked: {2}"
+
+msgid "{0} paso {1} hecho: {2}"
+msgstr "{0} step {1} done: {2}"
+
+msgid "subcomando desconocido: step {0} (add, set, rm)"
+msgstr "unknown subcommand: step {0} (add, set, rm)"
+
+msgid "el id de la tarea"
+msgstr "the task id"
+
+msgid "el texto del paso"
+msgstr "the step text"
+
+msgid "{0}: paso {1} agregado"
+msgstr "{0}: step {1} added"
+
+msgid "{0}: paso {1} quitado"
+msgstr "{0}: step {1} removed"
+
+msgid "falta --text o --detail"
+msgstr "missing --text or --detail"
+
+msgid "{0}: paso {1} actualizado"
+msgstr "{0}: step {1} updated"
+
+msgid "el texto de la decisión"
+msgstr "the decision text"
+
+msgid "el texto de la decisión está vacío"
+msgstr "the decision text is empty"
+
+msgid "--session tiene que ser el id de una sesión de Claude Code (un uuid): {0}"
+msgstr "--session must be a Claude Code session id (a uuid): {0}"
+
+msgid "{0}: decisión {1} registrada ({2})"
+msgstr "{0}: decision {1} recorded ({2})"
+
+msgid "subcomando desconocido: decision {0} ({1})"
+msgstr "unknown subcommand: decision {0} ({1})"
+
+msgid "el número de decisión"
+msgstr "the decision number"
+
+msgid "{0}: decisión {1} promovida a {2} ({3})"
+msgstr "{0}: decision {1} promoted to {2} ({3})"
+
+msgid "decisión inexistente: {0} (la tarea tiene {1})"
+msgstr "no such decision: {0} (the task has {1})"
+
+msgid "la decisión {0} no es una pregunta: se revisa con decision ok o revert"
+msgstr "decision {0} isn't a question: review it with decision ok or revert"
+
+msgid "la respuesta"
+msgstr "the answer"
+
+msgid "la respuesta está vacía"
+msgstr "the answer is empty"
+
+msgid "la decisión {0} es una pregunta: se responde con decision reply"
+msgstr "decision {0} is a question: answer it with decision reply"
+
+msgid "la decisión {0} no está para revertir"
+msgstr "decision {0} isn't marked to revert"
+
+msgid "{0}: decisión {1} quitada"
+msgstr "{0}: decision {1} removed"
+
+msgid "{0}: decisión {1} {2}"
+msgstr "{0}: decision {1} {2}"
+
+msgid "Sin decisiones."
+msgstr "No decisions."
+
+msgid "--file reemplaza la tarea entera: no se combina con campos sueltos"
+msgstr "--file replaces the whole task: it can't be combined with single fields"
+
+msgid "falta --file o algún campo ({0})"
+msgstr "missing --file or some field ({0})"
+
+msgid "Guardada {0}"
+msgstr "Saved {0}"
+
+msgid "Sin listas: scompass lists add \"<título>\" crea una."
+msgstr "No lists: scompass lists add \"<title>\" creates one."
+
+msgid "vacía"
+msgstr "empty"
+
+msgid "1 de {0} pendiente"
+msgstr "1 of {0} pending"
+
+msgid "{0} de {1} pendientes"
+msgstr "{0} of {1} pending"
+
+msgid "todo tildado"
+msgstr "all checked"
+
+msgid "la lista"
+msgstr "the list"
+
+msgid "  (vacía)"
+msgstr "  (empty)"
+
+msgid "Creada la lista {0}: {1}"
+msgstr "Created the list {0}: {1}"
+
+msgid "Guardada la lista {0}"
+msgstr "Saved the list {0}"
+
+msgid "Borrada la lista {0}"
+msgstr "Deleted the list {0}"
+
+msgid "subcomando desconocido: lists {0} (show, add, set, rm)"
+msgstr "unknown subcommand: lists {0} (show, add, set, rm)"
+
+msgid "subcomando desconocido: item {0} (add, check, set, rm, clear, task)"
+msgstr "unknown subcommand: item {0} (add, check, set, rm, clear, task)"
+
+msgid "el número de ítem"
+msgstr "the item number"
+
+msgid "ítem inexistente: {0} (la lista tiene {1})"
+msgstr "no such item: {0} (the list has {1})"
+
+msgid "un ítem que se repite necesita fecha límite (--due)"
+msgstr "a repeating item needs a due date (--due)"
+
+msgid "el texto"
+msgstr "the text"
+
+msgid "{0}: ítem {1} agregado"
+msgstr "{0}: item {1} added"
+
+msgid "tildado quitado"
+msgstr "checked item removed"
+
+msgid "tildados quitados"
+msgstr "checked items removed"
+
+msgid "{0}: {1} {2}"
+msgstr "{0}: {1} {2}"
+
+msgid "{0} ítem {1} hecho: {2} · ↻ próxima vez: {3}"
+msgstr "{0} item {1} done: {2} · ↻ next time: {3}"
+
+msgid "{0} ítem {1} desmarcado: {2}"
+msgstr "{0} item {1} unchecked: {2}"
+
+msgid "{0} ítem {1} hecho: {2}"
+msgstr "{0} item {1} done: {2}"
+
+msgid "{0}: ítem {1} quitado"
+msgstr "{0}: item {1} removed"
+
+msgid "falta --text, --due, --repeat o --interval"
+msgstr "missing --text, --due, --repeat or --interval"
+
+msgid "{0}: ítem {1} actualizado"
+msgstr "{0}: item {1} updated"
+
+msgid "el ítem {0} ya pasó a la tarea {1}"
+msgstr "item {0} already became task {1}"
+
+msgid "{0}: ítem {1} → tarea {2}"
+msgstr "{0}: item {1} → task {2}"
+
+msgid "Sesiones pasadas al formato nuevo: {0}"
+msgstr "Sessions moved to the new format: {0}"
+
+msgid "No hay sesiones del formato anterior."
+msgstr "No sessions in the old format."
+
+msgid "anda"
+msgstr "works"
+
+msgid "falla"
+msgstr "fails"
+
+msgid "sin probar"
+msgstr "untested"
+
+msgid "Tareas que ya no existen (su resultado se descartó): {0}"
+msgstr "Tasks that no longer exist (their result was dropped): {0}"
+
+msgid "aviso: hay sesiones del formato anterior (result y note en la sesión): scompass playtest migrate las pasa a las tareas"
+msgstr "warning: there are sessions in the old format (result and note in the session): scompass playtest migrate moves them to the tasks"
+
+msgid "Sin sesiones de playtest: scompass playtest new \"<título>\" crea una."
+msgstr "No playtest sessions: scompass playtest new \"<title>\" creates one."
+
+msgid "{0} de {1} sin probar"
+msgstr "{0} of {1} untested"
+
+msgid "todo probado"
+msgstr "all tested"
+
+msgid "fallan"
+msgstr "fail"
+
+msgid "--milestone va con --review"
+msgstr "--milestone goes with --review"
+
+msgid "Creada la sesión {0}: {1}{2}"
+msgstr "Created the session {0}: {1}{2}"
+
+msgid "la sesión"
+msgstr "the session"
+
+msgid "Guardada la sesión {0}"
+msgstr "Saved the session {0}"
+
+msgid "Borrada la sesión {0}"
+msgstr "Deleted the session {0}"
+
+msgid "subcomando desconocido: playtest {0} (show, new, set, rm, add, move, drop, pass, fail, reset, migrate)"
+msgstr "unknown subcommand: playtest {0} (show, new, set, rm, add, move, drop, pass, fail, reset, migrate)"
+
+msgid "{0} no está en la sesión (tiene {1} {2})"
+msgstr "{0} isn't in the session (it has {1} {2})"
+
+msgid "falta alguna tarea (o --review)"
+msgstr "missing a task (or --review)"
+
+msgid "posición inválida: {0} (de 1 a {1})"
+msgstr "invalid position: {0} (from 1 to {1})"
+
+msgid "{0} agregada"
+msgstr "{0} added"
+
+msgid "{0} tareas agregadas"
+msgstr "{0} tasks added"
+
+msgid "{0}: {1} desde la posición {2}"
+msgstr "{0}: {1} from position {2}"
+
+msgid "{0}: nada nuevo para agregar"
+msgstr "{0}: nothing new to add"
+
+msgid "la posición"
+msgstr "the position"
+
+msgid "{0}: {1} en la posición {2}"
+msgstr "{0}: {1} at position {2}"
+
+msgid "{0}: {1} fuera de la sesión"
+msgstr "{0}: {1} out of the session"
+
+msgid "anda ✓"
+msgstr "works ✓"
+
+msgid "falla ✗"
+msgstr "fails ✗"
+
+msgid "{0}: fecha objetivo {1}"
+msgstr "{0}: target date {1}"
+
+msgid "{0}: sin fecha objetivo"
+msgstr "{0}: no target date"
+
+msgid "--file reemplaza el hito entero: no se combina con --due"
+msgstr "--file replaces the whole milestone: it can't be combined with --due"
+
+msgid "Guardado {0}"
+msgstr "Saved {0}"
+
+msgid "subcomando desconocido: milestone {0}"
+msgstr "unknown subcommand: milestone {0}"
+
+msgid "comando desconocido: {0}\n\n{1}"
+msgstr "unknown command: {0}\n\n{1}"
+
+msgid "error [{0}]: {1}"
+msgstr "error [{0}]: {1}"
+
+msgid "bandeja: {0}"
+msgstr "tray: {0}"
+
+msgid "{0} · no encontrado"
+msgstr "{0} · not found"
+
+msgid "{0} · hub suelto :{1}"
+msgstr "{0} · standalone hub :{1}"
+
+msgid "Detener hub suelto (lo abrió el dock)"
+msgstr "Stop standalone hub (opened by the dock)"
+
+msgid "Detener hub suelto"
+msgstr "Stop standalone hub"
+
+msgid "Abrir Inicio"
+msgstr "Open Home"
+
+msgid "Agregar proyecto…"
+msgstr "Add project…"
+
+msgid "sin dirección"
+msgstr "no address"
+
+msgid "Desactivar acceso en la red ({0})"
+msgstr "Turn off network access ({0})"
+
+msgid "Activar acceso en la red (teléfono)"
+msgstr "Turn on network access (phone)"
+
+msgid "Reiniciar Inicio"
+msgstr "Restart Home"
+
+msgid "Cerrar Inicio"
+msgstr "Quit Home"
+
+msgid "plantilla desconocida: {0} ({1})"
+msgstr "unknown template: {0} ({1})"

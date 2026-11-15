@@ -42,7 +42,7 @@ mkdirSync(STAGE, { recursive: true });
 writeFileSync(join(DIST, '.gdignore'), ''); // Godot no escanea dist/
 
 // Hub: lo que lista "files" de package.json, con web/ y schema/ (que en el repo están en la raíz) adentro.
-for (const d of ['bin', 'src', 'templates', 'assets']) cpSync(join(REPO, 'hub', d), join(STAGE, d), { recursive: true });
+for (const d of ['bin', 'src', 'templates', 'locales', 'assets']) cpSync(join(REPO, 'hub', d), join(STAGE, d), { recursive: true });
 for (const d of ['web', 'schema']) cpSync(join(REPO, d), join(STAGE, d), { recursive: true });
 for (const f of ['package.json', 'package-lock.json']) cpSync(join(REPO, 'hub', f), join(STAGE, f));
 // Sin scripts: postinstall solo sirve en el repo (el .gdignore de node_modules para Godot) y `npm test` necesita los
