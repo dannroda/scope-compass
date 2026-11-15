@@ -3,10 +3,12 @@
 (function () {
   const S = { projects: [], today: [], week: [], templates: [], dataDir: '', sep: '/', loaded: false, offline: false, connected: false,
     add: { open: false, mode: 'import', err: '', busy: false }, busy: new Set() };
-  const EVERY = { day: 'cada día', week: 'cada semana', month: 'cada mes', year: 'cada año' };
+  const EVERY = { day: T('cada día'), week: T('cada semana'), month: T('cada mes'), year: T('cada año') };
   // repeat con interval (31.6), como repeatLabel de hub/src/dates.js.
-  const EVERY_N = { day: 'días', week: 'semanas', month: 'meses', year: 'años' };
-  const repeatLabel = (r) => ((r.interval ?? 1) > 1 ? `cada ${r.interval} ${EVERY_N[r.every]}` : EVERY[r.every]);
+  const EVERY_N = { day: (n) => T`cada ${n} días`, week: (n) => T`cada ${n} semanas`, month: (n) => T`cada ${n} meses`, year: (n) => T`cada ${n} años` };
+  const repeatLabel = (r) => ((r.interval ?? 1) > 1 ? EVERY_N[r.every](r.interval) : EVERY[r.every]);
+  // Fechas con el idioma de la página (§45).
+  const LOCALE = I18N.lang === 'es' ? 'es-AR' : 'en-US';
   // Preferencias de quien mira, en este navegador (nunca en compass/); sin almacenamiento, los valores por defecto.
   const pref = (key, value) => {
     try {
@@ -16,7 +18,7 @@
     return null;
   };
   // En este orden en el formulario; la primera queda elegida (Juego, como antes de que hubiera Sala limpia).
-  const TPL_NAMES = { juego: 'Juego', personal: 'Personal', vacio: 'Vacío', 'clean-room': 'Sala limpia' };
+  const TPL_NAMES = { juego: T('Juego'), personal: T('Personal'), vacio: T('Vacío'), 'clean-room': T('Sala limpia') };
   const tplRank = (n) => { const i = Object.keys(TPL_NAMES).indexOf(n); return i < 0 ? 99 : i; };
 
   class ApiError extends Error {
@@ -32,7 +34,7 @@
     try {
       r = await fetch(path, { method, headers: body === undefined ? {} : { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
     } catch (e) {
-      throw new ApiError(0, { error: { code: 'offline', message: 'sin conexión con el Inicio' } });
+      throw new ApiError(0, { error: { code: 'offline', message: T('sin conexión con el Inicio') } });
     }
     const data = await r.json().catch(() => null);
     if (!r.ok) throw new ApiError(r.status, data);
@@ -66,14 +68,15 @@
     clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, 3600);
   }
 
-  // "2026-10-10T17:30" → "10/10 17:30" (con año si no es este).
+  // "2026-10-10T17:30" → "10/10 17:30" (con año si no es este; en inglés, mes/día).
   function showDue(due) {
     const [d, t] = String(due).split('T');
     const [y, m, day] = d.split('-');
-    return `${day}/${m}${Number(y) !== new Date().getFullYear() ? '/' + y : ''}${t ? ' ' + t : ''}`;
+    const dm = I18N.lang === 'es' ? `${day}/${m}` : `${m}/${day}`;
+    return `${dm}${Number(y) !== new Date().getFullYear() ? '/' + y : ''}${t ? ' ' + t : ''}`;
   }
-  const dueTag = (x) => x.due_state === 'overdue' ? h('span', { class: 'tag overdue' }, 'vencido · ' + showDue(x.due))
-    : x.due_state === 'today' ? h('span', { class: 'tag today' }, x.due.includes('T') ? 'hoy ' + x.due.split('T')[1] : 'hoy')
+  const dueTag = (x) => x.due_state === 'overdue' ? h('span', { class: 'tag overdue' }, T`vencido · ${showDue(x.due)}`)
+    : x.due_state === 'today' ? h('span', { class: 'tag today' }, x.due.includes('T') ? T`hoy ${x.due.split('T')[1]}` : T('hoy'))
     : x.due_state === 'later' && x.due.includes('T') ? h('span', { class: 'tag' }, x.due.split('T')[1]) : null;
   // El tablero de un proyecto vive dentro del Inicio, en /p/<clave>/ (D29).
   const boardUrl = (path) => S.projects.find((p) => p.path === path)?.url ?? null;
@@ -86,7 +89,7 @@
       const r = await fn();
       if (okMsg) toast(typeof okMsg === 'function' ? okMsg(r) : okMsg);
     } catch (e) {
-      toast(e.code === 'offline' ? 'Sin conexión con el Inicio: no se hizo el cambio.' : e.code === 'conflict' ? 'Ese ítem cambió en otro lado; se actualizó. Probá de nuevo.' : 'No se pudo: ' + e.message);
+      toast(e.code === 'offline' ? T('Sin conexión con el Inicio: no se hizo el cambio.') : e.code === 'conflict' ? T('Ese ítem cambió en otro lado; se actualizó. Probá de nuevo.') : T`No se pudo: ${e.message}`);
     } finally {
       S.busy.delete(key);
       await load();
@@ -115,13 +118,13 @@
 
   function renderHoy() {
     const box = document.getElementById('hoy');
-    if (!S.loaded) { box.replaceChildren(h('div', { class: 'hoy-empty' }, 'Cargando…')); return; }
+    if (!S.loaded) { box.replaceChildren(h('div', { class: 'hoy-empty' }, T('Cargando…'))); return; }
     const all = rowsOf(S.today);
     // Dos repos con el mismo nombre: se distinguen por la carpeta (en Hoy y en Esta semana).
     const keys = new Map();
     for (const r of [...all, ...rowsOf(S.week)]) keys.set(r.x.project.name, new Set([...(keys.get(r.x.project.name) ?? []), repoKey(r.x.project)]));
     hoyName = (pr) => (keys.get(pr.name)?.size > 1 ? `${pr.name} · ${folder(pr.path)}` : pr.name);
-    if (!all.length) { box.replaceChildren(h('div', { class: 'hoy-empty' }, 'Nada vencido ni para hoy, y nada en curso.')); return; }
+    if (!all.length) { box.replaceChildren(h('div', { class: 'hoy-empty' }, T('Nada vencido ni para hoy, y nada en curso.'))); return; }
     // 31.1: arriba lo mío (vencido y de hoy, sueltos), después lo que solo está en curso, en un grupo plegable por
     // proyecto (23.1), y al final las preguntas de los agentes, plegadas: con muchas no tapan lo demás.
     const rows = all.filter((r) => areaOk(r.x));
@@ -136,16 +139,16 @@
     const closed = foldedHoy();
     const qOpen = !!pref('questions-open');
     box.replaceChildren(
-      ...(mine.length ? mine.map((r, i) => hoyRow(r, 'hoy-' + i, true)) : [h('div', { class: 'hoy-empty' }, S.area ? `Nada vencido ni para hoy en ${S.area}.` : 'Nada vencido ni para hoy.')]),
+      ...(mine.length ? mine.map((r, i) => hoyRow(r, 'hoy-' + i, true)) : [h('div', { class: 'hoy-empty' }, S.area ? T`Nada vencido ni para hoy en ${S.area}.` : T('Nada vencido ni para hoy.'))]),
       ...[...groups].map(([k, g]) =>
         h('details', { class: 'hoy-group', open: !closed.has(k) },
           // Con el clic y no con toggle: toggle también salta al crear el grupo abierto, y un render lo pisaría.
           h('summary', { onclick: (e) => { const s = foldedHoy(); e.currentTarget.parentElement.open ? s.add(k) : s.delete(k); foldedHoy(s); } },
-            h('span', { class: 'what' }, g.name), h('span', { class: 'tag doing' }, `${g.rows.length} en curso`)),
+            h('span', { class: 'what' }, g.name), h('span', { class: 'tag doing' }, T`${g.rows.length} en curso`)),
           g.rows.map((r, i) => hoyRow(r, null, false)))),
       questions.length ? h('details', { class: 'hoy-group questions', open: qOpen },
         h('summary', { onclick: (e) => pref('questions-open', !e.currentTarget.parentElement.open) },
-          h('span', { class: 'what' }, `Esperan tu respuesta (${questions.length})`), h('span', { class: 'tag ask' }, 'preguntas de los agentes')),
+          h('span', { class: 'what' }, T`Esperan tu respuesta (${questions.length})`), h('span', { class: 'tag ask' }, T('preguntas de los agentes'))),
         questions.map((r) => hoyRow(r, null, true))) : null);
   }
 
@@ -154,7 +157,7 @@
     const box = document.getElementById('semana');
     if (!S.loaded) { box.replaceChildren(); return; }
     const rows = rowsOf(S.week).filter((r) => areaOk(r.x));
-    if (!rows.length) { box.replaceChildren(h('div', { class: 'hoy-empty' }, S.area ? `Nada de ${S.area} vence en los próximos 7 días.` : 'Nada vence en los próximos 7 días.')); return; }
+    if (!rows.length) { box.replaceChildren(h('div', { class: 'hoy-empty' }, S.area ? T`Nada de ${S.area} vence en los próximos 7 días.` : T('Nada vence en los próximos 7 días.'))); return; }
     const days = new Map();
     for (const r of rows) { const d = r.x.due.slice(0, 10); days.set(d, [...(days.get(d) ?? []), r]); }
     const now = new Date();
@@ -163,21 +166,21 @@
     box.replaceChildren(...[...days].map(([d, rs]) => {
       const [y, m, day] = d.split('-').map(Number);
       const date = new Date(y, m - 1, day);
-      const name = date.toLocaleDateString('es-AR', { weekday: 'long' }) + ` ${day}/${m}`;
-      return h('div', { class: 'sem-day' }, h('h3', null, date.getTime() === tomorrow.getTime() ? 'mañana · ' + name : name), rs.map((r) => hoyRow(r, 'sem-' + n++, true)));
+      const name = date.toLocaleDateString(LOCALE, { weekday: 'long' }) + (I18N.lang === 'es' ? ` ${day}/${m}` : ` ${m}/${day}`);
+      return h('div', { class: 'sem-day' }, h('h3', null, date.getTime() === tomorrow.getTime() ? T`mañana · ${name}` : name), rs.map((r) => hoyRow(r, 'sem-' + n++, true)));
     }));
   }
 
   // Chips de área (31.4): las etiquetas de las tareas que hay en Hoy y en Esta semana.
   function renderAreas() {
     const box = document.getElementById('areas');
-    const tags = [...new Set([...S.today, ...S.week].flatMap((x) => x.tags ?? []))].sort((a, b) => a.localeCompare(b, 'es'));
+    const tags = [...new Set([...S.today, ...S.week].flatMap((x) => x.tags ?? []))].sort((a, b) => a.localeCompare(b, I18N.lang));
     // Un área guardada que ya no aparece no filtra (y queda guardada, por si vuelve).
     S.area = tags.includes(pref('area')) ? pref('area') : null;
     box.hidden = !tags.length;
     const chip = (tag, label) => h('button', { class: 'chip small', type: 'button', 'aria-pressed': String(S.area === tag),
       onclick: () => { pref('area', tag); render(); } }, label);
-    box.replaceChildren(...(tags.length ? [chip(null, 'Todas'), ...tags.map((t) => chip(t, t))] : []));
+    box.replaceChildren(...(tags.length ? [chip(null, T('Todas')), ...tags.map((t) => chip(t, t))] : []));
   }
 
   // Captura rápida (31.2): las listas de todos los proyectos; por defecto la última usada o "Quiero hacer" de "Vida".
@@ -217,7 +220,7 @@
         form.elements.text.value = ''; form.elements.due.value = '';
         form.elements.text.focus();
         return r;
-      }, `Anotado en ${title}`);
+      }, T`Anotado en ${title}`);
     });
   }
 
@@ -237,7 +240,7 @@
   // proyecto ni "en curso". Lo vencido y lo de hoy van marcados (urgent): solo eso va en dorado (31.5).
   function hoyRow({ x, only }, id, loose) {
     const where = [loose ? h('span', { class: 'tag' }, hoyName(x.project) + (x.kind === 'item' ? ' · ' + x.list_title : '')) : null,
-      only ? h('span', { class: 'tag', title: 'Solo en estos worktrees' }, '⎇ ' + only.join(', ')) : null];
+      only ? h('span', { class: 'tag', title: T('Solo en estos worktrees') }, '⎇ ' + only.join(', ')) : null];
     const urgent = urgentState(x) ? ' urgent' : '';
     if (x.kind === 'item') {
       const key = 'item:' + x.project.path + ':' + x.list + ':' + x.n;
@@ -245,7 +248,7 @@
         // Mientras se guarda queda tildado (re-renderizar no lo destilda).
         h('input', { type: 'checkbox', id, disabled: S.busy.has(key), checked: S.busy.has(key),
           onchange: () => act(key, () => call('POST', '/api/projects/check-item', { path: x.project.path, list: x.list, n: x.n, etag: x.etag }),
-            (r) => (r.advanced ? `${x.text}: ↻ la próxima vez es el ${showDue(r.list.items[x.n - 1].due)}` : `${x.text}: hecho`)) }),
+            (r) => (r.advanced ? T`${x.text}: ↻ la próxima vez es el ${showDue(r.list.items[x.n - 1].due)}` : T`${x.text}: hecho`)) }),
         h('label', { for: id, class: 'what' }, x.text),
         dueTag(x), x.repeat ? h('span', { class: 'tag' }, '↻ ' + repeatLabel(x.repeat)) : null, where);
     }
@@ -254,29 +257,29 @@
     if (x.kind === 'question') {
       return h('div', { class: 'hoy-row question' },
         h('span', { class: 'mark', 'aria-hidden': 'true' }, '?'),
-        h('span', { class: 'what' }, url ? h('a', { href: url + '#task/' + encodeURIComponent(x.id), title: 'Responder en la tarea' }, rich(x.text)) : rich(x.text)),
-        h('span', { class: 'tag ask', title: 'Pregunta abierta de la tarea ' + x.task }, 'pregunta · ' + x.task.split(' ')[0]), where);
+        h('span', { class: 'what' }, url ? h('a', { href: url + '#task/' + encodeURIComponent(x.id), title: T('Responder en la tarea') }, rich(x.text)) : rich(x.text)),
+        h('span', { class: 'tag ask', title: T`Pregunta abierta de la tarea ${x.task}` }, T`pregunta · ${x.task.split(' ')[0]}`), where);
     }
     const [code, ...rest] = x.text.split(' ');
     const title = /^\d/.test(code) ? h('span', null, h('span', { class: 'code' }, code), rich(rest.join(' '))) : rich(x.text);
     return h('div', { class: 'hoy-row' + urgent },
       h('span', { class: 'mark', 'aria-hidden': 'true' }, x.status === 'doing' ? '●' : '○'),
       h('span', { class: 'what' }, url ? h('a', { href: url }, title) : title),
-      dueTag(x), loose && x.status === 'doing' ? h('span', { class: 'tag doing' }, 'en curso') : null, where);
+      dueTag(x), loose && x.status === 'doing' ? h('span', { class: 'tag doing' }, T('en curso')) : null, where);
   }
 
   // Quién sirve el proyecto: el Inicio (lo normal, D29) o un hub suelto (el del dock, `scompass serve`).
   function hubTag(p) {
-    if (!p.found) return h('span', { class: 'tag overdue' }, 'no encontrado');
-    if (p.served === 'hub') return h('span', { class: 'tag live', title: 'Lo sirve un hub suelto (el del dock o scompass serve); el Inicio le pasa los pedidos' }, h('span', { class: 'dot' }), 'hub suelto :' + p.hubs.find((x) => !x.base)?.port);
-    if (p.served === 'home') return h('span', { class: 'tag live' }, h('span', { class: 'dot' }), 'abierto');
+    if (!p.found) return h('span', { class: 'tag overdue' }, T('no encontrado'));
+    if (p.served === 'hub') return h('span', { class: 'tag live', title: T('Lo sirve un hub suelto (el del dock o scompass serve); el Inicio le pasa los pedidos') }, h('span', { class: 'dot' }), T`hub suelto :${p.hubs.find((x) => !x.base)?.port}`);
+    if (p.served === 'home') return h('span', { class: 'tag live' }, h('span', { class: 'dot' }), T('abierto'));
     return null;
   }
 
   // others: los otros worktrees del mismo repo (23.2), que van en la tarjeta del principal.
   function projectCard(p, others = []) {
     const s = p.summary;
-    const kind = !p.found ? p.path : [p.godot ? 'Godot' : null, p.views?.[0] === 'lists' ? 'Personal' : null, others.length && p.worktree?.branch].filter(Boolean).join(' · ') || p.path;
+    const kind = !p.found ? p.path : [p.godot ? 'Godot' : null, p.views?.[0] === 'lists' ? T('Personal') : null, others.length && p.worktree?.branch].filter(Boolean).join(' · ') || p.path;
     const key = 'hub:' + p.path;
     const head = h('div', { class: 'head' }, h('div', null, h('h3', null, p.name), h('div', { class: 'kind', title: p.path }, kind)), hubTag(p));
     const body = [];
@@ -285,68 +288,68 @@
       const pct = (n) => (m.total ? Math.round(100 * n / m.total) : 0);
       body.push(h('div', { class: 'ms' },
         h('div', { class: 'row' }, h('span', null, h('b', null, m.code), ' · ', rich(m.title)),
-          h('span', null, m.due_state === 'overdue' ? h('span', { class: 'tag overdue', title: 'Fecha objetivo del hito' }, 'atrasado · ' + showDue(m.due)) : m.due_state === 'today' ? h('span', { class: 'tag today' }, 'objetivo hoy') : null,
-            ' ', h('span', { class: 'n', title: m.review ? m.review + ' en revisión' : null }, m.done + '/' + m.total))),
+          h('span', null, m.due_state === 'overdue' ? h('span', { class: 'tag overdue', title: T('Fecha objetivo del hito') }, T`atrasado · ${showDue(m.due)}`) : m.due_state === 'today' ? h('span', { class: 'tag today' }, T('objetivo hoy')) : null,
+            ' ', h('span', { class: 'n', title: m.review ? T`${m.review} en revisión` : null }, m.done + '/' + m.total))),
         // m.done incluye las de Revisión (m.review), que van en su color al final de la barra.
-        h('div', { class: 'bar', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': m.total, 'aria-valuenow': m.done, 'aria-label': 'Avance de ' + m.code + (m.review ? ', ' + m.review + ' en revisión' : '') },
+        h('div', { class: 'bar', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': m.total, 'aria-valuenow': m.done, 'aria-label': m.review ? T`Avance de ${m.code}, ${m.review} en revisión` : T`Avance de ${m.code}` },
           h('i', { style: 'width:' + pct(m.done - (m.review ?? 0)) + '%' }), m.review ? h('i', { class: 'rev', style: 'width:' + pct(m.review) + '%' }) : null)));
     }
     // Decisiones que esperan (§31): enlace a la vista Decisiones del proyecto.
     const dc = s?.decisions;
     if (dc && dc.open + dc.pending + dc.revert) {
-      const parts = [dc.open && (dc.open === 1 ? '1 pregunta abierta' : dc.open + ' preguntas abiertas'), dc.pending && dc.pending + ' sin revisar', dc.revert && dc.revert + ' a revertir'].filter(Boolean);
-      const text = 'Decisiones: ' + parts.join(' · ');
+      const parts = [dc.open && (dc.open === 1 ? T('1 pregunta abierta') : T`${dc.open} preguntas abiertas`), dc.pending && T`${dc.pending} sin revisar`, dc.revert && T`${dc.revert} a revertir`].filter(Boolean);
+      const text = T`Decisiones: ${parts.join(' · ')}`;
       body.push(h('p', { class: 'decs', style: 'margin:0' }, p.url ? h('a', { href: p.url + '#decisions', class: 'tag ' + (dc.open ? 'ask' : 'today') }, text) : h('span', { class: 'tag today' }, text)));
     }
-    if (s?.done_week) body.push(h('p', { class: 'muted week', style: 'margin:0' }, s.done_week === 1 ? '1 tarea terminada en los últimos 7 días' : s.done_week + ' tareas terminadas en los últimos 7 días'));
-    const tasks = [...(s?.doing ?? []).map((t) => ['en curso', t, 'doing']), ...(s?.next ?? []).map((t) => ['sigue', t, ''])].slice(0, 4);
+    if (s?.done_week) body.push(h('p', { class: 'muted week', style: 'margin:0' }, s.done_week === 1 ? T('1 tarea terminada en los últimos 7 días') : T`${s.done_week} tareas terminadas en los últimos 7 días`));
+    const tasks = [...(s?.doing ?? []).map((t) => [T('en curso'), t, 'doing']), ...(s?.next ?? []).map((t) => [T('sigue'), t, ''])].slice(0, 4);
     if (tasks.length) body.push(h('ul', null, tasks.map(([k, t, cls]) => h('li', null, h('span', { class: 'k ' + cls }, k), h('span', { class: 'v' }, t.code ? t.code + ' ' : '', rich(t.title))))));
     if (s?.lists?.length) {
       body.push(h('ul', { class: 'lists' }, s.lists.map((l) => h('li', null, h('span', { class: 'v' }, l.title),
-        h('span', null, l.overdue ? h('span', { class: 'tag overdue' }, l.overdue + ' vencido' + (l.overdue > 1 ? 's' : '')) : null, ' ',
-          l.today ? h('span', { class: 'tag today' }, l.today + ' hoy') : null, ' ', h('span', { class: 'n' }, l.left ? String(l.left) : '✓'))))));
+        h('span', null, l.overdue ? h('span', { class: 'tag overdue' }, l.overdue > 1 ? T`${l.overdue} vencidos` : T`${l.overdue} vencido`) : null, ' ',
+          l.today ? h('span', { class: 'tag today' }, T`${l.today} hoy`) : null, ' ', h('span', { class: 'n' }, l.left ? String(l.left) : '✓'))))));
     }
-    if (p.found && !s?.milestone && !s?.lists?.length) body.push(h('p', { class: 'muted', style: 'margin:0' }, 'Sin hitos ni listas todavía.'));
+    if (p.found && !s?.milestone && !s?.lists?.length) body.push(h('p', { class: 'muted', style: 'margin:0' }, T('Sin hitos ni listas todavía.')));
     if (p.outdated?.length) body.push(h('p', { style: 'margin:0', class: 'outdated' },
-      h('span', { class: 'tag today', title: p.outdated.map((f) => 'compass/' + f).join('\n') }, `compass/ desactualizado (${p.outdated.length} archivo${p.outdated.length > 1 ? 's' : ''})`), ' ',
-      h('button', { class: 'btn small', type: 'button', onclick: () => act('upd:' + p.path, () => call('POST', '/api/projects/update', { path: p.path }), (r) => `Actualizado: ${r.updated.join(', ')}`) }, 'Actualizar')));
-    if (p.warnings) body.push(h('p', { class: 'muted', style: 'margin:0' }, `⚠ ${p.warnings} archivo${p.warnings > 1 ? 's' : ''} con problemas (abrí el tablero para verlos)`));
+      h('span', { class: 'tag today', title: p.outdated.map((f) => 'compass/' + f).join('\n') }, p.outdated.length > 1 ? T`compass/ desactualizado (${p.outdated.length} archivos)` : T`compass/ desactualizado (${p.outdated.length} archivo)`), ' ',
+      h('button', { class: 'btn small', type: 'button', onclick: () => act('upd:' + p.path, () => call('POST', '/api/projects/update', { path: p.path }), (r) => T`Actualizado: ${r.updated.join(', ')}`) }, T('Actualizar'))));
+    if (p.warnings) body.push(h('p', { class: 'muted', style: 'margin:0' }, p.warnings > 1 ? T`⚠ ${p.warnings} archivos con problemas (abrí el tablero para verlos)` : T`⚠ ${p.warnings} archivo con problemas (abrí el tablero para verlos)`));
 
     if (others.length) {
-      body.push(h('div', { class: 'wts' }, h('span', { class: 'k' }, others.length === 1 ? '1 worktree' : others.length + ' worktrees'),
+      body.push(h('div', { class: 'wts' }, h('span', { class: 'k' }, others.length === 1 ? T('1 worktree') : T`${others.length} worktrees`),
         h('ul', null, others.map((w) => h('li', null,
           h('span', { class: 'v', title: w.path }, folder(w.path), w.worktree?.branch ? h('span', { class: 'n' }, ' ' + w.worktree.branch) : null),
-          w.doing ? h('span', { class: 'tag doing' }, w.doing + ' en curso') : null, hubTag(w),
-          w.git?.uncommitted ? h('span', { class: 'tag today', title: 'Archivos del tablero sin commitear en este worktree' }, w.git.uncommitted + ' sin commitear') : null,
-          h('span', { class: 'acts' }, w.url ? h('a', { href: w.url }, 'Abrir') : null, removeBtn(w, 'btn ghost small')))))));
+          w.doing ? h('span', { class: 'tag doing' }, T`${w.doing} en curso`) : null, hubTag(w),
+          w.git?.uncommitted ? h('span', { class: 'tag today', title: T('Archivos del tablero sin commitear en este worktree') }, T`${w.git.uncommitted} sin commitear`) : null,
+          h('span', { class: 'acts' }, w.url ? h('a', { href: w.url }, T('Abrir')) : null, removeBtn(w, 'btn ghost small')))))));
     }
-    if (p.git?.uncommitted) body.push(h('p', { style: 'margin:0' }, h('span', { class: 'tag today', title: 'La app no commitea sola: commiteá compass/ cuando quieras' }, p.git.uncommitted === 1 ? '1 archivo sin commitear' : p.git.uncommitted + ' archivos sin commitear')));
+    if (p.git?.uncommitted) body.push(h('p', { style: 'margin:0' }, h('span', { class: 'tag today', title: T('La app no commitea sola: commiteá compass/ cuando quieras') }, p.git.uncommitted === 1 ? T('1 archivo sin commitear') : T`${p.git.uncommitted} archivos sin commitear`)));
     const foot = h('div', { class: 'foot' });
     // Solo un hub suelto se apaga desde acá; los proyectos que sirve el Inicio no tienen un proceso propio.
     if (p.found && p.served === 'hub') {
-      foot.append(h('button', { class: 'btn', type: 'button', disabled: S.busy.has(key), 'aria-label': 'Apagar el hub suelto de ' + p.name, onclick: () => stopHub(p) }, '■ Apagar hub suelto'));
+      foot.append(h('button', { class: 'btn', type: 'button', disabled: S.busy.has(key), 'aria-label': T`Apagar el hub suelto de ${p.name}`, onclick: () => stopHub(p) }, T('■ Apagar hub suelto')));
     }
     foot.append(removeBtn(p, 'btn ghost'));
     foot.append(h('span', { class: 'spacer' }));
-    if (p.url) foot.append(h('a', { href: p.url, class: 'open' }, 'Abrir tablero'));
+    if (p.url) foot.append(h('a', { href: p.url, class: 'open' }, T('Abrir tablero')));
     return h('article', { class: 'proj' + (p.found ? '' : ' missing'), 'aria-label': p.name }, head, ...body, foot);
   }
 
   function removeBtn(p, cls) {
     const label = p.worktree && !p.worktree.main ? `${p.name} (${folder(p.path)})` : p.name;
-    return h('button', { class: cls, type: 'button', 'aria-label': 'Quitar ' + label + ' del Inicio',
-      onclick: () => { if (confirm(`¿Quitar "${label}" del Inicio? No se borra nada de la carpeta; se puede volver a agregar.`)) act('rm:' + p.path, () => call('DELETE', '/api/projects?path=' + encodeURIComponent(p.path)), 'Quitado del Inicio'); } }, 'Quitar');
+    return h('button', { class: cls, type: 'button', 'aria-label': T`Quitar ${label} del Inicio`,
+      onclick: () => { if (confirm(T`¿Quitar "${label}" del Inicio? No se borra nada de la carpeta; se puede volver a agregar.`)) act('rm:' + p.path, () => call('DELETE', '/api/projects?path=' + encodeURIComponent(p.path)), T('Quitado del Inicio')); } }, T('Quitar'));
   }
 
   async function stopHub(p) {
     const key = 'hub:' + p.path;
     try {
       await call('POST', '/api/projects/stop', { path: p.path });
-      toast('Hub apagado');
+      toast(T('Hub apagado'));
     } catch (e) {
       // Uno que abrió el dock: se confirma antes, porque el editor se queda sin hub.
-      if (e.foreign && confirm(`${e.message}. ¿Apagarlo igual?`)) return act(key, () => call('POST', '/api/projects/stop', { path: p.path, force: true }), 'Hub apagado');
-      if (!e.foreign) toast('No se pudo: ' + e.message);
+      if (e.foreign && confirm(T`${e.message}. ¿Apagarlo igual?`)) return act(key, () => call('POST', '/api/projects/stop', { path: p.path, force: true }), T('Hub apagado'));
+      if (!e.foreign) toast(T`No se pudo: ${e.message}`);
     }
     await load();
   }
@@ -358,10 +361,10 @@
     const stale = S.projects.filter((p) => p.outdated?.length);
     btn.hidden = !S.loaded || stale.length < 2;
     btn.disabled = S.busy.has('upd:all');
-    btn.textContent = `Actualizar todos (${stale.length})`;
-    btn.title = 'Pone al día schema/ y AGENTS.md de:\n' + stale.map((p) => p.name).join('\n');
+    btn.textContent = T`Actualizar todos (${stale.length})`;
+    btn.title = T`Pone al día schema/ y AGENTS.md de:\n${stale.map((p) => p.name).join('\n')}`;
     btn.onclick = () => act('upd:all', () => call('POST', '/api/projects/update-all'),
-      (r) => r.updated.length ? `Actualizados ${r.updated.length} tablero${r.updated.length > 1 ? 's' : ''}` : 'Ya estaban todos al día');
+      (r) => r.updated.length > 1 ? T`Actualizados ${r.updated.length} tableros` : r.updated.length ? T`Actualizado ${r.updated.length} tablero` : T('Ya estaban todos al día'));
   }
 
   function renderProjects() {
@@ -376,11 +379,11 @@
       return projectCard(lead, ps.filter((p) => p !== lead).map((w) => ({ ...w, doing: w.summary?.doing?.length ?? 0 })));
     });
     cards.push(h('article', { class: 'proj', style: 'border-style:dashed;align-items:center;justify-content:center;text-align:center;min-height:200px' },
-      h('h3', null, 'Agregar proyecto'),
-      h('p', { class: 'muted', style: 'margin:0;max-width:300px' }, 'Los proyectos aparecen solos al abrir su hub. También se pueden agregar sin prenderlo, o crear uno nuevo.'),
+      h('h3', null, T('Agregar proyecto')),
+      h('p', { class: 'muted', style: 'margin:0;max-width:300px' }, T('Los proyectos aparecen solos al abrir su hub. También se pueden agregar sin prenderlo, o crear uno nuevo.')),
       h('div', { class: 'foot', style: 'border:0;justify-content:center' },
-        h('button', { class: 'btn', type: 'button', onclick: () => openAdd('import') }, 'Importar carpeta…'),
-        h('button', { class: 'btn', type: 'button', onclick: () => openAdd('create') }, 'Crear con plantilla'))));
+        h('button', { class: 'btn', type: 'button', onclick: () => openAdd('import') }, T('Importar carpeta…')),
+        h('button', { class: 'btn', type: 'button', onclick: () => openAdd('create') }, T('Crear con plantilla')))));
     box.replaceChildren(...cards);
   }
 
@@ -410,20 +413,20 @@
     };
     let form;
     if (S.add.mode === 'import') {
-      form = h('form', { onsubmit: (e) => submit(e, async () => { const r = await call('POST', '/api/projects', { path: document.getElementById('add-path').value.trim() }); toast(r.added ? `Agregado: ${r.project.name}` : `${r.project.name} ya estaba en el Inicio`); }) },
-        h('div', { class: 'field' }, h('label', { for: 'add-path' }, 'Carpeta del proyecto (ruta absoluta, con compass/ adentro)'),
-          h('input', { type: 'text', id: 'add-path', required: true, placeholder: '/home/…/mi-proyecto', autocomplete: 'off', spellcheck: 'false' })),
-        h('p', { class: 'hint' }, 'Se anota sin prender su hub. No se copia ni se cambia nada en la carpeta.'),
+      form = h('form', { onsubmit: (e) => submit(e, async () => { const r = await call('POST', '/api/projects', { path: document.getElementById('add-path').value.trim() }); toast(r.added ? T`Agregado: ${r.project.name}` : T`${r.project.name} ya estaba en el Inicio`); }) },
+        h('div', { class: 'field' }, h('label', { for: 'add-path' }, T('Carpeta del proyecto (ruta absoluta, con compass/ adentro)')),
+          h('input', { type: 'text', id: 'add-path', required: true, placeholder: T('/home/…/mi-proyecto'), autocomplete: 'off', spellcheck: 'false' })),
+        h('p', { class: 'hint' }, T('Se anota sin prender su hub. No se copia ni se cambia nada en la carpeta.')),
         h('p', { class: 'err', role: 'alert' }, S.add.err),
-        h('div', { class: 'actions' }, h('button', { class: 'btn ghost', type: 'button', onclick: closeAdd }, 'Cancelar'), h('button', { class: 'btn primary', type: 'submit' }, 'Agregar')));
+        h('div', { class: 'actions' }, h('button', { class: 'btn ghost', type: 'button', onclick: closeAdd }, T('Cancelar')), h('button', { class: 'btn primary', type: 'submit' }, T('Agregar'))));
     } else {
       const tpls = S.templates.length ? [...S.templates].sort((a, b) => tplRank(a.name) - tplRank(b.name)) : [{ name: 'vacio', description: '' }];
       // La carpeta es <dónde>/<nombre>; <dónde> es la carpeta de datos del usuario (D28) salvo que se elija otra.
       const where = h('p', { class: 'hint', id: 'new-where' });
       const showWhere = () => {
-        const name = document.getElementById('new-name')?.value.trim() || 'Nombre';
+        const name = document.getElementById('new-name')?.value.trim() || T('Nombre');
         const parent = S.add.parent || S.dataDir;
-        where.textContent = parent ? `Se crea en ${parent}${S.sep}${name}` + (S.add.parent ? '.' : ', con su propio repo de git.') : '';
+        where.textContent = !parent ? '' : S.add.parent ? T`Se crea en ${parent}${S.sep}${name}.` : T`Se crea en ${parent}${S.sep}${name}, con su propio repo de git.`;
         const reset = document.getElementById('new-reset');
         if (reset) reset.hidden = !S.add.parent;
       };
@@ -441,22 +444,22 @@
         const typed = document.getElementById('new-parent')?.value.trim();
         const parent = typed || S.add.parent;
         const r = await call('POST', '/api/projects/init', { name: document.getElementById('new-name').value.trim(), template, ...(parent && { parent }) });
-        toast(`Creado: ${r.config.project} (plantilla ${r.template}) en ${r.path}`);
+        toast(T`Creado: ${r.config.project} (plantilla ${TPL_NAMES[r.template] ?? r.template}) en ${r.path}`);
       }) },
         h('div', { class: 'fields' },
-          h('div', { class: 'field' }, h('label', { for: 'new-name' }, 'Nombre (también es el nombre de la carpeta)'),
-            h('input', { type: 'text', id: 'new-name', required: true, placeholder: 'Vida', autocomplete: 'off', oninput: showWhere }))),
-        h('fieldset', { class: 'tpls' }, h('legend', null, 'Plantilla'),
+          h('div', { class: 'field' }, h('label', { for: 'new-name' }, T('Nombre (también es el nombre de la carpeta)')),
+            h('input', { type: 'text', id: 'new-name', required: true, placeholder: T('Vida'), autocomplete: 'off', oninput: showWhere }))),
+        h('fieldset', { class: 'tpls' }, h('legend', null, T('Plantilla')),
           tpls.map((t, i) => h('label', { class: 'tpl' }, h('input', { type: 'radio', name: 'tpl', value: t.name, checked: i === 0 }), h('span', null, h('b', null, TPL_NAMES[t.name] ?? t.name), t.description)))),
         h('div', { class: 'where-row' }, where,
-          S.add.manual ? null : h('button', { class: 'btn', type: 'button', onclick: pick }, 'Elegir otra carpeta…'),
-          h('button', { class: 'btn ghost', type: 'button', id: 'new-reset', hidden: true, onclick: () => { S.add.parent = ''; showWhere(); } }, 'Usar la de siempre')),
-        S.add.manual ? h('div', { class: 'field' }, h('label', { for: 'new-parent' }, 'Dónde crearla (ruta absoluta de la carpeta que la va a contener)'),
+          S.add.manual ? null : h('button', { class: 'btn', type: 'button', onclick: pick }, T('Elegir otra carpeta…')),
+          h('button', { class: 'btn ghost', type: 'button', id: 'new-reset', hidden: true, onclick: () => { S.add.parent = ''; showWhere(); } }, T('Usar la de siempre'))),
+        S.add.manual ? h('div', { class: 'field' }, h('label', { for: 'new-parent' }, T('Dónde crearla (ruta absoluta de la carpeta que la va a contener)')),
           h('input', { type: 'text', id: 'new-parent', placeholder: S.dataDir || '/home/…', autocomplete: 'off', spellcheck: 'false', 'data-keep': '1' })) : null,
         h('p', { class: 'err', role: 'alert' }, S.add.err),
-        h('div', { class: 'actions' }, h('button', { class: 'btn ghost', type: 'button', onclick: closeAdd }, 'Cancelar'), h('button', { class: 'btn primary', type: 'submit' }, 'Crear proyecto')));
+        h('div', { class: 'actions' }, h('button', { class: 'btn ghost', type: 'button', onclick: closeAdd }, T('Cancelar')), h('button', { class: 'btn primary', type: 'submit' }, T('Crear proyecto'))));
     }
-    box.replaceChildren(h('h2', null, 'Agregar proyecto'), h('div', { class: 'tabs' }, tab('import', 'Importar carpeta'), tab('create', 'Crear con plantilla')), form);
+    box.replaceChildren(h('h2', null, T('Agregar proyecto')), h('div', { class: 'tabs' }, tab('import', T('Importar carpeta')), tab('create', T('Crear con plantilla'))), form);
     document.getElementById('new-name')?.dispatchEvent(new Event('input'));
   }
 
@@ -464,7 +467,7 @@
     document.getElementById('conn').hidden = !(S.loaded && (S.offline || !S.connected));
   }
   function render() {
-    document.getElementById('date').textContent = new Date().toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
+    document.getElementById('date').textContent = new Date().toLocaleDateString(LOCALE, { weekday: 'short', day: 'numeric', month: 'short' });
     renderAdd();
     renderCapture();
     renderAreas();
@@ -516,6 +519,8 @@
     ws.onclose = () => { S.connected = false; renderConn(); setTimeout(connect, retry); retry = Math.min(retry * 2, 10000); };
   }
 
+  // Los textos fijos de home.html (§45), antes del primer render.
+  I18N.dom(document.body);
   setupCapture();
   document.getElementById('add-btn').addEventListener('click', () => (S.add.open ? closeAdd() : openAdd('import')));
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.add.open) closeAdd(); });

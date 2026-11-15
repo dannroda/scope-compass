@@ -1,0 +1,386 @@
+# hub/locales/en/home.po: los textos del Inicio (web/home.js y web/home.html) en inglés (spec §45). msgid: el castellano del código.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid "cada día"
+msgstr "every day"
+
+msgid "cada semana"
+msgstr "every week"
+
+msgid "cada mes"
+msgstr "every month"
+
+msgid "cada año"
+msgstr "every year"
+
+msgid "cada {0} días"
+msgstr "every {0} days"
+
+msgid "cada {0} semanas"
+msgstr "every {0} weeks"
+
+msgid "cada {0} meses"
+msgstr "every {0} months"
+
+msgid "cada {0} años"
+msgstr "every {0} years"
+
+msgid "Juego"
+msgstr "Game"
+
+msgid "Personal"
+msgstr "Personal"
+
+msgid "Vacío"
+msgstr "Empty"
+
+msgid "sin conexión con el Inicio"
+msgstr "no connection to Home"
+
+msgid "vencido · {0}"
+msgstr "overdue · {0}"
+
+msgid "hoy {0}"
+msgstr "today {0}"
+
+msgid "hoy"
+msgstr "today"
+
+msgid "Sin conexión con el Inicio: no se hizo el cambio."
+msgstr "No connection to Home: the change wasn't made."
+
+msgid "Ese ítem cambió en otro lado; se actualizó. Probá de nuevo."
+msgstr "That item changed somewhere else and was refreshed. Try again."
+
+msgid "No se pudo: {0}"
+msgstr "Couldn't do it: {0}"
+
+msgid "Cargando…"
+msgstr "Loading…"
+
+msgid "Nada vencido ni para hoy, y nada en curso."
+msgstr "Nothing overdue or due today, and nothing in progress."
+
+msgid "Nada vencido ni para hoy en {0}."
+msgstr "Nothing overdue or due today in {0}."
+
+msgid "Nada vencido ni para hoy."
+msgstr "Nothing overdue or due today."
+
+msgid "{0} en curso"
+msgstr "{0} in progress"
+
+msgid "Esperan tu respuesta ({0})"
+msgstr "Waiting for your answer ({0})"
+
+msgid "preguntas de los agentes"
+msgstr "questions from agents"
+
+msgid "Nada de {0} vence en los próximos 7 días."
+msgstr "Nothing in {0} is due in the next 7 days."
+
+msgid "Nada vence en los próximos 7 días."
+msgstr "Nothing is due in the next 7 days."
+
+msgid "mañana · {0}"
+msgstr "tomorrow · {0}"
+
+msgid "Todas"
+msgstr "All"
+
+msgid "Anotado en {0}"
+msgstr "Added to {0}"
+
+msgid "Solo en estos worktrees"
+msgstr "Only in these worktrees"
+
+msgid "{0}: ↻ la próxima vez es el {1}"
+msgstr "{0}: ↻ next time is {1}"
+
+msgid "{0}: hecho"
+msgstr "{0}: done"
+
+msgid "Responder en la tarea"
+msgstr "Answer in the task"
+
+msgid "Pregunta abierta de la tarea {0}"
+msgstr "Open question from task {0}"
+
+msgid "pregunta · {0}"
+msgstr "question · {0}"
+
+msgid "en curso"
+msgstr "in progress"
+
+msgid "no encontrado"
+msgstr "not found"
+
+msgid "Lo sirve un hub suelto (el del dock o scompass serve); el Inicio le pasa los pedidos"
+msgstr "Served by a standalone hub (the dock's or scompass serve); Home forwards requests to it"
+
+msgid "hub suelto :{0}"
+msgstr "standalone hub :{0}"
+
+msgid "abierto"
+msgstr "open"
+
+msgid "Fecha objetivo del hito"
+msgstr "Milestone target date"
+
+msgid "atrasado · {0}"
+msgstr "behind · {0}"
+
+msgid "objetivo hoy"
+msgstr "target today"
+
+msgid "{0} en revisión"
+msgstr "{0} in review"
+
+msgid "Avance de {0}, {1} en revisión"
+msgstr "Progress of {0}, {1} in review"
+
+msgid "Avance de {0}"
+msgstr "Progress of {0}"
+
+msgid "1 pregunta abierta"
+msgstr "1 open question"
+
+msgid "{0} preguntas abiertas"
+msgstr "{0} open questions"
+
+msgid "{0} sin revisar"
+msgstr "{0} unreviewed"
+
+msgid "{0} a revertir"
+msgstr "{0} to revert"
+
+msgid "Decisiones: {0}"
+msgstr "Decisions: {0}"
+
+msgid "1 tarea terminada en los últimos 7 días"
+msgstr "1 task finished in the last 7 days"
+
+msgid "{0} tareas terminadas en los últimos 7 días"
+msgstr "{0} tasks finished in the last 7 days"
+
+msgid "sigue"
+msgstr "next"
+
+msgid "{0} vencidos"
+msgstr "{0} overdue"
+
+msgid "{0} vencido"
+msgstr "{0} overdue"
+
+msgid "{0} hoy"
+msgstr "{0} today"
+
+msgid "Sin hitos ni listas todavía."
+msgstr "No milestones or lists yet."
+
+msgid "compass/ desactualizado ({0} archivos)"
+msgstr "compass/ out of date ({0} files)"
+
+msgid "compass/ desactualizado ({0} archivo)"
+msgstr "compass/ out of date ({0} file)"
+
+msgid "Actualizado: {0}"
+msgstr "Updated: {0}"
+
+msgid "Actualizar"
+msgstr "Update"
+
+msgid "⚠ {0} archivos con problemas (abrí el tablero para verlos)"
+msgstr "⚠ {0} files with problems (open the board to see them)"
+
+msgid "⚠ {0} archivo con problemas (abrí el tablero para verlos)"
+msgstr "⚠ {0} file with problems (open the board to see it)"
+
+msgid "1 worktree"
+msgstr "1 worktree"
+
+msgid "{0} worktrees"
+msgstr "{0} worktrees"
+
+msgid "Archivos del tablero sin commitear en este worktree"
+msgstr "Uncommitted board files in this worktree"
+
+msgid "{0} sin commitear"
+msgstr "{0} uncommitted"
+
+msgid "Abrir"
+msgstr "Open"
+
+msgid "La app no commitea sola: commiteá compass/ cuando quieras"
+msgstr "The app never commits on its own: commit compass/ whenever you like"
+
+msgid "1 archivo sin commitear"
+msgstr "1 uncommitted file"
+
+msgid "{0} archivos sin commitear"
+msgstr "{0} uncommitted files"
+
+msgid "Apagar el hub suelto de {0}"
+msgstr "Stop the standalone hub of {0}"
+
+msgid "■ Apagar hub suelto"
+msgstr "■ Stop standalone hub"
+
+msgid "Abrir tablero"
+msgstr "Open board"
+
+msgid "Quitar {0} del Inicio"
+msgstr "Remove {0} from Home"
+
+msgid "¿Quitar \"{0}\" del Inicio? No se borra nada de la carpeta; se puede volver a agregar."
+msgstr "Remove \"{0}\" from Home? Nothing in the folder is deleted; you can add it again."
+
+msgid "Quitado del Inicio"
+msgstr "Removed from Home"
+
+msgid "Quitar"
+msgstr "Remove"
+
+msgid "Hub apagado"
+msgstr "Hub stopped"
+
+msgid "{0}. ¿Apagarlo igual?"
+msgstr "{0}. Stop it anyway?"
+
+msgid "Actualizar todos ({0})"
+msgstr "Update all ({0})"
+
+msgid "Pone al día schema/ y AGENTS.md de:\n{0}"
+msgstr "Updates schema/ and AGENTS.md in:\n{0}"
+
+msgid "Actualizados {0} tableros"
+msgstr "Updated {0} boards"
+
+msgid "Actualizado {0} tablero"
+msgstr "Updated {0} board"
+
+msgid "Ya estaban todos al día"
+msgstr "All were already up to date"
+
+msgid "Agregar proyecto"
+msgstr "Add project"
+
+msgid "Los proyectos aparecen solos al abrir su hub. También se pueden agregar sin prenderlo, o crear uno nuevo."
+msgstr "Projects show up on their own when their hub opens. You can also add one without starting it, or create a new one."
+
+msgid "Importar carpeta…"
+msgstr "Import folder…"
+
+msgid "Crear con plantilla"
+msgstr "Create from template"
+
+msgid "Agregado: {0}"
+msgstr "Added: {0}"
+
+msgid "{0} ya estaba en el Inicio"
+msgstr "{0} was already in Home"
+
+msgid "Carpeta del proyecto (ruta absoluta, con compass/ adentro)"
+msgstr "Project folder (absolute path, with compass/ inside)"
+
+msgid "/home/…/mi-proyecto"
+msgstr "/home/…/my-project"
+
+msgid "Se anota sin prender su hub. No se copia ni se cambia nada en la carpeta."
+msgstr "It's added without starting its hub. Nothing in the folder is copied or changed."
+
+msgid "Cancelar"
+msgstr "Cancel"
+
+msgid "Agregar"
+msgstr "Add"
+
+msgid "Nombre"
+msgstr "Name"
+
+msgid "Se crea en {0}{1}{2}."
+msgstr "It will be created in {0}{1}{2}."
+
+msgid "Se crea en {0}{1}{2}, con su propio repo de git."
+msgstr "It will be created in {0}{1}{2}, with its own git repo."
+
+msgid "Creado: {0} (plantilla {1}) en {2}"
+msgstr "Created: {0} ({1} template) in {2}"
+
+msgid "Nombre (también es el nombre de la carpeta)"
+msgstr "Name (also the folder name)"
+
+msgid "Vida"
+msgstr "Life"
+
+msgid "Plantilla"
+msgstr "Template"
+
+msgid "Elegir otra carpeta…"
+msgstr "Choose another folder…"
+
+msgid "Usar la de siempre"
+msgstr "Use the default"
+
+msgid "Dónde crearla (ruta absoluta de la carpeta que la va a contener)"
+msgstr "Where to create it (absolute path of the parent folder)"
+
+msgid "Crear proyecto"
+msgstr "Create project"
+
+msgid "Importar carpeta"
+msgstr "Import folder"
+
+msgid "Inicio · Scope Compass"
+msgstr "Home · Scope Compass"
+
+msgid "Scope Compass"
+msgstr "Scope Compass"
+
+msgid "Inicio"
+msgstr "Home"
+
+msgid "Sin conexión con el Inicio · reintentando"
+msgstr "No connection to Home · retrying"
+
+msgid "Anotar"
+msgstr "Add"
+
+msgid "En la lista"
+msgstr "To list"
+
+msgid "Fecha límite (opcional)"
+msgstr "Due date (optional)"
+
+msgid "Hoy"
+msgstr "Today"
+
+msgid "lo vencido, lo de hoy y lo que está en curso, de todos los proyectos"
+msgstr "overdue, due today and in progress, across all projects"
+
+msgid "Esta semana"
+msgstr "This week"
+
+msgid "lo que vence en los próximos 7 días"
+msgstr "due in the next 7 days"
+
+msgid "Proyectos"
+msgstr "Projects"
+
+msgid "Actualizar todos"
+msgstr "Update all"
+
+msgid "Ajustes"
+msgstr "Settings"
+
+msgid "Anotar en una lista"
+msgstr "Jot down in a list"
+
+msgid "Anotar…"
+msgstr "Jot down…"
+
+msgid "Área"
+msgstr "Area"
