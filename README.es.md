@@ -24,7 +24,7 @@ Todo corre en tu equipo: sin cuentas, sin nube, sin telemetría. Lo único que h
 - **Servidor MCP para Claude Code.** `scompass mcp` ofrece la CLI como herramientas tipadas (listar, ver, crear y mover tareas, tildar pasos, registrar decisiones, buscar en los documentos…), así un agente trabaja el tablero sin comandos de shell. La web además puede abrir un chat con el Claude Code instalado en tu equipo, con tu cuenta.
 - **Inglés y castellano.** La CLI, la web, el Inicio, el MCP y el dock siguen el idioma del sistema, del navegador o del editor de Godot; `scompass lang es|en` o el selector de Ajustes eligen uno. Los tableros nuevos (su guía para agentes, el export y la plantilla) salen en el idioma en que se crean.
 - **Dock de Godot.** El dock "Tablero" del editor de Godot 4.8 muestra las tareas, abre los scripts y las escenas que cita una tarea y puede levantar el hub. Lee el tablero por su cuenta; para editar necesita el hub.
-- **El teléfono en la red de casa.** Con `--lan`, el tablero y el Inicio se abren desde el teléfono en una red de confianza.
+- **El teléfono en la red de casa.** Con `--lan`, el tablero y el Inicio se abren desde el teléfono en una red de confianza. Si vinculás el teléfono con un QR desde el Inicio, también usa el chat: Claude Code sigue corriendo en tu equipo, con sus perfiles y tu cuenta.
 
 Más capturas:
 
@@ -80,6 +80,7 @@ Los pasos completos, con el paquete de npm y lo propio de Windows, están en [`d
 - **Desde la terminal:** `scompass list`, `scompass add "Título" --milestone m00`, `scompass move <id> doing`. Con `--json`, la salida es para programas.
 - **Claude Code:** registrá el servidor MCP una vez para todos los proyectos con `scompass mcp install` (corre `claude mcp add --scope user` con la ruta entera), e instalá el plugin, cuya skill manda al agente a la guía del tablero (`compass/AGENTS.md`): `/plugin marketplace add dannroda/scope-compass` y después `/plugin install scope-compass@scope-compass`. Sin el plugin, agregá al `AGENTS.md` o `CLAUDE.md` del proyecto: "El tablero de tareas se maneja con scompass; leé compass/AGENTS.md antes de tocarlo."
 - **Desde el teléfono:** `scompass home --tray --lan`, o "Activar acceso en la red" en la bandeja. No hay login: cualquiera en esa red puede ver y editar, así que solo en una red de confianza. Ver [SECURITY.md](SECURITY.md).
+- **Chat desde el teléfono:** en el Inicio de tu equipo, **Vincular teléfono** muestra un QR (sirve una vez y vence a los 5 minutos). Escanealo, poné un nombre y el tablero muestra el botón **Chat** en el teléfono. Para quitarlo, en el mismo diálogo o con `scompass devices rm <id>`. Anda en la red de casa; fuera de casa, más adelante, por Tailscale.
 
 ## Dónde viven los tableros
 
