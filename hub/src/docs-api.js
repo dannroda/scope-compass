@@ -4,6 +4,7 @@
 import { changeDocs, checkRefs, diffSections, findDoc, findSection, LINK, loadDocs, refText, searchDocs, sectionMarkdown } from './docs.js';
 import { docDiff, docLog, docsStatus } from './git.js';
 import { renderBBCode, renderBlocks, renderMarkdown } from './render.js';
+import { docChanges, docText, rememberVersion } from './doc-versions.js';
 import { StoreError } from './store/json-files.js';
 
 // Tareas que referencian cada sección, "<ruta>#<id>", o el documento entero, "<ruta>" → [{ id, code, title, status, milestone }].
@@ -62,7 +63,8 @@ export function registerDocsApi(app, { store, projectDir, validators, onDocsChan
   app.get('/api/docs/:alias', async (req) => {
     const [{ docs, links }, g] = await Promise.all([context(store, projectDir), docsStatus(projectDir)]);
     const d = getDoc(docs, req.params.alias);
-    return { alias: d.alias, path: d.path, ...gitOf(g, d), warnings: d.warnings, tasks: links.get(d.path) ?? [], sections: d.sections.map((s) => sectionInfo(d, s, links)),
+    const etag = d.missing ? null : await rememberVersion(docText(d));
+    return { alias: d.alias, path: d.path, etag, ...gitOf(g, d), warnings: d.warnings, tasks: links.get(d.path) ?? [], sections: d.sections.map((s) => sectionInfo(d, s, links)),
       html: renderMarkdown(d.lines.join('\n'), d.sections) };
   });
 
@@ -74,6 +76,19 @@ export function registerDocsApi(app, { store, projectDir, validators, onDocsChan
     const git = g.status[d.path] ?? 'clean';
     const diff = git === 'clean' ? '' : await docDiff(projectDir, d.path, { untracked: git === 'untracked', text: d.lines.join('\n') });
     return { alias: d.alias, path: d.path, repo: true, git, diff, sections: diffSections(d, diff) };
+  });
+
+  // Qué cambió desde un etag (§41): secciones cambiadas, nuevas y quitadas, contra la versión de la caché o de git.
+  app.get('/api/docs/:alias/changes', async (req) => {
+    const { docs } = await context(store, projectDir);
+    const d = getDoc(docs, req.params.alias);
+    if (d.missing) throw new StoreError('not_found', `no existe ${d.path}`);
+    const since = String(req.query.since ?? '');
+    if (!since) throw new StoreError('invalid_argument', 'falta since: el etag que se leyó');
+    const section = req.query.section ? String(req.query.section) : null;
+    const c = await docChanges(projectDir, d, since, section);
+    if (section && !findSection(d, section) && !c.sections?.removed.includes(section)) throw new StoreError('not_found', `no hay una sección "${section}" en ${d.path}`);
+    return c;
   });
 
   // Historial del documento, del commit más nuevo al más viejo (siguiendo renombres).
@@ -90,11 +105,12 @@ export function registerDocsApi(app, { store, projectDir, validators, onDocsChan
     if (!s) throw new StoreError('not_found', `no hay una sección "${req.params.id}" en ${d.path}`);
     const inside = d.sections.filter((x) => x.start >= s.start && x.start < s.end);
     const markdown = sectionMarkdown(d, s);
+    const etag = await rememberVersion(docText(d));
     // ?format=bbcode: para el RichTextLabel del dock de Godot (6.7).
-    if (req.query.format === 'bbcode') return { alias: d.alias, path: d.path, ...sectionInfo(d, s, links), bbcode: renderBBCode(markdown) };
+    if (req.query.format === 'bbcode') return { alias: d.alias, path: d.path, etag, ...sectionInfo(d, s, links), bbcode: renderBBCode(markdown) };
     // ?format=blocks: texto en BBCode y código crudo, para mostrarlo en un CodeEdit.
-    if (req.query.format === 'blocks') return { alias: d.alias, path: d.path, ...sectionInfo(d, s, links), blocks: renderBlocks(markdown) };
-    return { alias: d.alias, path: d.path, ...sectionInfo(d, s, links), markdown, html: renderMarkdown(markdown, inside) };
+    if (req.query.format === 'blocks') return { alias: d.alias, path: d.path, etag, ...sectionInfo(d, s, links), blocks: renderBlocks(markdown) };
+    return { alias: d.alias, path: d.path, etag, ...sectionInfo(d, s, links), markdown, html: renderMarkdown(markdown, inside) };
   });
 
   // Agregar o quitar un documento (12.2): reescribe config.json › docs. path: un archivo o un patrón con *.

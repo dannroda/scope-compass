@@ -202,6 +202,7 @@ scompass doc rm enemigos                     # deja de declararlo; el archivo no
 scompass doc search "salto doble"            # líneas con todas las palabras, con su sección
 scompass doc status                          # estado de git de cada documento y su último commit
 scompass doc diff gdd                        # cambios sin commitear y las secciones que tocan
+scompass doc changed gdd --since <etag>      # qué secciones cambiaron desde el etag que dio doc show (sale con 1 si cambió)
 ```
 
 ## Dónde vive el tablero

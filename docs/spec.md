@@ -836,6 +836,7 @@ scompass doc rm <alias>
 scompass doc search "<texto>" [--json]
 scompass doc status [--json]                # estado de git y último commit de cada documento
 scompass doc diff <alias> [--json]          # diff contra HEAD y "Secciones tocadas: …"
+scompass doc changed <alias>[#<id>] --since <etag> [--json]   # qué cambió desde una versión (§41)
 ```
 
 ### 20.1 Criterios de aceptación de M12
@@ -1529,8 +1530,8 @@ scompass doc changed <alias>[#sección] --since <etag> [--json]   # sale con 0 s
 
 ### Criterios de aceptación
 
-- [ ] `doc show --json`, la API y `show_doc` dan el etag del documento, igual a `git hash-object` del archivo.
-- [ ] `doc changed --since` dice qué secciones cambiaron, cuáles son nuevas y cuáles se quitaron, con el texto viejo de la caché o de git; sin él, `known: false`.
+- [x] `doc show --json`, la API y `show_doc` dan el etag del documento, igual a `git hash-object` del archivo.
+- [x] `doc changed --since` dice qué secciones cambiaron, cuáles son nuevas y cuáles se quitaron, con el texto viejo de la caché o de git; sin él, `known: false`.
 - [ ] `show_doc` con el mismo etag no repite el texto; con otro, lo da con las secciones cambiadas.
 - [ ] Un documento que el MCP mostró y después cambió genera un aviso, una sola vez, en el resultado de la herramienta siguiente.
 - [ ] AGENTS.md dice cuándo volver a leer un documento y cómo preguntar si cambió.

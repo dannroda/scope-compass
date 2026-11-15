@@ -8,6 +8,7 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import { exportMarkdown } from './export-md.js';
 import { changeDocs, checkRefs, diffSections, loadDocs, resolveRef, searchDocs, sectionMarkdown, stampIds, suggestRefs } from './docs.js';
+import { blobEtag, docChanges, docText, rememberVersion } from './doc-versions.js';
 import { writeAtomic } from './store/atomic.js';
 import { openUrl as openInBrowser } from './desktop.js';
 import { importArtifact } from './import-artifact.js';
@@ -158,6 +159,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   doc search "<texto>"                      líneas de los documentos con todas las palabras (sin tildes ni mayúsculas)
   doc status                                estado de git de cada documento y su último commit
   doc diff <alias>                          cambios sin commitear del documento (contra HEAD) y las secciones que toca
+  doc changed <alias>[#<id>] --since <etag> qué secciones cambiaron desde el etag que dio doc show (sale con 1 si cambió)
   refs check                                referencias rotas (sale con 1 si hay) y frágiles; también archivos que ya no están
   refs suggest                              propone refs a partir de citas "gdd.md §4.3" (no aplica nada)
   ref add|rm <tarea> <alias>[#<id>]         agrega o quita una referencia (sin #<id>, al documento entero)
@@ -194,7 +196,7 @@ const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
-  raw: { type: 'boolean' }, check: { type: 'boolean' }, template: { type: 'string' }, due: { type: 'string' }, repeat: { type: 'string' }, interval: { type: 'string' },
+  raw: { type: 'boolean' }, since: { type: 'string' }, check: { type: 'boolean' }, template: { type: 'string' }, due: { type: 'string' }, repeat: { type: 'string' }, interval: { type: 'string' },
   port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, lan: { type: 'boolean' }, force: { type: 'boolean' }, log: { type: 'string' },
   q: { type: 'string' }, blocked: { type: 'boolean' }, unblocked: { type: 'boolean' }, 'pending-steps': { type: 'boolean' }, 'with-refs': { type: 'boolean' },
   tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, size: { type: 'string' }, assignee: { type: 'string' },
@@ -841,7 +843,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const docs = await loadDocs(project, all.config);
       if (sub === 'list') {
         if (o.json) {
-          return done({ docs: docs.map((d) => ({ alias: d.alias, path: d.path, warnings: d.warnings,
+          return done({ docs: docs.map((d) => ({ alias: d.alias, path: d.path, ...(!d.missing && { etag: blobEtag(docText(d)) }), warnings: d.warnings,
             sections: d.sections.map(({ id, title, level, explicit }) => ({ id, title, level, explicit })) })) });
         }
         if (!docs.length) print('Sin documentos: agregalos con scompass doc add <alias> <ruta>.');
@@ -855,11 +857,13 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (sub === 'show') {
         const r = resolveRef(docs, need(target, '<alias>[#<id>]'));
         if (!r.doc) throw new StoreError('not_found', `no hay un documento "${r.key}" (doc list muestra los que hay)`);
+        // El etag del documento entero, también al mostrar una sección (§41): con él, doc changed --since dice qué cambió.
+        const etag = r.doc.missing ? null : await rememberVersion(docText(r.doc));
         if (r.whole) {
           const md = r.doc.lines.join('\n').replace(/\s+$/, '') + '\n';
           if (o.raw) { out.write(md); return 0; }
-          if (o.json) return done({ alias: r.doc.alias, path: r.doc.path, lines: [1, r.doc.lines.length], markdown: md });
-          print(`${r.doc.alias} · ${r.doc.path}, ${r.doc.lines.length} líneas`);
+          if (o.json) return done({ alias: r.doc.alias, path: r.doc.path, etag, lines: [1, r.doc.lines.length], markdown: md });
+          print(`${r.doc.alias} · ${r.doc.path}, ${r.doc.lines.length} líneas · etag ${etag}`);
           print('');
           out.write(md);
           return 0;
@@ -868,11 +872,30 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         const md = sectionMarkdown(r.doc, r.section);
         if (o.raw) { out.write(md); return 0; }
         const { id, title, level, explicit, start, end } = r.section;
-        if (o.json) return done({ alias: r.doc.alias, path: r.doc.path, id, title, level, explicit, lines: [start + 1, end], markdown: md });
-        print(`${r.doc.alias}#${id} · ${r.doc.path}, líneas ${start + 1}–${end}${explicit ? '' : ' · sin id (frágil)'}`);
+        if (o.json) return done({ alias: r.doc.alias, path: r.doc.path, etag, id, title, level, explicit, lines: [start + 1, end], markdown: md });
+        print(`${r.doc.alias}#${id} · ${r.doc.path}, líneas ${start + 1}–${end}${explicit ? '' : ' · sin id (frágil)'} · etag ${etag}`);
         print('');
         out.write(md);
         return 0;
+      }
+      // Qué cambió desde un etag (§41): sale con 1 si cambió, como diff, para usarlo en un if.
+      if (sub === 'changed') {
+        const r = resolveRef(docs, need(target, '<alias>[#<id>]'));
+        if (!r.doc || r.doc.missing) throw new StoreError('not_found', `no hay un documento "${r.key}" (doc list muestra los que hay)`);
+        const c = await docChanges(project, r.doc, need(o.since, '--since <etag> (el que dio doc show)'), r.id);
+        if (r.id && !r.section && !c.sections?.removed.includes(r.id)) throw new StoreError('not_found', `no hay una sección "${r.id}" en ${r.doc.path}`);
+        if (o.json) print(JSON.stringify(c));
+        else {
+          const what = r.id ? `${r.doc.alias}#${r.id}` : r.doc.alias;
+          if (!c.changed) print(`${what}: sin cambios desde ${c.since.slice(0, 12)}.`);
+          else if (!c.known) print(`${what} cambió desde ${c.since.slice(0, 12)}, pero esa versión no está en la caché ni en git: volvé a leerlo entero (etag actual ${c.etag}).`);
+          else {
+            print(`${what} cambió desde ${c.since.slice(0, 12)} (etag actual ${c.etag}).`);
+            for (const [label, ids] of [['Cambiaron', c.sections.changed], ['Nuevas', c.sections.added], ['Quitadas', c.sections.removed]]) if (ids.length) print(`${label}: ${ids.join(', ')}`);
+            if (!c.sections.changed.length && !c.sections.added.length && !c.sections.removed.length) print('Ninguna sección: cambió el texto antes del primer título.');
+          }
+        }
+        return c.changed ? 1 : 0;
       }
       // Estado de git de los documentos (12.3): solo lectura, la app nunca commitea (spec §4.5).
       const GIT_LABEL = { clean: 'sin cambios', modified: 'modificado', added: 'nuevo (agregado)', untracked: 'nuevo sin seguir', deleted: 'borrado', renamed: 'renombrado' };
