@@ -152,6 +152,12 @@ test('las escrituras pasan por la CLI: archivo canónico, export y etag', async 
   assert.deepEqual(links, await cli(['link', 'list', t.id, '--json']));
   await s.tool('remove_link', { id: t.id, other: 'm1-04' });
   assert.equal((await task('m1-04')).links, undefined);
+  // delete_task: el aviso de los vínculos rotos llega en el resultado.
+  await s.tool('add_link', { id: 'm1-04', type: 'blocks', other: t.id });
+  const del = await s.tool('delete_task', { id: t.id });
+  assert.equal(del.isError, undefined);
+  assert.match(del.content.map((c) => c.text).join('\n'), /vínculos rotos hacia .* en m1-04/);
+  await assert.rejects(task(t.id));
 });
 
 test('playtest: el resultado queda en la tarea', async () => {

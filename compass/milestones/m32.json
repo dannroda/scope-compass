@@ -1,0 +1,13 @@
+{
+  "code": "M32",
+  "done_when": [
+    "El repo es público sin secretos, rutas personales ni enlaces privados, también en el historial de git.",
+    "El README está en inglés y en castellano, con capturas, y hay CHANGELOG, CONTRIBUTING y SECURITY.",
+    "Un tag vX.Y.Z publica una release en GitHub con dos descargas separadas: el binario de scompass (Linux y Windows) y el zip del addon de Godot, con la misma versión.",
+    "El addon y scompass avisan cuando hay una versión nueva y cuando sus versiones no son compatibles, según lo acordado con godot-agent.",
+    "La landing en dann.com.ar enlaza la última release."
+  ],
+  "goal": "Hacer público el repo y publicar releases: pulir lo que ve alguien de afuera, sacar scompass como binario y el addon de Godot como descargas separadas, definir cómo se actualizan (coordinado con godot-agent) y tener una landing page.",
+  "order": 32,
+  "title": "Repo público y releases"
+}

@@ -5,11 +5,13 @@
   "decisions": [
     {
       "at": "2026-10-21T06:02:54.972Z",
+      "review": "ok",
       "text": "El claude falso guarda las sesiones en la carpeta del perfil, como el real, pero nunca fuera de la carpeta temporal",
       "why": "un test sin FAKE_CLAUDE_STATE no puede escribir en el ~/.claude de verdad"
     },
     {
       "at": "2026-10-21T06:02:55.349Z",
+      "review": "ok",
       "text": "Elegir un perfil al crear una conversación lo deja como el del proyecto; retomar una pregunta no lo cambia",
       "why": "la spec dice que el proyecto recuerda el último elegido"
     }
@@ -28,5 +30,5 @@
   "status": "review",
   "test": "hub/test/profiles.test.js (6: lista, entorno, cuenta guardada, perfil por conversación y del proyecto, pregunta en su perfil, API y 403)",
   "title": "Perfiles y cuenta en el hub",
-  "updated_at": "2026-10-21T06:02:56.172Z"
+  "updated_at": "2026-10-26T06:37:34.956Z"
 }

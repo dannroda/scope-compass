@@ -176,7 +176,7 @@ Godot 4.8 agrega la clase `EditorDock` con `EditorPlugin.add_dock()` / `remove_d
 
 - **Qué:** cada tarea puede tener `links: [{ type, task }]` con `type` `blocks` (esta tarea bloquea a `task`) o `related`. "Bloqueada por" no se guarda: la CLI, la web y el dock lo calculan recorriendo las demás tareas.
 - **Por qué:** guardar el vínculo en un solo lado evita que los dos archivos queden desincronizados tras una edición a mano o un merge de git. El tablero es chico: calcular el inverso es recorrer todas las tareas.
-- **Reglas:** entre dos tareas hay a lo sumo un vínculo (agregar otro lo reemplaza); una tarea no se vincula consigo misma; un `blocks` que cerraría un ciclo se rechaza (CLI y web). Una tarea está **bloqueada** si la bloquea alguna tarea sin terminar y ella misma no está hecha: se marca en la lista de la CLI, en la tarjeta de la web y en el dock.
+- **Reglas:** entre dos tareas hay a lo sumo un vínculo (agregar otro lo reemplaza); una tarea no se vincula consigo misma; un `blocks` que cerraría un ciclo se rechaza (CLI y web). Una tarea está **bloqueada** si la bloquea alguna tarea sin terminar (ni en Revisión ni Hecha) y ella misma no está hecha: se marca en la lista de la CLI, en la tarjeta de la web y en el dock.
 - **Límites:** la API valida la forma de `links` (JSON Schema), no que la otra tarea exista ni los ciclos; eso lo cuidan la CLI y la web. Un vínculo a una tarea borrada queda roto: se muestra como tal y `scompass link list` lo avisa y sale con 1. El dock los muestra y permite ir a la otra tarea, pero no los edita.
 - **Descartado:** guardar los dos sentidos en ambas tareas (dos escrituras por vínculo y posibles inconsistencias) y un archivo aparte de vínculos (otra colección que versionar y validar).
 
@@ -454,3 +454,16 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Guardar el perfil en la decisión: es una ruta de la máquina dentro de git.
   - Leer el uso de la cuenta con otra llamada: Claude Code no tiene un comando para eso; el `rate_limit_event` llega gratis con cada turno.
   - Iniciar sesión desde la web: `claude auth login` abre el navegador y es de la terminal.
+
+## D45 · scompass como binario: Node SEA que extrae el paquete a una caché
+**2026-11-12 · vigente** · spec §35
+
+- **Qué:** la release trae `scompass-v<versión>-<so>-<arq>`, un ejecutable de Node SEA (`node --build-sea`) que no necesita Node instalado. Adentro lleva el paquete de npm entero (src, web, schema, templates, assets y node_modules de producción) en un solo bloque comprimido. La primera vez que corre una versión lo extrae a `~/.cache/scope-compass/runtime/<versión>-<hash>/` (`%LOCALAPPDATA%` en Windows) y desde ahí lo carga. El `.tgz` de npm sigue saliendo.
+- **Por qué:** el usuario pidió que no haya que instalar Node u otras dependencias para usarlo. SEA es de Node mismo: no agrega un runtime nuevo ni dependencias para armarlo.
+- **Por qué extraer en lugar de empaquetar con un bundler:** el código sigue usando rutas de archivo de verdad (la web que sirve fastify, las plantillas que copia init, los íconos de la bandeja, el .ps1 de Windows) sin cambios, y no hace falta esbuild. El costo es unos 30 MB en la caché por versión y unos 0,3 s la primera vez.
+- **Por qué `require()` y no `import()`:** en el script principal de un SEA, `import()` solo resuelve módulos internos de Node. `require()` de un módulo ES anda si no tiene `await` en el nivel superior: por eso el cuerpo de `bin/scompass.js` pasó a `src/main.js`.
+- **Para relanzarse,** el binario se llama a sí mismo sin script (`src/self.js`).
+- **Descartado:**
+  - `bun build --compile`: un paso solo, pero cambia el runtime. Queda para revisar si el tamaño o el arranque molestan.
+  - Leer los archivos desde los assets del SEA sin extraerlos: obliga a cambiar cada lectura de archivo y fastify no sirve estáticos desde ahí.
+  - Borrar las versiones viejas de la caché: un Inicio que sigue corriendo con la versión anterior carga módulos de a poco y se rompería.

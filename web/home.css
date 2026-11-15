@@ -86,3 +86,39 @@ a.tag:hover { text-decoration: underline; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 160ms; }
 .proj .outdated { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .btn.small { min-height: 30px; padding: 2px 10px; font-size: 14px; }
+/* M31: Hoy y Esta semana sin subrayado permanente (31.5); el dorado, solo para lo vencido o de hoy. */
+.hoy-row .what a { color: inherit; text-decoration: none; }
+.hoy-row .what a:hover, .hoy-row .what a:focus-visible { text-decoration: underline; }
+.hoy-row.urgent .what, .hoy-row.urgent .what a { color: var(--accent); }
+.hoy-group.questions > summary { font-weight: 500; color: var(--muted); }
+.sem-day > h3 { margin: 0; padding: 8px 16px 4px; font-size: 14px; font-weight: 700; color: var(--muted); text-transform: capitalize; border-top: 1px solid var(--surface-2); }
+.sem-day:first-child > h3 { border-top: 0; }
+.sem-day .hoy-row { border-top: 0; min-height: 44px; }
+.areas { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.areas[hidden] { display: none; }
+/* Captura rápida (31.2). */
+.capture { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.capture[hidden] { display: none; }
+.capture input, .capture select { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 10px; min-height: 44px; min-width: 0; }
+.capture input[type="text"] { flex: 1 1 260px; font-size: 16px; }
+.capture select { flex: 0 1 220px; }
+.sec-head .add-btn { margin-left: auto; }
+section > .add { margin-bottom: 16px; }
+/* Teléfono (31.1): lo mío en la primera pantalla. Sin la fecha ni los subtítulos; Anotar en dos filas; las áreas
+   en una fila que se desplaza de costado; filas más bajas. */
+@media (max-width: 560px) {
+  .today-date, .sec-head .sub { display: none; }
+  .capture { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+  .capture input[type="text"] { grid-area: 1 / 1; }
+  .capture button { grid-area: 1 / 2; }
+  .capture select { grid-area: 2 / 1; min-height: 40px; }
+  .capture input[type="date"] { grid-area: 2 / 2; min-height: 40px; }
+  .sec-head { flex-wrap: nowrap; align-items: center; margin-bottom: 6px; }
+  .areas { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+  .areas .chip { flex: none; }
+  .hoy-row { padding: 6px 12px; gap: 4px 10px; min-height: 44px; }
+  .hoy-row .tag { font-size: 12px; padding: 1px 7px; }
+  .hoy-group > summary { padding: 6px 12px; min-height: 44px; }
+  .hoy-group .hoy-row { padding-left: 24px; }
+  .hoy-group.questions > summary .tag { display: none; }
+}

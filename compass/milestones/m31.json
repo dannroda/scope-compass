@@ -1,0 +1,13 @@
+{
+  "code": "M31",
+  "done_when": [
+    "En 1440×900 y en 390×844, Hoy muestra lo vencido, lo de hoy y lo en curso sin scrollear aunque haya 7 preguntas abiertas.",
+    "Desde el Inicio se anota un ítem en una lista con un campo y Enter, sin abrir el proyecto.",
+    "La franja Esta semana muestra lo que vence en los próximos 7 días, de todos los proyectos, por día.",
+    "Hoy y Esta semana se filtran por área (etiqueta) y el filtro se recuerda en el navegador.",
+    "Un ítem con repeat { every: day, interval: 2 } avanza dos días al tildarlo."
+  ],
+  "goal": "Que el Inicio sirva para organizar la vida (rutina, trabajo, hobbies, aprendizaje) y no solo como bandeja de trabajo con agentes: lo mío primero, anotar rápido, ver la semana, filtrar por área y rutinas cada N días.",
+  "order": 31,
+  "title": "Inicio para la vida"
+}

@@ -1,0 +1,61 @@
+{
+  "checklist": [
+    {
+      "done": true,
+      "text": "Schema: interval opcional, mínimo 1"
+    },
+    {
+      "done": true,
+      "text": "nextDue con intervalo"
+    },
+    {
+      "done": true,
+      "text": "CLI --interval, web y textos (cada 2 días)"
+    },
+    {
+      "done": true,
+      "text": "Decisión preguntada: días fijos de la semana"
+    }
+  ],
+  "code": "31.6",
+  "created_at": "2026-11-03T05:49:29.377Z",
+  "decisions": [
+    {
+      "alternatives": "escribir siempre interval",
+      "at": "2026-11-03T05:51:58.222Z",
+      "text": "interval 1 no se escribe: { every } queda igual que antes",
+      "why": "los archivos existentes no cambian y el diff de git no se ensucia; sin interval vale 1"
+    },
+    {
+      "alternatives": "opciones fijas en el selector (cada 2 días, cada 3 días)",
+      "at": "2026-11-03T05:51:58.617Z",
+      "text": "En la web, un campo numérico Cada cuántos al lado del selector de repetición",
+      "why": "sin él, editar un ítem con interval lo perdía"
+    },
+    {
+      "asked": true,
+      "at": "2026-11-03T05:51:58.877Z",
+      "session": "3f5dbba8-88af-4b79-af05-4af6c5a650f8",
+      "text": "¿Cómo modelo los días fijos de la semana (lun/mié/vie)? Propuesta: repeat { every: \"week\", days: [\"mon\",\"wed\",\"fri\"] } (days solo con every week; interval sigue valiendo: cada 2 semanas lun y vie). Tildar mueve due al próximo día de la lista después de la fecha límite (si es el último de la semana, al primero de la semana siguiente + interval-1 semanas). Alternativa: días como números 1-7 (ISO), o un every: \"weekdays\" aparte. ¿Va así?"
+    },
+    {
+      "alternatives": "--repeat 2d (formato compacto)",
+      "at": "2026-11-03T05:52:04.853Z",
+      "text": "CLI: --interval N junto a --repeat; en item set, --repeat solo cambia la unidad y conserva el intervalo",
+      "why": "cambiar de cada 2 días a cada 2 semanas es un solo flag; --repeat \"\" quita todo"
+    }
+  ],
+  "description": "Las rutinas reales son cada 2 o 3 días. repeat suma interval opcional (entero, mínimo 1; sin él vale 1), como ya reservaba §16.5, sin migrar los archivos. Tildar avanza due interval períodos desde la fecha límite. Los días fijos de la semana (lun/mié/vie) no van todavía: queda una decisión preguntada sobre cómo modelarlos.",
+  "milestone": "m31",
+  "notes": "dates.js: nextDue(due, every, interval) y repeatLabel; lists.js: repeatOf. Schema list: repeat.interval entero ≥1 (schema/, compass/schema/ con scompass update, y el fixture de tests). Guía de agentes (hub/templates/compass-AGENTS.md y copias) actualizada. Días fijos de la semana: pregunta abierta (decisión 3).",
+  "order": 6,
+  "refs": [],
+  "status": "review",
+  "tags": [
+    "cli",
+    "ui"
+  ],
+  "test": "scompass item add rutina \"Regar\" --due 2026-11-03 --repeat day --interval 2 y tildarlo: due pasa a 2026-11-05 y lists show dice \"cada 2 días\". Un archivo sin interval sigue validando y no cambia. En la web, editar el ítem conserva el intervalo. Tests: hub/test/repeat.test.js.",
+  "title": "repeat cada N: { every, interval }",
+  "updated_at": "2026-11-03T05:59:32.198Z"
+}

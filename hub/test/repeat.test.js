@@ -28,7 +28,7 @@ async function cli(...argv) {
   const code = await run(['--dir', dir, '--direct', ...argv], { now: () => NOW, out: { write: (s) => { out += s; } }, err: { write: (s) => { err += s; } } });
   return { code, out, err };
 }
-const items = async () => JSON.parse((await cli('lists', 'show', 'pendientes', '--json')).out).items;
+const items = async (l = 'pendientes') => JSON.parse((await cli('lists', 'show', l, '--json')).out).items;
 
 test('nextDue: desde la fecha límite, con fin de mes y años bisiestos', () => {
   for (const [due, every, next] of [
@@ -57,7 +57,41 @@ test('schema: repeat necesita due y un período conocido', () => {
   assert.ok(parseDoc(list({ text: 'x', done: false, due: '2026-10-10', repeat: { every: 'week' } }), 'list', V).ok);
   assert.equal(parseDoc(list({ text: 'x', done: false, repeat: { every: 'week' } }), 'list', V).ok, false, 'sin due');
   assert.equal(parseDoc(list({ text: 'x', done: false, due: '2026-10-10', repeat: { every: 'hour' } }), 'list', V).ok, false);
-  assert.equal(parseDoc(list({ text: 'x', done: false, due: '2026-10-10', repeat: { every: 'day', interval: 3 } }), 'list', V).ok, false, 'interval todavía no');
+  assert.ok(parseDoc(list({ text: 'x', done: false, due: '2026-10-10', repeat: { every: 'day', interval: 3 } }), 'list', V).ok, 'interval (31.6)');
+  for (const interval of [0, 1.5, '2']) assert.equal(parseDoc(list({ text: 'x', done: false, due: '2026-10-10', repeat: { every: 'day', interval } }), 'list', V).ok, false, `interval ${interval}`);
+});
+
+test('interval (31.6): avanza N períodos; sin él, uno', () => {
+  for (const [due, every, n, next] of [
+    ['2026-11-03', 'day', 2, '2026-11-05'],
+    ['2026-12-30', 'day', 3, '2027-01-02'],
+    ['2026-10-10T08:00', 'week', 2, '2026-10-24T08:00'],
+    ['2026-11-30', 'month', 3, '2027-02-28'],
+    ['2026-01-31', 'month', 12, '2027-01-31'],
+    ['2028-02-29', 'year', 4, '2032-02-29']
+  ]) assert.equal(nextDue(due, every, n), next, `${due} ${every} ×${n}`);
+  assert.throws(() => nextDue('2026-10-10', 'day', 0));
+  const it = { text: 'Regar', done: false, due: '2026-11-03', repeat: { every: 'day', interval: 2 } };
+  assert.equal(checkItem(it).item.due, '2026-11-05');
+});
+
+test('CLI: --interval al agregar y al cambiar; 1 no se escribe', async () => {
+  await cli('lists', 'add', 'Rutina');
+  assert.equal((await cli('item', 'add', 'rutina', 'Regar', '--due', '2026-11-03', '--repeat', 'day', '--interval', '2')).code, 0);
+  assert.deepEqual((await items('rutina'))[0].repeat, { every: 'day', interval: 2 });
+  assert.match((await cli('lists', 'show', 'rutina')).out, /↻ cada 2 días/);
+  await cli('item', 'check', 'rutina', '1');
+  assert.equal((await items('rutina'))[0].due, '2026-11-05');
+  assert.equal((await cli('item', 'set', 'rutina', '1', '--repeat', 'week')).code, 0);
+  assert.deepEqual((await items('rutina'))[0].repeat, { every: 'week', interval: 2 }, '--repeat solo cambia la unidad');
+  assert.equal((await cli('item', 'set', 'rutina', '1', '--interval', '1')).code, 0);
+  assert.deepEqual((await items('rutina'))[0].repeat, { every: 'week' });
+  let r = await cli('item', 'add', 'rutina', 'X', '--due', '2026-11-03', '--interval', '2');
+  assert.match(r.err, /--interval va con --repeat/);
+  r = await cli('item', 'add', 'rutina', 'X', '--due', '2026-11-03', '--repeat', 'day', '--interval', '0');
+  assert.match(r.err, /intervalo inválido/);
+  assert.equal((await cli('item', 'set', 'rutina', '1', '--repeat', '')).code, 0, 'quitar la repetición');
+  assert.equal((await items('rutina'))[0].repeat, undefined);
 });
 
 test('CLI: ítem mensual 2026-01-31 pasa a 2026-02-28 al tildarlo y sigue sin tildar', async () => {
@@ -98,4 +132,5 @@ test('CLI: --repeat necesita --due; set lo cambia o lo quita', async () => {
 test('export: la repetición se lee en el markdown', () => {
   const md = renderMarkdown({ milestones: [], tasks: [], lists: [['p', { title: 'Pendientes', order: 1, items: [{ text: 'Pagar la luz', done: false, due: '2026-10-10', repeat: { every: 'month' } }] }]] }, { title: 'P', date: '2026-01-01' });
   assert.match(md, /- \[ \] Pagar la luz · vence 2026-10-10 · se repite cada mes\n/);
+  assert.match(renderMarkdown({ milestones: [], tasks: [], lists: [['p', { title: 'P', order: 1, items: [{ text: 'Regar', done: false, due: '2026-10-10', repeat: { every: 'day', interval: 2 } }] }]] }, { title: 'P', date: '2026-01-01' }), /se repite cada 2 días/);
 });

@@ -1,0 +1,34 @@
+{
+  "checklist": [
+    {
+      "done": true,
+      "text": "Enlaces de Hoy sin subrayado, subrayado en hover/foco"
+    },
+    {
+      "done": true,
+      "text": "Dorado solo para vencido o de hoy"
+    }
+  ],
+  "code": "31.5",
+  "created_at": "2026-11-03T05:49:28.346Z",
+  "decisions": [
+    {
+      "alternatives": "dorado solo en los enlaces",
+      "at": "2026-11-03T05:59:02.400Z",
+      "text": "Lo vencido o de hoy va con el título en dorado (ítems y tareas); el resto, en el color del texto",
+      "why": "así lo urgente se distingue de un vistazo, también en los ítems, que no son enlaces"
+    }
+  ],
+  "description": "Todos los enlaces de Hoy van subrayados en dorado y no se distingue lo urgente de lo normal. Sin subrayado permanente (solo en hover y foco); el dorado (acento) solo para lo vencido o de hoy. Respetar tema claro y oscuro, los bordes de fantasía (19.16) y la tipografía.",
+  "milestone": "m31",
+  "notes": "web/home.css: .hoy-row .what a sin subrayado (hover/focus-visible lo subrayan); .hoy-row.urgent en --accent. .capture en las reglas de bordes de fantasía de app.css. Revisado a ojo en claro, oscuro y fantasía (capturas a 1440×900 y 390×844).",
+  "order": 5,
+  "refs": [],
+  "status": "review",
+  "tags": [
+    "ui"
+  ],
+  "test": "En el Inicio, en claro y oscuro y con bordes de fantasía: los títulos de Hoy no están subrayados hasta pasar el mouse o enfocarlos; solo las filas vencidas o de hoy van en dorado.",
+  "title": "Estilo de Hoy: sin subrayado, dorado solo para lo urgente",
+  "updated_at": "2026-11-03T05:59:31.895Z"
+}

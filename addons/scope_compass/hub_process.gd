@@ -47,6 +47,9 @@ func command(configured: String) -> Array:
 		if OS.execute("where", ["scompass"], out) == 0:
 			for line in str(out[0]).split("\n"):
 				var shim := line.strip_edges().replace("\\", "/")
+				# El binario de la release (scompass.exe) se lanza directo, sin Node.
+				if shim.get_extension().to_lower() == "exe" and FileAccess.file_exists(shim):
+					return [shim, []]
 				var js := shim.get_base_dir().path_join("node_modules/scope-compass/bin/scompass.js")
 				if shim != "" and FileAccess.file_exists(js):
 					return ["node", [js]]

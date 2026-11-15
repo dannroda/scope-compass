@@ -3,12 +3,13 @@
   "code": "21.2",
   "created_at": "2026-10-16T04:38:50.602Z",
   "description": "dock.test.js salteaba los 39 tests cuando 'godot --version' fallaba, como si no hubiera Godot: el wrapper de godot-manager corría la versión de .godot-version (4.8-dev6), que ya no estaba instalada. Usar GODOT si está, saltear solo si no hay binario y, si lo hay pero no arranca, fallar con el motivo.",
+  "done_at": "2026-10-26T06:36:24.081Z",
   "milestone": "m21",
   "notes": "La causa no era el PATH: .godot-version pedía 4.8-dev6, desinstalada; pasa a 4.8-beta1. Con beta1, godot --import se colgaba (Message queue out of memory, millones de 'Object was deleted while awaiting a callback') por .godot/editor/editor_layout.cfg guardado por una versión anterior; no es el addon (pasa con el plugin vacío o desactivado). Es estado local: se movió y Godot lo vuelve a crear. El test sugiere eso si ve ese error. 39/39 con 4.8-beta1.",
-  "order": 2,
+  "order": 0,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "GODOT=/nope saltea con el motivo; GODOT=/bin/false falla con '--version falló'; con 4.8-beta1, 39/39.",
   "title": "Tests del dock sin saltearse en silencio",
-  "updated_at": "2026-10-16T04:56:17.333Z"
+  "updated_at": "2026-10-26T06:36:24.081Z"
 }

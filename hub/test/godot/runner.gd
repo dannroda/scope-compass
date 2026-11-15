@@ -397,7 +397,7 @@ func test_read_docs(a: Array) -> void:
 	_check("read_docs", JSON.stringify(got) == a[1], "documentos %s, esperado %s" % [JSON.stringify(got), a[1]])
 
 
-# Vínculos: la tarea bloqueada lo muestra en la lista y en el detalle; el vínculo lleva a la otra tarea.
+# Vínculos: la tarea bloqueada por una en Revisión lo muestra en la lista y en el detalle; el vínculo lleva a la otra tarea.
 func test_links(a: Array) -> void:
 	var c := "links"
 	var v := await _view(a[0])
@@ -406,7 +406,8 @@ func test_links(a: Array) -> void:
 	var link: Button = v.detail.links_box.get_child(1)
 	if not _check(c, link.text.begins_with("Bloqueada por: ") and link.text.ends_with(" · Revisión"), "texto: " + link.text): return
 	var item: TreeItem = v.tree.get_selected()
-	if not _check(c, item != null and item.get_tooltip_text(0).contains("Bloqueada por: "), "la lista no marca la tarea bloqueada"): return
+	# La que bloquea está en Revisión: ya no bloquea, pero la lista avisa que quedó desbloqueada.
+	if not _check(c, item != null and item.get_tooltip_text(0).contains("Desbloqueada, en Revisión: ") and not item.get_tooltip_text(0).contains("Bloqueada por: "), "la lista no marca la tarea desbloqueada en revisión"): return
 	link.pressed.emit()
 	await process_frame
 	if not _check(c, v.selected_task == a[2], "no fue a la otra tarea: " + v.selected_task): return

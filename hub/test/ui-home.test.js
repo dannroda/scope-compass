@@ -105,13 +105,15 @@ test('Hoy: lo que solo está en curso va en un grupo plegable por proyecto, y el
   assert.equal((await groups()).find((g) => g[0] === 'Scope Compass')[2], true);
 });
 
-test('decisiones (§31): las preguntas abiertas van arriba en Hoy y llevan a la tarea; la tarjeta cuenta las que esperan', async () => {
+test('decisiones (§31, 31.1): las preguntas abiertas van plegadas en Esperan tu respuesta y llevan a la tarea; la tarjeta cuenta las que esperan', async () => {
   const sv = createJsonFilesStore(join(vida, 'compass'), { validators: V });
   await sv.patch('tasks', 'm1-04', { decisions: [{ text: '¿Lo hago en JSON?', asked: true }, { text: 'Usé X' }, { text: 'Usé Y' }] });
   const page = await open();
-  await page.waitForSelector('#hoy > .hoy-row.question');
-  assert.match(await page.textContent('#hoy > .hoy-row:first-child'), /¿Lo hago en JSON\?.*pregunta · 1\.4/);
-  assert.match(await page.getAttribute('#hoy > .hoy-row.question a', 'href'), /#task\/m1-04$/);
+  await page.waitForSelector('#hoy > details.questions');
+  assert.match(await page.textContent('#hoy > details.questions > summary'), /Esperan tu respuesta \(1\)/);
+  assert.equal(await page.getAttribute('#hoy > details.questions', 'open'), null, 'plegada');
+  assert.match(await page.textContent('#hoy .hoy-row.question'), /¿Lo hago en JSON\?.*pregunta · 1\.4/);
+  assert.match(await page.getAttribute('#hoy .hoy-row.question a', 'href'), /#task\/m1-04$/);
   const tag = page.locator('.proj .decs a');
   assert.equal(await tag.textContent(), 'Decisiones: 1 pregunta abierta · 2 sin revisar');
   assert.match(await tag.getAttribute('href'), /#decisions$/);

@@ -26,6 +26,7 @@
     }
   ],
   "description": "Sección §31 en la spec con los criterios de aceptación de M24 y D42 en decisiones.md. Las decisiones viven en la tarea (campo decisions), no en una colección aparte: nacen de una tarea y viajan con ella en git, el export y history. Definir el modelo ({ text, why?, alternatives?, by: agent|user, asked, review: pending|ok|revert, answer?, at }), qué cuenta como decisión (elegir entre alternativas que el usuario podría querer distinto) y cómo se representa una pregunta abierta (asked sin respuesta). Relación con decisiones.md: D-n son las de diseño, escritas a mano; las de la tarea son las chicas. Promover a D-n choca con D33 (la app no escribe documentos): decidirlo acá.",
+  "done_at": "2026-10-26T06:36:34.785Z",
   "links": [
     {
       "task": "m24-02",
@@ -40,8 +41,8 @@
   "notes": "Cambios respecto de la propuesta: sin campo by (asked alcanza: una decisión del usuario es una pregunta respondida); review sin valor pending (sin review = sin revisar, como playtest sin result) y con reverted para cerrar las revertidas; reply sirve para la respuesta a una pregunta y para decir qué hacer al revertir. D42 cambia D33: la app puede escribir documentos (primero solo Promover; editar desde la web, después). Que el agente se entere de que un documento cambió quedó en \"Fuera de M24\".",
   "order": 1,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "Leer §31 de la spec y D42 en decisiones.md: el modelo, los estados calculados, la CLI, el MCP, Promover y lo que queda fuera de M24 alcanzan para hacer 24.2 a 24.10 sin volver a decidir nada.",
   "title": "Spec y decisión de las decisiones",
-  "updated_at": "2026-10-21T05:03:57.786Z"
+  "updated_at": "2026-10-26T06:36:34.785Z"
 }

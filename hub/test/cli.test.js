@@ -190,6 +190,22 @@ test('link: bloquea, bloqueada por y relacionada; sin ciclos; el inverso se calc
   assert.equal((await cli(['link', 'list'])).code, 0);
 });
 
+test('rm borra la tarea y avisa los vínculos que quedan rotos', async () => {
+  const { existsSync } = await import('node:fs');
+  assert.equal((await cli(['link', 'add', 'm1-03', 'blocks', 'm1-04'])).code, 0);
+  assert.equal((await cli(['link', 'add', 'm1-05', 'related', 'm1-04'])).code, 0);
+  const r = await cli(['rm', 'm1-04']);
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /Borrada m1-04/);
+  assert.match(r.err, /vínculos rotos hacia m1-04 en m1-03, m1-05/);
+  assert.ok(!existsSync(join(dir, 'compass', 'tasks', 'm1-04.json')));
+  assert.equal((await cli(['link', 'list'])).code, 1, 'los vínculos quedan rotos');
+  const quiet = await cli(['rm', 'm1-06']);
+  assert.equal(quiet.code, 0, quiet.err);
+  assert.equal(quiet.err, '', 'sin vínculos, sin aviso');
+  assert.equal((await cli(['rm', 'm1-04'])).code, 1, 'ya no existe');
+});
+
 test('--etag none: set crea solo si no existe', async () => {
   await writeFile(join(dir, 't.json'), JSON.stringify({ milestone: 'm02', title: 'Nueva', status: 'todo' }));
   assert.equal((await cli(['set', 'm2-99', '--file', 't.json', '--etag', 'none'])).code, 0);

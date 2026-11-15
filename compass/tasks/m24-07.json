@@ -12,12 +12,13 @@
     }
   ],
   "description": "Línea de tiempo de todas las decisiones del proyecto con su tarea e hito, filtros por hito, quién, consultada o no y revisión. Por defecto: tomadas sin consultar y sin revisar, como bandeja. OK y Revertir desde la lista; un clic lleva a la tarea.",
+  "done_at": "2026-10-26T06:36:41.516Z",
   "milestone": "m24",
   "notes": "Pestaña nueva `decisions` en config.views (schema, VIEWS del hub, web, README/AGENTS), después de Playtest; sin views se ve. La pestaña lleva un globito con cuántas esperan. Agrupada por día, la más nueva arriba; el filtro y el hito se recuerdan en el navegador (pref). decisionItem sirve al detalle y a la vista (where), así las acciones son las mismas. Con seis pestañas, en el teléfono la fila de pestañas se desplaza de costado.",
-  "order": 7,
+  "order": 1.03125,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "cd hub && node --test test/ui-decisions.test.js: la pestaña Decisiones cuenta las que esperan; filtros Esperan/Preguntas abiertas/Sin revisar/A revertir/Todas; responder desde la vista; filtro por hito; un clic en la tarea la abre encima. En el teléfono las pestañas se desplazan de costado sin scroll de página.",
   "title": "Web: vista Decisiones del proyecto",
-  "updated_at": "2026-10-21T05:03:44.030Z"
+  "updated_at": "2026-10-26T06:36:41.516Z"
 }

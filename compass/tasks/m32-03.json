@@ -1,0 +1,16 @@
+{
+  "checklist": [],
+  "code": "",
+  "created_at": "2026-11-12T14:44:02.046Z",
+  "description": "Al pushear un tag vX.Y.Z, un workflow corre los tests en Linux y Windows, arma el binario de cada plataforma y el zip de addons/scope_compass, verifica que hub/package.json, plugin.cfg y el tag tengan la misma versión, y publica la release con notas sacadas del CHANGELOG y checksums. Los nombres de los archivos siguen la convención que acordemos con godot-agent (que publica godot-agent-harness-vX.Y.Z.zip). Se basa en tools/build.mjs.",
+  "milestone": "m32",
+  "notes": "Convención de godot-agent para copiar (agent-harness-81, 2026-11-12):\n- El workflow release.yml se lanza a mano con bump patch, minor, major o X.Y.Z. Corre el CI, sube la versión en plugin.cfg (acá también en hub/package.json) y commitea «Release vX.Y.Z» con el tag.\n- CHANGELOG.md en inglés, formato Keep a Changelog. La sección Unreleased pasa a la versión nueva; si está vacía, el release falla. Las notas son esa sección más una línea de instalación.\n- `gh release create vX.Y.Z <assets> --title vX.Y.Z --notes-file notes.md`, con --prerelease opcional.\n- Assets:\n  - scope-compass-addon-vX.Y.Z.zip, con addons/scope_compass/ desde la raíz, solo lo versionado, más README, CHANGELOG y LICENSE;\n  - scompass-vX.Y.Z-linux-x64 y scompass-vX.Y.Z-windows-x64.exe;\n  - SHA256SUMS.",
+  "order": 3,
+  "priority": "high",
+  "refs": [],
+  "size": "m",
+  "status": "todo",
+  "test": "",
+  "title": "Releases en GitHub Actions: binario y addon como descargas separadas",
+  "updated_at": "2026-11-12T14:44:55.150Z"
+}

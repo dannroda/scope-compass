@@ -5,16 +5,19 @@
   "decisions": [
     {
       "at": "2026-10-21T06:08:54.899Z",
+      "review": "ok",
       "text": "Los perfiles (y su claude auth status) se piden recién al abrir el panel",
       "why": "pedirlos lanza un claude por perfil; con el panel cerrado no hace falta"
     },
     {
       "at": "2026-10-21T06:08:55.937Z",
+      "review": "ok",
       "text": "Una ventana de límites al 90 % o más se pinta en rojo",
       "why": "aviso visual simple; avisar antes de llegar quedó fuera de M28"
     },
     {
       "at": "2026-10-21T06:08:56.288Z",
+      "review": "ok",
       "text": "Los tests de la UI del chat usan un HOME propio",
       "why": "si no, mostrarían los perfiles reales de la máquina"
     }
@@ -27,5 +30,5 @@
   "status": "review",
   "test": "hub/test/ui-chat.test.js (7): el selector de perfil en una nueva, la cuenta de cada uno, las barras (con una al 93 % en rojo), los tokens plegados y el total; la nueva recuerda el perfil del proyecto. Capturas en claro y oscuro.",
   "title": "Web: cuenta, perfil y uso en el panel",
-  "updated_at": "2026-10-21T06:08:57.882Z"
+  "updated_at": "2026-10-26T06:37:34.361Z"
 }

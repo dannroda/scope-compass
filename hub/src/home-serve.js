@@ -70,11 +70,12 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
   app.all('/p/:key/*', { bodyLimit: 16 << 20 }, async (req, reply) => {
     const p = find(req.params.key);
     if (!p) return missing(reply, req.params.key);
-    const q = req.url.indexOf('?');
-    const url = '/' + req.params['*'] + (q >= 0 ? req.url.slice(q) : '');
+    // La ruta cruda, sin decodificar: params['*'] vuelve "docs%2Fspec%2Fia" en "docs/spec/ia" y el hub no la encuentra.
+    const url = req.url.slice(req.url.indexOf('/', 3));
     // El chat solo desde este equipo (§32): el hub del proyecto ve al Inicio como 127.0.0.1, así que se mira acá.
     const local = isLoopback(req.socket.remoteAddress);
-    if (!local && /^\/api\/chats(\/|\?|$)/.test(url)) {
+    // Sobre la ruta decodificada, para que "/api/%63hats" no se saltee el chequeo.
+    if (!local && /^api\/chats(\/|$)/.test(req.params['*'])) {
       return reply.code(403).send({ error: { code: 'forbidden', message: 'el chat solo anda en este equipo (127.0.0.1)' } });
     }
     const headers = Object.fromEntries(IN.filter((h) => req.headers[h] !== undefined).map((h) => [h, req.headers[h]]));

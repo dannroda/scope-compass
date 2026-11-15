@@ -3,12 +3,13 @@
   "code": "24.5",
   "created_at": "2026-10-21T03:52:54.460Z",
   "description": "Regla en el template, el addon y compass/: cada vez que el agente elige entre alternativas sin preguntar, lo registra con add_decision (asked false); si pregunta, también, con asked true y la respuesta. Qué no hace falta registrar (detalles sin alternativa razonable). Las instrucciones del servidor MCP lo repiten. Sin esto el resto del hito queda vacío.",
+  "done_at": "2026-10-26T06:36:40.001Z",
   "milestone": "m24",
   "notes": "Los comandos de decisiones se movieron de Leer/Escribir a la sección propia, después de Vínculos. La sección MCP mapea decide → add_decision y decision ok → review_decision. Las instrucciones del servidor MCP (lo que Claude Code ve siempre) llevan la regla en un renglón.",
-  "order": 5,
+  "order": 1.125,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "Leer la sección \"Decisiones\" de compass/AGENTS.md (igual en hub/templates y el addon) y las instrucciones de scompass mcp: dicen qué registrar, qué no, que las preguntas también, y que antes de seguir una tarea se miran las que hay que revertir.",
   "title": "AGENTS.md: registrar las decisiones",
-  "updated_at": "2026-10-21T04:10:01.768Z"
+  "updated_at": "2026-10-26T06:36:40.001Z"
 }

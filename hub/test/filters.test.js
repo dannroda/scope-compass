@@ -60,6 +60,8 @@ test('fecha: vencidas, hoy, semana (con las vencidas) y sin fecha; las hechas no
 test('bloqueo (por una tarea sin terminar), pasos pendientes y referencias', () => {
   assert.deepEqual(ids({ blocked: true }), ['c'], 'e la bloquea una tarea hecha: no cuenta');
   assert.deepEqual(ids({ blocked: false }), ['a', 'b', 'd', 'e']);
+  const inReview = T.map((t) => (t.id === 'b' ? { ...t, status: 'review' } : t));
+  assert.deepEqual(filterTasks(inReview, { blocked: true }, { now }).map((t) => t.id), [], 'una tarea en Revisión ya no bloquea');
   assert.deepEqual(ids({ pendingSteps: true }), ['a']);
   assert.deepEqual(ids({ withRefs: true }), ['b']);
   assert.deepEqual(ids({ status: ['todo'], blocked: false, priority: ['high'], q: 'nivel' }), ['a'], 'se combinan');
@@ -133,6 +135,10 @@ for (const where of ['sin-hub', 'con-hub']) {
     assert.deepEqual(await list('--pending-steps'), ['m1-04']);
     assert.deepEqual(await list('--q', 'store json'), ['m1-03']);
     assert.ok((await list('--unblocked', '--milestone', 'm01')).includes('m1-03'));
+    await cli(p, ['move', 'm1-03', 'review']);
+    assert.deepEqual(await list('--blocked'), [], 'una tarea en Revisión ya no bloquea');
+    assert.match((await cli(p, ['list', '--milestone', 'm01'])).out, /m1-04 .*\[desbloqueada, en revisión: m1-03\]/);
+    await cli(p, ['move', 'm1-03', 'doing']);
     const text = await cli(p, ['list', '--tag', 'store']);
     assert.match(text.out, /m1-03 .* · prioridad alta {2}· @Claude {2}· #store/);
     for (const bad of [['--due', 'mañana'], ['--priority', 'urgente'], ['--status', 'doing,wip'], ['--blocked', '--unblocked']]) {

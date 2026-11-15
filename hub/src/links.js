@@ -19,9 +19,14 @@ export function linkView(tasks, id) {
   return out;
 }
 
-/** Tareas sin terminar que bloquean a esta. */
+/** Tareas sin terminar que bloquean a esta: una en Revisión o Hecha ya no bloquea. */
 export function openBlockers(tasks, id) {
-  return linkView(tasks, id).blockedBy.filter((b) => { const t = tasks.find((x) => x.id === b); return t && t.status !== 'done'; });
+  return linkView(tasks, id).blockedBy.filter((b) => { const t = tasks.find((x) => x.id === b); return t && t.status !== 'done' && t.status !== 'review'; });
+}
+
+/** Tareas en Revisión que bloqueaban a esta: ya no la bloquean, pero se avisa (desbloqueada en revisión). */
+export function reviewBlockers(tasks, id) {
+  return linkView(tasks, id).blockedBy.filter((b) => tasks.find((x) => x.id === b)?.status === 'review');
 }
 
 /** ¿`from` bloquea a `to` cerraría un ciclo? (si desde `to` ya se llega a `from` por "blocks"). */

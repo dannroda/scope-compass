@@ -217,6 +217,7 @@ nav.views a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--
 /* Cuántas decisiones esperan, en la pestaña. */
 #tab-decisions[data-count]:not([data-count=""])::after { content: attr(data-count); margin-left: 6px; font-size: 12px; font-weight: 700; color: var(--on-accent); background: var(--s-review); border-radius: 999px; padding: 0 6px; }
 .card .blockmark, .tasks .blockmark { font-size: 11px; font-weight: 700; color: var(--danger); align-self: flex-start; border: 1px solid var(--danger); border-radius: 4px; padding: 0 5px; }
+.card .blockmark.review, .tasks .blockmark.review { color: var(--s-review); border-color: var(--s-review); }
 .link-row { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 4px 6px 4px 10px; flex-wrap: wrap; }
 .link-row.broken, .link-row.blocking { border-color: var(--danger); }
 .link-row.broken .link-task { color: var(--danger); }
@@ -695,9 +696,9 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
 .fantasy :is(.toc, .doc-tree) { padding: 20px 16px; }
 .fantasy .doc-body pre { padding: 18px 22px; }
 /* Ranura: campos, selectores y los grupos de botones de a uno. Los de id van aparte: subirían todo el grupo. */
-.fantasy :is(.seg, .mode-switch, .newtask input[type="text"], .newtask select, .detail select, .detail textarea, .addcl input, .step-edit input, .step-edit textarea, .add input[type="text"], .doc-add input, .item-add input, .item-add select, .ref-search input, .docs-bar select, .list-new input, .sec-bar select) { border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/slot.png) 16 fill / 16px stretch; padding-inline: 14px; }
+.fantasy :is(.seg, .mode-switch, .newtask input[type="text"], .newtask select, .detail select, .detail textarea, .addcl input, .step-edit input, .step-edit textarea, .add input[type="text"], .capture input, .capture select, .doc-add input, .item-add input, .item-add select, .ref-search input, .docs-bar select, .list-new input, .sec-bar select) { border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/slot.png) 16 fill / 16px stretch; padding-inline: 14px; }
 .fantasy :is(#doc-q, #f-q, #file-q, #project-switch) { border-width: 2px; border-style: solid; border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; image-rendering: pixelated; border-image: url(frames/slot.png) 16 fill / 16px stretch; padding-inline: 14px; }
-.fantasy :is(.newtask input[type="text"], .newtask select, .detail select, .detail textarea, .addcl input, .step-edit input, .step-edit textarea, .add input[type="text"], .doc-add input, .item-add input, .item-add select, .ref-search input, .docs-bar select, .list-new input, .sec-bar select):focus, .fantasy :is(#doc-q, #f-q, #file-q, #project-switch):focus { border-image: url(frames/slot_focus.png) 16 fill / 16px stretch; outline: none; }
+.fantasy :is(.newtask input[type="text"], .newtask select, .detail select, .detail textarea, .addcl input, .step-edit input, .step-edit textarea, .add input[type="text"], .capture input, .capture select, .doc-add input, .item-add input, .item-add select, .ref-search input, .docs-bar select, .list-new input, .sec-bar select):focus, .fantasy :is(#doc-q, #f-q, #file-q, #project-switch):focus { border-image: url(frames/slot_focus.png) 16 fill / 16px stretch; outline: none; }
 .fantasy :is(.seg, .mode-switch) { padding: 6px; }
 .fantasy :is(.seg, .mode-switch) button { border-width: 2px; border-style: solid; border-color: transparent; }
 .fantasy .detail input.title:hover, .fantasy .detail input.title:focus { background: var(--surface-2); }

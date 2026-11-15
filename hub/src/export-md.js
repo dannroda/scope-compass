@@ -6,7 +6,7 @@ import { projectRel, realInside } from './paths.js';
 import { StoreError } from './store/json-files.js';
 import { writeAtomic } from './store/atomic.js';
 import { linkView } from './links.js';
-import { EVERY, localDay, milestoneDueState } from './dates.js';
+import { localDay, repeatLabel, milestoneDueState } from './dates.js';
 import { PRIORITY_LABEL } from './filters.js';
 import { decisionState, MARK } from './decisions.js';
 
@@ -84,7 +84,7 @@ export function renderMarkdown({ milestones, tasks, lists = [], playtests = [] }
   for (const [, l] of ls) {
     const items = l.items ?? [];
     L.push(`### ${line(l.title)}` + (items.length ? `  (${items.filter((x) => x.done).length}/${items.length})` : ''), '');
-    L.push(...items.map((x) => `- [${x.done ? 'x' : ' '}] ${line(x.text)}` + (x.due ? ` · vence ${x.due.replace('T', ' ')}` : '') + (x.repeat ? ` · se repite ${EVERY[x.repeat.every]}` : '') + (x.task ? ` · → tarea ${ts.find((t) => t.id === x.task)?.code || x.task}` : '')));
+    L.push(...items.map((x) => `- [${x.done ? 'x' : ' '}] ${line(x.text)}` + (x.due ? ` · vence ${x.due.replace('T', ' ')}` : '') + (x.repeat ? ` · se repite ${repeatLabel(x.repeat)}` : '') + (x.task ? ` · → tarea ${ts.find((t) => t.id === x.task)?.code || x.task}` : '')));
     if (items.length) L.push('');
   }
   // Sesiones de playtest (D39), al final: las tareas en el orden de prueba, con su estado y cómo salieron (eso vive

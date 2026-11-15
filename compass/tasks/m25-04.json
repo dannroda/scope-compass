@@ -6,22 +6,26 @@
     {
       "alternatives": "marcar started al mandar el primer mensaje (falla si claude muere antes de crear la sesión)",
       "at": "2026-10-21T05:27:03.873Z",
+      "review": "ok",
       "text": "Si no se sabe si la sesión existe, ChatProcess prueba una vez con la otra opción (--resume o --session-id) según el error de claude",
       "why": "cerrar el hub a mitad del primer turno dejaba la conversación sin poder retomarse"
     },
     {
       "alternatives": "424 o 500",
       "at": "2026-10-21T05:27:04.186Z",
+      "review": "ok",
       "text": "claude_missing responde 503",
       "why": "es el servicio que falta, no un error del pedido"
     },
     {
       "at": "2026-10-21T05:27:04.530Z",
+      "review": "ok",
       "text": "El corte fuera del equipo también se hace en el Inicio (HTTP y WebSocket)",
       "why": "el hub del proyecto ve al Inicio como 127.0.0.1"
     }
   ],
   "description": "Endpoints para listar, crear, mandar un mensaje, cortar y borrar conversaciones, y eventos por el WebSocket con el texto en vivo, las herramientas que usa y el fin del turno. Rechaza los pedidos que no vienen de 127.0.0.1, también con --lan. Con varias pestañas abiertas, todas ven la misma conversación.",
+  "done_at": "2026-10-26T06:37:20.270Z",
   "links": [
     {
       "task": "m25-07",
@@ -30,10 +34,10 @@
   ],
   "milestone": "m25",
   "notes": "chat-api.js: /api/chats con su propio manejo de errores; los eventos salen como { type: 'chat', chat, event, … } por app.events. attachSocket recibe local. El Inicio corta /api/chats y los eventos chat para clientes de la red.",
-  "order": 4,
+  "order": -2,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "hub/test/chat-api.test.js (9 tests con el claude falso: conversar, pedidos inválidos, sin claude, 403 fuera del equipo y con token, WebSocket con dos pestañas locales y una por la IP de la red, cerrar el hub a mitad de un turno y retomar, el Inicio). chat.test.js suma probar al revés --resume/--session-id.",
   "title": "API y WebSocket del chat",
-  "updated_at": "2026-10-21T05:28:32.122Z"
+  "updated_at": "2026-10-26T06:37:40.186Z"
 }

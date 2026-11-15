@@ -5,6 +5,7 @@
   "decisions": [
     {
       "at": "2026-10-21T06:05:15.899Z",
+      "review": "ok",
       "text": "Los límites se guardan por perfil en chats/limits.json y salen en /api/chats/profiles, no en cada conversación",
       "why": "son de la cuenta, no de la conversación ni del proyecto"
     }
@@ -23,5 +24,5 @@
   "status": "review",
   "test": "chat.test.js (el evento limits y los tokens del fin del turno), chats.test.js (con el perfil y guardados; la copia guarda tokens), profiles.test.js (la API trae el último uso), chat-api.test.js (el WebSocket los manda)",
   "title": "Límites y tokens",
-  "updated_at": "2026-10-21T06:05:16.521Z"
+  "updated_at": "2026-10-26T06:37:34.552Z"
 }

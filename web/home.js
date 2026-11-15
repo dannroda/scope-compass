@@ -1,9 +1,20 @@
 // Inicio de Scope Compass (spec §16.2, mockups en https://claude.ai/artifact/H842sKGxHz1oGH7qgZhYvY): la franja
 // "Hoy" y una tarjeta por proyecto del registro. Los datos vienen de la API del Inicio (hub/src/home.js).
 (function () {
-  const S = { projects: [], today: [], templates: [], dataDir: '', sep: '/', loaded: false, offline: false, connected: false,
+  const S = { projects: [], today: [], week: [], templates: [], dataDir: '', sep: '/', loaded: false, offline: false, connected: false,
     add: { open: false, mode: 'import', err: '', busy: false }, busy: new Set() };
   const EVERY = { day: 'cada día', week: 'cada semana', month: 'cada mes', year: 'cada año' };
+  // repeat con interval (31.6), como repeatLabel de hub/src/dates.js.
+  const EVERY_N = { day: 'días', week: 'semanas', month: 'meses', year: 'años' };
+  const repeatLabel = (r) => ((r.interval ?? 1) > 1 ? `cada ${r.interval} ${EVERY_N[r.every]}` : EVERY[r.every]);
+  // Preferencias de quien mira, en este navegador (nunca en compass/); sin almacenamiento, los valores por defecto.
+  const pref = (key, value) => {
+    try {
+      if (value === undefined) return JSON.parse(localStorage.getItem('scompass.home.' + key) ?? 'null');
+      localStorage.setItem('scompass.home.' + key, JSON.stringify(value));
+    } catch { /* sin localStorage */ }
+    return null;
+  };
   const TPL_NAMES = { juego: 'Juego', personal: 'Personal', vacio: 'Vacío' };
 
   class ApiError extends Error {
@@ -60,7 +71,8 @@
     return `${day}/${m}${Number(y) !== new Date().getFullYear() ? '/' + y : ''}${t ? ' ' + t : ''}`;
   }
   const dueTag = (x) => x.due_state === 'overdue' ? h('span', { class: 'tag overdue' }, 'vencido · ' + showDue(x.due))
-    : x.due_state === 'today' ? h('span', { class: 'tag today' }, x.due.includes('T') ? 'hoy ' + x.due.split('T')[1] : 'hoy') : null;
+    : x.due_state === 'today' ? h('span', { class: 'tag today' }, x.due.includes('T') ? 'hoy ' + x.due.split('T')[1] : 'hoy')
+    : x.due_state === 'later' && x.due.includes('T') ? h('span', { class: 'tag' }, x.due.split('T')[1]) : null;
   // El tablero de un proyecto vive dentro del Inicio, en /p/<clave>/ (D29).
   const boardUrl = (path) => S.projects.find((p) => p.path === path)?.url ?? null;
 
@@ -79,43 +91,134 @@
     }
   }
 
-  function renderHoy() {
-    const box = document.getElementById('hoy');
-    if (!S.loaded) { box.replaceChildren(h('div', { class: 'hoy-empty' }, 'Cargando…')); return; }
-    if (!S.today.length) { box.replaceChildren(h('div', { class: 'hoy-empty' }, 'Nada vencido ni para hoy, y nada en curso.')); return; }
-    // Las preguntas abiertas de los agentes (§31), lo vencido y lo de hoy van arriba, sueltos; lo que solo está en
-    // curso, en un grupo plegable por proyecto.
-    const urgent = (x) => x.kind === 'item' || x.kind === 'question' || x.due_state === 'overdue' || x.due_state === 'today';
-    // Los worktrees de un repo (23.2) son un proyecto: lo mismo en varios (la misma tarea, el mismo ítem) es una fila
-    // sola, la del worktree principal si está ahí, con los worktrees donde aparece si no es en todos.
+  // Las filas de Hoy y de Esta semana. Los worktrees de un repo (23.2) son un proyecto: lo mismo en varios (la misma
+  // tarea, el mismo ítem) es una fila sola, la del worktree principal si está ahí, con los worktrees donde aparece si
+  // no es en todos.
+  function rowsOf(entries) {
     const members = new Map();
     for (const p of S.projects.filter((x) => x.found)) members.set(repoKey(p), (members.get(repoKey(p)) ?? 0) + 1);
     const rows = new Map();
-    for (const x of S.today) {
+    for (const x of entries) {
       const k = [repoKey(x.project), x.kind, x.kind === 'item' ? [x.list, x.text, x.due].join('\n') : x.kind === 'question' ? [x.id, x.at, x.text].join('\n') : x.id].join('\n');
       const r = rows.get(k);
       if (!r) rows.set(k, { x, in: [x.project.path] });
       else { r.in.push(x.project.path); if (x.project.worktree?.main) r.x = x; }
     }
     for (const r of rows.values()) r.only = members.get(repoKey(r.x.project)) > r.in.length ? r.in.map(folder) : null;
-    // Dos repos con el mismo nombre: se distinguen por la carpeta.
+    return [...rows.values()];
+  }
+  // El área elegida (31.4): una etiqueta de tarea. Los ítems de lista no tienen área: con un filtro puesto no se ven.
+  const areaOk = (x) => !S.area || (x.tags ?? []).includes(S.area);
+  const urgentState = (x) => x.due_state === 'overdue' || x.due_state === 'today';
+
+  function renderHoy() {
+    const box = document.getElementById('hoy');
+    if (!S.loaded) { box.replaceChildren(h('div', { class: 'hoy-empty' }, 'Cargando…')); return; }
+    const all = rowsOf(S.today);
+    // Dos repos con el mismo nombre: se distinguen por la carpeta (en Hoy y en Esta semana).
     const keys = new Map();
-    for (const r of rows.values()) keys.set(r.x.project.name, new Set([...(keys.get(r.x.project.name) ?? []), repoKey(r.x.project)]));
+    for (const r of [...all, ...rowsOf(S.week)]) keys.set(r.x.project.name, new Set([...(keys.get(r.x.project.name) ?? []), repoKey(r.x.project)]));
     hoyName = (pr) => (keys.get(pr.name)?.size > 1 ? `${pr.name} · ${folder(pr.path)}` : pr.name);
+    if (!all.length) { box.replaceChildren(h('div', { class: 'hoy-empty' }, 'Nada vencido ni para hoy, y nada en curso.')); return; }
+    // 31.1: arriba lo mío (vencido y de hoy, sueltos), después lo que solo está en curso, en un grupo plegable por
+    // proyecto (23.1), y al final las preguntas de los agentes, plegadas: con muchas no tapan lo demás.
+    const rows = all.filter((r) => areaOk(r.x));
+    const mine = rows.filter((r) => r.x.kind !== 'question' && (r.x.kind === 'item' || urgentState(r.x)));
+    const questions = rows.filter((r) => r.x.kind === 'question');
     const groups = new Map();
-    for (const r of [...rows.values()].filter((y) => !urgent(y.x))) {
+    for (const r of rows.filter((y) => y.x.kind === 'task' && !urgentState(y.x))) {
       const k = repoKey(r.x.project);
       if (!groups.has(k)) groups.set(k, { name: hoyName(r.x.project), rows: [] });
       groups.get(k).rows.push(r);
     }
     const closed = foldedHoy();
-    box.replaceChildren(...[...rows.values()].filter((r) => urgent(r.x)).map((r, i) => hoyRow(r, i, true)), ...[...groups].map(([k, g]) =>
-      h('details', { class: 'hoy-group', open: !closed.has(k) },
-        // Con el clic y no con toggle: toggle también salta al crear el grupo abierto, y un render lo pisaría.
-        h('summary', { onclick: (e) => { const s = foldedHoy(); e.currentTarget.parentElement.open ? s.add(k) : s.delete(k); foldedHoy(s); } },
-          h('span', { class: 'what' }, g.name), h('span', { class: 'tag doing' }, `${g.rows.length} en curso`)),
-        g.rows.map((r, i) => hoyRow(r, i, false)))));
+    const qOpen = !!pref('questions-open');
+    box.replaceChildren(
+      ...(mine.length ? mine.map((r, i) => hoyRow(r, 'hoy-' + i, true)) : [h('div', { class: 'hoy-empty' }, S.area ? `Nada vencido ni para hoy en ${S.area}.` : 'Nada vencido ni para hoy.')]),
+      ...[...groups].map(([k, g]) =>
+        h('details', { class: 'hoy-group', open: !closed.has(k) },
+          // Con el clic y no con toggle: toggle también salta al crear el grupo abierto, y un render lo pisaría.
+          h('summary', { onclick: (e) => { const s = foldedHoy(); e.currentTarget.parentElement.open ? s.add(k) : s.delete(k); foldedHoy(s); } },
+            h('span', { class: 'what' }, g.name), h('span', { class: 'tag doing' }, `${g.rows.length} en curso`)),
+          g.rows.map((r, i) => hoyRow(r, null, false)))),
+      questions.length ? h('details', { class: 'hoy-group questions', open: qOpen },
+        h('summary', { onclick: (e) => pref('questions-open', !e.currentTarget.parentElement.open) },
+          h('span', { class: 'what' }, `Esperan tu respuesta (${questions.length})`), h('span', { class: 'tag ask' }, 'preguntas de los agentes')),
+        questions.map((r) => hoyRow(r, null, true))) : null);
   }
+
+  // Esta semana (31.3): lo que vence en los próximos 7 días, por día.
+  function renderWeek() {
+    const box = document.getElementById('semana');
+    if (!S.loaded) { box.replaceChildren(); return; }
+    const rows = rowsOf(S.week).filter((r) => areaOk(r.x));
+    if (!rows.length) { box.replaceChildren(h('div', { class: 'hoy-empty' }, S.area ? `Nada de ${S.area} vence en los próximos 7 días.` : 'Nada vence en los próximos 7 días.')); return; }
+    const days = new Map();
+    for (const r of rows) { const d = r.x.due.slice(0, 10); days.set(d, [...(days.get(d) ?? []), r]); }
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    let n = 0;
+    box.replaceChildren(...[...days].map(([d, rs]) => {
+      const [y, m, day] = d.split('-').map(Number);
+      const date = new Date(y, m - 1, day);
+      const name = date.toLocaleDateString('es-AR', { weekday: 'long' }) + ` ${day}/${m}`;
+      return h('div', { class: 'sem-day' }, h('h3', null, date.getTime() === tomorrow.getTime() ? 'mañana · ' + name : name), rs.map((r) => hoyRow(r, 'sem-' + n++, true)));
+    }));
+  }
+
+  // Chips de área (31.4): las etiquetas de las tareas que hay en Hoy y en Esta semana.
+  function renderAreas() {
+    const box = document.getElementById('areas');
+    const tags = [...new Set([...S.today, ...S.week].flatMap((x) => x.tags ?? []))].sort((a, b) => a.localeCompare(b, 'es'));
+    // Un área guardada que ya no aparece no filtra (y queda guardada, por si vuelve).
+    S.area = tags.includes(pref('area')) ? pref('area') : null;
+    box.hidden = !tags.length;
+    const chip = (tag, label) => h('button', { class: 'chip small', type: 'button', 'aria-pressed': String(S.area === tag),
+      onclick: () => { pref('area', tag); render(); } }, label);
+    box.replaceChildren(...(tags.length ? [chip(null, 'Todas'), ...tags.map((t) => chip(t, t))] : []));
+  }
+
+  // Captura rápida (31.2): las listas de todos los proyectos; por defecto la última usada o "Quiero hacer" de "Vida".
+  const normName = (x) => String(x ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  function renderCapture() {
+    const form = document.getElementById('capture');
+    const sel = document.getElementById('cap-list');
+    const groups = S.projects.filter((p) => p.found && p.summary?.lists?.length && !(p.worktree && !p.worktree.main && S.projects.some((q) => q !== p && q.found && repoKey(q) === repoKey(p))));
+    form.hidden = !S.loaded || !groups.length;
+    const sig = JSON.stringify(groups.map((p) => [p.path, p.name, p.summary.lists.map((l) => [l.id, l.title])]));
+    if (sel.dataset.sig === sig) return;
+    sel.dataset.sig = sig;
+    const value = (path, list) => JSON.stringify([path, list]);
+    const opts = groups.flatMap((p) => p.summary.lists.map((l) => value(p.path, l.id)));
+    const last = pref('capture');
+    const vida = groups.find((p) => normName(p.name) === 'vida');
+    const quiero = vida?.summary.lists.find((l) => normName(l.title) === 'quiero hacer');
+    const pick = [sel.value, last && value(last.path, last.list), quiero && value(vida.path, quiero.id), vida && value(vida.path, vida.summary.lists[0].id)].find((v) => v && opts.includes(v)) ?? opts[0];
+    sel.replaceChildren(...groups.map((p) => h('optgroup', { label: p.name }, p.summary.lists.map((l) => h('option', { value: value(p.path, l.id), selected: value(p.path, l.id) === pick }, l.title)))));
+    sel.value = pick;
+  }
+  function setupCapture() {
+    const form = document.getElementById('capture');
+    const sel = document.getElementById('cap-list');
+    sel.addEventListener('change', () => { const [path, list] = JSON.parse(sel.value); pref('capture', { path, list }); });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = form.elements.text.value.trim();
+      if (!text || !sel.value) return;
+      const [path, list] = JSON.parse(sel.value);
+      const due = form.elements.due.value;
+      const title = sel.selectedOptions[0]?.textContent ?? list;
+      pref('capture', { path, list });
+      act('capture', async () => {
+        const r = await call('POST', '/api/projects/add-item', { path, list, text, ...(due && { due }) });
+        // Solo si se guardó: si falla, el texto queda para reintentar.
+        form.elements.text.value = ''; form.elements.due.value = '';
+        form.elements.text.focus();
+        return r;
+      }, `Anotado en ${title}`);
+    });
+  }
+
   // Un repo con varios worktrees se junta por su repo; sin git, cada carpeta es un proyecto.
   const repoKey = (p) => p.worktree?.repo ?? p.path;
   const folder = (path) => path.split(/[\\/]/).pop();
@@ -128,20 +231,21 @@
     } catch { /* sin localStorage */ }
     return set ?? new Set();
   }
-  // Una fila de Hoy. Dentro del grupo de su proyecto no repite el proyecto ni "en curso".
-  function hoyRow({ x, only }, i, loose) {
+  // Una fila de Hoy o de Esta semana (id: el de la casilla de un ítem). Dentro del grupo de su proyecto no repite el
+  // proyecto ni "en curso". Lo vencido y lo de hoy van marcados (urgent): solo eso va en dorado (31.5).
+  function hoyRow({ x, only }, id, loose) {
     const where = [loose ? h('span', { class: 'tag' }, hoyName(x.project) + (x.kind === 'item' ? ' · ' + x.list_title : '')) : null,
       only ? h('span', { class: 'tag', title: 'Solo en estos worktrees' }, '⎇ ' + only.join(', ')) : null];
+    const urgent = urgentState(x) ? ' urgent' : '';
     if (x.kind === 'item') {
-      const id = 'hoy-' + i;
       const key = 'item:' + x.project.path + ':' + x.list + ':' + x.n;
-      return h('div', { class: 'hoy-row' },
+      return h('div', { class: 'hoy-row' + urgent },
         // Mientras se guarda queda tildado (re-renderizar no lo destilda).
         h('input', { type: 'checkbox', id, disabled: S.busy.has(key), checked: S.busy.has(key),
           onchange: () => act(key, () => call('POST', '/api/projects/check-item', { path: x.project.path, list: x.list, n: x.n, etag: x.etag }),
             (r) => (r.advanced ? `${x.text}: ↻ la próxima vez es el ${showDue(r.list.items[x.n - 1].due)}` : `${x.text}: hecho`)) }),
         h('label', { for: id, class: 'what' }, x.text),
-        dueTag(x), x.repeat ? h('span', { class: 'tag' }, '↻ ' + EVERY[x.repeat.every]) : null, where);
+        dueTag(x), x.repeat ? h('span', { class: 'tag' }, '↻ ' + repeatLabel(x.repeat)) : null, where);
     }
     const url = boardUrl(x.project.path);
     // Una pregunta de un agente: lleva a la tarea, donde se responde.
@@ -153,7 +257,7 @@
     }
     const [code, ...rest] = x.text.split(' ');
     const title = /^\d/.test(code) ? h('span', null, h('span', { class: 'code' }, code), rich(rest.join(' '))) : rich(x.text);
-    return h('div', { class: 'hoy-row' },
+    return h('div', { class: 'hoy-row' + urgent },
       h('span', { class: 'mark', 'aria-hidden': 'true' }, x.status === 'doing' ? '●' : '○'),
       h('span', { class: 'what' }, url ? h('a', { href: url }, title) : title),
       dueTag(x), loose && x.status === 'doing' ? h('span', { class: 'tag doing' }, 'en curso') : null, where);
@@ -346,7 +450,10 @@
   function render() {
     document.getElementById('date').textContent = new Date().toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
     renderAdd();
+    renderCapture();
+    renderAreas();
     renderHoy();
+    renderWeek();
     renderProjects();
     renderConn();
   }
@@ -362,6 +469,7 @@
         const [p, t, tp] = await Promise.all([call('GET', '/api/projects'), call('GET', '/api/today'), S.templates.length ? { templates: S.templates } : call('GET', '/api/templates')]);
         S.projects = p.projects;
         S.today = t.items;
+        S.week = t.week ?? [];
         S.templates = tp.templates;
         if (tp.data_dir) S.dataDir = tp.data_dir;
         if (tp.sep) S.sep = tp.sep;
@@ -392,6 +500,7 @@
     ws.onclose = () => { S.connected = false; renderConn(); setTimeout(connect, retry); retry = Math.min(retry * 2, 10000); };
   }
 
+  setupCapture();
   document.getElementById('add-btn').addEventListener('click', () => (S.add.open ? closeAdd() : openAdd('import')));
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.add.open) closeAdd(); });
   // Al pasar la medianoche, "hoy" cambia.

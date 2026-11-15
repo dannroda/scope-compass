@@ -1,0 +1,43 @@
+{
+  "checklist": [
+    {
+      "done": true,
+      "text": "Reusar dueMatches(week) para las entradas de la semana"
+    },
+    {
+      "done": true,
+      "text": "Franja agrupada por día"
+    },
+    {
+      "done": true,
+      "text": "Tildar desde la franja"
+    }
+  ],
+  "code": "31.3",
+  "created_at": "2026-11-03T05:49:26.093Z",
+  "decisions": [
+    {
+      "at": "2026-11-03T05:59:01.411Z",
+      "text": "week va en la misma respuesta de GET /api/today, no en una ruta hermana",
+      "why": "una lectura de disco por proyecto en vez de dos; los clientes viejos ignoran el campo"
+    },
+    {
+      "alternatives": "sacarla de Esta semana si ya está en curso",
+      "at": "2026-11-03T05:59:01.659Z",
+      "text": "Esta semana no repite lo vencido ni lo de hoy (ya está en Hoy); una tarea en curso con fecha esta semana sale en los dos lados",
+      "why": "la franja es de fechas; en curso no dice cuándo vence"
+    }
+  ],
+  "description": "No hay una vista de lo que vence en los próximos 7 días entre proyectos. Sumar a GET /api/today los ítems de lista y tareas sin terminar que vencen después de hoy y antes de la medianoche de dentro de 7 días (la regla de list --due week), y mostrarlos en una franja Esta semana agrupada por día.",
+  "milestone": "m31",
+  "notes": "weekOf en hub/src/summary.js (dueState later + dueMatches week); GET /api/today devuelve { items, week }. Puro JS, sin nada de plataforma: Windows y Linux igual.",
+  "order": 3,
+  "refs": [],
+  "status": "review",
+  "tags": [
+    "ui"
+  ],
+  "test": "Con ítems y tareas que vencen mañana y en 6 días en dos proyectos, la franja muestra dos días con sus filas; uno que vence en 8 días no aparece. Test: hub/test/home.test.js y m31-criteria.",
+  "title": "Franja Esta semana",
+  "updated_at": "2026-11-03T05:59:31.328Z"
+}

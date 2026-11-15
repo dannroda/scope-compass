@@ -6,23 +6,26 @@
     {
       "alternatives": "a la derecha encima del detalle; flotante abajo",
       "at": "2026-10-21T05:33:55.072Z",
+      "review": "ok",
       "text": "El panel va a la izquierda y en pantallas anchas corre el tablero",
       "why": "el detalle de la tarea está a la derecha y la tarea abierta es contexto del chat: tienen que verse juntos"
     },
     {
       "alternatives": "renderizar markdown en el hub",
       "at": "2026-10-21T05:33:55.381Z",
+      "review": "ok",
       "text": "La respuesta se muestra como texto con código en línea (rich), sin markdown completo",
       "why": "la web no tiene un renderizador de markdown en el cliente"
     }
   ],
   "description": "Un panel lateral plegable en el tablero: la conversación con el texto en vivo, las herramientas que usa (plegadas), Cortar, y la lista de conversaciones. Con una tarea abierta, la adjunta como contexto (compass://task/<id>). Fuera de 127.0.0.1 el panel no aparece.",
+  "done_at": "2026-10-26T06:37:30.680Z",
   "milestone": "m25",
   "notes": "Panel #chat en index.html, la lógica al final de app.js (C, chatCheck, chatEvent, renderChat). De paso se arregló un 'null' suelto en el detalle de las tareas sin decisiones (M24), con su test en ui-decisions.test.js.",
   "order": 7,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "hub/test/ui-chat.test.js (Playwright con el claude falso: conversar, herramientas plegadas, recargar, Nueva, lista y borrar; Cortar con dos pestañas en vivo; la tarea abierta como contexto y sacarla; sin claude; desde la red no aparece). Capturas en claro y oscuro.",
   "title": "Web: panel de chat",
-  "updated_at": "2026-10-21T05:35:19.005Z"
+  "updated_at": "2026-10-26T06:37:38.780Z"
 }

@@ -46,6 +46,9 @@ export const localDay = (iso) => { const d = new Date(iso); return `${d.getFullY
 export const localStamp = (iso) => { const d = new Date(iso); return `${localDay(iso)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 
 export const EVERY = { day: 'cada día', week: 'cada semana', month: 'cada mes', year: 'cada año' };
+const EVERY_N = { day: 'días', week: 'semanas', month: 'meses', year: 'años' };
+/** "cada mes", "cada 2 días": el texto de un repeat { every, interval? } (31.6). */
+export const repeatLabel = (r) => ((r.interval ?? 1) > 1 ? `cada ${r.interval} ${EVERY_N[r.every]}` : EVERY[r.every]);
 
 const pad = (n) => String(n).padStart(2, '0');
 const daysIn = (y, m) => new Date(y, m + 1, 0).getDate(); // m desde 0
@@ -54,16 +57,17 @@ const daysIn = (y, m) => new Date(y, m + 1, 0).getDate(); // m desde 0
  * La próxima fecha de algo que se repite, a partir de su fecha límite (no de cuando se hizo): la luz vence el 10
  * aunque se pague el 12. Un mes o un año que no tiene ese día usa el último (31/01 → 28/02, 29/02 → 28/02).
  * Mantiene la hora si la tiene. Ese día queda fijo desde ahí (28/02 → 28/03): el schema no guarda el día original.
+ * interval (31.6): cuántos períodos avanza (cada 2 días, cada 3 meses); sin él, 1.
  */
-export function nextDue(due, every) {
+export function nextDue(due, every, interval = 1) {
   const d = parseDue(due);
-  if (!d || !EVERY[every]) throw new Error(`no se puede repetir ${due} ${every}`);
+  if (!d || !EVERY[every] || !Number.isInteger(interval) || interval < 1) throw new Error(`no se puede repetir ${due} ${every} ${interval}`);
   let y = d.getFullYear(), m = d.getMonth(), day = d.getDate();
   if (every === 'day' || every === 'week') {
-    const n = new Date(y, m, day + (every === 'day' ? 1 : 7));
+    const n = new Date(y, m, day + interval * (every === 'day' ? 1 : 7));
     [y, m, day] = [n.getFullYear(), n.getMonth(), n.getDate()];
   } else {
-    if (every === 'month') { m += 1; if (m === 12) { m = 0; y += 1; } } else y += 1;
+    if (every === 'month') { m += interval; y += Math.floor(m / 12); m %= 12; } else y += interval;
     day = Math.min(day, daysIn(y, m));
   }
   return `${y}-${pad(m + 1)}-${pad(day)}${due.includes('T') ? due.slice(10) : ''}`;

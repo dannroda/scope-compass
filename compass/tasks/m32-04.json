@@ -1,0 +1,33 @@
+{
+  "checklist": [],
+  "code": "",
+  "created_at": "2026-11-12T14:44:02.101Z",
+  "decisions": [
+    {
+      "alternatives": "Que el harness actualice el addon (lo acopla al harness). Compatibilidad por semver (rompe en cada release). Que el plugin traiga el binario (pesado, y depende de la plataforma).",
+      "asked": true,
+      "at": "2026-11-12T14:44:49.985Z",
+      "reply": "Sí, aprobado.",
+      "session": "c2f5977e-adf2-4184-8c89-effa5661ea6e",
+      "text": "¿Aprobás el diseño que propuso agent-harness-81? El addon se actualiza solo (como godot_agent), la compatibilidad va por un número de protocolo en /api/health, y el MCP sale como plugin en godot-agent-plugins que usa el scompass del PATH.",
+      "why": "Funciona sin el harness y no queda acoplado a él. Un binario viejo solo deja de servir cuando cambia el protocolo."
+    }
+  ],
+  "description": "Scope Compass tiene tres partes que se actualizan por separado: el binario scompass (uno por equipo), el addon de Godot (uno por proyecto) y el MCP registrado en Claude Code. Hay que definir: quién avisa y quién instala cada actualización (el addon solo, como godot_agent, o el harness desde Extensiones o el Asset Store); cómo el addon sabe si el scompass que encontró es compatible (versión en la API del hub y una versión mínima en plugin.cfg); y si hace falta un `scompass update`. Le pregunté a la sesión agent-harness-81 el 2026-11-12. El diseño se acuerda con ellos antes de implementar.",
+  "links": [
+    {
+      "task": "m32-05",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m32",
+  "notes": "Propuesta de agent-harness-81 (2026-11-12), pendiente de que la apruebe el usuario:\n- El harness no actualiza scope_compass. El addon se actualiza solo, con una copia de addons/godot_agent/core/addon_updater.gd de godot-agent cambiando REPO, ADDON_DIR y el nombre del zip. Ese updater:\n  - mira api.github.com/repos/<repo>/releases y elige la versión más alta, sin prereleases;\n  - baja el .zip y lo rechaza si el plugin.cfg de adentro no dice la versión del tag;\n  - reemplaza la carpeta, respalda los archivos que el usuario pudo editar y reinicia el editor;\n  - no corre en copias de desarrollo (symlink o plugin de dev).\n  Si algún día está en el Asset Store, el harness lo actualiza como cualquier asset.\n- Release: los binarios y el addon salen en el mismo release y con la misma versión, con un SHA256SUMS. Ver m32-03.\n- Compatibilidad por un número de protocolo entero, no por semver. Sube solo si se rompe la API HTTP/WS o el formato de compass/. El hub ya tiene GET /api/health con version (server.js y home.js): se le suma protocol. El addon tiene un const PROTOCOL. Si no coincide o no hay hub, el dock avisa, ofrece el binario del mismo tag (URL directa) y mientras tanto lee compass/ sin hub.\n- MCP: plugin en dannroda/godot-agent-plugins con .mcp.json (scompass mcp) y la skill. No trae el binario: lo busca en el PATH o en una ruta configurable. Subir la version del plugin.json cuando cambian las tools o la skill. serverInfo.version ya dice la versión del binario (mcp.js); falta avisar si el protocolo es viejo. El marketplace lo edita la sesión de godot-agent-plugins.",
+  "order": 4,
+  "priority": "high",
+  "refs": [],
+  "size": "l",
+  "status": "todo",
+  "test": "",
+  "title": "Actualizaciones y compatibilidad entre el addon y scompass (coordinado con godot-agent)",
+  "updated_at": "2026-11-12T14:54:35.257Z"
+}

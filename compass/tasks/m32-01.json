@@ -1,0 +1,16 @@
+{
+  "checklist": [],
+  "code": "",
+  "created_at": "2026-11-12T14:44:01.914Z",
+  "description": "Antes de hacer público el repo hay que revisar el árbol y todo el historial de git en busca de tokens, emails, rutas como /home/dannode, referencias a ../project-epiphany y a otros proyectos privados, y enlaces a artifacts de claude.ai. Hay que decidir qué se publica: compass/ (el tablero propio), docs/decisiones.md, docs/reference/tablero-artifact.html y los fixtures. Si el historial tiene algo que no se puede publicar, hay que elegir entre reescribirlo o arrancar un repo nuevo sin historial.",
+  "milestone": "m32",
+  "notes": "",
+  "order": 1,
+  "priority": "high",
+  "refs": [],
+  "size": "m",
+  "status": "todo",
+  "test": "",
+  "title": "Auditoría para publicar: secretos, rutas personales y enlaces privados",
+  "updated_at": "2026-11-12T14:44:01.914Z"
+}

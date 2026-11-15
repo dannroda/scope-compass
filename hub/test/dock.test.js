@@ -406,7 +406,7 @@ test('dock: la fecha límite se ve en la lista y en el detalle; vencida y de hoy
   expectOk(await godot('due', dir, 'm1-04', 'm1-05', 'm1-03', 'm1-07'), 'due');
 });
 
-test('dock: una tarea bloqueada se marca, y el vínculo del detalle lleva a la otra tarea', { skip }, async () => {
+test('dock: una tarea desbloqueada en revisión se marca, y el vínculo del detalle lleva a la otra tarea', { skip }, async () => {
   await setTask('m1-05', { links: [{ task: 'm1-03', type: 'blocks' }] });
   expectOk(await godot('links', dir, 'm1-03', 'm1-05'), 'links');
 });

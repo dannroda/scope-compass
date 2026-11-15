@@ -6,28 +6,32 @@
     {
       "alternatives": "guardarla siempre, para retomar también al revertir",
       "at": "2026-10-21T05:40:02.237Z",
+      "review": "ok",
       "text": "La sesión se guarda solo en las preguntas (--ask), no en las decisiones tomadas solas",
       "why": "es lo que se retoma con la respuesta; en las otras sería ruido"
     },
     {
       "at": "2026-10-21T05:40:02.563Z",
+      "review": "ok",
       "text": "Una sesión de afuera no se crea vacía si --resume no la encuentra: el chat muestra el error",
       "why": "crearla con ese id le mandaría la respuesta a un agente sin contexto"
     },
     {
       "alternatives": "retomarla sola al responder",
       "at": "2026-10-21T05:40:02.859Z",
+      "review": "ok",
       "text": "Seguir en el chat es un botón en la pregunta respondida, no un paso automático al responder",
       "why": "si la sesión sigue abierta en una terminal, es mejor responder ahí"
     }
   ],
   "description": "La decisión de M24 guarda la sesión de Claude que hizo la pregunta (session, opcional, desde CLAUDE_SESSION_ID o lo que exponga Claude Code; investigar). Al responderla en la web se ofrece retomar esa sesión en el chat con la respuesta, así el agente sigue sin volver a leer la tarea.",
+  "done_at": "2026-10-26T06:37:31.169Z",
   "milestone": "m25",
   "notes": "Investigado: Claude Code 2.1.306 pone CLAUDE_CODE_SESSION_ID en el entorno de Bash y de los servidores MCP que lanza (visto en /proc/<pid>/environ del scompass mcp). Los tests la borran en isolate.js para no heredar la sesión que los corre. Una sesión hecha en otra carpeta (worktree) no se encuentra con --resume desde el proyecto: el chat muestra el error.",
-  "order": 8,
+  "order": -2.75,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "cli.test.js (decide --ask toma CLAUDE_CODE_SESSION_ID, --session, inválida), mcp.test.js (add_decision con ask desde el entorno del servidor), chats.test.js y chat-api.test.js (retomar una sesión de afuera, no crearla vacía), ui-chat.test.js (Seguir en el chat). Suite: 477.",
   "title": "Responder una pregunta abierta retoma la sesión",
-  "updated_at": "2026-10-21T05:42:59.079Z"
+  "updated_at": "2026-10-26T06:37:38.033Z"
 }

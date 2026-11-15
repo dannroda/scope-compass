@@ -317,6 +317,7 @@ scompass list [--milestone m00] [--status doing] [--json]
 scompass show <id> [--json]
 scompass add "<título>" --milestone m00 [--code 0.11] [--description "…"]
 scompass move <id> <todo|doing|review|done>
+scompass rm <id>                              # borra la tarea y sus capturas que nadie más cita; los vínculos hacia ella quedan rotos
 scompass check <id> <n> [--undo]             # n desde 1, como lo muestra `show`
 scompass set <id> --file task.json          # reemplazo completo, para cargas grandes
 scompass set <id> [--title] [--description] [--notes] [--test] [--code] [--milestone] [--status]   # solo esos campos
@@ -626,7 +627,7 @@ Hay dos registros, con funciones distintas (D23):
   - `GET /ws`: `changed { path, collection, id }` (reenviado de los hubs o de una escritura directa), `hubs` (cambió el conjunto de hubs vivos) y `projects` (cambió el registro). El Inicio mira el registro de hubs cada medio segundo y se suscribe al WebSocket de cada hub vivo.
 - `GET /api/templates` (con `data_dir`) y `POST /api/projects/init { name, template, parent? }`: crear un proyecto desde el Inicio, con la misma `scompass init` (en otro proceso). La carpeta es `<parent>/<nombre>`, con el nombre tal cual; `parent` es por defecto `$XDG_DATA_HOME/scope-compass` (D28), así "Vida" queda en `~/.local/share/scope-compass/Vida`. Si esa carpeta ya existe, `409`. Fuera de todo repo, recibe `git init`.
 - `POST /api/pick-folder { start? }`: el botón "Elegir otra carpeta…" de la página. El navegador no da rutas, así que el diálogo lo abre el Inicio (`kdialog` o `zenity`). Devuelve `{ path }` o `{ cancelled: true }`, o `404` si no hay selector (entonces la página muestra un campo para escribir la ruta).
-- **Página** (`web/home.html`, `home.js`, `home.css`, con los tokens y las fuentes de `app.css`): la franja Hoy (tildar ítems; las tareas enlazan al tablero si su hub está vivo; lo vencido y lo de hoy van sueltos arriba, y lo que solo está en curso en un grupo plegable por proyecto, 23.1, que se recuerda en el navegador; los worktrees de un repo son un solo proyecto: una tarea o un ítem que está en varios es una fila, la del worktree principal, con `⎇ <carpetas>` si no está en todos; dos repos con el mismo nombre se distinguen por la carpeta), una tarjeta por repo (la del worktree principal, con la rama y los otros worktrees adentro: carpeta, rama, cuántas en curso, Abrir y Quitar; 23.2) con (hub, hito actual con su avance, en curso y lo que sigue, listas con vencidos y de hoy, Prender o Apagar, Quitar, Abrir tablero) y Agregar proyecto (importar carpeta o crear con plantilla). Se recarga con los eventos del WebSocket.
+- **Página** (`web/home.html`, `home.js`, `home.css`, con los tokens y las fuentes de `app.css`; desde M31, ordenada para el uso personal, §34): la franja Hoy (tildar ítems; las tareas enlazan al tablero si su hub está vivo; lo vencido y lo de hoy van sueltos arriba, y lo que solo está en curso en un grupo plegable por proyecto, 23.1, que se recuerda en el navegador; los worktrees de un repo son un solo proyecto: una tarea o un ítem que está en varios es una fila, la del worktree principal, con `⎇ <carpetas>` si no está en todos; dos repos con el mismo nombre se distinguen por la carpeta), una tarjeta por repo (la del worktree principal, con la rama y los otros worktrees adentro: carpeta, rama, cuántas en curso, Abrir y Quitar; 23.2) con (hub, hito actual con su avance, en curso y lo que sigue, listas con vencidos y de hoy, Prender o Apagar, Quitar, Abrir tablero) y Agregar proyecto (importar carpeta o crear con plantilla). Se recarga con los eventos del WebSocket.
 - **Volver al Inicio:** con el Inicio corriendo, el tablero de cada proyecto muestra "← Inicio" arriba del título (`GET /api/home` del hub, que lo busca en el registro; la web lo revisa cada 10 s y al volver a la pestaña).
 - Un segundo `scompass home` no levanta otro: dice dónde corre el primero (y lo abre con `--open`). Puerto 4700, o el siguiente libre.
 
@@ -670,7 +671,7 @@ Solo dos fechas importan (D26): **cuándo se creó** (`created_at`, que ya exist
   - Un mes o un año sin ese día usa el último (31/01 → 28/02). Desde ahí queda en ese día (28/02 → 28/03): no se guarda el día original.
   - Un ítem que se repite no se destilda (no hay una fecha anterior segura): se le cambia `due` a mano.
   - Atrasado varios períodos, cada tilde avanza uno: cada vez que se hace cuenta como una vez.
-- La forma `{ every }` deja lugar para `{ every: "day", interval: 3 }` (cada x días) más adelante sin migrar.
+- `interval` (desde M31, §34): `{ "every": "day", "interval": 3 }` es cada 3 días. Entero desde 1; sin él vale 1 y no se escribe, así los archivos de antes siguen igual. Tildar avanza `interval` períodos con la misma regla.
 - **Sin notificaciones** por ahora: involucran coordinar todos los procesos.
 
 ### 16.6 Vistas y plantillas
@@ -687,7 +688,7 @@ Solo dos fechas importan (D26): **cuándo se creó** (`created_at`, que ya exist
 ### 16.7 Fuera de v3
 <!-- id: v3-fuera -->
 
-Notificaciones y recordatorios, repetición personalizada (cada x días), listas en el dock de Godot, un hub con varios proyectos, mirror always-on (§12).
+Notificaciones y recordatorios, repetición en días fijos de la semana (cada x días llegó en M31, §34), listas en el dock de Godot, un hub con varios proyectos, mirror always-on (§12).
 
 ### 16.8 Criterios de aceptación de v3
 <!-- id: criterios-v3 -->
@@ -1199,7 +1200,7 @@ Que Claude Code opere el tablero con herramientas tipadas en lugar de armar coma
 - **Las herramientas son la CLI:** cada una arma los argumentos de un comando y llama a `run()` en el mismo proceso con `--json`, una por vez. Así validan, encuentran el hub, regeneran el export y avisan igual que la CLI, y lo que cambie en la CLI llega solo. El resultado es el JSON de `--json` (como texto y como `structuredContent`); un error es `isError` con el mensaje de la CLI (conflicto, validación, id inexistente). Los avisos de la CLI (hub de otra versión, archivos inválidos) se agregan al resultado.
 - **Herramientas (22.3, 22.4):** lectura: `list_tasks` (los filtros de `list`), `show_task`, `task_history`, `list_milestones`, `show_milestone`, `list_links`, `list_playtests`, `show_playtest`, `search_docs`, `show_doc`. Escritura: `add_task`, `update_task` (campos sueltos), `move_task`, `add_step`, `update_step`, `remove_step`, `check_step`, `add_link`, `remove_link`, `add_ref`, `remove_ref`, `add_file`, `remove_file`, `set_playtest_result`. Las escrituras aceptan `etag`: si la tarea cambió, falla con conflicto, como `--etag`.
 - **Recursos (22.5):** `compass://milestone/<id>` (el hito con sus tareas), `compass://task/<id>` (plantilla) y `compass://doc/<alias>` (el markdown de un documento de `config.json`). `resources/list` da los hitos y los documentos; las tareas se piden por la plantilla.
-- **Registrarlo (22.7):** `claude mcp add --scope user scompass -- node <scope-compass>/hub/bin/scompass.js mcp` lo deja en todos los proyectos; toma el proyecto de la carpeta de la sesión.
+- **Registrarlo (22.7):** `claude mcp add --scope user scompass -- scompass mcp` lo deja en todos los proyectos; toma el proyecto de la carpeta de la sesión. Desde un clon sin instalar, `node <scope-compass>/hub/bin/scompass.js mcp`.
 
 ### 30.1 Criterios de aceptación de M22
 <!-- id: criterios-mcp -->
@@ -1277,7 +1278,7 @@ Un chat en la web con el Claude Code instalado en el equipo, que trabaja sobre e
 - **El proceso (25.2):** el hub (o el Inicio, si sirve el proyecto, D29) lanza `claude` en la carpeta del proyecto con `-p --input-format stream-json --output-format stream-json --verbose --include-partial-messages`. Un proceso por conversación mientras se usa: cada mensaje del usuario es una línea `{"type":"user","message":{"role":"user","content":"…"}}` en stdin, y los eventos se leen línea por línea de stdout. Se cierra tras 10 minutos sin uso y al cerrar el hub; el siguiente mensaje lo vuelve a lanzar con `--resume`. Sin dependencias nuevas.
   - **Ejecutable:** `claude` del PATH (en Windows, también `claude.cmd` y `claude.exe`), o el de `SCOMPASS_CLAUDE` (para el test y para instalaciones fuera del PATH). Si no está, la API responde `claude_missing` y la web dice cómo instalarlo.
   - **Cuenta y config:** las del usuario: su login, su modelo por defecto, su `CLAUDE.md` y su `settings.json`. El hub no guarda claves.
-  - **MCP:** `--mcp-config` con un solo servidor, `scompass` (`node <scope-compass>/hub/bin/scompass.js mcp --dir <proyecto>`), y `--strict-mcp-config`, para que las herramientas sean siempre las mismas aunque el usuario tenga otros servidores o ya haya registrado `scompass`.
+  - **MCP:** `--mcp-config` con un solo servidor, `scompass` (el mismo scompass que corre el hub: `node <scope-compass>/hub/bin/scompass.js mcp --dir <proyecto>`, o el binario con `mcp --dir <proyecto>`), y `--strict-mcp-config`, para que las herramientas sean siempre las mismas aunque el usuario tenga otros servidores o ya haya registrado `scompass`.
   - **Permisos fijados de antemano:** `--tools Read,Grep,Glob` deja solo esas herramientas propias de Claude Code (no ve Bash ni Edit), y `--allowedTools mcp__scompass,Read,Grep,Glob` las permite sin preguntar. `--permission-mode dontAsk --permission-prompts none` niega lo demás sin preguntar, y el agente lo dice; la web no aprueba nada. Editar archivos y correr comandos quedan para la terminal.
   - **Archivos:** la config del MCP (`mcp.json`) y las instrucciones (`prompt.md`, por `--append-system-prompt-file`) se escriben en la carpeta del chat del proyecto (ver *Conversaciones*) antes de cada lanzamiento: así ningún argumento lleva JSON ni espacios, y en Windows `claude.cmd` se puede lanzar por el shell.
   - **Entorno:** el hijo no hereda `CLAUDECODE` ni `CLAUDE_CODE_*`, por si el hub se lanzó desde una sesión de Claude Code.
@@ -1342,3 +1343,42 @@ Saber con qué cuenta de Claude habla el chat (§32) y cuánto gasta, y poder us
 - [ ] Tests con el claude falso cubren perfiles, cuenta, límites y tokens.
 
 - **Fuera de M28:** iniciar o cerrar sesión desde la web (`claude auth login` sigue en la terminal); avisar antes de llegar al límite; otros agentes (M27).
+
+## 34. El Inicio para la vida (M31)
+<!-- id: inicio-vida -->
+
+Usar Scope Compass para organizar la vida (rutina, trabajo, hobbies, ocio, aprendizaje), no solo proyectos de juego. Se usa con un proyecto "Vida" (plantilla `personal`) con listas (Rutina, Quiero hacer, Pendientes) y un tablero para las metas con fin; las **áreas** (trabajo, casa, música, aprender) son etiquetas de tarea. Todo sigue local: no toca hosting, Tailscale ni el chat.
+
+- **Hoy en secciones (31.1):** arriba lo mío, suelto: ítems y tareas vencidos o de hoy (los ítems con casilla). Después lo que solo está en curso, en el grupo plegable de cada proyecto (23.1). Al final **Esperan tu respuesta (n)**: las preguntas abiertas de los agentes (§31), plegadas por defecto; si se despliega, se recuerda en el navegador (`scompass.home.questions-open`). Antes iban primero y con muchas tapaban lo demás. En el teléfono (hasta 560 px) no se muestran la fecha ni los subtítulos y las filas son más bajas, para que lo mío entre en 390×844.
+- **Captura rápida (31.2):** un formulario **Anotar…** arriba de todo: texto, lista (las de todos los proyectos, agrupadas por proyecto) y fecha opcional; Enter agrega el ítem al final de la lista. La lista elegida se recuerda en el navegador (`scompass.home.capture`); sin elegir, va a "Quiero hacer" del proyecto "Vida" (sin mayúsculas ni tildes), o a la primera lista de "Vida", o a la primera que haya. Sin listas, no se muestra. **Agregar proyecto** pasa a un botón chico en la cabecera de Proyectos.
+  - `POST /api/projects/add-item { path, list, text, due?, etag? }` → `201 { list, n, via }`: la misma regla que `item add` (`newItem` de `hub/src/lists.js`, que usa también la CLI), por el hub del proyecto si está vivo o directo al Store con etag. El texto se recorta; vacío o con una fecha inválida, `400`; etag viejo, `409`.
+- **Esta semana (31.3):** `GET /api/today` suma `week`: ítems de lista y tareas sin terminar que vencen después de hoy y antes de la medianoche de dentro de 7 días (la regla de `list --due week`, sin lo vencido ni lo de hoy, que ya está en Hoy), de todos los proyectos, por fecha. La página los muestra en una franja **Esta semana** agrupada por día ("mañana · miércoles 4/11"), con casillas para los ítems. Una tarea en curso que vence esta semana aparece en los dos lados.
+- **Áreas (31.4):** `items` y `week` traen `tags` en las tareas y las preguntas. Arriba de Hoy, un chip por etiqueta presente más *Todas*; elegir uno filtra Hoy y Esta semana. El filtro se guarda en el navegador (`scompass.home.area`), nunca en `compass/`. Los ítems de lista no tienen área: con un filtro puesto no se ven. Un área guardada que ya no aparece no filtra.
+- **Estilo (31.5):** los enlaces de Hoy y Esta semana van sin subrayado (se subrayan con hover o foco) y en el color del texto; el dorado (`--accent`) queda para el título de lo vencido o de hoy. Los campos de Anotar usan los marcos de los bordes de fantasía (19.16).
+- **Repetir cada N (31.6):** `repeat.interval` en los ítems de lista (§16.5). CLI: `item add … --repeat day --interval 2`; en `item set`, `--interval` cambia solo el intervalo y `--repeat` solo la unidad (`--repeat ""` quita la repetición). La web del tablero suma un campo *Cada cuántos* al lado del selector. Se lee "cada 2 días" en la web, la CLI y el export. Los días fijos de la semana (lun/mié/vie) quedan para después: hay una pregunta abierta en la tarea sobre cómo modelarlos.
+
+### 34.1 Criterios de aceptación de M31
+<!-- id: criterios-inicio-vida -->
+
+Cada uno tiene su test en `hub/test/m31-criteria.test.js`.
+
+- [ ] Con 7 preguntas abiertas en un proyecto, lo vencido, lo de hoy y lo en curso se ven sin scrollear en 1440×900 y en 390×844; Esperan tu respuesta está plegada y, desplegada, sigue así al recargar.
+- [ ] Anotar agrega un ítem a "Quiero hacer" de "Vida" sin elegir nada, con fecha si se pone, y recuerda la última lista elegida.
+- [ ] Esta semana muestra lo que vence en los próximos 7 días de todos los proyectos, por día, y no lo de dentro de 8.
+- [ ] Un chip de área filtra Hoy y Esta semana y se recuerda al recargar sin cambiar nada en `compass/`.
+- [ ] Los enlaces de Hoy no van subrayados salvo en hover; solo lo vencido o de hoy va en dorado.
+- [ ] Un ítem con `repeat { every: "day", interval: 2 }` avanza dos días al tildarlo; los archivos sin `interval` siguen validando.
+
+## 35. Distribución (M32)
+
+- **Descargas de cada release:** `scompass-v<versión>-linux-x64`, `scompass-v<versión>-windows-x64.exe`, el zip del addon y el `.tgz` de npm, todos con la misma versión (D45).
+- **El binario** es un Node SEA que trae el paquete entero. La primera vez que corre una versión lo extrae a `~/.cache/scope-compass/runtime/<versión>-<hash>/` (en Windows, `%LOCALAPPDATA%\scope-compass\runtime\`; `SCOMPASS_RUNTIME_DIR` la cambia) y lo carga desde ahí (`tools/sea-main.cjs`). Las versiones viejas quedan en la caché.
+- **Relanzarse:** el hub que se reinicia, el Inicio que prende hubs o corre `init`, y el MCP del chat usan `selfCommand` (`hub/src/self.js`). Desde el repo o npm es `node bin/scompass.js`; en el binario, el ejecutable solo.
+- **Armarlo:** `node tools/build.mjs` arma el binario de la plataforma donde corre (hace falta Node 25.5 o más nuevo, por `--build-sea`) y lo prueba con `list`. Para tener los de Linux y Windows, el build corre en cada plataforma.
+- **Instalar:** `install.sh` prefiere el binario: lo copia a `~/.local/bin/scompass`. El dock lo encuentra en el PATH; en Windows también acepta `scompass.exe` de `where`.
+
+### Criterios de aceptación
+
+- [ ] El binario corre `init`, `list`, `serve` (con la web), `home` (crea proyectos y prende hubs) y `mcp` en un equipo sin Node.
+- [ ] Dos `scompass` que arrancan a la vez por primera vez no rompen la carpeta de la caché.
+- [ ] El repo (`node hub/bin/scompass.js`) y el `.tgz` siguen andando igual.

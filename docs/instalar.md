@@ -6,13 +6,19 @@ Se desarrolla en Linux y se prueba también en Windows 10/11 (D30). Los pasos so
 
 ## Requisitos
 
-- Node.js 22 o más nuevo (`node --version`). En Windows, el instalador de nodejs.org (o `winget install OpenJS.NodeJS.LTS`).
+- Con el binario (`scompass-v<versión>-linux-x64` o `-windows-x64.exe`), nada más: trae su propio Node. Con el `.tgz`, Node.js 22 o más nuevo (`node --version`; en Windows, el instalador de nodejs.org o `winget install OpenJS.NodeJS.LTS`).
 - Git (los datos viven en git). En Windows, `winget install Git.Git`.
 - Godot 4.8 para el addon.
-- Conexión a internet la primera vez: `npm` descarga las dependencias del hub.
+- Con el `.tgz`, conexión a internet la primera vez: `npm` descarga las dependencias del hub.
 - Para el chat de la web (opcional): Claude Code instalado (`npm i -g @anthropic-ai/claude-code`) y con tu login (correr `claude` una vez). Lo busca en el PATH; si está en otro lado, `SCOMPASS_CLAUDE=<ruta>` al levantar el hub o el Inicio.
 
 ## 1. Hub y CLI
+
+### Con el binario (sin Node)
+
+Poné el binario en una carpeta del PATH con el nombre `scompass` (`scompass.exe` en Windows). En Linux, `sh install.sh` al lado del binario lo copia a `~/.local/bin/scompass` y deja **Scope Compass** en el menú de aplicaciones (ver abajo). La primera vez que corre una versión extrae su contenido (unos 30 MB) a `~/.cache/scope-compass/runtime/` (`%LOCALAPPDATA%\scope-compass\runtime\` en Windows); `SCOMPASS_RUNTIME_DIR` cambia esa carpeta. Para actualizar, reemplazá el binario.
+
+### Con el paquete de npm
 
 ```sh
 npm install -g ./scope-compass-<versión>.tgz
@@ -25,7 +31,7 @@ Eso deja `scompass` en el PATH, que es donde lo busca el addon. Si `npm install 
 
 En Windows, desde PowerShell o cmd: `npm install -g .\scope-compass-<versión>.tgz`. Queda en `%APPDATA%\npm`, que el instalador de Node ya pone en el PATH. Si PowerShell dice que la ejecución de scripts está deshabilitada, usá `scompass.cmd` en lugar de `scompass`, o habilitalos para tu usuario: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 
-En Linux, `sh install.sh` (al lado del `.tgz`) hace el `npm install -g` y además deja **Scope Compass** en el menú de aplicaciones: levanta el Inicio con ícono en la bandeja y lo abre en el navegador. El acceso desde el teléfono se prende y apaga desde la bandeja ("Activar acceso en la red"). Para desarrollar, `tools/install.sh --dev` en el repo: `scompass` en `~/.local/bin` corre el `hub/bin/scompass.js` del repo, sin empaquetar.
+En Linux, `sh install.sh` (al lado del binario o del `.tgz`; prefiere el binario) instala `scompass` y además deja **Scope Compass** en el menú de aplicaciones: levanta el Inicio con ícono en la bandeja y lo abre en el navegador. El acceso desde el teléfono se prende y apaga desde la bandeja ("Activar acceso en la red"). Para desarrollar, `tools/install.sh --dev` en el repo: `scompass` en `~/.local/bin` corre el `hub/bin/scompass.js` del repo, sin empaquetar.
 
 Para actualizar, instalá el `.tgz` nuevo con el mismo comando. Para quitarlo: `npm uninstall -g scope-compass`.
 

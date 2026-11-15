@@ -12,6 +12,7 @@
     }
   ],
   "description": "Los comandos de §31: scompass decide <id> \"<texto>\" [--why] [--alternatives] [--ask]; decision ok|revert|reverted <id> <n> [--reply]; decision reply <id> <n> \"<respuesta>\"; decision rm <id> <n>; scompass decisions [--open|--pending|--revert] [--milestone] [--json]; list --decisions open|pending|revert; show las lista debajo de los pasos. Escriben como los pasos: leen la tarea y la escriben entera con PATCH e If-Match. (promote es 24.10.)",
+  "done_at": "2026-10-26T06:36:38.310Z",
   "links": [
     {
       "task": "m24-04",
@@ -20,10 +21,10 @@
   ],
   "milestone": "m24",
   "notes": "decide guarda why/alternatives solo si no están vacíos. decision ok/revert/reverted rechaza las preguntas (se responden con reply) y reply rechaza las que no son preguntas; reverted exige que esté marcada para revertir y conserva el reply (qué hacer). Quitar la última decisión borra el campo. list muestra \"· N sin revisar / preguntas abiertas / a revertir\" en la línea de la tarea. filterTasks suma decisions (el filtro de la web, cuando llegue, repite la regla). AGENTS.md (las tres copias) con los comandos; la regla de cuándo registrar es 24.5.",
-  "order": 3,
+  "order": 1.5,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "cd hub && node --test test/cli.test.js test/cli-hub.test.js: decide, decision ok/revert/reverted/reply/rm, show, list --decisions y decisions, con los errores (pregunta revisada, decisión respondida, revertir sin marcar) y la misma salida con y sin hub.",
   "title": "CLI: registrar y revisar decisiones",
-  "updated_at": "2026-10-21T05:03:48.007Z"
+  "updated_at": "2026-10-26T06:36:38.310Z"
 }

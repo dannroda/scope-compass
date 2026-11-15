@@ -3,6 +3,7 @@
 import { dueState, milestoneDueState } from './dates.js';
 import { listLists, listMilestones, listTasks, STATUSES } from './views.js';
 import { decisionCounts, decisionState } from './decisions.js';
+import { dueMatches } from './filters.js';
 
 const label = (t) => [t.code, t.title].filter(Boolean).join(' ');
 
@@ -65,13 +66,34 @@ export function todayOf(all, now = new Date()) {
   }
   for (const t of listTasks(all)) {
     (t.decisions ?? []).forEach((d, i) => {
-      if (decisionState(d) === 'open') out.push({ kind: 'question', id: t.id, n: i + 1, etag: t.etag, text: d.text, task: label(t), milestone: t.milestone, at: d.at });
+      if (decisionState(d) === 'open') out.push({ kind: 'question', id: t.id, n: i + 1, etag: t.etag, text: d.text, task: label(t), milestone: t.milestone, at: d.at, ...tagsOf(t) });
     });
     if (t.status === 'done') continue;
     const s = dueState(t.due, now);
     if (t.status === 'doing' || s === 'overdue' || s === 'today') {
-      out.push({ kind: 'task', id: t.id, etag: t.etag, text: label(t), status: t.status, milestone: t.milestone, ...(t.due && { due: t.due, due_state: s }) });
+      out.push({ kind: 'task', id: t.id, etag: t.etag, text: label(t), status: t.status, milestone: t.milestone, ...(t.due && { due: t.due, due_state: s }), ...tagsOf(t) });
     }
   }
   return out.sort(byToday);
+}
+
+// Las áreas (31.4) son las etiquetas de la tarea; los ítems de lista no tienen.
+const tagsOf = (t) => (t.tags?.length ? { tags: t.tags } : {});
+
+/**
+ * Esta semana (31.3): ítems de lista y tareas sin terminar que vencen después de hoy y antes de la medianoche de
+ * dentro de 7 días (la regla de `list --due week`, sin lo vencido ni lo de hoy, que ya están en Hoy). Por fecha.
+ */
+export function weekOf(all, now = new Date()) {
+  const soon = (due) => dueState(due, now) === 'later' && dueMatches({ due }, 'week', now);
+  const out = [];
+  for (const l of listLists(all.lists ?? [])) {
+    l.items.forEach((x, i) => {
+      if (!x.done && soon(x.due)) out.push({ kind: 'item', list: l.id, list_title: l.title, n: i + 1, etag: l.etag, text: x.text, due: x.due, due_state: 'later', ...(x.repeat && { repeat: x.repeat }) });
+    });
+  }
+  for (const t of listTasks(all)) {
+    if (t.status !== 'done' && soon(t.due)) out.push({ kind: 'task', id: t.id, etag: t.etag, text: label(t), status: t.status, milestone: t.milestone, due: t.due, due_state: 'later', ...tagsOf(t) });
+  }
+  return out.sort((a, b) => a.due.localeCompare(b.due));
 }

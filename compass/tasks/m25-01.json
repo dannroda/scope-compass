@@ -6,31 +6,37 @@
     {
       "alternatives": "sumar los MCP del usuario",
       "at": "2026-10-21T05:08:28.462Z",
+      "review": "ok",
       "text": "Con --strict-mcp-config, el chat solo ve el MCP scompass y no los otros servidores del usuario",
       "why": "las herramientas son siempre las mismas y no choca con un scompass ya registrado"
     },
     {
       "alternatives": "leer ~/.claude/projects",
       "at": "2026-10-21T05:08:29.024Z",
+      "review": "ok",
       "text": "El hub guarda una copia liviana de cada conversación para mostrarla",
       "why": "las sesiones de Claude Code son un formato interno"
     },
     {
       "at": "2026-10-21T05:08:29.488Z",
+      "review": "ok",
       "text": "Herramientas permitidas: mcp__scompass, Read, Grep y Glob; nada de Edit ni Bash",
       "why": "sin pedidos de permiso desde la web, solo lo que no cambia el repo"
     },
     {
       "at": "2026-10-21T05:08:29.797Z",
+      "review": "ok",
       "text": "El proceso se cierra tras 10 minutos sin uso; cortar mata el proceso si no termina en 5 s"
     },
     {
       "at": "2026-10-21T05:08:30.088Z",
+      "review": "ok",
       "text": "Las conversaciones viven en <config>/scope-compass/chats/<sha1 de la ruta>/ junto a projects.json",
       "why": "son de la máquina, no van a git"
     }
   ],
   "description": "Sección §32 en la spec con los criterios de M25 y D43 en decisiones.md: el chat lanza el claude instalado con -p --input-format/--output-format stream-json, sin dependencias, con el login y la config del usuario. Permisos fijados de antemano (MCP scompass y herramientas de lectura), sin aprobar desde la web. Solo 127.0.0.1 aunque haya --lan, porque no hay login. Descartado por ahora: ACP con @agentclientprotocol/claude-agent-acp (trae el Agent SDK, zod y otro Claude Code; conviene si el chat crece a consola de trabajo, por los pedidos de permiso) y el Agent SDK directo.",
+  "done_at": "2026-10-26T06:36:47.586Z",
   "links": [
     {
       "task": "m25-02",
@@ -41,8 +47,8 @@
   "notes": "Claude Code 2.1.306 tiene --session-id <uuid>: el hub elige el id al crear la conversación y no hace falta esperar al init. stream-json de salida pide --verbose.",
   "order": 1,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "docs/spec.md §32 y docs/decisiones.md D43; la suite sigue pasando (432)",
   "title": "Spec y decisión del chat",
-  "updated_at": "2026-10-21T05:10:05.104Z"
+  "updated_at": "2026-10-26T06:37:46.600Z"
 }

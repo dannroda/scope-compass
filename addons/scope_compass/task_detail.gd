@@ -509,7 +509,7 @@ func _render_links(t: Dictionary) -> void:
 					status = " · " + s.label
 			b.text = "%s: %s%s" % [kind[1], board.task_name(id), status]
 			# En rojo: el vínculo roto, o la tarea sin terminar que bloquea a esta.
-			if other == null or (kind[0] == "blocked_by" and other.status != "done" and t.status != "done"):
+			if other == null or (kind[0] == "blocked_by" and not other.status in ["done", "review"] and t.status != "done"):
 				b.add_theme_color_override("font_color", BLOCKED_COLOR)
 			if other == null:
 				b.disabled = true

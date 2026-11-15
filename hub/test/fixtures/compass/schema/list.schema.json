@@ -49,7 +49,7 @@
           },
           "repeat": {
             "type": "object",
-            "description": "Se repite: al tildarlo, due avanza un período desde la fecha límite y el ítem sigue sin tildar. Requiere due.",
+            "description": "Se repite: al tildarlo, due avanza interval períodos (1 si no está) desde la fecha límite y el ítem sigue sin tildar. Requiere due.",
             "required": [
               "every"
             ],
@@ -62,6 +62,11 @@
                   "month",
                   "year"
                 ]
+              },
+              "interval": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Cada cuántos períodos (cada 2 días); sin él, 1"
               }
             }
           },

@@ -799,7 +799,8 @@
       refsOf(t).length ? h('span', { class: 'refmark' + (brokenRefs(t).length ? ' bad' : ''), title: brokenRefs(t).length ? 'Tiene referencias rotas' : refsOf(t).length + ' referencias a documentos' },
         brokenRefs(t).length ? '⚠ ' : '§ ', refsOf(t).length) : null,
       decisionMark(t),
-      openBlockers(t).length ? h('span', { class: 'blockmark', title: 'Bloqueada por: ' + openBlockers(t).map(taskName).join('; ') }, 'Bloqueada') : null,
+      openBlockers(t).length ? h('span', { class: 'blockmark', title: 'Bloqueada por: ' + openBlockers(t).map(taskName).join('; ') }, 'Bloqueada')
+        : reviewBlockers(t).length ? h('span', { class: 'blockmark review', title: 'Desbloqueada, en Revisión: ' + reviewBlockers(t).map(taskName).join('; ') }, 'Desbloqueada en revisión') : null,
       t.due ? dueMark(t) : null,
       p.total ? h('span', { class: 'cl' }, h('span', { class: 'bar', role: 'img', 'aria-label': p.done + ' de ' + p.total + ' pasos' }, h('i', { style: 'width:' + pct + '%' })), p.done + '/' + p.total) : null);
   }
@@ -1255,7 +1256,9 @@
     return out;
   }
   // Tareas sin terminar que bloquean a esta (una tarea hecha no está bloqueada).
-  const openBlockers = (t) => (t.status === 'done' ? [] : linkView(t.id).blockedBy.filter((b) => { const x = taskById(b); return x && x.status !== 'done'; }));
+  const openBlockers = (t) => (t.status === 'done' ? [] : linkView(t.id).blockedBy.filter((b) => { const x = taskById(b); return x && x.status !== 'done' && x.status !== 'review'; }));
+  // Las que la bloqueaban y están en Revisión: ya no bloquean, pero la tarjeta avisa (desbloqueada en revisión).
+  const reviewBlockers = (t) => (t.status === 'done' ? [] : linkView(t.id).blockedBy.filter((b) => taskById(b)?.status === 'review'));
   // ¿from bloquea a to cerraría un ciclo? ignore: par cuyo vínculo actual se va a reemplazar.
   function wouldCycle(from, to) {
     const seen = new Set();
@@ -1295,7 +1298,7 @@
       for (const id of v[kind]) {
         const other = taskById(id);
         const st = other && STATUSES.find((s) => s.id === (other.status || 'todo'));
-        box.append(h('div', { class: 'link-row' + (other ? '' : ' broken') + (kind === 'blockedBy' && other && other.status !== 'done' && t.status !== 'done' ? ' blocking' : ''), 'data-kind': kind, 'data-task': id },
+        box.append(h('div', { class: 'link-row' + (other ? '' : ' broken') + (kind === 'blockedBy' && other && other.status !== 'done' && other.status !== 'review' && t.status !== 'done' ? ' blocking' : ''), 'data-kind': kind, 'data-task': id },
           h('span', { class: 'link-kind' }, label),
           other
             ? h('button', { class: 'link-task', type: 'button', title: 'Abrir la tarea', onclick: () => goToTask(id) }, rich(taskName(id), true))
@@ -1896,6 +1899,12 @@
   // Vista Listas (8.4, spec §16.4). La regla de tildar (lo que se repite avanza) y el id de una lista nueva los
   // pone el hub: la web solo muestra y manda.
   const EVERY = { day: 'cada día', week: 'cada semana', month: 'cada mes', year: 'cada año' };
+  // repeat con interval (31.6), como repeatLabel y repeatOf de hub/src: "cada 2 días"; 1 no se escribe.
+  const EVERY_N = { day: 'días', week: 'semanas', month: 'meses', year: 'años' };
+  const repeatLabel = (r) => ((r.interval ?? 1) > 1 ? `cada ${r.interval} ${EVERY_N[r.every]}` : EVERY[r.every]);
+  const repeatOf = (every, v) => { const n = Math.max(1, Math.floor(Number(v)) || 1); return n > 1 ? { every, interval: n } : { every }; };
+  const intervalInput = (id, value) => [h('label', { for: id, class: 'sr' }, 'Cada cuántos'),
+    h('input', { type: 'number', id, name: 'interval', min: 1, step: 1, value: value ?? 1, title: 'Cada cuántos (2: cada 2 días)', style: 'width:5.5em', 'data-keep': '1' })];
   function applyList(id, doc) {
     const i = S.lists.findIndex((x) => x.id === id);
     if (doc === null) { if (i >= 0) S.lists.splice(i, 1); }
@@ -2018,7 +2027,7 @@
       if (!text) return;
       const date = f.elements.date.value, time = f.elements.time.value, every = f.elements.repeat.value;
       if (every && !date) { toast('Para repetirlo hace falta una fecha.'); return; }
-      const item = { text, done: false, created_at: new Date().toISOString(), ...(date ? { due: date + (time ? 'T' + time : '') } : {}), ...(every ? { repeat: { every } } : {}) };
+      const item = { text, done: false, created_at: new Date().toISOString(), ...(date ? { due: date + (time ? 'T' + time : '') } : {}), ...(every ? { repeat: repeatOf(every, f.elements.interval.value) } : {}) };
       f.reset();
       f.elements.text.focus();
       listWrite(l.id, (cur) => api.listPatch(cur.id, { items: [...cur.items, item] }, cur.etag));
@@ -2029,6 +2038,7 @@
     h('label', { for: 'item-time', class: 'sr' }, 'Hora'), h('input', { type: 'time', id: 'item-time', name: 'time', 'data-keep': '1' }),
     h('label', { for: 'item-repeat', class: 'sr' }, 'Repetir'),
     h('select', { id: 'item-repeat', name: 'repeat', 'data-keep': '1' }, h('option', { value: '' }, 'No se repite'), Object.entries(EVERY).map(([k, v]) => h('option', { value: k }, v))),
+    intervalInput('item-interval'),
     h('button', { class: 'btn primary', type: 'submit' }, 'Agregar'));
   }
 
@@ -2051,7 +2061,7 @@
       } }),
       h('label', { for: id, class: 'text' }, rich(x.text)),
       x.due ? h('span', { class: 'due' + (g === 'overdue' ? ' bad' : g === 'today' ? ' today' : '') }, showDue(x.due)) : null,
-      x.repeat ? h('span', { class: 'rep', title: 'Al tildarlo, la fecha avanza ' + EVERY[x.repeat.every] }, '↻ ' + EVERY[x.repeat.every]) : null,
+      x.repeat ? h('span', { class: 'rep', title: 'Al tildarlo, la fecha avanza ' + repeatLabel(x.repeat) }, '↻ ' + repeatLabel(x.repeat)) : null,
       task ? h('a', { href: '#', class: 'item-task', onclick: (e) => { e.preventDefault(); goToTask(task.id); } }, '→ ', task.code || task.id) : x.task ? h('span', { class: 'muted small' }, '→ ' + x.task) : null,
       h('span', { class: 'acts' },
         !x.task && S.milestones.length ? h('button', { class: 'btn ghost small', type: 'button', title: 'Crea una tarea con este texto y deja el ítem enlazado', onclick: () => toTask(l, n) }, 'Pasar a tarea') : null,
@@ -2073,7 +2083,7 @@
       listWrite(l.id, (cur) => api.listPatch(cur.id, { items: cur.items.map((y, i) => {
         if (i !== n - 1) return y;
         const { due, repeat, ...rest } = y;
-        return { ...rest, text, ...(d ? { due: d + (t ? 'T' + t : '') } : {}), ...(every ? { repeat: { every } } : {}) };
+        return { ...rest, text, ...(d ? { due: d + (t ? 'T' + t : '') } : {}), ...(every ? { repeat: repeatOf(every, f.elements.interval.value) } : {}) };
       }) }, cur.etag));
     }, onkeydown: (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } } },
     h('label', { for: 'ie-text', class: 'sr' }, 'Texto'), h('input', { type: 'text', id: 'ie-text', name: 'text', value: x.text, 'data-keep': '1' }),
@@ -2081,6 +2091,7 @@
     h('label', { for: 'ie-time', class: 'sr' }, 'Hora'), h('input', { type: 'time', id: 'ie-time', name: 'time', value: time, 'data-keep': '1' }),
     h('label', { for: 'ie-repeat', class: 'sr' }, 'Repetir'),
     h('select', { id: 'ie-repeat', name: 'repeat', 'data-keep': '1' }, h('option', { value: '' }, 'No se repite'), Object.entries(EVERY).map(([k, v]) => h('option', { value: k, selected: x.repeat?.every === k }, v))),
+    intervalInput('ie-interval', x.repeat?.interval),
     h('button', { class: 'btn primary', type: 'submit' }, 'Guardar'), h('button', { class: 'btn ghost', type: 'button', onclick: close }, 'Cancelar')));
   }
 

@@ -3,12 +3,13 @@
   "code": "21.5",
   "created_at": "2026-10-16T04:38:54.944Z",
   "description": "Una caja de texto que filtra la lista por código, título o id, sin tildes, como scompass list --q.",
+  "done_at": "2026-10-26T06:36:30.473Z",
   "milestone": "m21",
   "notes": "Board.search(q) y Board.norm (las reglas de filters.js: minúsculas, sin tildes ni ñ, todas las palabras en código, título o id). Busca en todos los hitos, como list --q: lo de otro hito lleva ' · M5' al final, los grupos van desplegados y lo que se pliega buscando no cambia la lista del hito. Esc o la × la vacían. La caja se esconde con la lista plegada.",
-  "order": 5,
+  "order": 0.75,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "dock.test.js 21.5: menu PAUSA encuentra 'Menú de pausa', por id en otro hito con su código, código + palabra, todas las palabras, y vacía vuelve a la lista del hito con Hecho plegado.",
   "title": "Buscar tareas en el dock",
-  "updated_at": "2026-10-16T06:58:28.549Z"
+  "updated_at": "2026-10-26T06:36:30.473Z"
 }

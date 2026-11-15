@@ -1,0 +1,35 @@
+{
+  "checklist": [],
+  "code": "",
+  "created_at": "2026-11-12T14:44:02.265Z",
+  "decisions": [
+    {
+      "alternatives": "Sacarla en castellano y traducirla después. Traducirla ahora, siguiendo el idioma del editor o del navegador, como godot-agent.",
+      "asked": true,
+      "at": "2026-11-12T14:47:56.025Z",
+      "reply": "Sí, se traduce al inglés antes del lanzamiento.",
+      "session": "c2f5977e-adf2-4184-8c89-effa5661ea6e",
+      "text": "¿La UI (web, Inicio, dock y CLI) se traduce al inglés antes del lanzamiento, o sale solo en castellano y la landing en inglés lo avisa?",
+      "why": "La landing en inglés hoy dice \"The interface is in Spanish\" y nombra los botones en castellano. Traducir es trabajo grande (m) y cambia las capturas en inglés."
+    },
+    {
+      "asked": true,
+      "at": "2026-11-12T14:47:56.065Z",
+      "reply": "vibe",
+      "session": "c2f5977e-adf2-4184-8c89-effa5661ea6e",
+      "text": "¿Qué etiqueta de uso de IA lleva Scope Compass en dann.com.ar: hand, assisted o vibe? (Godot Agent está en vibe.)",
+      "why": "Es una declaración tuya sobre cómo se hizo; no la puedo decidir yo."
+    }
+  ],
+  "description": "La hace la sesión de dann.com.ar (dann-com-ar-fb), a la que se le pidió el 2026-11-12. De este lado hay que pasarle los textos, las capturas y el enlace a releases/latest, y revisar que lo que dice coincida con lo que hace la release.",
+  "milestone": "m32",
+  "notes": "Borrador en dann.com.ar/content/pages/scope-compass.json (draft: true): se ve con npm run dev en /es/ y /en/scope-compass/. Los pasos de instalación usan el binario. Si el primer release sale solo con el .tgz, hay que avisarle a dann-com-ar-fb para que los pase a npm install -g con Node 22. Por ahora no usa el logo; si lo suma, pone el crédito de @icons/Voxy. Le falta de este lado: las capturas con alt y epígrafe (m32-08), el nivel de IA, si se traduce la UI y el README en inglés (m32-06).",
+  "order": 7,
+  "priority": "medium",
+  "refs": [],
+  "size": "s",
+  "status": "todo",
+  "test": "",
+  "title": "Landing page en dann.com.ar",
+  "updated_at": "2026-11-12T14:54:35.203Z"
+}

@@ -6,7 +6,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
 
 - **Usá la CLI `scompass`, no edites los JSON a mano.** Valida, escribe en formato canónico, regenera el export markdown y, si hay un hub corriendo, avisa al instante a la UI web y al dock de Godot.
 - Corré los comandos desde cualquier carpeta del proyecto (busca `compass/` hacia arriba) o con `--dir <proyecto>`.
-- Si `scompass` no está en el PATH: `node <carpeta de scope-compass>/hub/bin/scompass.js`.
+- Si `scompass` no está en el PATH: la ruta al binario de la release, o `node <carpeta de scope-compass>/hub/bin/scompass.js` desde un clon del repo.
 - Agregá `--json` para leer la salida desde un programa. Código de salida 0 si anduvo; el error va por stderr.
 - No hace falta que el hub esté corriendo: sin hub, la CLI escribe directo en `compass/`. Con el Inicio corriendo (`scompass home`), la CLI pasa por él solo (lo encuentra en el registro).
 - Si la CLI avisa que el hub es de otra versión, reinicialo con `scompass restart` antes de seguir: un hub viejo puede no conocer campos nuevos.
@@ -19,7 +19,7 @@ Si en tus herramientas aparece el servidor `scompass` (`list_tasks`, `show_task`
 Para tenerlo en Claude Code en todos los proyectos (toma el de la carpeta de la sesión; `dir` en cada herramienta apunta a otro):
 
 ```sh
-claude mcp add --scope user scompass -- node <carpeta de scope-compass>/hub/bin/scompass.js mcp
+claude mcp add --scope user scompass -- scompass mcp
 ```
 
 Los hitos (`compass://milestone/<id>`), las tareas (`compass://task/<id>`) y los documentos (`compass://doc/<alias>`) se adjuntan con `@scompass:…`.
@@ -142,7 +142,7 @@ scompass decisions --revert                          # las de todo el proyecto (
 
 ## Listas
 
-Además de las tareas, un proyecto puede tener listas (`compass/lists/<id>.json`): pendientes, compras, ideas, assets a conseguir. Cada ítem es `{ text, done, created_at, due?, repeat?, task? }`; `due` es la fecha límite (`YYYY-MM-DD` o `YYYY-MM-DDTHH:MM`, hora local), `repeat` `{ "every": "day" | "week" | "month" | "year" }` (requiere `due`) y `task` el id de la tarea creada desde el ítem.
+Además de las tareas, un proyecto puede tener listas (`compass/lists/<id>.json`): pendientes, compras, ideas, assets a conseguir. Cada ítem es `{ text, done, created_at, due?, repeat?, task? }`; `due` es la fecha límite (`YYYY-MM-DD` o `YYYY-MM-DDTHH:MM`, hora local), `repeat` `{ "every": "day" | "week" | "month" | "year", "interval"? }` (requiere `due`; `interval`: cada cuántos períodos, 1 si no está) y `task` el id de la tarea creada desde el ítem.
 
 ```sh
 scompass lists                                      # listas con lo que queda pendiente
@@ -150,13 +150,14 @@ scompass lists show compras --json                  # { "id", "etag", "title", "
 scompass lists add "Libros para leer"               # el id sale del título: libros-para-leer
 scompass item add compras "Yerba"
 scompass item add pendientes "Pagar la luz" --due 2026-10-10 --repeat month
+scompass item add rutina "Regar las plantas" --due 2026-11-03 --repeat day --interval 2   # cada 2 días
 scompass item check compras 2                       # ítems numerados desde 1, como en lists show
 scompass item set pendientes 1 --due ""             # quita la fecha
 scompass item clear compras                         # quita los tildados
 scompass item task assets 3 --milestone m06         # pasa el ítem a una tarea y lo enlaza
 ```
 
-- Tildar un ítem que se repite no lo deja tildado: su `due` avanza un período desde la fecha límite (31/01 → 28/02). No se destilda; si hace falta, cambiale la fecha con `item set --due`.
+- Tildar un ítem que se repite no lo deja tildado: su `due` avanza un período (o `interval` períodos) desde la fecha límite (31/01 → 28/02). No se destilda; si hace falta, cambiale la fecha con `item set --due`.
 - Algo con etapas o pasos va como tarea en un hito; algo que solo se tilda va en una lista. Si un ítem crece, pasalo a tarea con `item task`.
 
 ## Playtest
@@ -209,7 +210,7 @@ Cada hub que se levanta anota su proyecto en `~/.config/scope-compass/projects.j
 scompass home list --json   # { "file", "projects": [ { "path", "name", "found", "hubs": [ { "pid", "port" } ] } ] }
 scompass home add           # anota este proyecto sin levantar su hub (o: home add <carpeta>)
 scompass home rm <carpeta>  # lo quita del registro; no toca sus datos
-scompass home               # levanta el Inicio (uno por usuario): GET /api/today junta lo vencido, de hoy y en curso
+scompass home               # levanta el Inicio (uno por usuario): GET /api/today junta lo vencido, de hoy y en curso, y lo de los próximos 7 días (week)
 ```
 
 ## Más

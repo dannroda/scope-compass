@@ -915,6 +915,9 @@ func _build_tree() -> void:
 			if not blockers.is_empty():
 				it.set_custom_color(0, BLOCKED_COLOR)
 				it.set_tooltip_text(0, "%s\nBloqueada por: %s" % [tip, "; ".join(blockers.map(board.task_name))])
+			elif not board.review_blockers(t.id).is_empty():
+				it.set_custom_color(0, TODAY_COLOR)
+				it.set_tooltip_text(0, "%s\nDesbloqueada, en Revisión: %s" % [tip, "; ".join(board.review_blockers(t.id).map(board.task_name))])
 			if t.id == selected_task:
 				it.select(0)
 

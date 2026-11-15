@@ -5,7 +5,6 @@ import { existsSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { exportMarkdown } from './export-md.js';
 import { changeDocs, checkRefs, diffSections, loadDocs, resolveRef, searchDocs, sectionMarkdown, stampIds, suggestRefs } from './docs.js';
@@ -30,14 +29,14 @@ import { taskHistory } from './history.js';
 import { promoteDecision } from './promote.js';
 import { forgetProject, projectsFile, projectsStatus, pruneTempProjects, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listPlaytests, listTasks } from './views.js';
-import { checkItem, freeId, slugify } from './lists.js';
+import { checkItem, freeId, newItem, repeatOf, slugify } from './lists.js';
 import { migrateSessions, nextPlaytest, sessionState } from './playtests.js';
-import { dueState, EVERY, isValidDue, localDay, localStamp, milestoneDueState, showDue } from './dates.js';
-import { brokenLinks, linksOf, linkView, openBlockers, wouldCycle } from './links.js';
+import { dueState, isValidDue, repeatLabel, localDay, localStamp, milestoneDueState, showDue } from './dates.js';
+import { brokenLinks, linksOf, linkView, openBlockers, reviewBlockers, wouldCycle } from './links.js';
 import { decisionCounts, decisionLabel, decisionState, DECISION_STATES, MARK } from './decisions.js';
 import { descriptionTemplate, DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, SIZES, splitList } from './filters.js';
+import { selfCommand } from './self.js';
 
-const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
 const STATUS = { todo: 'Pendiente', paused: 'Pausado', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
 // --lan (D36): las direcciones de este equipo en la red, para abrir el hub o el Inicio desde el teléfono.
 const lanUrls = (port) => Object.values(networkInterfaces()).flat().filter((a) => a.family === 'IPv4' && !a.internal).map((a) => `http://${a.address}:${port}/`);
@@ -77,6 +76,8 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   add "<título>" --milestone m00 [--code 0.11] [--status todo] [--due 2026-10-10]
       [--tags arte,audio] [--priority high|medium|low] [--size s|m|l] [--assignee nombre] [--description "…"]
   move <id> <todo|paused|doing|review|done>
+  rm <id>                                   borra la tarea (y sus capturas guardadas por la app que nadie más cita);
+                                            los vínculos de otras tareas hacia ella quedan rotos, como en la web
   check <id> <n> [--undo]                   tilda el paso n (desde 1)
   step add <id> "<texto>" [--detail "…"]     agrega un paso (texto corto; el detalle se despliega)
   step set <id> <n> [--text …] [--detail …]  cambia un paso (--detail "" lo quita)
@@ -108,11 +109,11 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   lists add "<título>"                      crea una lista (el id sale del título: "Libros para leer" → libros-para-leer)
   lists set <lista> --title "…"              le cambia el título
   lists rm <lista>                          borra la lista
-  item add <lista> "<texto>" [--due 2026-10-10] [--repeat month]
+  item add <lista> "<texto>" [--due 2026-10-10] [--repeat month] [--interval 2]
                                             agrega un ítem (--due: fecha límite, YYYY-MM-DD o YYYY-MM-DDTHH:MM;
-                                            --repeat day|week|month|year, con --due)
+                                            --repeat day|week|month|year, con --due; --interval: cada cuántos)
   item check <lista> <n> [--undo]           tilda el ítem n (desde 1); si se repite, su fecha avanza un período
-  item set <lista> <n> [--text …] [--due …] [--repeat …]
+  item set <lista> <n> [--text …] [--due …] [--repeat …] [--interval …]
                                             cambia un ítem (--due "" quita la fecha; --repeat "" deja de repetirlo)
   item rm <lista> <n>                       quita un ítem
   item clear <lista>                        quita los ítems tildados
@@ -180,7 +181,7 @@ const OPTIONS = {
   dir: { type: 'string' }, json: { type: 'boolean' }, etag: { type: 'string' },
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
-  raw: { type: 'boolean' }, check: { type: 'boolean' }, template: { type: 'string' }, due: { type: 'string' }, repeat: { type: 'string' },
+  raw: { type: 'boolean' }, check: { type: 'boolean' }, template: { type: 'string' }, due: { type: 'string' }, repeat: { type: 'string' }, interval: { type: 'string' },
   port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, lan: { type: 'boolean' }, force: { type: 'boolean' }, log: { type: 'string' },
   q: { type: 'string' }, blocked: { type: 'boolean' }, unblocked: { type: 'boolean' }, 'pending-steps': { type: 'boolean' }, 'with-refs': { type: 'boolean' },
   tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, size: { type: 'string' }, assignee: { type: 'string' },
@@ -340,7 +341,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     unregisterHub();
     if (restart) {
       const again = argv.filter((x, i) => x !== '--port' && argv[i - 1] !== '--port' && !x.startsWith('--port=') && x !== '--open' && x !== '--lan');
-      spawn(process.execPath, [BIN, ...again, '--port', String(addr.port), ...(withLan ? ['--lan'] : [])], { cwd, env: process.env, stdio: 'inherit', detached: true, windowsHide: true }).unref();
+      spawn(...selfCommand([...again, '--port', String(addr.port), ...(withLan ? ['--lan'] : [])]), { cwd, env: process.env, stdio: 'inherit', detached: true, windowsHide: true }).unref();
       if (!o.json) print('Reiniciando el Inicio…');
     }
     return 0;
@@ -522,7 +523,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (restart) {
         // En el mismo puerto que tenía (con --port 0 tomaría otro al azar).
         const again = argv.filter((x, i) => x !== '--port' && argv[i - 1] !== '--port' && !x.startsWith('--port='));
-        spawn(process.execPath, [BIN, ...again, '--port', String(addr.port)], { cwd, env: process.env, stdio: 'inherit', detached: true, windowsHide: true }).unref();
+        spawn(...selfCommand([...again, '--port', String(addr.port)]), { cwd, env: process.env, stdio: 'inherit', detached: true, windowsHide: true }).unref();
         if (!o.json) print('Reiniciando el hub…');
         if (stdin === process.stdin) process.exit(0);
       }
@@ -563,7 +564,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         const cl = t.checklist ?? [];
         const steps = cl.length ? `  ${cl.filter((c) => c.done).length}/${cl.length}` : '';
         const blockers = t.status === 'done' ? [] : openBlockers(everything, t.id);
-        const blocked = blockers.length ? `  [bloqueada por ${blockers.join(', ')}]` : '';
+        const inReview = blockers.length || t.status === 'done' ? [] : reviewBlockers(everything, t.id);
+        const blocked = blockers.length ? `  [bloqueada por ${blockers.join(', ')}]` : inReview.length ? `  [desbloqueada, en revisión: ${inReview.join(', ')}]` : '';
         const when = t.due ? `  · ${dueNote(t.due, t.status === 'done')}` : '';
         const dc = decisionCounts(t);
         const more = [...extras(t), dc.open && `${dc.open} ${dc.open === 1 ? 'pregunta abierta' : 'preguntas abiertas'}`, dc.pending && `${dc.pending} sin revisar`,
@@ -1021,6 +1023,19 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       return written({ id: r.id, etag: r.etag, ...r.doc }, `${id} → ${STATUS[status]}`);
     },
 
+    async rm() {
+      const id = need(rest[0], 'el id');
+      const cur = await store.get('tasks', id);
+      // Las tareas con un vínculo hacia esta: no se tocan (como en la web), pero quedan rotos y se avisa.
+      const linked = listTasks(await store.loadAll()).filter((t) => t.id !== id && linksOf(t).some((l) => l.task === id)).map((t) => t.id);
+      await store.delete('tasks', id, { ifMatch: o.etag ?? cur.etag });
+      // Sus capturas guardadas por la app que nadie más cita, como DELETE /api/tasks/:id (con hub ya las borró él).
+      const all = listTasks(await store.loadAll());
+      for (const path of cur.doc.images ?? []) await dropImage(project, path, all);
+      if (linked.length) warn(`aviso: quedan vínculos rotos hacia ${id} en ${linked.join(', ')} (scompass link rm <tarea> ${id} los quita)`);
+      return written({ id }, `Borrada ${id}: ${cur.doc.title}`);
+    },
+
     async check() {
       const id = need(rest[0], 'el id');
       const n = Number(need(rest[1], 'el número de paso'));
@@ -1190,7 +1205,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         if (o.json) return done({ id: l.id, etag: l.etag, ...l.doc });
         print(`${l.doc.title}  [${l.id}]`);
         if (!l.doc.items.length) print('  (vacía)');
-        l.doc.items.forEach((x, i) => print(`  ${String(i + 1).padStart(2)}. [${x.done ? 'x' : ' '}] ${x.text}${x.due ? `  · ${dueNote(x.due, x.done)}` : ''}${x.repeat ? `  ↻ ${EVERY[x.repeat.every]}` : ''}${x.task ? `  → ${x.task}` : ''}`));
+        l.doc.items.forEach((x, i) => print(`  ${String(i + 1).padStart(2)}. [${x.done ? 'x' : ' '}] ${x.text}${x.due ? `  · ${dueNote(x.due, x.done)}` : ''}${x.repeat ? `  ↻ ${repeatLabel(x.repeat)}` : ''}${x.task ? `  → ${x.task}` : ''}`));
         return 0;
       }
       if (sub === 'add') {
@@ -1225,16 +1240,14 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         if (!Number.isInteger(n) || n < 1 || n > items.length) throw new StoreError('invalid_argument', `ítem inexistente: ${arg} (la lista tiene ${items.length})`);
         return n;
       };
-      const repeat = (v) => { if (v !== '' && !EVERY[v]) throw new StoreError('invalid_argument', `repetición inválida: ${v} (day, week, month, year)`); return v; };
       const needsDue = (x) => { if (x.repeat && !x.due) throw new StoreError('invalid_argument', 'un ítem que se repite necesita fecha límite (--due)'); return x; };
       const save = async (next, msg) => {
         const r = await store.patch('lists', id, { items: next }, { ifMatch: o.etag ?? cur.etag });
         return written({ id: r.id, etag: r.etag, ...r.doc }, msg);
       };
       if (sub === 'add') {
-        const text = need(arg, 'el texto');
-        const item = needsDue({ text, done: false, created_at: (now ?? (() => new Date().toISOString()))(),
-          ...(o.due ? { due: due(o.due) } : {}), ...(o.repeat ? { repeat: { every: repeat(o.repeat) } } : {}) });
+        const item = newItem({ text: need(arg, 'el texto'), due: o.due ? due(o.due) : undefined, repeat: repeatOf(o.repeat, o.interval) },
+          (now ?? (() => new Date().toISOString()))());
         return save([...items, item], `${id}: ítem ${items.length + 1} agregado`);
       }
       if (sub === 'clear') {
@@ -1252,10 +1265,11 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       }
       if (sub === 'rm') return save(items.toSpliced(n - 1, 1), `${id}: ítem ${n} quitado`);
       if (sub === 'set') {
-        if (o.text === undefined && o.due === undefined && o.repeat === undefined) throw new UsageError('falta --text, --due o --repeat');
+        if (o.text === undefined && o.due === undefined && o.repeat === undefined && o.interval === undefined) throw new UsageError('falta --text, --due, --repeat o --interval');
         const { due: d, repeat: rp, ...others } = it;
         const nd = o.due !== undefined ? due(o.due) : d;
-        const nr = o.repeat !== undefined ? (repeat(o.repeat) ? { every: o.repeat } : null) : rp;
+        // --interval solo cambia el intervalo; --repeat solo, la unidad (cada 2 días → cada 2 semanas).
+        const nr = o.repeat === '' ? null : o.repeat === undefined && o.interval === undefined ? rp : repeatOf(o.repeat ?? rp?.every, o.interval ?? rp?.interval);
         const next = needsDue({ ...others, ...(o.text !== undefined ? { text: o.text } : {}), ...(nd ? { due: nd } : {}), ...(nr ? { repeat: nr } : {}) });
         return save(items.with(n - 1, next), `${id}: ítem ${n} actualizado`);
       }

@@ -1,0 +1,50 @@
+{
+  "checklist": [
+    {
+      "done": true,
+      "text": "Separar las filas de Hoy en tres secciones"
+    },
+    {
+      "done": true,
+      "text": "Esperan tu respuesta plegada por defecto, recordada en localStorage"
+    },
+    {
+      "done": true,
+      "text": "Probar 1440×900 y 390×844 con 7 preguntas"
+    }
+  ],
+  "code": "31.1",
+  "created_at": "2026-11-03T05:49:23.299Z",
+  "decisions": [
+    {
+      "alternatives": "las preguntas en una sección aparte debajo de Esta semana",
+      "at": "2026-11-03T05:58:59.434Z",
+      "text": "Orden dentro de Hoy: lo vencido y de hoy, después los grupos en curso y al final Esperan tu respuesta, en la misma caja",
+      "why": "una sola franja; las preguntas quedan a un clic sin empujar nada"
+    },
+    {
+      "alternatives": "dejar todo y aceptar scroll",
+      "at": "2026-11-03T05:58:59.678Z",
+      "text": "En el teléfono (≤560 px) se ocultan la fecha y los subtítulos de las secciones, Anotar va en dos filas, las áreas en una fila que se desplaza y las filas son más bajas",
+      "why": "con 4 vencidos/hoy y 4 en curso, sin eso lo en curso quedaba debajo del pliegue en 390×844"
+    },
+    {
+      "alternatives": "casilla que la pasa a done con move-task",
+      "at": "2026-11-03T05:58:59.924Z",
+      "text": "Las tareas vencidas o de hoy siguen siendo un enlace al tablero, sin casilla; las casillas son para los ítems",
+      "why": "tildar una tarea es moverla de estado y se saltearía Revisión"
+    }
+  ],
+  "description": "Hoy pone las preguntas abiertas de los agentes primero y sueltas: con 7 de un proyecto ocupan la primera pantalla y lo mío queda abajo (en el teléfono, ~4 pantallas). Separar Hoy en secciones: arriba \"Hoy\" (vencido y de hoy, con casillas), después \"En curso\" (el grupo plegable por proyecto de 23.1) y al final \"Esperan tu respuesta (n)\", plegada por defecto y recordada en el navegador como los grupos en curso.",
+  "milestone": "m31",
+  "notes": "web/home.js renderHoy + rowsOf (la deduplicación de worktrees, compartida con Esta semana). El pliegue de las preguntas se guarda en localStorage scompass.home.questions-open. El test viejo de ui-home (preguntas arriba) se cambió a plegadas. Medido con datos de ejemplo (4 vencidos/hoy, 4 en curso, 7 preguntas): lo mío termina en 727 px a 1440×900 y en 775 px a 390×844.",
+  "order": 1,
+  "refs": [],
+  "status": "review",
+  "tags": [
+    "ui"
+  ],
+  "test": "Con 7 preguntas abiertas en un proyecto y un ítem vencido en otro, abrir el Inicio en 1440×900 y en 390×844: el ítem y lo en curso se ven sin scrollear; Esperan tu respuesta (7) está plegada; desplegarla, recargar y sigue desplegada. Test: hub/test/m31-criteria.test.js.",
+  "title": "Hoy en secciones: lo mío arriba, las preguntas plegadas",
+  "updated_at": "2026-11-03T05:59:30.742Z"
+}

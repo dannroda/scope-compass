@@ -10,12 +10,11 @@ import { existsSync, statSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { delimiter, dirname, join } from 'node:path';
 import { createInterface } from 'node:readline';
-import { fileURLToPath } from 'node:url';
 import { projectsFile } from './projects.js';
 import { cleanEnv, profileEnv } from './profiles.js';
+import { selfCommand } from './self.js';
 
 const WIN = process.platform === 'win32';
-const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
 export const IDLE_MS = 10 * 60 * 1000;
 export const INTERRUPT_MS = 5000;
 export const TOOLS = ['Read', 'Grep', 'Glob'];
@@ -185,7 +184,7 @@ export class ChatProcess extends EventEmitter {
     await mkdir(dir, { recursive: true });
     const mcpConfig = join(dir, 'mcp.json');
     const promptFile = join(dir, 'prompt.md');
-    await writeFile(mcpConfig, JSON.stringify({ mcpServers: { scompass: { command: process.execPath, args: [BIN, 'mcp', '--dir', this.projectDir] } } }, null, 2));
+    await writeFile(mcpConfig, JSON.stringify({ mcpServers: { scompass: (([command, args]) => ({ command, args }))(selfCommand(['mcp', '--dir', this.projectDir])) } }, null, 2));
     await writeFile(promptFile, PROMPT(this.name));
     const args = claudeArgs({ session: this.session, resume: this.resume, mcpConfig, promptFile });
     // Si el hub corre adentro de una sesión de Claude Code, el hijo no tiene que creerse anidado; y va con el

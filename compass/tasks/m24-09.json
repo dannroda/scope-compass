@@ -12,12 +12,13 @@
     }
   ],
   "description": "El detalle de la tarea en el dock de Godot muestra sus decisiones y marca las sin revisar; con hub, OK y Revertir escriben como la web. La lista marca las tareas con decisiones sin revisar.",
+  "done_at": "2026-10-26T06:36:43.072Z",
   "milestone": "m24",
   "notes": "board.gd: decisions_of, decision_state, decision_counts (las reglas de hub/src/decisions.js). compass_reader valida que decisions sea una lista de objetos (sin hub nadie valida el schema). En el dock no se responden preguntas ni se escribe qué hacer al revertir: eso va en el navegador (lo dicen el estado y el tooltip). Se busca la decisión por at + texto, como la web.",
-  "order": 9,
+  "order": 1.0078125,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "cd hub && node --test test/dock.test.js (con Godot): la lista marca ? / ! y el tooltip dice cuántas; el detalle muestra las decisiones con su estado, porqué y respuesta; OK / Revertir solo en las sin revisar, deshabilitados sin hub; con hub, Revertir escribe review: revert.",
   "title": "Dock: decisiones en el detalle",
-  "updated_at": "2026-10-21T05:03:31.193Z"
+  "updated_at": "2026-10-26T06:36:43.072Z"
 }

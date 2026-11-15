@@ -3,7 +3,7 @@
 import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -156,4 +156,15 @@ test('registro: un proyecto que sirve el Inicio queda anotado con su base; la CL
   assert.equal(hubsOf(p).length, 0, 'al cerrar el Inicio se desanota');
   home = createHomeServer({ validators: V, pollMs: 50 }); // para el afterEach
   await listen(home, 0);
+});
+
+test('un alias con "/" (de un patrón como docs/**/*.md) llega entero al hub del proyecto, sin decodificar', async () => {
+  const p = await project('Vida');
+  const cfg = JSON.parse(await readFile(join(p, 'compass', 'config.json'), 'utf8'));
+  await writeFile(join(p, 'compass', 'config.json'), JSON.stringify({ ...cfg, docs: [{ alias: 'docs', path: 'docs/**/*.md' }] }));
+  await mkdir(join(p, 'docs', 'spec'), { recursive: true });
+  await writeFile(join(p, 'docs', 'spec', 'ia.md'), '# IA\n');
+  const r = await fetch(base + '/p/vida/api/docs/' + encodeURIComponent('docs/spec/ia'));
+  assert.equal(r.status, 200, await r.clone().text());
+  assert.equal((await r.json()).path, 'docs/spec/ia.md');
 });

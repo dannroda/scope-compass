@@ -129,7 +129,15 @@ func open_blockers(id: String) -> Array:
 	var me = task(id)
 	if me == null or me.status == "done":
 		return []
-	return link_view(id).blocked_by.filter(func(b): var t = task(b); return t != null and t.status != "done")
+	return link_view(id).blocked_by.filter(func(b): var t = task(b); return t != null and not t.status in ["done", "review"])
+
+
+## Tareas en Revisión que bloqueaban a esta: ya no la bloquean, pero se avisa (desbloqueada en revisión).
+func review_blockers(id: String) -> Array:
+	var me = task(id)
+	if me == null or me.status == "done":
+		return []
+	return link_view(id).blocked_by.filter(func(b): var t = task(b); return t != null and t.status == "review")
 
 
 ## "5.2 Título" de una tarea, o su id si no existe.

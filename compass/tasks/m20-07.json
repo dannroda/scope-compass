@@ -20,12 +20,13 @@
   "code": "20.7",
   "created_at": "2026-10-15T03:52:57.106Z",
   "description": "Pedido: una tarea que está en varias sesiones mostraba en cada una un resultado y una nota distintos (m11-130 anda en una y falla con nota en otra). Decidido: resultado y nota viven en la tarea (D40).",
+  "done_at": "2026-10-26T06:36:16.052Z",
   "milestone": "m20",
   "notes": "La tarea lleva playtest: { result?, note? } (minProperties 1; sin nada, el campo se va). La sesión queda { task } en orden. hub/src/playtests.js: sessionState (cuántas faltan y fallan), nextPlaytest (undefined no cambia, null o \"\" quita) y migrateSessions (lee las sesiones crudas, ordena por updated_at, la más reciente que la probó gana el resultado, notas distintas se juntan de la vieja a la nueva, respeta lo que la tarea ya tenía; reescribe las sesiones directo con writeAtomic porque el store no pisa inválidas). La CLI avisa en playtest list si ve sesiones del formato anterior. Web: ptOf, ptSetResult y ptSetNote van por updateTask; Reiniciar quita result de cada tarea de la sesión (se ve en las otras). El historial muestra Playtest: anda → falla, nota agregada.",
-  "order": 7,
+  "order": 1.125,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "playtest.test.js (schema, misma tarea en dos sesiones por CLI, reset sin nada quita el campo, migrate con dos sesiones y una tarea borrada), ui-playtest.test.js (dos sesiones muestran lo mismo; Reiniciar en una se ve en la otra), history.test.js",
   "title": "Resultado del playtest en la tarea",
-  "updated_at": "2026-10-15T03:52:59.495Z"
+  "updated_at": "2026-10-26T06:36:16.052Z"
 }

@@ -4,8 +4,10 @@
 //   GET    /api/projects                     registro + estado del hub + resumen de cada proyecto
 //   POST   /api/projects        { path }     importar (anotar sin levantar el hub)
 //   DELETE /api/projects?path=…              quitar del registro (no toca los datos)
-//   GET    /api/today                        preguntas abiertas, vencido, de hoy y en curso, de todos los proyectos
+//   GET    /api/today                        preguntas abiertas, vencido, de hoy y en curso (items) y lo que vence en
+//                                            los próximos 7 días (week, 31.3), de todos los proyectos
 //   POST   /api/projects/check-item  { path, list, n, etag? }   tildar un ítem (los que se repiten avanzan)
+//   POST   /api/projects/add-item    { path, list, text, due?, etag? }   anotar un ítem (31.2), como `item add`
 //   POST   /api/projects/move-task   { path, id, status, etag? }
 //   POST   /api/projects/start   { path }          levanta su hub como hijo del Inicio (muere con él)
 //   POST   /api/projects/stop    { path, force? }  apaga su hub; uno que abrió otro (el dock) pide force
@@ -19,12 +21,11 @@ import { execFile, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { existsSync, realpathSync, statSync } from 'node:fs';
 import { mkdir, readFile, rm } from 'node:fs/promises';
-import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { isAbsolute, join, resolve, sep } from 'node:path';
 import Fastify from 'fastify';
 import websocket from '@fastify/websocket';
 import { exportMarkdown } from './export-md.js';
-import { checkItem } from './lists.js';
+import { checkItem, newItem } from './lists.js';
 import { pickFolder } from './desktop.js';
 import { folderName, forgetProject, loadProjects, projectsDataDir, projectsFile, projectsStatus, ProjectsError, recordProject } from './projects.js';
 import { hubsOf, listHubs } from './registry.js';
@@ -32,14 +33,14 @@ import { localOnly, VERSION, WEB_DIR } from './server.js';
 import { createHttpStore, detectHub } from './store/http.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { loadCompass } from './store/load.js';
-import { byToday, summarize, todayOf } from './summary.js';
+import { byToday, summarize, todayOf, weekOf } from './summary.js';
 import { registerProjectRoutes } from './home-serve.js';
 import { outdatedFiles, updateCompass } from './update.js';
 import { boardStatus, repoWorktree } from './git.js';
 import { listTemplates, loadTemplate } from './templates.js';
 import { STATUSES } from './views.js';
+import { selfCommand } from './self.js';
 
-const BIN = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'scompass.js');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
 
@@ -187,9 +188,9 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     const inRepo = await new Promise((r) => execFile('git', ['-C', path, 'rev-parse', '--is-inside-work-tree'], { windowsHide: true }, (err) => r(!err)));
     const gitInit = !inRepo && await new Promise((r) => execFile('git', ['-C', path, 'init', '-q'], { windowsHide: true }, (err) => r(!err)));
     // --project=<nombre>: un nombre que empieza con - no se toma por otra opción (19.8).
-    const args = [BIN, '--dir', path, 'init', '--template', template, '--json', ...(name ? [`--project=${name}`] : [])];
+    const args = ['--dir', path, 'init', '--template', template, '--json', ...(name ? [`--project=${name}`] : [])];
     const r = await new Promise((resolve) => {
-      const child = spawn(process.execPath, args, { stdio: ['ignore', 'pipe', 'pipe'], env: process.env, windowsHide: true });
+      const child = spawn(...selfCommand(args), { stdio: ['ignore', 'pipe', 'pipe'], env: process.env, windowsHide: true });
       let out = '', err = '';
       child.stdout.on('data', (d) => { out += d; });
       child.stderr.on('data', (d) => { err += d; });
@@ -230,12 +231,28 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   });
 
   app.get('/api/today', async () => {
-    const items = [];
+    const items = [], week = [];
     for (const p of projectsStatus().filter((x) => x.found)) {
       const [all, worktree] = await Promise.all([loadCompass(compassOf(p.path), validators), repoWorktree(p.path)]);
-      for (const x of todayOf(all, now())) items.push({ ...x, project: { path: p.path, name: all.config?.project ?? p.name, worktree } });
+      const project = { path: p.path, name: all.config?.project ?? p.name, worktree };
+      for (const x of todayOf(all, now())) items.push({ ...x, project });
+      for (const x of weekOf(all, now())) week.push({ ...x, project });
     }
-    return { items: items.sort(byToday) };
+    return { items: items.sort(byToday), week: week.sort((a, b) => a.due.localeCompare(b.due)) };
+  });
+
+  // Captura rápida (31.2): la regla de `item add` (newItem), por el hub del proyecto o directo con etag.
+  app.post('/api/projects/add-item', async (req, reply) => {
+    const { path, list, text, due, etag } = req.body ?? {};
+    known(path);
+    if (typeof list !== 'string' || !list) throw new StoreError('invalid_argument', 'falta list');
+    const store = await storeFor(path);
+    const cur = await store.get('lists', list);
+    if (etag !== undefined && etag !== cur.etag) throw new StoreError('conflict', 'la lista cambió desde que se leyó', { current: { id: cur.id, etag: cur.etag, ...cur.doc } });
+    const item = newItem({ text: typeof text === 'string' ? text.trim() : text, due: due || undefined }, now().toISOString());
+    const w = await store.patch('lists', list, { items: [...cur.doc.items, item] }, { ifMatch: cur.etag });
+    await afterWrite(path, store, 'lists', list, w);
+    return reply.code(201).send({ list: { id: w.id, etag: w.etag, ...w.doc }, n: w.doc.items.length, via: store.local ? 'home' : store.hub ? 'hub' : 'disk' });
   });
 
   app.post('/api/projects/check-item', async (req) => {
@@ -272,7 +289,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     known(path);
     const running = standaloneOf(path);
     if (running.length) return { hub: running[0], already: true };
-    const child = spawn(process.execPath, [BIN, '--dir', path, 'serve', '--exit-on-stdin-close'], { stdio: ['pipe', 'ignore', 'pipe'], env: { ...process.env, SCOMPASS_LAUNCHED_BY: 'home' }, windowsHide: true });
+    const child = spawn(...selfCommand(['--dir', path, 'serve', '--exit-on-stdin-close']), { stdio: ['pipe', 'ignore', 'pipe'], env: { ...process.env, SCOMPASS_LAUNCHED_BY: 'home' }, windowsHide: true });
     let err = '';
     child.stderr.on('data', (d) => { err += d; });
     children.set(child.pid, child);

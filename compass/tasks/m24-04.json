@@ -12,6 +12,7 @@
     }
   ],
   "description": "add_decision, review_decision, reply_decision y list_decisions sobre los comandos de 24.3 (promote_decision con 24.10), y el filtro decisions en list_tasks, con etag. Casos en mcp.test.js con y sin hub.",
+  "done_at": "2026-10-26T06:36:39.221Z",
   "links": [
     {
       "task": "m24-05",
@@ -24,10 +25,10 @@
   ],
   "milestone": "m24",
   "notes": "Sumé remove_decision (no estaba en la propuesta; es decision rm). list_decisions toma states [open, pending, revert] y los pasa como --open/--pending/--revert. promote_decision llega con 24.10.",
-  "order": 4,
+  "order": 1.25,
   "refs": [],
-  "status": "review",
+  "status": "done",
   "test": "cd hub && node --test test/mcp.test.js: add_decision, reply_decision, review_decision (una pregunta revisada da error), remove_decision, list_decisions y list_tasks con decisions, igual que la CLI.",
   "title": "MCP: herramientas de decisiones",
-  "updated_at": "2026-10-21T05:03:45.351Z"
+  "updated_at": "2026-10-26T06:36:39.221Z"
 }

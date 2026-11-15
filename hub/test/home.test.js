@@ -15,7 +15,7 @@ import { createServer, listen } from '../src/server.js';
 import { createHomeServer } from '../src/home.js';
 import { recordProject } from '../src/projects.js';
 import { liveHome, registerHub, unregisterHub } from '../src/registry.js';
-import { summarize, todayOf } from '../src/summary.js';
+import { summarize, todayOf, weekOf } from '../src/summary.js';
 import { run } from '../src/cli.js';
 
 const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'compass');
@@ -99,6 +99,20 @@ test('todayOf: vencido antes que hoy, y las tareas en curso al final', () => {
   assert.deepEqual(todayOf(all, TODAY).map((x) => x.text), ['Vencido', 'Vence', 'En curso']);
 });
 
+test('weekOf (31.3): lo que vence después de hoy y dentro de 7 días, por fecha; con las áreas de cada tarea', () => {
+  const all = {
+    milestones: new Map([['m00', { code: 'M0', order: 0, title: 'Cero' }]]),
+    tasks: new Map([['t1', { milestone: 'm00', title: 'En 6 días', status: 'doing', due: '2026-10-10T09:00', tags: ['casa'] }], ['t2', { milestone: 'm00', title: 'Hecha', status: 'done', due: '2026-10-06' }],
+      ['t3', { milestone: 'm00', title: 'En 7 días', status: 'todo', due: '2026-10-11' }], ['t4', { milestone: 'm00', title: 'Hoy', status: 'todo', due: '2026-10-04' }]]),
+    lists: new Map([['l', { title: 'L', order: 1, items: [{ text: 'Mañana', done: false, due: '2026-10-05', repeat: { every: 'day', interval: 2 } }, { text: 'Tildado', done: true, due: '2026-10-06' }, { text: 'Vencido', done: false, due: '2026-10-01' }, { text: 'Sin fecha', done: false }] }]])
+  };
+  const week = weekOf(all, TODAY);
+  assert.deepEqual(week.map((x) => [x.kind, x.text, x.due]), [['item', 'Mañana', '2026-10-05'], ['task', 'En 6 días', '2026-10-10T09:00']]);
+  assert.deepEqual(week[0].repeat, { every: 'day', interval: 2 });
+  assert.deepEqual(week[1].tags, ['casa']);
+  assert.deepEqual(todayOf(all, TODAY).find((x) => x.text === 'En 6 días').tags, ['casa'], 'Hoy también trae las áreas');
+});
+
 test('decisiones (§31): las preguntas abiertas van primero en Hoy; el resumen cuenta las que esperan', () => {
   const all = {
     milestones: new Map([['m00', { code: 'M0', order: 0, title: 'Cero' }]]),
@@ -162,6 +176,26 @@ test('check-item con hub pasa por el hub; sin hub escribe directo y avanza lo qu
   r = await api('POST', '/api/projects/check-item', { path: b, list: 'pendientes', n: 1, etag: 'viejo' });
   assert.equal(r.status, 409);
   assert.equal(r.body.error.current.items[0].due, '2026-10-10');
+});
+
+test('GET /api/today trae week; add-item (31.2) agrega con la regla de item add, por el hub o directo', async () => {
+  let r = await api('POST', '/api/projects/add-item', { path: b, list: 'pendientes', text: '  Llamar al dentista ', due: '2026-10-07' });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  assert.equal(r.body.via, 'disk');
+  assert.equal(r.body.n, 2);
+  const disk = JSON.parse(await readFile(join(b, 'compass', 'lists', 'pendientes.json'), 'utf8'));
+  assert.deepEqual(disk.items[1], { text: 'Llamar al dentista', done: false, due: '2026-10-07', created_at: TODAY.toISOString() });
+  const { body } = await api('GET', '/api/today');
+  assert.deepEqual(body.week.map((x) => [x.project.path, x.text, x.due]), [[b, 'Llamar al dentista', '2026-10-07']]);
+  r = await api('POST', '/api/projects/add-item', { path: a, list: 'compras', text: 'Pan' });
+  assert.equal(r.body.via, 'hub');
+  assert.equal(r.body.list.items.at(-1).text, 'Pan');
+  for (const [bad, re] of [[{ text: ' ' }, /falta el texto/], [{ text: 'x', due: '2026-02-30' }, /fecha inválida/], [{ text: 'x', etag: 'viejo' }, /cambió/]]) {
+    r = await api('POST', '/api/projects/add-item', { path: b, list: 'pendientes', ...bad });
+    assert.match(r.body.error.message, re);
+  }
+  assert.equal((await api('POST', '/api/projects/add-item', { path: b, text: 'x' })).status, 400, 'sin lista');
+  assert.equal((await api('POST', '/api/projects/add-item', { path: join(root, 'otro'), list: 'x', text: 'x' })).status, 404);
 });
 
 test('move-task y los límites: proyecto desconocido, ítem o estado inválidos', async () => {

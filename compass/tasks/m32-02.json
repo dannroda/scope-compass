@@ -1,0 +1,30 @@
+{
+  "checklist": [],
+  "code": "",
+  "created_at": "2026-11-12T14:44:01.983Z",
+  "decisions": [
+    {
+      "alternatives": "bun build --compile (cambia el runtime). Un bundler como esbuild con los assets leídos desde el SEA (obliga a cambiar cada lectura de archivo). Borrar de la caché las versiones viejas (rompería un Inicio que siga corriendo con la versión anterior).",
+      "at": "2026-11-12T15:11:12.606Z",
+      "text": "Node SEA (node --build-sea) que trae el paquete entero comprimido y lo extrae a ~/.cache/scope-compass/runtime/<versión>-<hash>/ la primera vez (D45).",
+      "why": "El usuario pidió que no haga falta instalar Node y me dejó elegir el stack. SEA es de Node mismo, así que no suma runtime ni dependencias de build. Extraer deja el código sin cambios: fastify sirve web/ desde el disco y las plantillas, los íconos y el .ps1 siguen siendo archivos."
+    }
+  ],
+  "description": "Hoy scompass se distribuye como un .tgz de npm y necesita Node 22 o más. La release tiene que traer un ejecutable que no dependa de Node, con web/, schema/, templates y assets adentro. Opciones: Node SEA (nativo de Node, sin dependencias de runtime, pero hay que juntar todo en un solo archivo y ver si soporta ESM) o bun build --compile (un solo paso, pero cambia el runtime). Hay que confirmar que fastify, ajv y dbus-native (la bandeja) funcionan, medir el tamaño y el arranque, y que `scompass mcp` y el --dev de install.sh sigan andando. Antes de elegir el stack, se analiza con el usuario.",
+  "links": [
+    {
+      "task": "m32-03",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m32",
+  "notes": "Hecho (2026-11-12):\n- tools/sea-main.cjs: el arranque del binario. Extrae el payload (gzip con un índice y los archivos) con un rename atómico y carga src/main.js con require(). En el script principal de un SEA, import() solo resuelve módulos internos de Node; require() de un módulo ESM sí anda mientras no tenga await en el nivel superior.\n- src/main.js: el cuerpo de bin/scompass.js, que tenía un await en el nivel superior.\n- src/self.js: selfCommand. El binario se relanza sin script; desde el repo o npm, con node bin/scompass.js. Lo usan el reinicio del hub (cli.js), el Inicio (init y prender hubs, en home.js) y el MCP del chat (chat.js).\n- tools/build.mjs arma dist/scompass-v<ver>-<so>-<arq> (con .exe en Windows) y lo prueba con list. Necesita Node 25.5 o más nuevo para --build-sea.\n- install.sh prefiere el binario y lo copia a ~/.local/bin/scompass.\n- El dock en Windows acepta scompass.exe de `where`.\n- Documentado en AGENTS.md (las tres copias: el MCP se registra con `scompass mcp`), instalar.md, README, spec §35 y D45.\n\nMedido en Linux x64: el binario pesa 155 MB, la caché 27 MB por versión, y cada comando tarda unos 0,25 s.\nProbado sin Node: init, list, serve con la web, home (init y prender un hub), mcp, e install.sh con un HOME aparte. 24 primeros arranques en paralelo, sin fallos.\nFalta: probar el build y el binario en Windows (VM, ssh win).",
+  "order": 2,
+  "priority": "high",
+  "refs": [],
+  "size": "l",
+  "status": "doing",
+  "test": "",
+  "title": "scompass como binario (Linux y Windows)",
+  "updated_at": "2026-11-12T15:11:12.649Z"
+}

@@ -6,12 +6,14 @@
     {
       "alternatives": "usar el CLAUDE_CONFIG_DIR del hub",
       "at": "2026-10-21T05:59:12.571Z",
+      "review": "ok",
       "text": "El perfil predeterminado es siempre ~/.claude, sin CLAUDE_CONFIG_DIR, aunque el hub lo tenga",
       "why": "si dependiera del entorno del hub, cambiaría según desde dónde se levantó"
     },
     {
       "alternatives": "guardar el perfil en la decisión",
       "at": "2026-10-21T05:59:13.592Z",
+      "review": "ok",
       "text": "El perfil de una pregunta se encuentra buscando su sesión en <perfil>/projects/*/<id>.jsonl",
       "why": "no hay que guardar rutas de la máquina en compass/"
     }
@@ -30,5 +32,5 @@
   "status": "review",
   "test": "docs/spec.md §33 y docs/decisiones.md D44",
   "title": "Spec y decisión: perfiles, cuenta y uso del chat",
-  "updated_at": "2026-10-21T05:59:14.982Z"
+  "updated_at": "2026-10-26T06:37:36.516Z"
 }
