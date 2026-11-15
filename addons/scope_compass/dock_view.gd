@@ -1015,6 +1015,7 @@ func _build_tree() -> void:
 	var root := tree.create_item()
 	var q := search.text.strip_edges()
 	var ts := board.search(q) if q != "" else board.tasks_of(current_milestone)
+	var col1_texts: Array[String] = []
 	for s in Board.STATUSES:
 		var items := ts.filter(func(t): return t.status == s.id)
 		if items.is_empty():
@@ -1048,6 +1049,7 @@ func _build_tree() -> void:
 			if str(t.get("due", "")) != "":
 				col1 = Board.show_due(str(t.due)) + ("  " + col1 if col1 != "" else "")
 			it.set_text(1, col1)
+			col1_texts.append(col1)
 			it.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
 			if ds == "overdue":
 				it.set_custom_color(1, OVERDUE_COLOR)
@@ -1070,6 +1072,19 @@ func _build_tree() -> void:
 				it.set_tooltip_text(0, "%s\n%s" % [tip, I18n.t("Desbloqueada, en Revisión: %s") % "; ".join(board.review_blockers(t.id).map(board.task_name))])
 			if t.id == selected_task:
 				it.select(0)
+	_fit_col1(col1_texts)
+
+
+## Ancho de la columna de la fecha y los pasos: el del texto más ancho con la fuente del árbol (m32-11). Un ancho fijo
+## cortaba "17/11" en "17/", y más con pasos ("17/11  2/4") o con la escala del editor.
+func _fit_col1(texts: Array[String]) -> void:
+	var font := tree.get_theme_font("font")
+	var size := tree.get_theme_font_size("font_size")
+	var w := 0.0
+	for text in texts + ["00/00"]:
+		w = maxf(w, font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x)
+	var pad := tree.get_theme_constant("inner_item_margin_left") + tree.get_theme_constant("inner_item_margin_right") + tree.get_theme_constant("h_separation") * 2 + 8
+	tree.set_column_custom_minimum_width(1, int(ceil(w)) + pad)
 
 
 ## Encabezado del bloque de tareas y estado del divisor (plegado: el detalle usa todo el alto).

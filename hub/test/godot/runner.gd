@@ -552,6 +552,10 @@ func test_due(a: Array) -> void:
 	if not _check(c, v.detail.due_label.visible and v.detail.due_label.text == "Vencida · 01/01", "detalle vencida: " + v.detail.due_label.text): return
 	var row: TreeItem = v.tree.get_selected()
 	if not _check(c, row != null and row.get_text(1).begins_with("01/01") and row.get_custom_color(1) == v.OVERDUE_COLOR, "fila vencida: " + (row.get_text(1) if row else "sin fila")): return
+	# La columna entra entera (m32-11): el ancho sale del texto más ancho, no de 44 px fijos.
+	var font := v.tree.get_theme_font("font")
+	var need := font.get_string_size(row.get_text(1), HORIZONTAL_ALIGNMENT_LEFT, -1, v.tree.get_theme_font_size("font_size")).x
+	if not _check(c, v.tree.get_column_width(1) >= need, "la columna 1 corta «%s»: %d < %d" % [row.get_text(1), v.tree.get_column_width(1), need]): return
 	_select(v, a[2])
 	if not _check(c, v.detail.due_label.text.begins_with("Vence hoy · "), "detalle de hoy: " + v.detail.due_label.text): return
 	_select(v, a[3])
