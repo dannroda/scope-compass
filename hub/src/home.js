@@ -275,7 +275,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     if (typeof req.body?.path !== 'string' || !req.body.path) throw new StoreError('invalid_argument', T('falta path'));
     // El dock puede mandarla con "/" al final o con un symlink en el camino: la del registro es la resuelta.
     let path = resolve(req.body.path);
-    try { path = realpathSync(path); } catch { /* no existe: known() lo dice */ }
+    try { path = realpathSync.native(path); } catch { /* no existe: known() lo dice */ }
     if (!projectsStatus().some((p) => p.path === path)) { await recordProject(path); emit({ type: 'projects' }); }
     const p = known(path);
     const standalone = standaloneOf(p.path)[0];

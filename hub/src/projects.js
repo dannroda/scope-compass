@@ -52,7 +52,7 @@ export class ProjectsError extends Error {
   constructor(code, message) { super(message); this.code = code; }
 }
 
-const real = (p) => { try { return realpathSync(p); } catch { return resolve(p); } };
+const real = (p) => { try { return realpathSync.native(p); } catch { return resolve(p); } };
 
 /** Lee el registro. Un archivo que falta es un registro vacío; uno inválido tira error y no se pisa. */
 export function loadProjects() {

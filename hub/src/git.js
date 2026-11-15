@@ -111,6 +111,7 @@ export async function repoWorktree(projectDir) {
     git(projectDir, ['symbolic-ref', '--short', '-q', 'HEAD'])]);
   if (!out) return null;
   const [common, gitDir, top] = out.trim().split('\n');
-  const inside = relative(top, realpathSync(resolve(projectDir))).split('\\').join('/');
+  const real = (p) => { try { return realpathSync.native(p); } catch { return resolve(p); } };
+  const inside = relative(real(top), real(resolve(projectDir))).split('\\').join('/');
   return { repo: common + (inside ? '#' + inside : ''), main: common === gitDir, branch: head?.trim() || null };
 }

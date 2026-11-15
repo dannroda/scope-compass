@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { cp, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadValidators } from '../src/schema.js';
 import { createJsonFilesStore } from '../src/store/json-files.js';
@@ -63,7 +63,7 @@ test('/api/files/file: código resaltado, markdown renderizado, imagen, enlace s
   assert.match(md.html, /<h1>Juego<\/h1>/);
   assert.equal((await get('/api/files/file?path=art/icon.png')).body.kind, 'image');
   const link = (await get('/api/files/file?path=afuera')).body;
-  assert.deepEqual([link.kind, link.target, link.html], ['link', '/etc/hostname', undefined]);
+  assert.deepEqual([link.kind, link.target, link.html], ['link', process.platform === 'win32' ? resolve('/etc/hostname') : '/etc/hostname', undefined]);
   const raw = await get('/api/files/raw?path=art/icon.png');
   assert.equal(raw.type, 'image/png');
   assert.deepEqual(raw.body, PNG);
