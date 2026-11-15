@@ -2,12 +2,15 @@
 extends RefCounted
 ## Estado del tablero en el dock: hitos, tareas y avisos, con el mismo orden que la CLI y la UI web.
 
-const STATUSES := [
-	{ "id": "doing", "label": "En curso", "color": Color("#7fb0dc") },
-	{ "id": "review", "label": "Revisión", "color": Color("#e0a95a") },
-	{ "id": "todo", "label": "Pendiente", "color": Color("#9a917f") },
-	{ "id": "paused", "label": "Pausado", "color": Color("#a99bd1") },
-	{ "id": "done", "label": "Hecho", "color": Color("#6fbf94") },
+const I18n := preload("i18n.gd")
+
+## Las etiquetas salen en el idioma del dock (§45): por eso es static var y no const.
+static var STATUSES := [
+	{ "id": "doing", "label": I18n.t("En curso"), "color": Color("#7fb0dc") },
+	{ "id": "review", "label": I18n.t("Revisión"), "color": Color("#e0a95a") },
+	{ "id": "todo", "label": I18n.t("Pendiente"), "color": Color("#9a917f") },
+	{ "id": "paused", "label": I18n.t("Pausado"), "color": Color("#a99bd1") },
+	{ "id": "done", "label": I18n.t("Hecho"), "color": Color("#6fbf94") },
 ]
 
 var config = null
@@ -144,7 +147,7 @@ func review_blockers(id: String) -> Array:
 func task_name(id: String) -> String:
 	var t = task(id)
 	if t == null:
-		return id + " (no existe)"
+		return id + I18n.t(" (no existe)")
 	var code := str(t.get("code", ""))
 	return ((code + " " if code != "" else "") + str(t.title)).replace("`", "")
 

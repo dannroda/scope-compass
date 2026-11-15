@@ -11,6 +11,7 @@ const HOST := "127.0.0.1"
 ## Protocolo que habla este addon (spec §39, D49): tiene que ser el PROTOCOL del hub (hub/src/protocol.js). Sube solo
 ## cuando se rompe la API HTTP/WebSocket o el formato de compass/. Con otro, el dock no usa ese hub.
 const PROTOCOL := 1
+const I18n := preload("i18n.gd")
 
 var project_root := ""
 ## Puerto de config.json; `port` es el que se usa (puede ser otro, si el registro dice que el hub está ahí).
@@ -76,15 +77,15 @@ func _probe() -> bool:
 	var r := await request("GET", "/api/health", null, [], 0.5)
 	var ok := false
 	if r.code == 0:
-		last_error = "no responde"
+		last_error = I18n.t("no responde")
 	elif not (r.json is Dictionary and r.json.get("name") == "scope-compass"):
-		last_error = "responde otro programa, HTTP %d" % r.code
+		last_error = I18n.t("responde otro programa, HTTP %d") % r.code
 	elif not _same_path(str(r.json.get("project", "")), project_root):
-		last_error = "es el hub de otro proyecto: %s" % r.json.get("project", "")
+		last_error = I18n.t("es el hub de otro proyecto: %s") % r.json.get("project", "")
 	elif int(r.json.get("protocol", -1)) != PROTOCOL:
 		mismatch_version = str(r.json.get("version", ""))
 		mismatch_protocol = int(r.json.get("protocol", -1))
-		last_error = "es scompass %s, de otro protocolo que el addon" % mismatch_version
+		last_error = I18n.t("es scompass %s, de otro protocolo que el addon") % mismatch_version
 	else:
 		ok = true
 		last_error = ""
@@ -94,7 +95,7 @@ func _probe() -> bool:
 		if _ws.connect_to_url("ws://%s:%d%s/ws" % [HOST, port, base]) != OK:
 			_ws = null
 			ok = false
-			last_error = "no se pudo abrir el WebSocket"
+			last_error = I18n.t("no se pudo abrir el WebSocket")
 		else:
 			_connecting = false
 	return ok
@@ -203,6 +204,8 @@ func request_url(method: String, url: String, body = null, headers: Array = [], 
 	http.timeout = timeout
 	add_child(http)
 	var h := PackedStringArray(headers)
+	# Los mensajes de error del hub, en el idioma del dock (§45).
+	h.append("Accept-Language: " + I18n.lang())
 	var data := ""
 	if body != null:
 		h.append("Content-Type: application/json")

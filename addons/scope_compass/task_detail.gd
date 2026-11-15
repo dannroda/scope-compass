@@ -5,6 +5,7 @@ extends ScrollContainer
 ## muchos pasos no le quita lugar a la lista. Lo que necesita del tablero (la tarea, el hub, escribir) lo toma de view.
 
 const Board := preload("board.gd")
+const I18n := preload("i18n.gd")
 
 ## Ancho mínimo de los textos con ajuste de línea. Sin esto, mientras el dock está en una pestaña oculta mide 0 de
 ## ancho, cada palabra va en su renglón y el alto mínimo (miles de px) desacomoda todo el editor.
@@ -17,9 +18,9 @@ const MUTED_COLOR := Color("#a69d8c")
 ## Resultado del playtest (D40): anda (el verde de Hecho) y falla (el rojo de bloqueada).
 const PASS_COLOR := Color("#6fbf94")
 const FAIL_COLOR := Color("#e8806e")
-const RESULTS := [["pass", "✓ Anda"], ["fail", "✗ Falla"]]
-const PRIORITIES := { "high": "Alta", "medium": "Media", "low": "Baja" }
-const LINK_KINDS := [["blocked_by", "Bloqueada por"], ["blocks", "Bloquea a"], ["related", "Relacionada con"]]
+static var RESULTS := [["pass", I18n.t("✓ Anda")], ["fail", I18n.t("✗ Falla")]]
+static var PRIORITIES := { "high": I18n.t("Alta"), "medium": I18n.t("Media"), "low": I18n.t("Baja") }
+static var LINK_KINDS := [["blocked_by", I18n.t("Bloqueada por")], ["blocks", I18n.t("Bloquea a")], ["related", I18n.t("Relacionada con")]]
 ## Decisiones (§31): la marca de cada estado, y el color de lo que espera al usuario.
 const DECISION_MARKS := { "open": "?", "pending": "!", "revert": "↺", "resolved": "✓" }
 const WAITING_COLOR := Color("#e0a95a")
@@ -77,12 +78,12 @@ func _init(v: Control) -> void:
 	title_label.size_flags_horizontal = SIZE_EXPAND_FILL
 	title_label.add_theme_font_size_override("font_size", 15)
 	trow.add_child(title_label)
-	web_button = view.icon_button("browser", "Abrir esta tarea en el navegador, donde se edita todo")
+	web_button = view.icon_button("browser", I18n.t("Abrir esta tarea en el navegador, donde se edita todo"))
 	web_button.size_flags_vertical = SIZE_SHRINK_BEGIN
 	web_button.pressed.connect(func(): OS.shell_open(view.web_url("#task/" + view.selected_task.uri_encode())))
 	trow.add_child(web_button)
 	hint = _wrapping_label()
-	hint.text = "Acá se cambian el estado, los pasos, el resultado del playtest y la revisión de las decisiones; lo demás, en el navegador (↗)."
+	hint.text = I18n.t("Acá se cambian el estado, los pasos, el resultado del playtest y la revisión de las decisiones; lo demás, en el navegador (↗).")
 	hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.45))
 	hint.add_theme_font_size_override("font_size", 11)
 	box.add_child(hint)
@@ -93,7 +94,7 @@ func _init(v: Control) -> void:
 	var srow := HBoxContainer.new()
 	box.add_child(srow)
 	var slabel := Label.new()
-	slabel.text = "Estado"
+	slabel.text = I18n.t("Estado")
 	srow.add_child(slabel)
 	status_select = OptionButton.new()
 	status_select.size_flags_horizontal = SIZE_EXPAND_FILL
@@ -107,13 +108,13 @@ func _init(v: Control) -> void:
 	var prow := HBoxContainer.new()
 	playtest_box.add_child(prow)
 	var plabel := Label.new()
-	plabel.text = "Playtest"
+	plabel.text = I18n.t("Playtest")
 	prow.add_child(plabel)
 	for r in RESULTS:
 		var b := Button.new()
 		b.text = r[1]
 		b.toggle_mode = true
-		b.tooltip_text = "Otro clic lo vuelve a sin probar"
+		b.tooltip_text = I18n.t("Otro clic lo vuelve a sin probar")
 		b.add_theme_color_override("font_pressed_color", PASS_COLOR if r[0] == "pass" else FAIL_COLOR)
 		b.pressed.connect(set_result.bind(r[0]))
 		prow.add_child(b)
@@ -191,7 +192,7 @@ func render() -> void:
 	var due := str(t.get("due", ""))
 	var ds := Board.due_state(t)
 	due_label.visible = due != ""
-	due_label.text = ("Vencida · " if ds == "overdue" else "Vence hoy · " if ds == "today" else "Vence ") + Board.show_due(due) if due != "" else ""
+	due_label.text = (I18n.t("Vencida · %s") if ds == "overdue" else I18n.t("Vence hoy · %s") if ds == "today" else I18n.t("Vence %s")) % Board.show_due(due) if due != "" else ""
 	if ds == "overdue":
 		due_label.add_theme_color_override("font_color", OVERDUE_COLOR)
 	elif ds == "today":
@@ -200,7 +201,7 @@ func render() -> void:
 		due_label.remove_theme_color_override("font_color")
 	var prio := str(t.get("priority", ""))
 	var size := str(t.get("size", ""))
-	var props := (["Prioridad " + PRIORITIES[prio].to_lower()] if PRIORITIES.has(prio) else []) + (["Tamaño " + size.to_upper()] if size != "" else []) + who_and_tags(t)
+	var props := ([I18n.t("Prioridad %s") % PRIORITIES[prio].to_lower()] if PRIORITIES.has(prio) else []) + ([I18n.t("Tamaño %s") % size.to_upper()] if size != "" else []) + who_and_tags(t)
 	props_label.visible = not props.is_empty()
 	props_label.text = " · ".join(props)
 	for i in status_select.item_count:
@@ -264,7 +265,7 @@ func _render_steps(t: Dictionary) -> void:
 		cb.button_pressed = cl[i].get("done", false)
 		cb.disabled = not view.online
 		cb.size_flags_vertical = SIZE_SHRINK_BEGIN
-		cb.tooltip_text = "Marcar como hecho"
+		cb.tooltip_text = I18n.t("Marcar como hecho")
 		var id: String = t.id
 		cb.toggled.connect(func(on: bool): view.update_task(id, func(cur): return { "checklist": _toggled(cur, i, on) }))
 		var cb_box := MarginContainer.new() # para alinear el cuadradito con la primera línea del texto
@@ -284,7 +285,7 @@ func _render_steps(t: Dictionary) -> void:
 		label.text = str(cl[i].get("text", "")).replace("`", "")
 		label.focus_mode = Control.FOCUS_NONE if detail_text == "" else Control.FOCUS_ALL
 		label.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if detail_text != "" else Control.CURSOR_ARROW
-		label.tooltip_text = ("Ocultar detalle" if open else "Ver detalle") if detail_text != "" else ""
+		label.tooltip_text = (I18n.t("Ocultar detalle") if open else I18n.t("Ver detalle")) if detail_text != "" else ""
 		if cl[i].get("done", false):
 			label.add_theme_color_override("font_color", MUTED_COLOR)
 		if detail_text != "":
@@ -299,7 +300,7 @@ func _render_steps(t: Dictionary) -> void:
 			var toggle := Button.new()
 			toggle.flat = true
 			view.fold_icon(open, toggle)
-			toggle.tooltip_text = "Ocultar detalle" if open else "Ver detalle"
+			toggle.tooltip_text = I18n.t("Ocultar detalle") if open else I18n.t("Ver detalle")
 			toggle.size_flags_vertical = SIZE_SHRINK_BEGIN
 			toggle.pressed.connect(toggle_detail)
 			line.add_child(toggle)
@@ -340,10 +341,10 @@ func _render_decisions(t: Dictionary) -> void:
 		return
 	var n := Board.decision_counts(t)
 	var waiting := []
-	if n.open: waiting.append("%d abiertas" % n.open)
-	if n.pending: waiting.append("%d sin revisar" % n.pending)
-	if n.revert: waiting.append("%d a revertir" % n.revert)
-	decisions_box.add_child(_section_label("Decisiones" + (" (" + ", ".join(waiting) + ")" if not waiting.is_empty() else "")))
+	if n.open: waiting.append(I18n.t("%d abiertas") % n.open)
+	if n.pending: waiting.append(I18n.t("%d sin revisar") % n.pending)
+	if n.revert: waiting.append(I18n.t("%d a revertir") % n.revert)
+	decisions_box.add_child(_section_label(I18n.t("Decisiones") + (" (" + ", ".join(waiting) + ")" if not waiting.is_empty() else "")))
 	var id: String = t.id
 	for d in list:
 		var st := Board.decision_state(d)
@@ -366,14 +367,14 @@ func _render_decisions(t: Dictionary) -> void:
 			text.add_theme_color_override("font_color", MUTED_COLOR)
 		line.add_child(text)
 		# Debajo, en chico: el estado, si se consultó, y el porqué, lo descartado y la respuesta.
-		var meta := [_decision_label(d), "consultada" if d.get("asked", false) else "sin consultar"]
+		var meta := [_decision_label(d), I18n.t("consultada") if d.get("asked", false) else I18n.t("sin consultar")]
 		if str(d.get("promoted", "")) != "":
 			meta.append(str(d.promoted))
 		var lines := [" · ".join(meta)]
-		var reply_label := "Respuesta" if d.get("asked", false) else "Qué hacer"
-		for pair in [["Por qué", d.get("why", "")], ["Descartado", d.get("alternatives", "")], [reply_label, d.get("reply", "")]]:
+		var reply_label := I18n.t("Respuesta") if d.get("asked", false) else I18n.t("Qué hacer")
+		for pair in [[I18n.t("Por qué"), d.get("why", "")], [I18n.t("Descartado"), d.get("alternatives", "")], [reply_label, d.get("reply", "")]]:
 			if str(pair[1]) != "":
-				lines.append("%s: %s" % [pair[0], str(pair[1]).replace("`", "")])
+				lines.append(I18n.t("%s: %s") % [pair[0], str(pair[1]).replace("`", "")])
 		for s in lines:
 			var l := _wrapping_label()
 			l.text = s
@@ -384,11 +385,11 @@ func _render_decisions(t: Dictionary) -> void:
 			var acts := HBoxContainer.new()
 			row.add_child(_indented(acts))
 			var key := str(d.get("at", "")) + "|" + str(d.get("text", ""))
-			for r in [["ok", "OK"], ["revert", "Revertir"]]:
+			for r in [["ok", I18n.t("OK")], ["revert", I18n.t("Revertir")]]:
 				var b := Button.new()
 				b.text = r[1]
 				b.disabled = not view.online
-				b.tooltip_text = "Qué hacer en su lugar se escribe en el navegador" if r[0] == "revert" else ""
+				b.tooltip_text = I18n.t("Qué hacer en su lugar se escribe en el navegador") if r[0] == "revert" else ""
 				b.pressed.connect(review_decision.bind(id, key, r[0]))
 				acts.add_child(b)
 		decisions_box.add_child(row)
@@ -403,8 +404,8 @@ static func _indented(c: Control) -> MarginContainer:
 
 static func _decision_label(d: Dictionary) -> String:
 	if d.get("asked", false):
-		return "Respondida" if str(d.get("reply", "")) != "" else "Pregunta abierta (se responde en el navegador)"
-	return { "ok": "OK", "revert": "A revertir", "reverted": "Revertida" }.get(str(d.get("review", "")), "Sin revisar")
+		return I18n.t("Respondida") if str(d.get("reply", "")) != "" else I18n.t("Pregunta abierta (se responde en el navegador)")
+	return { "ok": I18n.t("OK"), "revert": I18n.t("A revertir"), "reverted": I18n.t("Revertida") }.get(str(d.get("review", "")), I18n.t("Sin revisar"))
 
 
 ## OK o Revertir una decisión sin revisar, sobre la versión más reciente de la tarea. Se busca por cuándo se registró
@@ -440,7 +441,7 @@ func _render_images(t: Dictionary) -> void:
 		if not FileAccess.file_exists(abs_path):
 			var gone := Label.new()
 			gone.text = "⚠ " + str(p).get_file()
-			gone.tooltip_text = str(p) + "\nNo está en el disco"
+			gone.tooltip_text = str(p) + "\n" + I18n.t("No está en el disco")
 			gone.add_theme_color_override("font_color", OVERDUE_COLOR)
 			images_box.add_child(gone)
 			continue
@@ -458,7 +459,7 @@ func _render_images(t: Dictionary) -> void:
 			tb.custom_minimum_size = Vector2(96, 72)
 			tb.texture_normal = tex
 			b = tb
-		b.tooltip_text = str(p) + "\nAbrir con el visor del sistema"
+		b.tooltip_text = str(p) + "\n" + I18n.t("Abrir con el visor del sistema")
 		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		b.pressed.connect(func(): OS.shell_open(abs_path))
 		images_box.add_child(b)
@@ -494,7 +495,7 @@ func _render_links(t: Dictionary) -> void:
 	var v: Dictionary = board.link_view(t.id)
 	if v.blocks.is_empty() and v.blocked_by.is_empty() and v.related.is_empty():
 		return
-	links_box.add_child(_section_label("Vínculos"))
+	links_box.add_child(_section_label(I18n.t("Vínculos")))
 	for kind in LINK_KINDS:
 		for id in v[kind[0]]:
 			var other = board.task(id)
@@ -514,7 +515,7 @@ func _render_links(t: Dictionary) -> void:
 			if other == null:
 				b.disabled = true
 			else:
-				b.tooltip_text = "Ir a la tarea"
+				b.tooltip_text = I18n.t("Ir a la tarea")
 				b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 				b.pressed.connect(view.go_to_task.bind(id))
 			links_box.add_child(b)
@@ -534,7 +535,7 @@ func _render_files(t: Dictionary) -> void:
 			linkable.append(editing)
 	if files.is_empty() and linkable.is_empty():
 		return
-	files_box.add_child(_section_label("Archivos"))
+	files_box.add_child(_section_label(I18n.t("Archivos")))
 	for f in files:
 		var b := Button.new()
 		b.flat = true
@@ -544,9 +545,9 @@ func _render_files(t: Dictionary) -> void:
 		b.text = str(f)
 		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		if FileAccess.file_exists(view.project_root.path_join(str(f))):
-			b.tooltip_text = "Abrir en el editor"
+			b.tooltip_text = I18n.t("Abrir en el editor")
 		else:
-			b.tooltip_text = "No está en el disco: se movió o se borró"
+			b.tooltip_text = I18n.t("No está en el disco: se movió o se borró")
 			b.add_theme_color_override("font_color", BLOCKED_COLOR)
 		b.pressed.connect(open_task_file.bind(str(f)))
 		files_box.add_child(b)
@@ -554,8 +555,8 @@ func _render_files(t: Dictionary) -> void:
 		var add := Button.new()
 		add.flat = true
 		add.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		add.text = "+ Vincular " + str(p).get_file()
-		add.tooltip_text = "Agregar a la tarea %s, que estás editando" % p
+		add.text = I18n.t("+ Vincular %s") % str(p).get_file()
+		add.tooltip_text = I18n.t("Agregar a la tarea %s, que estás editando") % p
 		var id: String = t.id
 		add.pressed.connect(func(): view.update_task(id, func(cur): return {} if files_of(cur).has(p) else { "files": files_of(cur) + [p] }))
 		files_box.add_child(add)
@@ -569,7 +570,7 @@ func open_task_file(path: String) -> void:
 	if view.online:
 		OS.shell_open(view.web_url("#files/" + path.uri_encode()))
 	else:
-		view.show_notice("Godot no abre %s. Con el hub iniciado, se abre en la pestaña Archivos del navegador." % path)
+		view.show_notice(I18n.t("Godot no abre %s. Con el hub iniciado, se abre en la pestaña Archivos del navegador.") % path)
 
 
 # --- Referencias a documentos (6.7) ----------------------------------------------------------------
@@ -579,7 +580,7 @@ func _render_refs(t: Dictionary) -> void:
 	var refs = t.get("refs", [])
 	if not refs is Array or refs.is_empty():
 		return
-	refs_box.add_child(_section_label("Referencias"))
+	refs_box.add_child(_section_label(I18n.t("Referencias")))
 	for r in refs:
 		var d = view.board.doc(str(r.get("doc", "")))
 		# Sin sección, la referencia es al documento entero (12.1): no se despliega, se abre en el navegador.
@@ -590,7 +591,7 @@ func _render_refs(t: Dictionary) -> void:
 		var key := "%s#%s" % [r.get("doc", ""), r.get("section", "")]
 		if s == null:
 			var broken := Label.new()
-			broken.text = "⚠ Referencia rota: " + key
+			broken.text = I18n.t("⚠ Referencia rota: %s") % key
 			broken.add_theme_color_override("font_color", BLOCKED_COLOR)
 			refs_box.add_child(broken)
 			continue
@@ -607,7 +608,7 @@ func _render_refs(t: Dictionary) -> void:
 		toggle.pressed.connect(func(): _refs_open[key] = not open; render())
 		head.add_child(toggle)
 		if view.online:
-			var web: Button = view.icon_button("browser", "Abrir en el navegador")
+			var web: Button = view.icon_button("browser", I18n.t("Abrir en el navegador"))
 			web.pressed.connect(func(): OS.shell_open(view.web_url("#docs/%s/%s" % [str(d.alias).uri_encode(), str(s.id).uri_encode()])))
 			head.add_child(web)
 		if open:
@@ -620,7 +621,7 @@ func _render_refs(t: Dictionary) -> void:
 func _render_whole_ref(r: Dictionary, d) -> void:
 	if d == null:
 		var broken := Label.new()
-		broken.text = "⚠ Referencia rota: %s no está" % r.get("doc", "")
+		broken.text = I18n.t("⚠ Referencia rota: %s no está") % r.get("doc", "")
 		broken.add_theme_color_override("font_color", BLOCKED_COLOR)
 		refs_box.add_child(broken)
 		return
@@ -629,13 +630,13 @@ func _render_whole_ref(r: Dictionary, d) -> void:
 	var title := Label.new()
 	title.name = "WholeDoc"
 	title.text = "▤ " + _doc_title(d)
-	title.tooltip_text = "%s · documento entero" % d.path
+	title.tooltip_text = I18n.t("%s · documento entero") % d.path
 	title.mouse_filter = Control.MOUSE_FILTER_PASS
 	title.size_flags_horizontal = SIZE_EXPAND_FILL
 	title.clip_text = true
 	head.add_child(title)
 	if view.online:
-		var web: Button = view.icon_button("browser", "Abrir en el navegador")
+		var web: Button = view.icon_button("browser", I18n.t("Abrir en el navegador"))
 		web.pressed.connect(func(): OS.shell_open(view.web_url("#docs/" + str(d.alias).uri_encode())))
 		head.add_child(web)
 
@@ -655,7 +656,7 @@ func _fill_section(section_box: VBoxContainer, d: Dictionary, s: Dictionary) -> 
 	var blocks = _blocks.get(key)
 	if blocks == null and view.online:
 		var wait := Label.new()
-		wait.text = "Cargando…"
+		wait.text = I18n.t("Cargando…")
 		section_box.add_child(wait)
 		var r: Dictionary = await view.client.request("GET", "/api/docs/%s/sections/%s?format=blocks" % [str(d.alias).uri_encode(), str(s.id).uri_encode()])
 		if not is_instance_valid(section_box):
@@ -663,7 +664,7 @@ func _fill_section(section_box: VBoxContainer, d: Dictionary, s: Dictionary) -> 
 		wait.queue_free()
 		if r.code != 200:
 			var err := Label.new()
-			err.text = "No se pudo traer la sección."
+			err.text = I18n.t("No se pudo traer la sección.")
 			section_box.add_child(err)
 			return
 		blocks = r.json.blocks

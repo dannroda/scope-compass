@@ -3,6 +3,7 @@ extends RefCounted
 ## Lee compass/ desde disco en solo lectura (spec §11.1, nivel 1): el dock sin hub.
 ## Un archivo que no se puede leer va a `warnings` y no se carga, igual que en el hub.
 
+const I18n := preload("i18n.gd")
 const STATUSES := ["todo", "paused", "doing", "review", "done"]
 
 
@@ -13,7 +14,7 @@ static func read(project_root: String) -> Dictionary:
 	var out := { "config": null, "milestones": [], "tasks": [], "warnings": [], "docs": [] }
 	# Proyecto sin compass/ (plugin recién instalado): tablero vacío con un aviso, sin errores en la consola.
 	if not DirAccess.dir_exists_absolute(compass):
-		out.warnings.append({ "code": "missing_compass", "path": "compass/", "message": "no existe" })
+		out.warnings.append({ "code": "missing_compass", "path": "compass/", "message": I18n.t("no existe") })
 		return out
 	var cfg = _read_doc(compass.path_join("config.json"), "config", out.warnings)
 	if cfg != null:
@@ -47,16 +48,16 @@ static func _read_doc(path: String, kind: String, warnings: Array):
 	if kind == "config":
 		rel = "compass/config.json"
 	if not FileAccess.file_exists(path):
-		warnings.append({ "code": "missing_config", "path": rel, "message": "falta" })
+		warnings.append({ "code": "missing_config", "path": rel, "message": I18n.t("falta") })
 		return null
 	var text := FileAccess.get_file_as_string(path)
 	for line in text.split("\n"):
 		if line.begins_with("<<<<<<<") or line.begins_with("=======") or line.begins_with(">>>>>>>"):
-			warnings.append({ "code": "conflict_markers", "path": rel, "message": "conflicto de git sin resolver" })
+			warnings.append({ "code": "conflict_markers", "path": rel, "message": I18n.t("conflicto de git sin resolver") })
 			return null
 	var json := JSON.new()
 	if json.parse(text) != OK or typeof(json.data) != TYPE_DICTIONARY:
-		warnings.append({ "code": "invalid_json", "path": rel, "message": "JSON inválido" })
+		warnings.append({ "code": "invalid_json", "path": rel, "message": I18n.t("JSON inválido") })
 		return null
 	var doc: Dictionary = json.data
 	var problem := _check(doc, kind)
@@ -71,39 +72,39 @@ static func _check(doc: Dictionary, kind: String) -> String:
 	match kind:
 		"config":
 			if typeof(doc.get("project")) != TYPE_STRING:
-				return "falta project"
+				return I18n.t("falta project")
 		"milestones":
 			for k in ["code", "title"]:
 				if typeof(doc.get(k)) != TYPE_STRING:
-					return "falta " + k
+					return I18n.t("falta %s") % k
 		"tasks":
 			for k in ["milestone", "title"]:
 				if typeof(doc.get(k)) != TYPE_STRING:
-					return "falta " + k
+					return I18n.t("falta %s") % k
 			if not STATUSES.has(doc.get("status")):
-				return "status inválido"
+				return I18n.t("status inválido")
 			if doc.has("checklist") and typeof(doc.checklist) != TYPE_ARRAY:
-				return "checklist no es una lista"
+				return I18n.t("checklist no es una lista")
 			# Sin hub nadie valida el schema: una lista con otra forma (un JSON editado a mano) rompía el render (19.10).
 			for k in ["checklist", "links", "refs", "images", "files", "tags", "decisions"]:
 				var v = doc.get(k, [])
 				if typeof(v) != TYPE_ARRAY:
-					return k + " no es una lista"
+					return I18n.t("%s no es una lista") % k
 				var want := TYPE_STRING if k in ["images", "files", "tags"] else TYPE_DICTIONARY
 				for x in v:
 					if typeof(x) != want:
-						return "%s tiene un elemento con otra forma" % k
+						return I18n.t("%s tiene un elemento con otra forma") % k
 			if doc.has("playtest") and typeof(doc.playtest) != TYPE_DICTIONARY:
-				return "playtest no es un objeto"
+				return I18n.t("playtest no es un objeto")
 			for c in doc.get("checklist", []):
 				if typeof(c.get("text")) != TYPE_STRING:
-					return "un paso sin texto"
+					return I18n.t("un paso sin texto")
 			for l in doc.get("links", []):
 				if typeof(l.get("task")) != TYPE_STRING:
-					return "un vínculo sin tarea"
+					return I18n.t("un vínculo sin tarea")
 			for r in doc.get("refs", []):
 				if typeof(r.get("doc")) != TYPE_STRING:
-					return "una referencia sin documento"
+					return I18n.t("una referencia sin documento")
 	return ""
 
 

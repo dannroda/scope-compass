@@ -66,9 +66,13 @@ async function setTask(id, changes) {
 }
 
 function godot(...args) {
+  return godotWith({}, ...args);
+}
+// Con variables de entorno de más (SCOMPASS_LANG para el idioma).
+function godotWith(env, ...args) {
   return new Promise((resolve) => {
     execFile(GODOT, ['--headless', '--path', REPO, '--script', 'res://hub/test/godot/runner.gd', '--', ...args],
-      { timeout: 60000 }, (err, stdout, stderr) => resolve({ code: err ? err.code ?? 1 : 0, out: stdout + stderr }));
+      { timeout: 60000, env: { ...process.env, ...env } }, (err, stdout, stderr) => resolve({ code: err ? err.code ?? 1 : 0, out: stdout + stderr }));
   });
 }
 const expectOk = (r, name) => assert.ok(r.code === 0 && r.out.includes(`OK ${name}`), r.out.split('\n').filter((l) => /FAIL|ERROR|OK /.test(l)).join('\n') || r.out);
@@ -76,6 +80,10 @@ const expectOk = (r, name) => assert.ok(r.code === 0 && r.out.includes(`OK ${nam
 test('sin hub: tareas del primer hito sin terminar, agrupadas por estado, en solo lectura', { skip }, async () => {
   const expected = ['doing:m1-03', 'review:m1-05', 'done:m1-01', 'done:m1-02', 'done:m1-04', 'done:m1-06', 'done:m1-07'];
   expectOk(await godot('offline', dir, 'm01', JSON.stringify(expected)), 'offline');
+});
+
+test('§45: con SCOMPASS_LANG=en el dock sale en inglés', { skip }, async () => {
+  expectOk(await godotWith({ SCOMPASS_LANG: 'en' }, 'english', dir), 'english');
 });
 
 test('elegir un hito lo recuerda y cambia la lista', { skip }, async () => {

@@ -15,6 +15,7 @@ const HubClient := preload("hub_client.gd")
 const HubProcess := preload("hub_process.gd")
 const TaskDetail := preload("task_detail.gd")
 const Updater := preload("addon_updater.gd")
+const I18n := preload("i18n.gd")
 
 const WRAP_MIN_WIDTH := TaskDetail.WRAP_MIN_WIDTH
 const BLOCKED_COLOR := TaskDetail.BLOCKED_COLOR
@@ -52,7 +53,7 @@ var banner_text: Label
 var init_button: Button
 ## Plantilla para "Crear compass/" (8.14): juego por defecto, porque desde el dock es un proyecto de Godot.
 var template_select: OptionButton
-const TEMPLATES := [["juego", "Juego"], ["personal", "Personal"], ["vacio", "Vacío"]]
+static var TEMPLATES := [["juego", I18n.t("Juego")], ["personal", I18n.t("Personal")], ["vacio", I18n.t("Vacío")]]
 var start_button: Button
 var open_tasks_button: Button
 var warnings_label: Label
@@ -85,7 +86,7 @@ var files_button: Button
 var new_row: HBoxContainer
 ## Cargar un bug (21.4): menú con la captura que lleva (del juego, del editor o ninguna).
 var bug_button: MenuButton
-const BUG_SOURCES := [["game", "Con captura del juego"], ["editor", "Con captura del editor"], ["", "Sin captura"]]
+static var BUG_SOURCES := [["game", I18n.t("Con captura del juego")], ["editor", I18n.t("Con captura del editor")], ["", I18n.t("Sin captura")]]
 ## Capturas para los bugs (las pone el plugin): la ventana del juego que corre desde el editor (por el depurador) y la
 ## pantalla principal del editor. Devuelven un Image, o null si no se pudo; game_running dice si hay juego.
 var capture_game: Callable = func(): return null
@@ -123,6 +124,8 @@ var _notice_timer: Timer
 
 func _init() -> void:
 	name = "Tablero"
+	# Los textos del dock ya vienen traducidos (I18n.t): el catálogo del editor no tiene que tocarlos (§45).
+	auto_translate_mode = AUTO_TRANSLATE_MODE_DISABLED
 	size_flags_vertical = SIZE_EXPAND_FILL
 	add_theme_constant_override("separation", 6)
 	add_child(client)
@@ -292,9 +295,9 @@ func _send_update(id: String, patch) -> void:
 		doc["etag"] = cur.etag
 		board.apply("tasks", id, doc)
 		_render()
-		show_notice("Otra pestaña o la CLI cambió esta tarea; se actualizó. Revisá y volvé a aplicar tu cambio.")
+		show_notice(I18n.t("Otra pestaña o la CLI cambió esta tarea; se actualizó. Revisá y volvé a aplicar tu cambio."))
 	else:
-		show_notice("No se pudo guardar: " + _error_of(r))
+		show_notice(I18n.t("No se pudo guardar: %s") % _error_of(r))
 		# La casilla o el selector quedaron con lo que no se guardó: se vuelve a mostrar lo que hay (19.10).
 		detail.render()
 
@@ -303,7 +306,7 @@ func _send_update(id: String, patch) -> void:
 static func _error_of(r: Dictionary) -> String:
 	if r.json is Dictionary and r.json.get("error") is Dictionary and r.json.error.get("message") is String:
 		return r.json.error.message
-	return "sin respuesta del hub" if r.code == 0 else "HTTP %d" % r.code
+	return I18n.t("sin respuesta del hub") if r.code == 0 else "HTTP %d" % r.code
 
 
 func create_task(title: String) -> void:
@@ -319,7 +322,7 @@ func _post_task(fields: Dictionary) -> String:
 	body.merge(fields, true)
 	var r := await client.request("POST", "/api/tasks", body)
 	if r.code != 201:
-		show_notice("No se pudo crear la tarea: " + _error_of(r))
+		show_notice(I18n.t("No se pudo crear la tarea: %s") % _error_of(r))
 		return ""
 	board.apply("tasks", r.json.id, r.json)
 	selected_task = r.json.id
@@ -339,7 +342,7 @@ func create_bug(title: String, source := "") -> void:
 	if current_milestone == "" or not online:
 		return
 	if title == "":
-		show_notice("Escribí en la caja qué pasa: es el título del bug.")
+		show_notice(I18n.t("Escribí en la caja qué pasa: es el título del bug."))
 		if new_title.is_inside_tree():
 			new_title.grab_focus()
 		return
@@ -353,20 +356,20 @@ func create_bug(title: String, source := "") -> void:
 	var id := await _post_task(fields)
 	if id == "":
 		return
-	var what := "Bug cargado"
+	var what := I18n.t("Bug cargado")
 	if img is Image and not img.is_empty():
 		var r := await client.request("POST", "/api/tasks/%s/images" % id.uri_encode(), { "data": encode_image(img) }, [], 30.0)
 		if r.code == 201:
 			board.apply("tasks", id, r.json)
 			_render()
-			what += " con la captura del " + ("juego" if source == "game" else "editor")
+			what += I18n.t(" con la captura del juego") if source == "game" else I18n.t(" con la captura del editor")
 		else:
-			what += ", pero no se pudo guardar la captura (%s)" % _error_of(r)
+			what += I18n.t(", pero no se pudo guardar la captura (%s)") % _error_of(r)
 	elif source == "game":
-		what += " sin captura: el juego no contestó (¿está corriendo, o frenado en un breakpoint?)"
+		what += I18n.t(" sin captura: el juego no contestó (¿está corriendo, o frenado en un breakpoint?)")
 	elif source == "editor":
-		what += " sin captura: no se pudo capturar el editor"
-	show_notice(what + ". Completá la descripción en el navegador (↗)." if fields.has("description") else what + ".")
+		what += I18n.t(" sin captura: no se pudo capturar el editor")
+	show_notice(I18n.t("%s. Completá la descripción en el navegador (↗).") % what if fields.has("description") else what + ".")
 
 
 ## La captura en base64 para POST /api/tasks/<id>/images: PNG, o JPEG si el PNG pasa de 9 MB (el hub acepta hasta 10).
@@ -398,29 +401,29 @@ func _render_compat() -> void:
 	var mine := addon_version()
 	var mismatch := not online and client.mismatch_version != ""
 	compat_row.visible = mine != "" and not online and (mismatch or _scompass_missing)
-	compat_button.text = "Bajar scompass %s" % mine
+	compat_button.text = I18n.t("Bajar scompass %s") % mine
 	compat_button.tooltip_text = Updater.binary_url(mine)
 	if mismatch:
-		compat_label.text = "El scompass de este equipo (%s) no es compatible con este addon (%s): hablan otro protocolo. Bajá scompass %s y volvé a iniciar el hub; mientras tanto, las tareas se leen de compass/ en solo lectura." % [client.mismatch_version, mine, mine]
+		compat_label.text = I18n.t("El scompass de este equipo (%s) no es compatible con este addon (%s): hablan otro protocolo. Bajá scompass %s y volvé a iniciar el hub; mientras tanto, las tareas se leen de compass/ en solo lectura.") % [client.mismatch_version, mine, mine]
 	else:
-		compat_label.text = "No encontré scompass en este equipo. Bajá scompass %s, abrilo una vez y apretá Iniciar hub, o configurá su ruta en Editor Settings › scope_compass/scompass_path." % mine
+		compat_label.text = I18n.t("No encontré scompass en este equipo. Bajá scompass %s, abrilo una vez y apretá Iniciar hub, o configurá su ruta en Editor Settings › scope_compass/scompass_path.") % mine
 
 
 ## Busca un release nuevo del addon y, si lo hay, lo avisa. Al abrir el editor (`manual` false) busca a lo sumo una
 ## vez por día y no vuelve a mostrar la versión a la que se le dijo Después. Devuelve "" o por qué no avisó.
 func check_addon_update(manual := false) -> String:
 	if Updater.is_dev_copy():
-		return "es una copia de desarrollo del addon: se actualiza con git"
+		return I18n.t("es una copia de desarrollo del addon: se actualiza con git")
 	var now := int(Time.get_unix_time_from_system())
 	if not manual and now - int(get_pref.call("update_last_check", 0)) < UPDATE_CHECK_INTERVAL_S:
-		return "ya se buscó hoy"
+		return I18n.t("ya se buscó hoy")
 	var result: Dictionary = await updater.check()
 	if not result.error.is_empty():
 		return result.error
 	set_pref.call("update_last_check", now)
 	var release: Dictionary = result.release
 	if release.is_empty():
-		return "es la última versión (%s)" % addon_version()
+		return I18n.t("es la última versión (%s)") % addon_version()
 	if manual or str(release.version) != str(get_pref.call("update_dismissed", "")):
 		show_addon_release(release)
 	return ""
@@ -429,7 +432,7 @@ func check_addon_update(manual := false) -> String:
 ## Muestra el aviso de `release` (como lo da Updater.pick_release()).
 func show_addon_release(release: Dictionary) -> void:
 	addon_release = release
-	addon_update_label.text = "Scope Compass %s está disponible (tenés la %s). Actualizar cambia el addon; si cambia el protocolo, el dock ofrece después el scompass nuevo." % [release.version, addon_version()]
+	addon_update_label.text = I18n.t("Scope Compass %s está disponible (tenés la %s). Actualizar cambia el addon; si cambia el protocolo, el dock ofrece después el scompass nuevo.") % [release.version, addon_version()]
 	_set_update_buttons(true)
 	addon_update_row.visible = true
 
@@ -446,10 +449,10 @@ func _set_update_buttons(enabled: bool) -> void:
 
 func _confirm_addon_update() -> void:
 	var confirm := ConfirmationDialog.new()
-	confirm.title = "Actualizar Scope Compass"
-	confirm.dialog_text = "Se baja Scope Compass %s, se instala sobre addons/scope_compass y se reinicia el editor (antes se guardan las escenas abiertas). Las tareas de compass/ no se tocan." % addon_release.get("version", "")
-	confirm.ok_button_text = "Actualizar y reiniciar"
-	confirm.cancel_button_text = "Cancelar"
+	confirm.title = I18n.t("Actualizar Scope Compass")
+	confirm.dialog_text = I18n.t("Se baja Scope Compass %s, se instala sobre addons/scope_compass y se reinicia el editor (antes se guardan las escenas abiertas). Las tareas de compass/ no se tocan.") % addon_release.get("version", "")
+	confirm.ok_button_text = I18n.t("Actualizar y reiniciar")
+	confirm.cancel_button_text = I18n.t("Cancelar")
 	confirm.confirmed.connect(install_addon_update)
 	confirm.visibility_changed.connect(func():
 		if not confirm.visible:
@@ -462,20 +465,20 @@ func _confirm_addon_update() -> void:
 ## editor no llega a recargar los scripts nuevos con el plugin viejo cargado.
 func install_addon_update() -> void:
 	if Updater.is_dev_copy():
-		addon_update_label.text = "Es una copia de desarrollo del addon: actualizala con git."
+		addon_update_label.text = I18n.t("Es una copia de desarrollo del addon: actualizala con git.")
 		return
 	var v := str(addon_release.get("version", ""))
 	_set_update_buttons(false)
 	addon_update_label.text = "Bajando Scope Compass %s…" % v
 	var staged: Dictionary = await updater.download(addon_release)
 	if not staged.ok:
-		addon_update_label.text = "No se pudo actualizar: %s" % staged.error
+		addon_update_label.text = I18n.t("No se pudo actualizar: %s") % staged.error
 		_set_update_buttons(true)
 		return
 	var backup := ProjectSettings.globalize_path("user://scope_compass/update/backup-%s" % addon_version())
 	var installed := Updater.install(staged.dir, ProjectSettings.globalize_path(Updater.ADDON_DIR), backup)
 	if not installed.ok:
-		addon_update_label.text = "No se pudo actualizar: %s" % installed.error
+		addon_update_label.text = I18n.t("No se pudo actualizar: %s") % installed.error
 		_set_update_buttons(true)
 		return
 	restart_editor.call()
@@ -499,13 +502,13 @@ func init_compass() -> bool:
 		return true
 	var cmd := scompass_command()
 	if cmd.is_empty():
-		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path.")
+		show_notice(I18n.t("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path."))
 		return false
 	var r: Array = await _scompass(["init", "--template", selected_template()])
 	if r[0] != 0 or not has_compass():
-		show_notice("No se pudo crear compass/: " + (r[1] if r[1] != "" else "sin salida de scompass"))
+		show_notice(I18n.t("No se pudo crear compass/: %s") % (r[1] if r[1] != "" else I18n.t("sin salida de scompass")))
 		return false
-	show_notice("Creada compass/ (plantilla %s). Ya podés iniciar el hub." % template_select.get_item_text(template_select.selected))
+	show_notice(I18n.t("Creada compass/ (plantilla %s). Ya podés iniciar el hub.") % template_select.get_item_text(template_select.selected))
 	await reload()
 	return true
 
@@ -531,18 +534,18 @@ func check_compass() -> void:
 func update_compass() -> bool:
 	var r: Array = await _scompass(["update"])
 	if r[0] != 0:
-		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path." if r[0] == -1 \
-			else "No se pudo actualizar compass/: " + r[1])
+		show_notice(I18n.t("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path.") if r[0] == -1 \
+			else I18n.t("No se pudo actualizar compass/: %s") % r[1])
 		return false
 	var n := outdated.size()
 	await check_compass()
-	show_notice("compass/ actualizada (%d archivos). Revisá el cambio y commitealo." % n)
+	show_notice(I18n.t("compass/ actualizada (%d archivos). Revisá el cambio y commitealo.") % n)
 	return true
 
 
 func _render_update() -> void:
 	update_row.visible = not outdated.is_empty()
-	update_label.text = "compass/ tiene archivos de una versión anterior de Scope Compass: " + ", ".join(outdated.map(func(p): return str(p).trim_prefix("compass/")))
+	update_label.text = I18n.t("compass/ tiene archivos de una versión anterior de Scope Compass: %s") % ", ".join(outdated.map(func(p): return str(p).trim_prefix("compass/")))
 
 
 # --- Iniciar el hub (5.5) ----------------------------------------------------------------------
@@ -572,17 +575,17 @@ func _start_hub() -> bool:
 	if home > 0:
 		var r := await client.request_url("POST", "http://%s:%d/api/projects/activate" % [client.HOST, home], { "path": project_root })
 		if r.code == 200 and await client.detect():
-			show_notice("Conectado al Inicio, que sirve este proyecto.")
+			show_notice(I18n.t("Conectado al Inicio, que sirve este proyecto."))
 			return true
-		show_notice("El Inicio no pudo servir el proyecto (%s); se levanta un hub propio." % _error_of(r))
+		show_notice(I18n.t("El Inicio no pudo servir el proyecto (%s); se levanta un hub propio.") % _error_of(r))
 	var cmd := scompass_command()
 	_scompass_missing = cmd.is_empty()
 	if cmd.is_empty():
-		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path.")
+		show_notice(I18n.t("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path."))
 		_render_compat()
 		return false
 	if not hub.launch(cmd, bool(keep_hub_setting.call())):
-		show_notice("No se pudo iniciar el hub con %s." % cmd[0])
+		show_notice(I18n.t("No se pudo iniciar el hub con %s.") % cmd[0])
 		return false
 	for i in 32:
 		await get_tree().create_timer(0.25).timeout
@@ -593,11 +596,11 @@ func _start_hub() -> bool:
 	# El scompass encontrado es de otro protocolo (§39): su hub no sirve; se cierra y se ofrece el del addon.
 	if not online and client.mismatch_version != "":
 		hub.stop(true)
-		show_notice("El scompass encontrado (%s) habla otro protocolo que el addon: bajá el de la versión %s." % [client.mismatch_version, addon_version()])
+		show_notice(I18n.t("El scompass encontrado (%s) habla otro protocolo que el addon: bajá el de la versión %s.") % [client.mismatch_version, addon_version()])
 		_render_compat()
 		return false
 	if not online and not await _wait_online(2.0):
-		show_notice("El hub no arrancó. Mirá .godot/scope_compass_hub.log o probá `scompass serve` en una terminal.")
+		show_notice(I18n.t("El hub no arrancó. Mirá .godot/scope_compass_hub.log o probá `scompass serve` en una terminal."))
 		return false
 	return true
 
@@ -616,7 +619,7 @@ func restart_hub() -> bool:
 		return false
 	var r := await client.request("POST", "/api/restart")
 	if r.code != 202:
-		show_notice("El hub no aceptó reiniciarse.")
+		show_notice(I18n.t("El hub no aceptó reiniciarse."))
 		return false
 	var t0 := Time.get_ticks_msec()
 	while online and Time.get_ticks_msec() - t0 < 5000:
@@ -625,13 +628,13 @@ func restart_hub() -> bool:
 		await get_tree().create_timer(0.25).timeout
 		await client.detect()
 	if not await _wait_online(2.0):
-		show_notice("El hub no volvió después de reiniciarse. Mirá .godot/scope_compass_hub.log.")
+		show_notice(I18n.t("El hub no volvió después de reiniciarse. Mirá .godot/scope_compass_hub.log."))
 		return false
 	if hub.pid > 0:
 		var h := await client.request("GET", "/api/health")
 		if h.code == 200:
 			hub.pid = int(h.json.pid)
-	show_notice("Hub reiniciado.")
+	show_notice(I18n.t("Hub reiniciado."))
 	return true
 
 
@@ -704,27 +707,27 @@ func _build() -> void:
 	bv.add_child(bb)
 	# Proyecto sin compass/: en lugar de "Iniciar hub" se ofrece crearla.
 	init_button = Button.new()
-	init_button.text = "Crear compass/"
-	init_button.tooltip_text = "Corre `scompass init` en este proyecto"
+	init_button.text = I18n.t("Crear compass/")
+	init_button.tooltip_text = I18n.t("Corre `scompass init` en este proyecto")
 	init_button.pressed.connect(init_compass)
 	template_select = OptionButton.new()
-	template_select.tooltip_text = "Plantilla: Juego trae el hito M0, listas de ideas y assets, y docs/gdd.md (si no existe)"
+	template_select.tooltip_text = I18n.t("Plantilla: Juego trae el hito M0, listas de ideas y assets, y docs/gdd.md (si no existe)")
 	for t in TEMPLATES:
 		template_select.add_item(t[1])
 		template_select.set_item_metadata(template_select.item_count - 1, t[0])
 	bb.add_child(template_select)
 	bb.add_child(init_button)
 	start_button = Button.new()
-	start_button.text = "Iniciar hub"
+	start_button.text = I18n.t("Iniciar hub")
 	start_button.icon = ICONS.start
 	start_button.pressed.connect(start_hub)
 	bb.add_child(start_button)
 	var retry := Button.new()
-	retry.text = "Reintentar"
+	retry.text = I18n.t("Reintentar")
 	retry.pressed.connect(_on_retry)
 	bb.add_child(retry)
 	open_tasks_button = Button.new()
-	open_tasks_button.text = "Abrir compass/tasks"
+	open_tasks_button.text = I18n.t("Abrir compass/tasks")
 	open_tasks_button.icon = ICONS.folder
 	open_tasks_button.pressed.connect(func(): OS.shell_open(project_root.path_join("compass/tasks")))
 	bb.add_child(open_tasks_button)
@@ -745,8 +748,8 @@ func _build() -> void:
 	update_label.add_theme_color_override("font_color", Color("#e0a95a"))
 	update_row.add_child(update_label)
 	var update_button := Button.new()
-	update_button.text = "Actualizar"
-	update_button.tooltip_text = "Corre `scompass update` en este proyecto"
+	update_button.text = I18n.t("Actualizar")
+	update_button.tooltip_text = I18n.t("Corre `scompass update` en este proyecto")
 	update_button.pressed.connect(update_compass)
 	update_row.add_child(update_button)
 	add_child(update_row)
@@ -771,9 +774,9 @@ func _build() -> void:
 	addon_update_label.custom_minimum_size.x = WRAP_MIN_WIDTH
 	addon_update_label.size_flags_horizontal = SIZE_EXPAND_FILL
 	addon_update_row.add_child(addon_update_label)
-	for b in [["Novedades", "Las notas del release en GitHub", func(): OS.shell_open(str(addon_release.get("html_url", "")))],
-			["Después", "No volver a avisar de esta versión", dismiss_addon_update],
-			["Actualizar", "Baja el addon nuevo, lo instala sobre addons/scope_compass y reinicia el editor", _confirm_addon_update]]:
+	for b in [[I18n.t("Novedades"), I18n.t("Las notas del release en GitHub"), func(): OS.shell_open(str(addon_release.get("html_url", "")))],
+			[I18n.t("Después"), I18n.t("No volver a avisar de esta versión"), dismiss_addon_update],
+			[I18n.t("Actualizar"), I18n.t("Baja el addon nuevo, lo instala sobre addons/scope_compass y reinicia el editor"), _confirm_addon_update]]:
 		var button := Button.new()
 		button.text = b[0]
 		button.tooltip_text = b[1]
@@ -789,34 +792,34 @@ func _build() -> void:
 	milestone_select.clip_text = true
 	# Sin esto el ancho mínimo del dock es el del hito con el nombre más largo.
 	milestone_select.fit_to_longest_item = false
-	milestone_select.tooltip_text = "Hito"
+	milestone_select.tooltip_text = I18n.t("Hito")
 	milestone_select.item_selected.connect(_on_milestone_selected)
 	head.add_child(milestone_select)
-	reload_button = icon_button("reload", "Recargar")
+	reload_button = icon_button("reload", I18n.t("Recargar"))
 	reload_button.pressed.connect(reload)
 	head.add_child(reload_button)
-	browser_button = icon_button("browser", "Abrir el tablero en el navegador")
+	browser_button = icon_button("browser", I18n.t("Abrir el tablero en el navegador"))
 	browser_button.pressed.connect(func(): OS.shell_open(web_url()))
 	head.add_child(browser_button)
-	files_button = icon_button("folder", "Ver los archivos del repo y su estado de git en el navegador")
+	files_button = icon_button("folder", I18n.t("Ver los archivos del repo y su estado de git en el navegador"))
 	files_button.pressed.connect(func(): OS.shell_open(web_url("#files")))
 	head.add_child(files_button)
 
 	new_row = HBoxContainer.new()
 	add_child(new_row)
 	new_title = LineEdit.new()
-	new_title.placeholder_text = "Nueva tarea en este hito"
+	new_title.placeholder_text = I18n.t("Nueva tarea en este hito")
 	new_title.size_flags_horizontal = SIZE_EXPAND_FILL
 	new_title.text_submitted.connect(func(t): create_task(t))
 	new_row.add_child(new_title)
 	var add := Button.new()
-	add.text = "Agregar"
+	add.text = I18n.t("Agregar")
 	add.pressed.connect(func(): create_task(new_title.text))
 	new_row.add_child(add)
 	bug_button = MenuButton.new()
-	bug_button.text = "Bug"
+	bug_button.text = I18n.t("Bug")
 	bug_button.flat = false
-	bug_button.tooltip_text = "Cargar un bug con el título de la caja: etiqueta bug, su plantilla de descripción y una captura"
+	bug_button.tooltip_text = I18n.t("Cargar un bug con el título de la caja: etiqueta bug, su plantilla de descripción y una captura")
 	var bug_menu := bug_button.get_popup()
 	for i in BUG_SOURCES.size():
 		bug_menu.add_item(BUG_SOURCES[i][1], i)
@@ -838,15 +841,15 @@ func _build() -> void:
 	tasks_header = Button.new()
 	tasks_header.flat = true
 	tasks_header.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	tasks_header.tooltip_text = "Plegar o desplegar la lista de tareas"
+	tasks_header.tooltip_text = I18n.t("Plegar o desplegar la lista de tareas")
 	tasks_header.pressed.connect(func():
 		tasks_collapsed = not tasks_collapsed
 		set_pref.call("tasks_collapsed", tasks_collapsed)
 		_apply_split())
 	tasks_panel.add_child(tasks_header)
 	search = LineEdit.new()
-	search.placeholder_text = "Buscar en todos los hitos"
-	search.tooltip_text = "Código, título o id; todas las palabras, sin importar tildes ni mayúsculas"
+	search.placeholder_text = I18n.t("Buscar en todos los hitos")
+	search.tooltip_text = I18n.t("Código, título o id; todas las palabras, sin importar tildes ni mayúsculas")
 	search.clear_button_enabled = true
 	search.text_changed.connect(func(_t): _render_tree())
 	search.gui_input.connect(func(e: InputEvent):
@@ -907,7 +910,7 @@ func _build() -> void:
 	# Solo el ícono: con el texto, el pie pedía casi 470 px (19.11). El tooltip dice qué hace.
 	restart_button.icon = ICONS.restart
 	restart_button.flat = true
-	restart_button.tooltip_text = "Reiniciar hub (para que cargue código nuevo de Scope Compass)"
+	restart_button.tooltip_text = I18n.t("Reiniciar hub (para que cargue código nuevo de Scope Compass)")
 	restart_button.pressed.connect(restart_hub)
 	foot.add_child(restart_button)
 
@@ -952,11 +955,11 @@ func _render() -> void:
 	banner.visible = not online
 	var compass := has_compass()
 	if compass:
-		banner_title.text = "No hay hub en 127.0.0.1:%d" % board.port() + ((" (" + client.last_error + ")") if client.last_error != "" else "")
-		banner_text.text = "Mostrando las tareas desde compass/ en solo lectura. Para editarlas, iniciá el hub o editá los JSON y commiteá con git."
+		banner_title.text = I18n.t("No hay hub en 127.0.0.1:%d") % board.port() + ((" (" + client.last_error + ")") if client.last_error != "" else "")
+		banner_text.text = I18n.t("Mostrando las tareas desde compass/ en solo lectura. Para editarlas, iniciá el hub o editá los JSON y commiteá con git.")
 	else:
-		banner_title.text = "Este proyecto no tiene compass/"
-		banner_text.text = "Ahí se guardan las tareas y los hitos del proyecto. Creala para empezar a usar el tablero."
+		banner_title.text = I18n.t("Este proyecto no tiene compass/")
+		banner_text.text = I18n.t("Ahí se guardan las tareas y los hitos del proyecto. Creala para empezar a usar el tablero.")
 	init_button.visible = not compass
 	template_select.visible = not compass
 	start_button.visible = compass
@@ -975,8 +978,8 @@ func _render() -> void:
 		var p := board.progress(m.id)
 		# Fecha objetivo (18.2): atrasado si pasó con tareas sin terminar.
 		var late: bool = str(m.get("due", "")) != "" and Board.due_state({ "due": m.due, "status": "done" if Board.complete(p) else "todo" }) == "overdue"
-		var review: String = (", %d en revisión" % p[2]) if p[2] > 0 else ""
-		milestone_select.add_item("%s · %s (%d/%d%s)%s" % [m.code, m.title, p[0], p[1], review, (" · atrasado " + Board.show_due(m.due)) if late else ""])
+		var review: String = (I18n.t(", %d en revisión") % p[2]) if p[2] > 0 else ""
+		milestone_select.add_item("%s · %s (%d/%d%s)%s" % [m.code, m.title, p[0], p[1], review, (I18n.t(" · atrasado %s") % Board.show_due(m.due)) if late else ""])
 		milestone_select.set_item_metadata(milestone_select.item_count - 1, m.id)
 		if m.id == current_milestone:
 			milestone_select.select(milestone_select.item_count - 1)
@@ -986,13 +989,13 @@ func _render() -> void:
 	detail.render()
 
 	footer_dot.color = Color("#6fbf94") if online else Color("#e0655a")
-	footer_label.text = ("127.0.0.1:%d" % client.port) if online else "Sin hub · solo lectura"
+	footer_label.text = ("127.0.0.1:%d" % client.port) if online else I18n.t("Sin hub · solo lectura")
 	footer_label.tooltip_text = footer_label.text
 	# Un proyecto que sirve el Inicio no se reinicia solo (su hub no tiene /api/restart): se reinicia el Inicio (19.10).
 	restart_button.visible = online and client.base == ""
 	_render_compat()
-	footer_right.text = ("compass: %d sin commitear" % _uncommitted) if _uncommitted >= 0 else ""
-	footer_right.tooltip_text = "Cambios del tablero que todavía no están en git: commitealos cuando quieras." if _uncommitted > 0 else ""
+	footer_right.text = (I18n.t("compass: %d sin commitear") % _uncommitted) if _uncommitted >= 0 else ""
+	footer_right.tooltip_text = I18n.t("Cambios del tablero que todavía no están en git: commitealos cuando quieras.") if _uncommitted > 0 else ""
 	if _uncommitted > 0:
 		footer_right.add_theme_color_override("font_color", TODAY_COLOR)
 	else:
@@ -1053,18 +1056,18 @@ func _build_tree() -> void:
 			it.set_metadata(0, t.id)
 			var tip := str(t.title)
 			if not pt.is_empty():
-				tip += "\nPlaytest: %s%s" % [{ "pass": "anda", "fail": "falla" }.get(pt.get("result"), "sin probar"), (" · " + str(pt.note)) if pt.has("note") else ""]
-			var waiting := [("%d preguntas abiertas" % dc.open) if dc.open else "", ("%d sin revisar" % dc.pending) if dc.pending else "", ("%d a revertir" % dc.revert) if dc.revert else ""].filter(func(x): return x != "")
+				tip += "\n" + I18n.t("Playtest: %s%s") % [{ "pass": I18n.t("anda"), "fail": I18n.t("falla") }.get(pt.get("result"), I18n.t("sin probar")), (" · " + str(pt.note)) if pt.has("note") else ""]
+			var waiting := [(I18n.t("%d preguntas abiertas") % dc.open) if dc.open else "", (I18n.t("%d sin revisar") % dc.pending) if dc.pending else "", (I18n.t("%d a revertir") % dc.revert) if dc.revert else ""].filter(func(x): return x != "")
 			if not waiting.is_empty():
-				tip += "\nDecisiones: " + ", ".join(waiting)
+				tip += "\n" + I18n.t("Decisiones: %s") % ", ".join(waiting)
 			it.set_tooltip_text(0, tip)
 			var blockers := board.open_blockers(t.id)
 			if not blockers.is_empty():
 				it.set_custom_color(0, BLOCKED_COLOR)
-				it.set_tooltip_text(0, "%s\nBloqueada por: %s" % [tip, "; ".join(blockers.map(board.task_name))])
+				it.set_tooltip_text(0, "%s\n%s" % [tip, I18n.t("Bloqueada por: %s") % "; ".join(blockers.map(board.task_name))])
 			elif not board.review_blockers(t.id).is_empty():
 				it.set_custom_color(0, TODAY_COLOR)
-				it.set_tooltip_text(0, "%s\nDesbloqueada, en Revisión: %s" % [tip, "; ".join(board.review_blockers(t.id).map(board.task_name))])
+				it.set_tooltip_text(0, "%s\n%s" % [tip, I18n.t("Desbloqueada, en Revisión: %s") % "; ".join(board.review_blockers(t.id).map(board.task_name))])
 			if t.id == selected_task:
 				it.select(0)
 
@@ -1074,9 +1077,9 @@ func _apply_split() -> void:
 	var q := search.text.strip_edges()
 	if q != "":
 		var n := board.search(q).size()
-		fold_icon(not tasks_collapsed, tasks_header, "Tareas · %d encontrada%s" % [n, "" if n == 1 else "s"])
+		fold_icon(not tasks_collapsed, tasks_header, (I18n.t("Tareas · %d encontrada") if n == 1 else I18n.t("Tareas · %d encontradas")) % n)
 	else:
-		fold_icon(not tasks_collapsed, tasks_header, "Tareas · %d" % board.tasks_of(current_milestone).size())
+		fold_icon(not tasks_collapsed, tasks_header, I18n.t("Tareas · %d") % board.tasks_of(current_milestone).size())
 	tree.visible = not tasks_collapsed
 	search.visible = not tasks_collapsed
 	split.collapsed = tasks_collapsed
@@ -1140,7 +1143,7 @@ func _render_editing() -> void:
 			b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			b.custom_minimum_size.x = WRAP_MIN_WIDTH
 			b.text = "%s · %s" % [path.get_file(), board.task_name(t.id)]
-			b.tooltip_text = "Cita %s que estás editando. Ir a la tarea" % ("el script" if kind == "script" else "la escena")
+			b.tooltip_text = I18n.t("Cita el script que estás editando. Ir a la tarea") if kind == "script" else I18n.t("Cita la escena que estás editando. Ir a la tarea")
 			b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 			b.pressed.connect(go_to_task.bind(t.id))
 			editing_box.add_child(b)

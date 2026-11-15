@@ -58,6 +58,18 @@ func test_offline(a: Array) -> void:
 	if not _check(c, v.detail.steps_box.get_child_count() > 0 and v.detail.step_checkbox(0).disabled, "pasos en solo lectura"): return
 
 
+# Idioma (§45): con SCOMPASS_LANG=en el dock sale en inglés (el test lo lanza con esa variable).
+func test_english(a: Array) -> void:
+	var v := await _view(a[0])
+	var c := "english"
+	if not _check(c, v.banner_title.text.begins_with("No hub at 127.0.0.1:4711"), "título del aviso: " + v.banner_title.text): return
+	if not _check(c, v.footer_label.text == "No hub · read-only", "pie: " + v.footer_label.text): return
+	if not _check(c, v.detail.status_select.get_item_text(0) == "In progress", "estado: " + v.detail.status_select.get_item_text(0)): return
+	if not _check(c, v.tasks_header.text.contains("Tasks · "), "cabecera de la lista: " + v.tasks_header.text): return
+	if not _check(c, v.new_title.placeholder_text == "New task in this milestone", "caja de tarea nueva: " + v.new_title.placeholder_text): return
+	if not _check(c, v.auto_translate_mode == Node.AUTO_TRANSLATE_MODE_DISABLED, "el catálogo del editor no tiene que traducir el dock"): return
+
+
 # Elegir un hito lo recuerda (preferencia del proyecto) y cambia la lista.
 func test_pick_milestone(a: Array) -> void:
 	var saved := {}

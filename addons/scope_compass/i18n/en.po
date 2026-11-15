@@ -1,0 +1,533 @@
+# addons/scope_compass/i18n/en.po: los textos de addons/scope_compass en inglés (spec §45). msgid: el castellano del código.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid "En curso"
+msgstr "In progress"
+
+msgid "Revisión"
+msgstr "Review"
+
+msgid "Pendiente"
+msgstr "To do"
+
+msgid "Pausado"
+msgstr "Paused"
+
+msgid "Hecho"
+msgstr "Done"
+
+msgid " (no existe)"
+msgstr " (doesn't exist)"
+
+msgid "no existe"
+msgstr "doesn't exist"
+
+msgid "falta"
+msgstr "missing"
+
+msgid "conflicto de git sin resolver"
+msgstr "unresolved git conflict"
+
+msgid "JSON inválido"
+msgstr "invalid JSON"
+
+msgid "falta project"
+msgstr "project is missing"
+
+msgid "falta %s"
+msgstr "%s is missing"
+
+msgid "status inválido"
+msgstr "invalid status"
+
+msgid "checklist no es una lista"
+msgstr "checklist is not a list"
+
+msgid "%s no es una lista"
+msgstr "%s is not a list"
+
+msgid "%s tiene un elemento con otra forma"
+msgstr "%s has an item with the wrong shape"
+
+msgid "playtest no es un objeto"
+msgstr "playtest is not an object"
+
+msgid "un paso sin texto"
+msgstr "a step without text"
+
+msgid "un vínculo sin tarea"
+msgstr "a link without a task"
+
+msgid "una referencia sin documento"
+msgstr "a reference without a document"
+
+msgid "Juego"
+msgstr "Game"
+
+msgid "Personal"
+msgstr "Personal"
+
+msgid "Vacío"
+msgstr "Empty"
+
+msgid "Con captura del juego"
+msgstr "With a game screenshot"
+
+msgid "Con captura del editor"
+msgstr "With an editor screenshot"
+
+msgid "Sin captura"
+msgstr "No screenshot"
+
+msgid "Otra pestaña o la CLI cambió esta tarea; se actualizó. Revisá y volvé a aplicar tu cambio."
+msgstr "Another tab or the CLI changed this task; it was refreshed. Check it and apply your change again."
+
+msgid "No se pudo guardar: %s"
+msgstr "Couldn't save: %s"
+
+msgid "sin respuesta del hub"
+msgstr "no response from the hub"
+
+msgid "No se pudo crear la tarea: %s"
+msgstr "Couldn't create the task: %s"
+
+msgid "Escribí en la caja qué pasa: es el título del bug."
+msgstr "Type what's wrong in the box: it's the bug's title."
+
+msgid "Bug cargado"
+msgstr "Bug filed"
+
+msgid " con la captura del juego"
+msgstr " with a game screenshot"
+
+msgid " con la captura del editor"
+msgstr " with an editor screenshot"
+
+msgid ", pero no se pudo guardar la captura (%s)"
+msgstr ", but the screenshot couldn't be saved (%s)"
+
+msgid " sin captura: el juego no contestó (¿está corriendo, o frenado en un breakpoint?)"
+msgstr " without a screenshot: the game didn't answer (is it running, or stopped at a breakpoint?)"
+
+msgid " sin captura: no se pudo capturar el editor"
+msgstr " without a screenshot: the editor couldn't be captured"
+
+msgid "%s. Completá la descripción en el navegador (↗)."
+msgstr "%s. Fill in the description in the browser (↗)."
+
+msgid "Bajar scompass %s"
+msgstr "Download scompass %s"
+
+msgid "El scompass de este equipo (%s) no es compatible con este addon (%s): hablan otro protocolo. Bajá scompass %s y volvé a iniciar el hub; mientras tanto, las tareas se leen de compass/ en solo lectura."
+msgstr "This computer's scompass (%s) isn't compatible with this addon (%s): they speak a different protocol. Download scompass %s and start the hub again; meanwhile, tasks are read from compass/ read-only."
+
+msgid "No encontré scompass en este equipo. Bajá scompass %s, abrilo una vez y apretá Iniciar hub, o configurá su ruta en Editor Settings › scope_compass/scompass_path."
+msgstr "scompass wasn't found on this computer. Download scompass %s, open it once and press Start hub, or set its path in Editor Settings › scope_compass/scompass_path."
+
+msgid "es una copia de desarrollo del addon: se actualiza con git"
+msgstr "it's a development copy of the addon: update it with git"
+
+msgid "ya se buscó hoy"
+msgstr "already checked today"
+
+msgid "es la última versión (%s)"
+msgstr "it's the latest version (%s)"
+
+msgid "Scope Compass %s está disponible (tenés la %s). Actualizar cambia el addon; si cambia el protocolo, el dock ofrece después el scompass nuevo."
+msgstr "Scope Compass %s is available (you have %s). Update replaces the addon; if the protocol changes, the dock then offers the new scompass."
+
+msgid "Actualizar Scope Compass"
+msgstr "Update Scope Compass"
+
+msgid "Se baja Scope Compass %s, se instala sobre addons/scope_compass y se reinicia el editor (antes se guardan las escenas abiertas). Las tareas de compass/ no se tocan."
+msgstr "Scope Compass %s is downloaded, installed over addons/scope_compass and the editor restarts (open scenes are saved first). The tasks in compass/ aren't touched."
+
+msgid "Actualizar y reiniciar"
+msgstr "Update and restart"
+
+msgid "Cancelar"
+msgstr "Cancel"
+
+msgid "Es una copia de desarrollo del addon: actualizala con git."
+msgstr "It's a development copy of the addon: update it with git."
+
+msgid "No se pudo actualizar: %s"
+msgstr "Couldn't update: %s"
+
+msgid "No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path."
+msgstr "scompass not found. Set its path in Editor Settings › scope_compass/scompass_path."
+
+msgid "No se pudo crear compass/: %s"
+msgstr "Couldn't create compass/: %s"
+
+msgid "sin salida de scompass"
+msgstr "scompass printed nothing"
+
+msgid "Creada compass/ (plantilla %s). Ya podés iniciar el hub."
+msgstr "Created compass/ (%s template). You can start the hub now."
+
+msgid "No se pudo actualizar compass/: %s"
+msgstr "Couldn't update compass/: %s"
+
+msgid "compass/ actualizada (%d archivos). Revisá el cambio y commitealo."
+msgstr "compass/ updated (%d files). Review the change and commit it."
+
+msgid "compass/ tiene archivos de una versión anterior de Scope Compass: %s"
+msgstr "compass/ has files from an older version of Scope Compass: %s"
+
+msgid "Conectado al Inicio, que sirve este proyecto."
+msgstr "Connected to Home, which serves this project."
+
+msgid "El Inicio no pudo servir el proyecto (%s); se levanta un hub propio."
+msgstr "Home couldn't serve the project (%s); starting a hub of its own."
+
+msgid "No se pudo iniciar el hub con %s."
+msgstr "Couldn't start the hub with %s."
+
+msgid "El scompass encontrado (%s) habla otro protocolo que el addon: bajá el de la versión %s."
+msgstr "The scompass found (%s) speaks a different protocol than the addon: download version %s."
+
+msgid "El hub no arrancó. Mirá .godot/scope_compass_hub.log o probá `scompass serve` en una terminal."
+msgstr "The hub didn't start. Check .godot/scope_compass_hub.log or try `scompass serve` in a terminal."
+
+msgid "El hub no aceptó reiniciarse."
+msgstr "The hub refused to restart."
+
+msgid "El hub no volvió después de reiniciarse. Mirá .godot/scope_compass_hub.log."
+msgstr "The hub didn't come back after restarting. Check .godot/scope_compass_hub.log."
+
+msgid "Hub reiniciado."
+msgstr "Hub restarted."
+
+msgid "Crear compass/"
+msgstr "Create compass/"
+
+msgid "Corre `scompass init` en este proyecto"
+msgstr "Runs `scompass init` in this project"
+
+msgid "Plantilla: Juego trae el hito M0, listas de ideas y assets, y docs/gdd.md (si no existe)"
+msgstr "Template: Game brings milestone M0, idea and asset lists, and docs/gdd.md (if missing)"
+
+msgid "Iniciar hub"
+msgstr "Start hub"
+
+msgid "Reintentar"
+msgstr "Retry"
+
+msgid "Abrir compass/tasks"
+msgstr "Open compass/tasks"
+
+msgid "Actualizar"
+msgstr "Update"
+
+msgid "Corre `scompass update` en este proyecto"
+msgstr "Runs `scompass update` in this project"
+
+msgid "Novedades"
+msgstr "What's new"
+
+msgid "Las notas del release en GitHub"
+msgstr "The release notes on GitHub"
+
+msgid "Después"
+msgstr "Later"
+
+msgid "No volver a avisar de esta versión"
+msgstr "Don't remind me about this version"
+
+msgid "Baja el addon nuevo, lo instala sobre addons/scope_compass y reinicia el editor"
+msgstr "Downloads the new addon, installs it over addons/scope_compass and restarts the editor"
+
+msgid "Hito"
+msgstr "Milestone"
+
+msgid "Recargar"
+msgstr "Reload"
+
+msgid "Abrir el tablero en el navegador"
+msgstr "Open the board in the browser"
+
+msgid "Ver los archivos del repo y su estado de git en el navegador"
+msgstr "See the repo's files and their git status in the browser"
+
+msgid "Nueva tarea en este hito"
+msgstr "New task in this milestone"
+
+msgid "Agregar"
+msgstr "Add"
+
+msgid "Bug"
+msgstr "Bug"
+
+msgid "Cargar un bug con el título de la caja: etiqueta bug, su plantilla de descripción y una captura"
+msgstr "File a bug with the title in the box: bug tag, its description template and a screenshot"
+
+msgid "Plegar o desplegar la lista de tareas"
+msgstr "Collapse or expand the task list"
+
+msgid "Buscar en todos los hitos"
+msgstr "Search all milestones"
+
+msgid "Código, título o id; todas las palabras, sin importar tildes ni mayúsculas"
+msgstr "Code, title or id; all the words, ignoring accents and case"
+
+msgid "Reiniciar hub (para que cargue código nuevo de Scope Compass)"
+msgstr "Restart hub (to load new Scope Compass code)"
+
+msgid "No hay hub en 127.0.0.1:%d"
+msgstr "No hub at 127.0.0.1:%d"
+
+msgid "Mostrando las tareas desde compass/ en solo lectura. Para editarlas, iniciá el hub o editá los JSON y commiteá con git."
+msgstr "Showing tasks from compass/, read-only. To edit them, start the hub or edit the JSON files and commit with git."
+
+msgid "Este proyecto no tiene compass/"
+msgstr "This project has no compass/"
+
+msgid "Ahí se guardan las tareas y los hitos del proyecto. Creala para empezar a usar el tablero."
+msgstr "That's where the project's tasks and milestones live. Create it to start using the board."
+
+msgid ", %d en revisión"
+msgstr ", %d in review"
+
+msgid " · atrasado %s"
+msgstr " · late %s"
+
+msgid "Sin hub · solo lectura"
+msgstr "No hub · read-only"
+
+msgid "compass: %d sin commitear"
+msgstr "compass: %d uncommitted"
+
+msgid "Cambios del tablero que todavía no están en git: commitealos cuando quieras."
+msgstr "Board changes not in git yet: commit them whenever you like."
+
+msgid "Playtest: %s%s"
+msgstr "Playtest: %s%s"
+
+msgid "anda"
+msgstr "passes"
+
+msgid "falla"
+msgstr "fails"
+
+msgid "sin probar"
+msgstr "not tested"
+
+msgid "%d preguntas abiertas"
+msgstr "%d open questions"
+
+msgid "%d sin revisar"
+msgstr "%d not reviewed"
+
+msgid "%d a revertir"
+msgstr "%d to revert"
+
+msgid "Decisiones: %s"
+msgstr "Decisions: %s"
+
+msgid "Bloqueada por: %s"
+msgstr "Blocked by: %s"
+
+msgid "Desbloqueada, en Revisión: %s"
+msgstr "Unblocked, in Review: %s"
+
+msgid "Tareas · %d encontrada"
+msgstr "Tasks · %d found"
+
+msgid "Tareas · %d encontradas"
+msgstr "Tasks · %d found"
+
+msgid "Tareas · %d"
+msgstr "Tasks · %d"
+
+msgid "Cita el script que estás editando. Ir a la tarea"
+msgstr "Mentions the script you're editing. Go to the task"
+
+msgid "Cita la escena que estás editando. Ir a la tarea"
+msgstr "Mentions the scene you're editing. Go to the task"
+
+msgid "no responde"
+msgstr "not responding"
+
+msgid "responde otro programa, HTTP %d"
+msgstr "another program answers, HTTP %d"
+
+msgid "es el hub de otro proyecto: %s"
+msgstr "it's another project's hub: %s"
+
+msgid "es scompass %s, de otro protocolo que el addon"
+msgstr "it's scompass %s, with a different protocol than the addon"
+
+msgid "no se pudo abrir el WebSocket"
+msgstr "couldn't open the WebSocket"
+
+msgid "Tablero"
+msgstr "Board"
+
+msgid "✓ Anda"
+msgstr "✓ Passes"
+
+msgid "✗ Falla"
+msgstr "✗ Fails"
+
+msgid "Alta"
+msgstr "High"
+
+msgid "Media"
+msgstr "Medium"
+
+msgid "Baja"
+msgstr "Low"
+
+msgid "Bloqueada por"
+msgstr "Blocked by"
+
+msgid "Bloquea a"
+msgstr "Blocks"
+
+msgid "Relacionada con"
+msgstr "Related to"
+
+msgid "Abrir esta tarea en el navegador, donde se edita todo"
+msgstr "Open this task in the browser, where everything can be edited"
+
+msgid "Acá se cambian el estado, los pasos, el resultado del playtest y la revisión de las decisiones; lo demás, en el navegador (↗)."
+msgstr "Here you change the status, the steps, the playtest result and the decision reviews; everything else, in the browser (↗)."
+
+msgid "Estado"
+msgstr "Status"
+
+msgid "Playtest"
+msgstr "Playtest"
+
+msgid "Otro clic lo vuelve a sin probar"
+msgstr "Click again to set it back to not tested"
+
+msgid "Vencida · %s"
+msgstr "Overdue · %s"
+
+msgid "Vence hoy · %s"
+msgstr "Due today · %s"
+
+msgid "Vence %s"
+msgstr "Due %s"
+
+msgid "Prioridad %s"
+msgstr "Priority %s"
+
+msgid "Tamaño %s"
+msgstr "Size %s"
+
+msgid "Marcar como hecho"
+msgstr "Mark as done"
+
+msgid "Ocultar detalle"
+msgstr "Hide details"
+
+msgid "Ver detalle"
+msgstr "Show details"
+
+msgid "%d abiertas"
+msgstr "%d open"
+
+msgid "Decisiones"
+msgstr "Decisions"
+
+msgid "consultada"
+msgstr "asked"
+
+msgid "sin consultar"
+msgstr "not asked"
+
+msgid "Respuesta"
+msgstr "Answer"
+
+msgid "Qué hacer"
+msgstr "What to do"
+
+msgid "Por qué"
+msgstr "Why"
+
+msgid "Descartado"
+msgstr "Ruled out"
+
+msgid "%s: %s"
+msgstr "%s: %s"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Revertir"
+msgstr "Revert"
+
+msgid "Qué hacer en su lugar se escribe en el navegador"
+msgstr "What to do instead is written in the browser"
+
+msgid "Respondida"
+msgstr "Answered"
+
+msgid "Pregunta abierta (se responde en el navegador)"
+msgstr "Open question (answer it in the browser)"
+
+msgid "A revertir"
+msgstr "To revert"
+
+msgid "Revertida"
+msgstr "Reverted"
+
+msgid "Sin revisar"
+msgstr "Not reviewed"
+
+msgid "No está en el disco"
+msgstr "Not on disk"
+
+msgid "Abrir con el visor del sistema"
+msgstr "Open with the system viewer"
+
+msgid "Vínculos"
+msgstr "Links"
+
+msgid "Ir a la tarea"
+msgstr "Go to the task"
+
+msgid "Archivos"
+msgstr "Files"
+
+msgid "Abrir en el editor"
+msgstr "Open in the editor"
+
+msgid "No está en el disco: se movió o se borró"
+msgstr "Not on disk: it was moved or deleted"
+
+msgid "+ Vincular %s"
+msgstr "+ Link %s"
+
+msgid "Agregar a la tarea %s, que estás editando"
+msgstr "Add %s, which you're editing, to the task"
+
+msgid "Godot no abre %s. Con el hub iniciado, se abre en la pestaña Archivos del navegador."
+msgstr "Godot doesn't open %s. With the hub running, it opens in the browser's Files tab."
+
+msgid "Referencias"
+msgstr "References"
+
+msgid "⚠ Referencia rota: %s"
+msgstr "⚠ Broken reference: %s"
+
+msgid "Abrir en el navegador"
+msgstr "Open in the browser"
+
+msgid "⚠ Referencia rota: %s no está"
+msgstr "⚠ Broken reference: %s is missing"
+
+msgid "%s · documento entero"
+msgstr "%s · whole document"
+
+msgid "Cargando…"
+msgstr "Loading…"
+
+msgid "No se pudo traer la sección."
+msgstr "Couldn't load the section."

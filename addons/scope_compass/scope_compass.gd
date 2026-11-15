@@ -4,6 +4,7 @@ extends EditorPlugin
 
 const DockView := preload("dock_view.gd")
 const GameShot := preload("game_shot.gd")
+const I18n := preload("i18n.gd")
 const SCOMPASS_SETTING := "scope_compass/scompass_path"
 const KEEP_SETTING := "scope_compass/keep_hub_running"
 ## Buscar versiones nuevas del addon al abrir el editor, una vez por día (spec §39).
@@ -16,8 +17,10 @@ var _shots: GameShot
 
 
 func _enter_tree() -> void:
-	_view = DockView.new()
 	var es := EditorInterface.get_editor_settings()
+	# El idioma del dock (§45): se registra antes de crear la vista, que ya arma sus textos traducidos.
+	I18n.register_setting(es)
+	_view = DockView.new()
 	if not es.has_setting(SCOMPASS_SETTING):
 		es.set_setting(SCOMPASS_SETTING, "")
 	es.set_initial_value(SCOMPASS_SETTING, "", false)
@@ -66,7 +69,7 @@ func _enter_tree() -> void:
 	_view.set_pref = func(key: String, value): es.set_project_metadata("scope_compass", key, value)
 
 	_dock = EditorDock.new()
-	_dock.title = "Tablero"
+	_dock.title = I18n.t("Tablero")
 	_dock.layout_key = "scope_compass"
 	_dock.default_slot = EditorDock.DOCK_SLOT_RIGHT_UL
 	_dock.add_child(_view)
