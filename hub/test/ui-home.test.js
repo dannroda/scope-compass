@@ -192,6 +192,9 @@ test('agregar: importar una carpeta y crear un proyecto con plantilla', async ()
   await page.click('#add .tabs button:has-text("Crear con plantilla")');
   await page.fill('#new-name', 'Vida dos');
   assert.equal(await page.textContent('#new-where'), `Se crea en ${join(process.env.SCOMPASS_DATA, 'Vida dos')}, con su propio repo de git.`);
+  // Juego queda elegida por defecto; Sala limpia va al final (m30-04).
+  assert.deepEqual(await page.$$eval('input[name="tpl"]', (is) => is.map((i) => [i.value, i.checked])), [['juego', true], ['personal', false], ['vacio', false], ['clean-room', false]]);
+  assert.match(await page.textContent('label.tpl:has(input[value="clean-room"])'), /^Sala limpia/);
   await page.check('input[name="tpl"][value="personal"]');
   await page.click('#add button[type="submit"]');
   await page.waitForSelector('article.proj[aria-label="Vida dos"]');

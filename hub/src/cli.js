@@ -48,7 +48,7 @@ const LAN_WARNING = 'sin login: cualquiera en esta red puede ver y editar';
 
 const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
 
-  init [--project <nombre>] [--template juego|personal|vacio] [--board <nombre>] [--in-project]
+  init [--project <nombre>] [--template clean-room|juego|personal|vacio] [--board <nombre>] [--in-project]
                                             crea el tablero (la plantilla trae vistas, hitos, listas y documentos
                                             iniciales; por defecto vacio). Va a la carpeta de tableros del usuario
                                             (--board: con otro nombre que el del proyecto) y compass/ queda como
@@ -410,7 +410,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     // Con datos iniciales, el export ya los muestra; sin datos (vacio) se genera en la primera escritura, como antes.
     if (Object.keys(tpl.milestones ?? {}).length + Object.keys(tpl.lists ?? {}).length) await exportMarkdown(project, await store.loadAll());
     try { await recordProject(project, { auto: true }); } catch (e) { warn(`aviso: no se anotó el proyecto en ${projectsFile()}: ${e.message}`); }
-    const extra = [...files.created.map((f) => `Creado ${f}`), ...files.kept.map((f) => `Ya existía ${f}: no se tocó`)];
+    const extra = [...files.created.map((f) => `Creado ${f}`), ...files.kept.map((f) => tpl.kept_hint?.[f] ?? `Ya existía ${f}: no se tocó`)];
     return done({ dir: compass, config, template: tpl.name, files, ...(board && { board: board.target, shared: board.shared }) },
       [`Creado ${board ? `${board.target} (plantilla ${tpl.name}), enlazado desde ${compass}` : `${compass} (plantilla ${tpl.name})`}`, ...extra, AGENTS_HINT].join('\n'));
   }

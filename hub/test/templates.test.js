@@ -33,8 +33,8 @@ async function init(name, ...args) {
   return { p, code, out, err };
 }
 
-test('hay tres plantillas y todas crean un compass/ sin avisos', async () => {
-  assert.deepEqual(await listTemplates(), ['juego', 'personal', 'vacio']);
+test('hay cuatro plantillas y todas crean un compass/ sin avisos', async () => {
+  assert.deepEqual(await listTemplates(), ['clean-room', 'juego', 'personal', 'vacio']);
   for (const t of await listTemplates()) {
     const r = await init(t, '--template', t);
     assert.equal(r.code, 0, r.err);
@@ -76,6 +76,32 @@ test('juego: crea docs/gdd.md con ids, pero no pisa uno que ya exista', async ()
   assert.equal(await readFile(join(p2, 'docs', 'gdd.md'), 'utf8'), '# Mi GDD\n');
 });
 
+test('clean-room (§16.6, m30-04): reglas en AGENTS.md y docs/, patrones prohibidos que el tablero hace cumplir', async () => {
+  const r = await init('sala', '--template', 'clean-room');
+  assert.equal(r.code, 0, r.err);
+  assert.match(await readFile(join(r.p, 'AGENTS.md'), 'utf8'), /docs\/clean-room\.md[\s\S]*compass\/AGENTS\.md/);
+  const rules = await readFile(join(r.p, 'docs', 'clean-room.md'), 'utf8');
+  for (const want of [/código fuente original/, /memoria/, /comportamiento observable/, /pseudocódigo traducido/, /camelCase/, /revisión humana/]) assert.match(rules, want);
+  const all = await loadCompass(join(r.p, 'compass'), V);
+  assert.deepEqual(all.config.docs.map((d) => d.alias), ['clean-room', 'comportamiento', 'preguntas']);
+  const cli = async (...a) => { let out = '', err = ''; const code = await run(['--dir', r.p, ...a], { out: { write: (x) => { out += x; } }, err: { write: (x) => { err += x; } } }); return { code, out, err }; };
+  // Los documentos de la plantilla no tienen nada prohibido; un nombre de archivo .c o de un descompilador no entra.
+  assert.equal((await cli('lint')).code, 0);
+  for (const bad of ['ver player_move.c', 'como FUN_00401a2c', 'igual que sub_401000', 'en input.h']) {
+    const w = await cli('add', bad, '--milestone', 'm00');
+    assert.notEqual(w.code, 0, bad);
+    assert.match(w.err, /forbidden_pattern/);
+  }
+  for (const ok of ['r.collider', 'PhysicsRayQueryParameters3D.create', 'Color(0xff8800)', 'sub_menu']) assert.equal((await cli('add', ok, '--milestone', 'm00')).code, 0, ok);
+  // Un AGENTS.md que ya existía no se toca: init dice qué agregarle.
+  const p2 = join(dir, 'con-agents');
+  await mkdir(p2, { recursive: true });
+  await writeFile(join(p2, 'AGENTS.md'), '# Mío\n');
+  const r2 = await init('con-agents', '--template', 'clean-room');
+  assert.equal(await readFile(join(p2, 'AGENTS.md'), 'utf8'), '# Mío\n');
+  assert.match(r2.out, /Ya existía AGENTS\.md: agregale .*docs\/clean-room\.md/);
+});
+
 test('vacio (por defecto): lo de siempre, sin datos ni export', async () => {
   const r = await init('nada');
   assert.equal(r.code, 0, r.err);
@@ -88,6 +114,6 @@ test('vacio (por defecto): lo de siempre, sin datos ni export', async () => {
 test('una plantilla desconocida no crea nada', async () => {
   const r = await init('mal', '--template', 'kanban');
   assert.equal(r.code, 2);
-  assert.match(r.err, /plantilla desconocida: kanban \(juego, personal, vacio\)/);
+  assert.match(r.err, /plantilla desconocida: kanban \(clean-room, juego, personal, vacio\)/);
   assert.ok(!existsSync(join(r.p, 'compass')));
 });

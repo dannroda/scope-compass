@@ -15,7 +15,9 @@
     } catch { /* sin localStorage */ }
     return null;
   };
-  const TPL_NAMES = { juego: 'Juego', personal: 'Personal', vacio: 'Vacío' };
+  // En este orden en el formulario; la primera queda elegida (Juego, como antes de que hubiera Sala limpia).
+  const TPL_NAMES = { juego: 'Juego', personal: 'Personal', vacio: 'Vacío', 'clean-room': 'Sala limpia' };
+  const tplRank = (n) => { const i = Object.keys(TPL_NAMES).indexOf(n); return i < 0 ? 99 : i; };
 
   class ApiError extends Error {
     constructor(status, body) {
@@ -415,7 +417,7 @@
         h('p', { class: 'err', role: 'alert' }, S.add.err),
         h('div', { class: 'actions' }, h('button', { class: 'btn ghost', type: 'button', onclick: closeAdd }, 'Cancelar'), h('button', { class: 'btn primary', type: 'submit' }, 'Agregar')));
     } else {
-      const tpls = S.templates.length ? S.templates : [{ name: 'vacio', description: '' }];
+      const tpls = S.templates.length ? [...S.templates].sort((a, b) => tplRank(a.name) - tplRank(b.name)) : [{ name: 'vacio', description: '' }];
       // La carpeta es <dónde>/<nombre>; <dónde> es la carpeta de datos del usuario (D28) salvo que se elija otra.
       const where = h('p', { class: 'hint', id: 'new-where' });
       const showWhere = () => {

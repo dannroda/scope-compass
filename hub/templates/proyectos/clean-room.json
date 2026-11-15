@@ -1,0 +1,53 @@
+{
+  "description": "Reimplementación a sala limpia: reglas para agentes (no leer el original, describir solo lo observable), patrones prohibidos de ejemplo y la lista de preguntas",
+  "config": {
+    "views": [
+      "board",
+      "docs",
+      "decisions",
+      "files"
+    ],
+    "docs": [
+      {
+        "alias": "clean-room",
+        "path": "docs/clean-room.md"
+      },
+      {
+        "alias": "comportamiento",
+        "path": "docs/comportamiento.md"
+      },
+      {
+        "alias": "preguntas",
+        "path": "docs/preguntas.md"
+      }
+    ],
+    "forbidden": [
+      {
+        "pattern": "\\b[A-Za-z0-9_]+\\.(?:c|cc|cpp|h|hpp|asm)\\b",
+        "note": "nombre de archivo del fuente original (ejemplo: ajustalo a su lenguaje)"
+      },
+      {
+        "pattern": "\\b(?:FUN|sub|DAT|LAB|loc|off|unk)_[0-9A-Fa-f]{4,}\\b",
+        "note": "nombre generado por un descompilador"
+      }
+    ]
+  },
+  "milestones": {
+    "m00": {
+      "code": "M0",
+      "order": 0,
+      "title": "Observación",
+      "goal": "Describir el comportamiento del original que hace falta para empezar, solo con lo que se ve.",
+      "done_when": []
+    }
+  },
+  "files": {
+    "AGENTS.md": "# Reglas del proyecto\n\nEste proyecto es una **reimplementación a sala limpia**: se rehace un programa a partir de su comportamiento observable, sin copiar nada de su código. Antes de hacer cualquier cosa, leé `docs/clean-room.md`. Las reglas valen para todo lo que escribas: código, commits, el tablero y los documentos.\n\nEl tablero de tareas se maneja con `scompass`: leé `compass/AGENTS.md` antes de tocarlo.\n",
+    "docs/clean-room.md": "# Sala limpia\n<!-- id: clean-room -->\n\nEste proyecto rehace un programa a partir de lo que se ve cuando se usa: su comportamiento y sus datos. Del código original no se copia nada, ni siquiera de memoria. Estas reglas valen para las personas y para los agentes, en el código, los commits, el tablero y los documentos.\n\n## Qué no se lee\n<!-- id: que-no-se-lee -->\n\n- El código fuente original, sus repositorios (también forks, ports y parches) ni el binario desensamblado o descompilado.\n- Notas, issues, wikis o foros que citen ese código.\n- La memoria, los resúmenes o las conversaciones de sesiones (de agentes o de personas) que sí lo leyeron. Si un agente tiene memoria compartida con esas sesiones, no la uses para este proyecto.\n\nSi algo de eso te llega igual (en un mensaje, en una herramienta, en un archivo que no esperabas), no lo uses: decilo y anotalo como decisión en el tablero.\n\n## Qué se escribe\n<!-- id: que-se-escribe -->\n\n- **El comportamiento observable:** qué pasa cuando el jugador o el usuario hace algo, con qué tiempos, en qué orden, con qué valores que se pueden medir desde afuera.\n- **Los datos:** formatos de archivo que se pueden inspeccionar, valores que se miden, tablas que se reconstruyen jugando o probando.\n- **Nombres propios del proyecto nuevo:** las clases, funciones, variables y archivos se nombran por lo que hacen acá, nunca como en el original.\n\n## Qué nunca se escribe\n<!-- id: que-nunca-se-escribe -->\n\n- Código del original, ni traducido a otro lenguaje: tampoco **pseudocódigo traducido** («primero chequea el flag, después resta 3 y llama a…»). Eso es el código con otras palabras.\n- **Nombres internos:** archivos, funciones, prefijos, tipos, constantes y **campos internos del motor**, también en camelCase (`lastAttack`, `hitTimer`) aunque parezcan genéricos. Si un nombre lo sabés porque lo viste en el código y no en la pantalla, no va.\n- Direcciones de memoria, desplazamientos u otros datos que solo salen de leer el binario.\n\n## Lo que el tablero revisa y lo que no\n<!-- id: revision -->\n\n`compass/config.json › forbidden` tiene patrones que el tablero rechaza al escribir y que `scompass lint` busca en `compass/` y en los documentos. Los de esta plantilla son ejemplos: ajustalos a lo que el original usa (su lenguaje, sus prefijos, los nombres de sus archivos).\n\nNingún patrón atrapa un nombre de campo en camelCase, pseudocódigo traducido ni una dirección de memoria (se escriben igual que un color en hexadecimal): eso queda para la revisión humana. El historial de git del proyecto y del tablero es el rastro de quién escribió qué; revisalo antes de cada entrega.\n\n## Antes de escribir algo\n<!-- id: antes-de-escribir -->\n\n1. ¿Lo vi pasar, o lo leí? Si lo leí en el código, no va.\n2. ¿Este nombre es mío, o es el del original?\n3. ¿Esto describe qué pasa, o cómo está programado?\n4. Si no sé cómo se comporta algo, ¿lo anoté en `docs/preguntas.md` en lugar de adivinarlo?\n",
+    "docs/comportamiento.md": "# Comportamiento observado\n<!-- id: comportamiento -->\n\nLo que hace el original, visto desde afuera: una sección por sistema, con lo que se midió y cómo. Es la especificación del proyecto nuevo; las tareas la referencian con `[[comportamiento#id]]`.\n\n## Ejemplo de sistema\n<!-- id: ejemplo-sistema -->\n\n- **Qué se ve:**\n- **Cómo se midió:**\n- **Dudas:** las que falten van a `docs/preguntas.md`.\n",
+    "docs/preguntas.md": "# Preguntas\n<!-- id: preguntas -->\n\nLo que la implementación necesita saber del comportamiento original y todavía no se observó. Quien puede probar el original (jugando, midiendo, grabando) contesta acá con lo que vio, nunca con lo que leyó en el código. Una respuesta que necesita el código no se contesta: se marca así y se decide qué hacer sin ella.\n\nFormato: una sección por pregunta, con cómo se observó la respuesta.\n\n## Ejemplo: cuánto dura la invulnerabilidad después de un golpe\n<!-- id: ejemplo-invulnerabilidad -->\n\n- **Pregunta:** después de recibir un golpe, ¿cuánto tiempo el personaje no recibe daño?\n- **Cómo observarlo:** grabar a 60 fps dos golpes seguidos y contar los cuadros entre el primero y el primero que hace daño.\n- **Respuesta:** _(pendiente)_\n"
+  },
+  "kept_hint": {
+    "AGENTS.md": "Ya existía AGENTS.md: agregale que es una reimplementación a sala limpia y que hay que leer docs/clean-room.md antes de hacer nada."
+  }
+}

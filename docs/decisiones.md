@@ -564,3 +564,13 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Contar `review` como hecha: todavía puede volver a En curso.
   - Hecha si al menos una tarea está hecha: con otra abierta, la sección sigue en trabajo.
   - Un porcentaje por sección: con pocas tareas por sección, un número así dice menos que los cuatro estados.
+
+## D54 · Plantilla clean-room: las reglas en archivos del proyecto, no en compass/AGENTS.md
+
+- **Qué:** `init --template clean-room` escribe las reglas en `docs/clean-room.md` (declarado como documento) y crea un `AGENTS.md` en la raíz del proyecto que manda a leerlas. Si ya hay un `AGENTS.md`, no lo toca y `init` dice qué agregarle (`kept_hint` de la plantilla). Los patrones prohibidos de ejemplo son genéricos (spec §16.6).
+- **Por qué:** `compass/AGENTS.md` lo genera Scope Compass y `scompass update` lo pisa; además es la guía del tablero, no del proyecto. Los agentes cargan solos el `AGENTS.md` de la raíz, así que ahí va el aviso. Las reglas como documento se pueden citar desde las tareas (`[[clean-room#que-nunca-se-escribe]]`) y `lint` las revisa como a los demás.
+- **Descartado:**
+  - Una sección de sala limpia en `compass/AGENTS.md` que dependa de la config: la guía del tablero sería distinta en cada proyecto, y `update` tendría que mezclarla.
+  - Pisar o completar un `AGENTS.md` existente: es del usuario.
+  - Un patrón para direcciones (`0x…`): choca con los colores en hexadecimal de cualquier proyecto de Godot.
+  - Patrones de un motor concreto: cada original tiene los suyos; la plantilla dice que hay que ajustarlos.

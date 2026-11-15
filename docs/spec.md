@@ -678,10 +678,17 @@ Solo dos fechas importan (D26): **cuándo se creó** (`created_at`, que ya exist
 <!-- id: v3-plantillas -->
 
 - **`views` en `config.json`:** las pestañas del proyecto, en orden; la primera es la que abre. Valores: `board`, `lists`, `docs`, desde M14 `files` (§22), desde M20 `playtest` (§28) y desde M24 `decisions` (§31). Sin `views`, se ven todas con el tablero primero.
-- **Plantillas:** `scompass init --template juego|personal|vacio`. Una plantilla es un `config.json` prearmado más datos iniciales; no tiene código propio. Cada una es un archivo `hub/templates/proyectos/<nombre>.json` con `{ description, config?, milestones?, lists?, files? }`: `config` se mezcla con la config base, hitos y listas se escriben con el Store, y `files` crea archivos del proyecto solo si no existen. Una plantilla desconocida no crea nada.
+- **Plantillas:** `scompass init --template clean-room|juego|personal|vacio`. Una plantilla es un `config.json` prearmado más datos iniciales; no tiene código propio. Cada una es un archivo `hub/templates/proyectos/<nombre>.json` con `{ description, config?, milestones?, lists?, files?, kept_hint? }`: `config` se mezcla con la config base, hitos y listas se escriben con el Store, y `files` crea archivos del proyecto solo si no existen. `kept_hint` da, por archivo, el mensaje de `init` cuando ya existía (en lugar de «no se tocó»), para decir qué agregarle a mano. Una plantilla desconocida no crea nada.
   - `juego`: `views` = board, lists, docs, files; hito M0 "Prototipo"; listas "Ideas sueltas" y "Assets a conseguir"; el documento `gdd` (`docs/gdd.md`, con un esqueleto con ids si no existe).
   - `personal`: `views` = lists, board; listas "Pendientes" y "Compras"; un hito "General" para el tablero (en vez de hacer opcionales los hitos).
   - `vacio` (por defecto): lo que hacía `scompass init`, sin datos ni export.
+  - `clean-room` (M30, D54): reimplementación a sala limpia.
+    - `views`: board, docs, decisions, files. Hito M0 "Observación".
+    - Documentos: `clean-room` (`docs/clean-room.md`, las reglas), `comportamiento` (lo observado del original, que es la especificación) y `preguntas` (lo que falta observar, contestado solo con lo que se vio).
+    - Las reglas: qué no se lee (el fuente original, sus repos, la memoria de sesiones que lo leyeron), qué se escribe (comportamiento observable, datos, nombres propios) y qué nunca (código, pseudocódigo traducido, nombres internos aunque sean camelCase genéricos, direcciones). También dicen que eso último lo revisa una persona, con git como rastro, porque ningún patrón lo atrapa.
+    - Crea un `AGENTS.md` en la raíz del proyecto, que los agentes cargan solos, apuntando a las reglas y a `compass/AGENTS.md`. Si ya existe, no lo toca: `init` dice qué agregarle.
+    - `forbidden` (§42) de ejemplo, genérico: nombres de archivos de C/C++/asm y nombres que genera un descompilador (`FUN_…`, `sub_…`, `DAT_…`). Las direcciones en hexadecimal no van porque se escriben igual que un color.
+    - En el Inicio aparece al final ("Sala limpia"); Juego sigue elegida por defecto.
 - `init` también anota el proyecto en el registro (§16.1).
 - Más adelante: plantillas propias en `~/.config/scope-compass/templates/`.
 
@@ -1553,6 +1560,7 @@ Algunos proyectos tienen texto que no puede aparecer en el tablero ni en los doc
   - Imprime una línea por coincidencia y un resumen, y sale con 1 si hay alguna. Con `--json`: `{ patterns, files, findings: [{ file, where | line, pattern, note, match }] }`.
   - El export markdown no se revisa porque se genera de los JSON.
   - Sirve como gancho de pre-commit o en CI.
+- **Plantilla:** `init --template clean-room` (§16.6) trae patrones de ejemplo y las reglas que ningún patrón puede hacer cumplir.
 - **Lo que no hace:** no revisa el código del proyecto ni los commits. Para eso está el gancho de git del proyecto, que puede llamar a `scompass lint` o usar los mismos patrones. Tampoco reescribe nada: quien escribió decide cómo decirlo sin el texto prohibido.
 
 ```

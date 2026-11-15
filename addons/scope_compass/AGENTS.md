@@ -258,7 +258,7 @@ scompass home               # levanta el Inicio (uno por usuario): GET /api/toda
 
 ## Más
 
-- `scompass --help`: todos los comandos. Un proyecto nuevo se crea con `scompass init --template juego|personal|vacio`.
+- `scompass --help`: todos los comandos. Un proyecto nuevo se crea con `scompass init --template juego|personal|vacio|clean-room` (`clean-room`: reimplementación a sala limpia, con sus reglas en `docs/clean-room.md` y patrones prohibidos de ejemplo).
 - `compass/README.md`: formato de los archivos y manejo a mano con git.
 - `compass/schema/`: JSON Schema de tareas, hitos, listas, sesiones de playtest y `config.json` (`views` elige las pestañas de la web: `board`, `lists`, `playtest`, `decisions`, `docs`, `files`).
 - Ajustes de la web (el engranaje del tablero y del Inicio): preferencias de quien mira, guardadas en su navegador y no en `compass/`. Por ahora, los bordes de fantasía: marcos de pixel art en botones, tarjetas y paneles, siempre con el tema oscuro.
