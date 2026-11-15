@@ -207,6 +207,24 @@ scompass doc diff gdd                        # cambios sin commitear y las secci
 scompass doc changed gdd --since <etag>      # qué secciones cambiaron desde el etag que dio doc show (sale con 1 si cambió)
 ```
 
+### Volver a leer un documento
+
+Lo que leíste de un documento puede quedar viejo mientras trabajás: el usuario lo edita, otra sesión lo cambia, llega un `git pull` o alguien promueve una decisión al documento de decisiones. Volvé a leerlo antes de basarte en él:
+
+- antes de una decisión, de un cambio de código o de cerrar una tarea que dependen de lo que dice, si lo leíste hace rato (otra tarea en el medio, una pausa larga, o después de un commit o un pull);
+- si una herramienta del MCP trae «Aviso: el documento … cambió desde que lo leíste»;
+- después de `decision promote`, si vas a seguir usando el documento de decisiones;
+- cuando una tarea cita una sección (`refs` o `[[alias#id]]`) que leíste en otra tarea.
+
+Para no releerlo entero, preguntá si cambió con el `etag` que te dio `doc show --json` (o `show_doc`), que es el del documento aunque hayas leído una sección:
+
+```sh
+scompass doc changed gdd --since <etag>          # sale con 0 si no cambió y con 1 si cambió, con las secciones
+scompass doc changed gdd#combate --since <etag>  # solo esa sección y las de adentro
+```
+
+Con el MCP, `show_doc` con `since` hace lo mismo y, si cambió, ya trae el texto nuevo. Volvé a leer solo las secciones que cambiaron, se agregaron o se quitaron y te importan. Si dice que no encontró la versión vieja (`known: false`), leelo entero. Si lo que cambió contradice algo que ya hiciste, decilo y registralo como decisión en lugar de seguir con la versión vieja.
+
 ## Dónde vive el tablero
 
 Los tableros son del usuario, no del proyecto: `scompass init` crea el tablero en `~/.local/share/scope-compass/boards/<nombre>/` (en Windows, `%LOCALAPPDATA%\scope-compass\boards\`) y `compass/` queda como un enlace (symlink; junction en Windows) que el proyecto excluye en `.git/info/exclude`. Así el tablero no se publica con el código. Los tipos:

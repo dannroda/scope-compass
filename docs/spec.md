@@ -1534,4 +1534,4 @@ scompass doc changed <alias>[#sección] --since <etag> [--json]   # sale con 0 s
 - [x] `doc changed --since` dice qué secciones cambiaron, cuáles son nuevas y cuáles se quitaron, con el texto viejo de la caché o de git; sin él, `known: false`.
 - [x] `show_doc` con el mismo etag no repite el texto; con otro, lo da con las secciones cambiadas.
 - [x] Un documento que el MCP mostró y después cambió genera un aviso, una sola vez, en el resultado de la herramienta siguiente.
-- [ ] AGENTS.md dice cuándo volver a leer un documento y cómo preguntar si cambió.
+- [x] AGENTS.md (y la skill del plugin) dicen cuándo volver a leer un documento y cómo preguntar si cambió.

@@ -22,5 +22,6 @@ The project's tasks and milestones live in `compass/` (often a link to the user'
 5. Done: fill `test` (how it is checked) and `notes`, and move it to `review`, never to `done`.
 6. Writes return an `etag`; pass it on the next write so you don't overwrite someone else's change.
 7. Changes stay as modified files in the board's repository (`git -C compass …`): commit only when asked.
+8. Documents (the GDD and others) change while you work. Before relying on one you read a while ago, or when a tool result says a document changed since you read it, ask with the `etag` you got: `show_doc` with `since`, or `scompass doc changed <alias> --since <etag>`.
 
 Board, CLI, hub, web UI and Godot addon versions differ freely as long as they speak the same protocol; if the CLI warns that a hub speaks another protocol, it writes straight to `compass/` instead, which is fine.
