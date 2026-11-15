@@ -247,9 +247,14 @@ test('CLI: un solo Inicio por usuario', async () => {
   let out = '', err = '';
   const ac = new AbortController();
   const io = { out: { write: (s) => { out += s; } }, err: { write: (s) => { err += s; } } };
-  const first = run(['home', '--port', '0', '--json'], { signal: ac.signal, ...io });
-  for (let i = 0; i < 100 && !out; i++) await sleep(20);
+  // Si el Inicio no llega a escuchar o no se cierra, el test falla diciendo qué escribió, en lugar de quedar colgado
+  // hasta el timeout de la suite (m10-10).
+  let ended = null;
+  const first = run(['home', '--port', '0', '--json'], { signal: ac.signal, ...io }).then((code) => { ended = { code }; return code; }, (e) => { ended = { error: e }; throw e; });
+  for (let i = 0; i < 1000 && !out && !ended; i++) await sleep(20);
+  const seen = () => `out: ${JSON.stringify(out)}, err: ${JSON.stringify(err)}, run: ${ended ? JSON.stringify(ended.error?.message ?? ended.code) : 'sin terminar'}`;
   try {
+    assert.ok(out, `el Inicio no escribió su dirección en 20 s (${seen()})`);
     const { port } = JSON.parse(out);
     assert.equal(liveHome().port, port);
     let out2 = '';
@@ -263,7 +268,9 @@ test('CLI: un solo Inicio por usuario', async () => {
     assert.equal(health.name, 'scope-compass-home');
   } finally {
     ac.abort();
-    await first;
+    let timer;
+    const late = new Promise((_, fail) => { timer = setTimeout(() => fail(new Error(`el Inicio no se cerró en 20 s (${seen()})`)), 20000); });
+    try { await Promise.race([first, late]); } finally { clearTimeout(timer); }
   }
   assert.equal(liveHome(), null, 'se desanota al cerrar');
 });

@@ -24,10 +24,14 @@ const until = async (cond, ms = 3000) => {
   throw new Error('no pasó a tiempo');
 };
 const lanIp = () => Object.values(networkInterfaces()).flat().find((i) => i && i.family === 'IPv4' && !i.internal)?.address;
-let root, dir, apps, saved;
+let root, dir, apps, saved, savedEnv;
 
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'scompass-devices-'));
+  // Config y registro propios (devices.json y projects.json): con npm test los archivos corren en paralelo.
+  savedEnv = { reg: process.env.SCOMPASS_REGISTRY, cfg: process.env.SCOMPASS_CONFIG };
+  process.env.SCOMPASS_REGISTRY = join(root, 'registro');
+  process.env.SCOMPASS_CONFIG = join(root, 'config');
   dir = join(root, 'p');
   await cp(join(HERE, 'fixtures', 'compass'), join(dir, 'compass'), { recursive: true });
   await rm(devicesFile(), { force: true });
@@ -40,6 +44,7 @@ beforeEach(async () => {
 afterEach(async () => {
   for (const a of apps) await a.close();
   if (saved === undefined) delete process.env.SCOMPASS_CLAUDE; else process.env.SCOMPASS_CLAUDE = saved;
+  for (const [k, v] of [['SCOMPASS_REGISTRY', savedEnv.reg], ['SCOMPASS_CONFIG', savedEnv.cfg]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
   await rm(chatDir(dir), { recursive: true, force: true });
   await rm(root, { recursive: true, force: true, maxRetries: 10 });
 });

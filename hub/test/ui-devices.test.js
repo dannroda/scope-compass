@@ -18,12 +18,17 @@ import { devicesFile } from '../src/devices.js';
 const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'compass');
 const V = loadValidators();
 const ip = Object.values(networkInterfaces()).flat().find((i) => i && i.family === 'IPv4' && !i.internal)?.address;
-let browser, root, home, port, proj, pageErrors;
+let browser, root, home, port, proj, pageErrors, saved;
 
 before(async () => { browser = await chromium.launch(); });
 after(async () => { await browser?.close(); });
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'scompass-ui-devices-'));
+  // Config y registro propios: con npm test los archivos corren en paralelo con la misma config, y otro test podría
+  // borrar devices.json o sumar proyectos a projects.json en el medio.
+  saved = { reg: process.env.SCOMPASS_REGISTRY, cfg: process.env.SCOMPASS_CONFIG };
+  process.env.SCOMPASS_REGISTRY = join(root, 'registro');
+  process.env.SCOMPASS_CONFIG = join(root, 'config');
   proj = join(root, 'vida');
   await cp(FIXTURE, join(proj, 'compass'), { recursive: true });
   await recordProject(proj);
@@ -34,6 +39,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   await home.close();
+  for (const [k, v] of [['SCOMPASS_REGISTRY', saved.reg], ['SCOMPASS_CONFIG', saved.cfg]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
   await rm(root, { recursive: true, force: true, maxRetries: 10 });
   assert.deepEqual(pageErrors, [], 'errores en la página');
 });
@@ -58,7 +64,7 @@ test('vincular un teléfono con el QR, usar el chat y quitarlo', { skip: !ip && 
   const pc = await page();
   await pc.goto(`http://127.0.0.1:${port}/`);
   await pc.waitForSelector('.proj h3');
-  const key = (await (await fetch(`http://127.0.0.1:${port}/api/projects`)).json()).projects[0].key;
+  const key = (await (await fetch(`http://127.0.0.1:${port}/api/projects`)).json()).projects.find((p) => p.path === proj).key;
   const board = `http://${ip}:${port}/p/${key}/`;
 
   const phone = await page(null, PHONE);
