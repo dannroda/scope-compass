@@ -1680,3 +1680,53 @@ La CLI, el MCP, el hub (sus mensajes de error), la web del tablero, el Inicio, l
 - [x] Con `SCOMPASS_LANG=en`, la CLI, los errores del hub, las descripciones del MCP y el dock salen en inglés (`i18n`, `i18n-hub`, `dock`).
 - [x] `init --lang en` crea el tablero con la guía, el README, el export y la plantilla en inglés, y `update` la mantiene.
 - [x] Los tests de siempre pasan con el idioma fijo en castellano, y cada texto que se usa está en el catálogo.
+
+## 49. Vincular el teléfono al chat (M29)
+<!-- id: vincular-dispositivos -->
+
+Hoy el chat solo atiende a 127.0.0.1, también con `--lan` (§32, D43). Sin login, cualquiera en la red usaría la cuenta de Claude de este equipo y leería el repo con el agente. El pedido es usar el chat desde el teléfono, con el perfil de este equipo. La idea es vincular el teléfono una vez, desde este equipo, y que el chat acepte «local o vinculado». Es la opción (a) de D36, solo para el chat.
+
+- **Vincular:** en el Inicio de este equipo, *Vincular teléfono* (también en el menú de la bandeja) crea un código de un solo uso y muestra la dirección de la red con el código.
+  - La dirección es `http://<ip de la red>:<puerto>/vincular#<código>`, con un QR (D60). El código va en el fragmento, que el navegador no manda al servidor ni guarda en los logs de nadie.
+  - Solo se puede pedir un código desde 127.0.0.1: desde la red no se vincula nada.
+  - Hace falta el Inicio con `--lan` (o la IP de Tailscale, m7-02). Si no está, el diálogo lo dice y no crea el código.
+  - El código vence a los pocos minutos (D60), sirve una sola vez y no queda guardado en el disco. Con 5 intentos fallidos seguidos se anulan los códigos pendientes.
+- **Canje:** la página `/vincular` del teléfono manda el código a `POST /api/devices/pair` con un nombre (por ejemplo «Teléfono», editable), y el Inicio le devuelve una cookie con un token propio de ese dispositivo.
+  - El token: 32 bytes al azar (base64url).
+  - Se guarda solo su SHA-256, en `<config>/scope-compass/devices.json`, junto a `chats/`: es de la máquina y no va a git. Cada entrada es `{ id, name, hash, created_at, last_seen }`.
+  - La cookie: `scompass_device`, `HttpOnly`, `SameSite=Strict`, `Path=/`, por un año. Lleva `Secure` cuando el pedido llega por HTTPS (`tailscale serve`).
+  - Sin TLS, la cookie viaja en claro por el wifi, igual que hoy el tablero con `--lan`. Fuera de casa va por Tailscale, que cifra.
+- **El chat acepta «local o vinculado»:**
+  - `/p/<clave>/api/chats` y los eventos `chat` del WebSocket del proyecto atienden a 127.0.0.1 o a un pedido con una cookie válida. El WebSocket la revisa al abrirse y cada vez que se manda un evento `chat`.
+  - Cada pedido válido anota `last_seen`, como mucho una vez por minuto.
+  - Nada más cambia de permisos. El agente sigue con lectura y el tablero (§32), sin Bash ni Edit. El resto de la API con `--lan` ya estaba abierto a la red (D36) y no depende de la cookie.
+  - Con token de hosting (§12) el chat sigue apagado.
+- **Revocar:**
+  - En el Inicio, *Dispositivos vinculados* muestra el nombre, cuándo se vinculó y el último uso, con *Desvincular*. Por la CLI: `scompass devices` y `scompass devices rm <id>`.
+  - Desvincular borra la entrada: el próximo pedido da 403, y los WebSocket abiertos de ese dispositivo se cierran enseguida.
+  - Solo se administra desde 127.0.0.1.
+- **Hub suelto:** un proyecto que sirve un hub suelto, y no el Inicio, se usa desde el teléfono a través del Inicio, que ya reenvía a los hubs sueltos (§16). El chat pasa por el chequeo del Inicio. Falta decidir si un hub suelto abierto con su propio `--lan` acepta también los dispositivos del Inicio (D60).
+- **Lo que no cambia:**
+  - Las conversaciones siguen siendo de este equipo, en `<config>/scope-compass/chats/`: el teléfono ve las mismas.
+  - El perfil de Claude Code es el que elige el proyecto (§33).
+  - No hay cuentas ni contraseñas, y no hace falta un servicio público ni un espejo de `compass/`: el teléfono habla con este equipo.
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `POST` | `/api/devices/code` | Solo local: crea un código de un solo uso y devuelve la dirección para el QR |
+| `POST` | `/api/devices/pair` | `{ code, name }` → crea el dispositivo y deja la cookie |
+| `GET` | `/api/devices` | Solo local: los dispositivos vinculados, sin el hash |
+| `DELETE` | `/api/devices/:id` | Solo local: lo desvincula y cierra sus WebSocket |
+
+```
+scompass devices            # los dispositivos vinculados
+scompass devices rm <id>    # desvincular
+```
+
+### Criterios de aceptación
+
+- [ ] Desde la red no se puede pedir un código ni administrar dispositivos.
+- [ ] Un código sirve una vez y vence; 5 intentos fallidos anulan los pendientes.
+- [ ] Con la cookie, el chat del proyecto anda desde el teléfono; sin ella, 403 como hoy.
+- [ ] Desvincular corta el próximo pedido y cierra los WebSocket abiertos.
+- [ ] `devices.json` guarda solo el hash del token.

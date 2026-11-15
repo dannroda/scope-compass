@@ -611,3 +611,21 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Docker, como decía §12: suma una dependencia y una forma de correr distinta de la de este equipo. Corre como un servicio de usuario de systemd con `scompass home` (respondido por el usuario).
 - **Respondido:** systemd con `scompass home`, y la rama `compass-sync`.
 - **Pendiente:** dónde corre, un equipo de casa siempre prendido o un VPS chico, siempre en Tailscale. m7-05 y m7-06 quedan para después.
+
+## D60 · Vincular el teléfono al chat: código de un solo uso, token por dispositivo en una cookie, solo para el chat
+
+- **Qué:** desde este equipo, el Inicio crea un código de un solo uso que el teléfono canjea por un token propio, guardado en una cookie `HttpOnly` y `SameSite=Strict`. Del token se guarda solo el hash, en la carpeta de config. El chat pasa a aceptar «local o vinculado»; nada más cambia de permisos. Se desvincula desde el Inicio o la CLI (spec §49).
+- **Por qué:**
+  - Es la opción (a) de D36, que ya era la intermedia para una red con invitados, acotada a lo único que hoy está cerrado: el chat.
+  - Un token por dispositivo se puede revocar uno por uno, cosa que `--lan` no permite.
+  - Pedir el código solo desde 127.0.0.1 hace que vincular requiera estar frente a este equipo.
+  - Guardar solo el hash hace que una copia de `devices.json` no sirva para entrar.
+- **Descartado:**
+  - Usuario y contraseña, o passkey (opción (b) de D36): mucho más trabajo para una sola persona, y la passkey necesita HTTPS.
+  - Un token fijo en la URL (un link para guardar): queda en el historial, en los favoritos y en lo que se comparta, y no se puede revocar sin cambiarlo para todos.
+  - Abrir el chat a toda la red con `--lan`: cualquiera en el wifi usaría la cuenta de Claude y leería el repo con el agente.
+  - Un servicio público o un espejo online para el teléfono: el teléfono habla con este equipo; fuera de casa, Tailscale (m7-02).
+- **Para decidir (preguntado):**
+  - **El QR:** sin librería, con un generador propio chico (modo byte, una sola versión y corrección M; un par de cientos de líneas en `web/`), o con una librería chica como `qrcode-generator`. La tercera opción es sin QR, con un código corto para escribir a mano. Propuesta: generador propio, por la regla de usar lo nativo antes que una dependencia.
+  - **Cuánto dura el código:** propuesta, 5 minutos.
+  - **Un hub suelto con su propio `--lan`:** si acepta los dispositivos del Inicio (leería el mismo `devices.json`) o si su chat sigue solo local. Propuesta: solo local; desde el teléfono, el proyecto se usa a través del Inicio.
