@@ -26,6 +26,7 @@ Con la CLI: `scompass list`, `scompass show <id>`, `scompass move <id> doing`, `
 | Borrar una tarea | Borrar el archivo |
 | Ver el historial de una tarea | `git log -p compass/tasks/<id>.json` |
 | Recuperar algo borrado | `git checkout <commit> -- compass/tasks/<id>.json` |
+| Mergear dos ramas que tocaron la misma tarea | Nada especial: el merge driver de Scope Compass (`.gitattributes`, lo registra `scompass update`) junta los cambios campo por campo; solo queda conflicto si los dos lados cambiaron lo mismo |
 
 ## Formato
 

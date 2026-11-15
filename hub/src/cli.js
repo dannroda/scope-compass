@@ -22,6 +22,7 @@ import { serveMcp } from './mcp.js';
 import { startTray } from './tray.js';
 import { outdatedFiles, TEMPLATES, updateAllCompasses, updateCompass } from './update.js';
 import { listTemplates, loadTemplate as loadTemplateFile } from './templates.js';
+import { ensureMergeDriver, mergeFiles } from './merge-json.js';
 import { hubsOf, listHubs, liveHome, registerHub, unregisterHub } from './registry.js';
 import { createHomeServer } from './home.js';
 import { boardStatus, docDiff, docLog, docsStatus, repoFiles } from './git.js';
@@ -165,6 +166,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   refs suggest                              propone refs a partir de citas "gdd.md §4.3" (no aplica nada)
   refs coverage [<alias>] [--uncovered]     por sección de los documentos, qué tareas la cubren y si están hechas
   lint                                      patrones prohibidos (config.json › forbidden) en compass/ y en los documentos (sale con 1 si hay)
+  merge-json <base> <nuestro> <de ellos> [<ruta>]   merge driver de git para compass/ (lo registran init y update)
   ref add|rm <tarea> <alias>[#<id>]         agrega o quita una referencia (sin #<id>, al documento entero)
   file add|rm <tarea> <ruta>                vincula un archivo del repo a la tarea (un script, una escena; acepta res://)
   image add|rm <tarea> <ruta>               captura de la tarea: una imagen del repo, o una de afuera, que se copia a
@@ -237,6 +239,15 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   if (o.help || !cmd) {
     (cmd || o.help ? print : warn)(USAGE);
     return cmd || o.help ? 0 : 2;
+  }
+
+  // El merge driver de git (§44): lo corre git con archivos temporales, sin proyecto ni hub.
+  if (cmd === 'merge-json') {
+    const [base, ours, theirs, path] = rest;
+    if (!base || !ours || !theirs) { warn('uso: scompass merge-json <base> <nuestro> <de ellos> [<ruta>]'); return 2; }
+    const r = mergeFiles(resolve(cwd, base), resolve(cwd, ours), resolve(cwd, theirs), path ?? '');
+    if (r.code) warn(`scompass merge-json${path ? ` ${path}` : ''}: ${r.error ?? `conflicto en ${r.conflicts.join(', ')}`}`);
+    return r.code;
   }
 
   const project = findProject(cwd, o.dir);
@@ -392,6 +403,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     await copyFile(join(TEMPLATES, 'compass-AGENTS.md'), join(compass, 'AGENTS.md'));
     await copyFile(join(TEMPLATES, 'compass-gitattributes'), join(compass, '.gitattributes'));
     await writeFile(join(compass, '.gdignore'), '');
+    // El merge driver (§44) en el repo del tablero, si ya hay uno.
+    try { ensureMergeDriver(compass); } catch (e) { warn(`aviso: no se registró el merge driver de git: ${e.message}`); }
     const config = { project: o.project || basename(project), export_md: board ? 'compass/tareas.md' : 'docs/tareas.md', port: 4711, ...tpl.config };
     const res = parseDoc(JSON.stringify(config), 'config', validators);
     if (!res.ok) throw new StoreError('invalid_argument', res.message);

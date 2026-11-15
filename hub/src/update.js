@@ -6,6 +6,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { KINDS, SCHEMA_DIR } from './schema.js';
+import { ensureMergeDriver } from './merge-json.js';
 
 export const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
 
@@ -21,6 +22,8 @@ export function updateCompass(compass) {
   const stale = new Set(outdatedFiles(compass));
   mkdirSync(join(compass, 'schema'), { recursive: true });
   for (const [src, rel] of generated()) if (stale.has(rel)) copyFileSync(src, join(compass, rel));
+  // El merge driver (§44) en el repo del tablero: lo que .gitattributes nombra tiene que existir en .git/config.
+  try { ensureMergeDriver(compass); } catch { /* sin git o sin permiso: el merge de git sigue como siempre */ }
   return [...stale];
 }
 

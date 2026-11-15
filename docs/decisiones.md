@@ -574,3 +574,14 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Pisar o completar un `AGENTS.md` existente: es del usuario.
   - Un patrón para direcciones (`0x…`): choca con los colores en hexadecimal de cualquier proyecto de Godot.
   - Patrones de un motor concreto: cada original tiene los suyos; la plantilla dice que hay que ajustarlos.
+
+## D55 · Merge de compass/ con un driver de git propio, por elemento y sin servidor
+
+- **Qué:** `scompass merge-json` es un merge driver de git (`*.json merge=scompass` en `compass/.gitattributes`, registrado por `init` y `update` en el repo de `compass/`). Junta a tres bandas campo por campo, las listas por la identidad de cada elemento, y `updated_at` toma el mayor. Ante un cambio del mismo campo en los dos lados, o un resultado que no pasa el schema, deja el conflicto de siempre (spec §44).
+- **Por qué:** un archivo por tarea ya evita choques entre tareas distintas, pero no entre dos cambios a la misma tarea. Con el teléfono, los agentes en worktrees y el repo de tableros compartido (§36), esos cambios son normales. Un driver de git sirve en cualquier merge, sin hub, en Linux y en Windows. La identidad sale de los campos que ya tienen los elementos, sin agregar ids.
+- **Descartado:**
+  - Agregar un id a cada paso y a cada ítem: cambia el formato y los archivos escritos a mano, para resolver lo que el texto, `at` y `created_at` ya identifican.
+  - Resolver solo en el hub (al ver el archivo con marcadores): no sirve en un merge sin hub, y el conflicto ya quedó en git.
+  - Elegir un lado ante el mismo campo cambiado distinto (el más nuevo por `updated_at`): pierde trabajo en silencio; el conflicto se ve y se decide.
+  - `merge=union` de git: junta líneas sin entender el JSON, y deja archivos inválidos.
+  - Registrar el driver en la config global del usuario: tocaría todos sus repos; va en el del tablero.

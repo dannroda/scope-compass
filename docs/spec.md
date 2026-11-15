@@ -212,7 +212,7 @@ Reglas que hacen esto posible:
 <!-- id: git-merges -->
 
 - **Un archivo por tarea** hace que dos ramas que tocan tareas distintas nunca choquen.
-- Si dos ramas cambian la misma tarea, el conflicto es de git y se resuelve como cualquier otro. Mientras el archivo tenga marcadores de conflicto, la app lo marca como inválido (§4.3) y no lo pisa.
+- Si dos ramas cambian la misma tarea, el merge driver de Scope Compass (§44) junta los cambios campo por campo; solo queda un conflicto de git si los dos lados cambiaron lo mismo, y se resuelve como cualquier otro. Mientras el archivo tenga marcadores de conflicto, la app lo marca como inválido (§4.3) y no lo pisa.
 - La app **nunca hace commits por su cuenta en local**: los cambios quedan en el working tree y se commitean cuando vos decidís, junto con el código si corresponde.
 - Para que no se olviden, la app **recuerda** cuántos archivos del tablero (`compass/` y el export markdown) están sin commitear: `GET /api/git` y el evento `git` del hub (después de cada cambio, y cada 3 s mientras haya algo pendiente, porque un commit no toca `compass/`), un aviso en la cabecera de la web, el pie del dock, la tarjeta del Inicio y una línea al final de `scompass list` (4.4).
 
@@ -1608,3 +1608,42 @@ scompass refs coverage [<alias>] [--uncovered] [--json]
 - [x] `refs coverage` da por sección las tareas que la cubren (refs y enlaces, también desde una sección de afuera) y su estado; `--uncovered` deja las que no toca ninguna.
 - [x] La API y `doc_coverage` del MCP dan lo mismo que `refs coverage --json`.
 - [x] En la web, el índice marca el estado de cada sección, la ficha muestra las tareas heredadas y el documento tiene su resumen.
+
+## 44. Merge driver de git para compass/ (M7)
+<!-- id: merge-driver -->
+
+Dos cambios a la misma tarea dan conflicto de git aunque toquen campos distintos: aprobar una decisión en el teléfono mientras un agente tilda pasos, o dos worktrees que avanzan la misma tarea. El merge por líneas de git no sabe que un JSON canónico es un objeto.
+
+- **`scompass merge-json %O %A %B %P`:** el driver de git, un merge a tres bandas campo por campo. No necesita hub ni proyecto: git lo corre con archivos temporales, en Linux y en Windows, en ramas y en worktrees.
+  - Un campo que cambió de un solo lado toma ese valor; si cambió igual en los dos, también.
+  - Las listas se juntan **por elemento**, con la identidad de cada uno:
+    - `created_at` en los ítems de las listas;
+    - `at` en las decisiones;
+    - `doc#section` en las refs;
+    - `text` en los pasos;
+    - `task` en los vínculos y en los ítems de playtest;
+    - el valor en los textos sueltos (etiquetas, archivos, capturas, criterios de un hito).
+
+    Así se juntan pasos tildados de los dos lados, pasos y etiquetas agregados en los dos, y lo que uno quitó. Un elemento que cambió adentro se junta campo por campo, con las mismas reglas.
+  - El orden de una lista es el del lado que la reordenó (por ejemplo, las tareas de una sesión de playtest); si no, el nuestro. Lo que agregó el otro lado va después del elemento que tenía antes, o al final si lo agregó al final.
+  - `updated_at` toma el mayor.
+  - El resultado sale en formato canónico (§4.4) y validado contra el schema del tipo, que sale de la ruta (`%P`).
+- **Conflicto:** si los dos lados cambiaron lo mismo de forma distinta (también un elemento que uno quitó y el otro cambió), o el resultado no pasa el schema, el driver hace lo que haría git sin él (`git merge-file`, con marcadores) y sale con 1. El archivo queda en conflicto y el store lo marca inválido (§4.3), como siempre. Una tarea borrada de un lado y cambiada del otro es un conflicto de git que no pasa por el driver.
+- **Registro:**
+  - `compass/.gitattributes` dice `*.json merge=scompass`. Viene de la plantilla, y `scompass update` lo pone al día.
+  - El driver va en `.git/config` del repo de `compass/`, con `git -C compass config`: el repo de tableros si es un enlace (§36) o el del proyecto si es una carpeta suya.
+  - Lo hacen `init` (si ya hay repo) y `update` (también `update --all`, "Actualizar todos" y el "Actualizar compass/" de la bandeja). El comando lleva la ruta entera de este `scompass`, sin depender del PATH, con barras `/`.
+  - No pisa un `merge.scompass.driver` ajeno (uno sin `merge-json`). Uno nuestro con otra ruta, por ejemplo después de reinstalar, se pone al día.
+  - Sin el driver registrado, git ignora el atributo y mergea por líneas como antes.
+
+```
+scompass merge-json <base> <nuestro> <de ellos> [<ruta>]   # sale con 0 si juntó, 1 si queda conflicto
+```
+
+### Criterios de aceptación
+
+- [x] Dos ramas que cambian campos distintos de la misma tarea se mergean sin conflicto, en formato canónico, con el `updated_at` mayor.
+- [x] Pasos tildados en los dos lados, y pasos y etiquetas agregados en los dos, se juntan por elemento.
+- [x] El mismo campo cambiado distinto en los dos lados queda con marcadores y el store lo marca inválido; un resultado que no pasa el schema también queda en conflicto.
+- [x] Una tarea borrada de un lado y cambiada del otro da el conflicto de siempre de git.
+- [x] `init` y `update` registran el driver en el repo de `compass/` sin pisar uno ajeno.

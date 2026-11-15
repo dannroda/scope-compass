@@ -101,6 +101,7 @@ scompass milestone set m08 --due 2026-11-01                   # fecha objetivo d
 - Los pasos se numeran desde 1, como los muestra `scompass show`.
 - Para no pisar un cambio ajeno, pasá `--etag <etag>` (el que devuelve `--json`): si la tarea cambió, falla con conflicto. Volvé a leerla y reintentá.
 - Una tarea se borra borrando su archivo en `compass/tasks/`.
+- Si un merge de git deja una tarea con marcadores de conflicto, los dos lados cambiaron el mismo campo (el merge driver de `compass/` junta solo lo demás). Resolvelo a mano dejando JSON válido y corré `scompass list` para ver que no quede ningún aviso.
 - Si una escritura falla con `forbidden_pattern`, el texto coincide con un patrón prohibido del proyecto (`compass/config.json › forbidden`; el mensaje dice el campo, el patrón y por qué). No se guardó nada: decilo de otra forma, sin ese texto, y no lo copies a otro campo ni a un documento. `scompass lint` revisa lo editado a mano en `compass/` y en los documentos, y sale con 1 si encuentra algo.
 
 ## Vínculos entre tareas
