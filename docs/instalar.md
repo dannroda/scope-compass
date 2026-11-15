@@ -1,12 +1,22 @@
-# Instalar Scope Compass (build interna)
+# Instalar Scope Compass
 
 Scope Compass tiene dos partes: el **hub** (la CLI `scompass`, el servidor y la UI web) y el **addon de Godot** (el dock "Tablero"). El addon funciona solo para leer el tablero; para editarlo necesita el hub.
 
 Se desarrolla en Linux y se prueba también en Windows 10/11 (D30). Los pasos son los mismos; donde cambian, está aclarado.
 
+## Descargas
+
+Todo está en la última release: https://github.com/dannroda/scope-compass/releases/latest. Los archivos llevan la versión con una `v` adelante:
+
+- `scompass-v<versión>-linux-x64`: el hub y la CLI para Linux, en un solo binario.
+- `scompass-v<versión>-windows-x64.exe`: lo mismo para Windows.
+- `scope-compass-addon-v<versión>.zip`: el addon de Godot.
+- `SHA256SUMS`: las sumas SHA-256 de los archivos. Para comprobar lo descargado: `sha256sum -c SHA256SUMS --ignore-missing` en Linux; en Windows, `Get-FileHash <archivo>` en PowerShell y comparar con la línea del archivo.
+
 ## Requisitos
 
-- Con el binario (`scompass-v<versión>-linux-x64` o `-windows-x64.exe`), nada más: trae su propio Node. Con el `.tgz`, Node.js 22 o más nuevo (`node --version`; en Windows, el instalador de nodejs.org o `winget install OpenJS.NodeJS.LTS`).
+- Linux o Windows 10/11, x64.
+- Con el binario, nada más: trae su propio Node. Con el paquete de npm (`.tgz`, ver abajo), Node.js 22 o más nuevo (`node --version`; en Windows, el instalador de nodejs.org o `winget install OpenJS.NodeJS.LTS`).
 - Git (los datos viven en git). En Windows, `winget install Git.Git`.
 - Godot 4.8 para el addon.
 - Con el `.tgz`, conexión a internet la primera vez: `npm` descarga las dependencias del hub.
@@ -14,11 +24,18 @@ Se desarrolla en Linux y se prueba también en Windows 10/11 (D30). Los pasos so
 
 ## 1. Hub y CLI
 
-### Con el binario (sin Node)
+### Con el binario (recomendado)
 
-Poné el binario en una carpeta del PATH con el nombre `scompass` (`scompass.exe` en Windows). En Linux, `sh install.sh` al lado del binario lo copia a `~/.local/bin/scompass` y deja **Scope Compass** en el menú de aplicaciones (ver abajo). La primera vez que corre una versión extrae su contenido (unos 30 MB) a `~/.cache/scope-compass/runtime/` (`%LOCALAPPDATA%\scope-compass\runtime\` en Windows); `SCOMPASS_RUNTIME_DIR` cambia esa carpeta. Para actualizar, reemplazá el binario.
+Poné el binario en una carpeta del PATH con el nombre `scompass` (`scompass.exe` en Windows), que es donde lo busca el addon, y probá `scompass --help`.
+
+- **Linux:** `sh install.sh scompass-v<versión>-linux-x64` (el `install.sh` está en `tools/` del repo; sin argumento, toma el binario más nuevo que tenga al lado) lo copia a `~/.local/bin/scompass` y deja **Scope Compass** en el menú de aplicaciones: levanta el Inicio con ícono en la bandeja y lo abre en el navegador. El acceso desde el teléfono se prende y apaga desde la bandeja ("Activar acceso en la red"). Sin el script: `install -m 755 scompass-v<versión>-linux-x64 ~/.local/bin/scompass`, con `~/.local/bin` en el PATH.
+- **Windows:** renombralo a `scompass.exe` y ponelo en una carpeta propia (por ejemplo `%LOCALAPPDATA%\Programs\scompass`) que agregues al PATH de tu usuario (Configuración › Sistema › Información › Configuración avanzada del sistema › Variables de entorno). El dock también lo encuentra con `where scompass`.
+
+La primera vez que corre una versión extrae su contenido (unos 30 MB) a `~/.cache/scope-compass/runtime/` (`%LOCALAPPDATA%\scope-compass\runtime\` en Windows); `SCOMPASS_RUNTIME_DIR` cambia esa carpeta. Para actualizar, reemplazá el binario (o volvé a correr `install.sh` con el nuevo); las versiones viejas quedan en esa caché y se pueden borrar. Para quitarlo, borrá el binario, la caché y, en Linux, el lanzador (`~/.local/share/applications/scope-compass.desktop`).
 
 ### Con el paquete de npm
+
+Si ya tenés Node, el hub también se instala como paquete de npm, `scope-compass-<versión>.tgz`. Lo arma `node tools/build.mjs` en `dist/`, desde un clon del repo:
 
 ```sh
 npm install -g ./scope-compass-<versión>.tgz
@@ -27,17 +44,17 @@ scompass --help
 
 El `./` importa: sin él, npm puede tomar la ruta como un repositorio de GitHub.
 
-Eso deja `scompass` en el PATH, que es donde lo busca el addon. Si `npm install -g` pide permisos, usá un prefijo propio (`npm config set prefix ~/.local`) y asegurate de que `~/.local/bin` esté en el PATH.
+Eso deja `scompass` en el PATH. Si `npm install -g` pide permisos, usá un prefijo propio (`npm config set prefix ~/.local`) y asegurate de que `~/.local/bin` esté en el PATH.
 
 En Windows, desde PowerShell o cmd: `npm install -g .\scope-compass-<versión>.tgz`. Queda en `%APPDATA%\npm`, que el instalador de Node ya pone en el PATH. Si PowerShell dice que la ejecución de scripts está deshabilitada, usá `scompass.cmd` en lugar de `scompass`, o habilitalos para tu usuario: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 
-En Linux, `sh install.sh` (al lado del binario o del `.tgz`; prefiere el binario) instala `scompass` y además deja **Scope Compass** en el menú de aplicaciones: levanta el Inicio con ícono en la bandeja y lo abre en el navegador. El acceso desde el teléfono se prende y apaga desde la bandeja ("Activar acceso en la red"). Para desarrollar, `tools/install.sh --dev` en el repo: `scompass` en `~/.local/bin` corre el `hub/bin/scompass.js` del repo, sin empaquetar.
+En Linux, `sh install.sh scope-compass-<versión>.tgz` hace el `npm install -g` y deja el lanzador en el menú, igual que con el binario. Para desarrollar, `tools/install.sh --dev` en el repo: `scompass` en `~/.local/bin` corre el `hub/bin/scompass.js` del repo, sin empaquetar.
 
 Para actualizar, instalá el `.tgz` nuevo con el mismo comando. Para quitarlo: `npm uninstall -g scope-compass`.
 
 ## 2. Addon de Godot
 
-1. Descomprimí `scope-compass-addon-<versión>.zip` en la raíz del proyecto de Godot: crea `addons/scope_compass/`.
+1. Descomprimí `scope-compass-addon-v<versión>.zip` en la raíz del proyecto de Godot: crea `addons/scope_compass/`.
 2. En Godot: Proyecto › Configuración del proyecto › Plugins › activar **Scope Compass**.
 3. El dock "Tablero" aparece junto al Inspector.
 
@@ -86,7 +103,3 @@ git commit -m "Saco el tablero"  # en el proyecto: la baja de compass/ quedó en
 ```
 
 Con el repo de todos los tableros, el historial entra en un commit en ese repo; lo sin commitear queda sin commitear. En otro equipo: clonar el repo de tableros (o el del tablero) en la carpeta de tableros y `scompass board link <nombre>` en el proyecto. Para compartir un tablero con otros, en lugar del enlace: `git submodule add <url> compass`. Antes de `board move`, detené el hub del proyecto y el Inicio.
-
-## Si se publica el proyecto antes que Scope Compass
-
-Agregá `addons/scope_compass` (sin barra final) al `.gitignore` del proyecto, y no commitees `project.godot` con el plugin activado.

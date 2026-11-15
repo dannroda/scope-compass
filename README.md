@@ -1,50 +1,100 @@
 # Scope Compass
 
-Organizador de proyectos de videojuegos: tablero de tareas por hito, con los datos en git. Una app local (CLI `scompass` + hub + UI web) y un dock para el editor de Godot los hacen cómodos de usar, pero nunca son el único lugar donde viven.
+**English** · [Español](README.es.md)
 
-**Estado:** v1 (M1–M3), el dock de Godot (M5), v2 (M6), v3 (M8: Inicio, listas y plantillas) y v4 (M9: el Inicio como app, multi-hub), M11 (vista de lista y filtros del tablero, con etiquetas, prioridad y responsable), M12 (biblioteca de documentos: carpetas, búsqueda y estado de git), M13 (UI más compacta), M14 (pestaña Archivos: los archivos del repo y su estado de git) M15 (tareas con archivos del repo, que el dock abre en el editor), M16 (uso en el teléfono), M17 (descripción de las tareas), M18 (fechas, capturas e historial), M19 (auditoría), M20 (playtests y estado Pausado), M21 (dock al día), M22 (servidor MCP), M23 (Inicio con muchos proyectos y worktrees), M24 (decisiones y preguntas al usuario) y M25 (chat con el Claude Code instalado) completos; M28 (perfiles, cuenta y uso del chat) está en revisión: la CLI `scompass`, el hub (`scompass serve`, API REST y WebSocket en `127.0.0.1`), la UI web del tablero en vivo, el dock "Tablero" en el editor, los documentos del proyecto (GDD) con referencias estables desde las tareas, y el Inicio (`scompass home`) con todos los proyectos del equipo, listas con fecha límite y repetición, y plantillas para crear proyectos de juego o personales. Se abre desde **Scope Compass** en el menú de aplicaciones, que deja `tools/install.sh` (ver [Build interna](#build-interna)), o con `scompass home --tray`. La bandeja prende y apaga el acceso desde la red: el Inicio sirve todos los proyectos en un solo puerto, cada tablero en `/p/<proyecto>/` (D29). Sin el Inicio, un proyecto se abre solo con `scompass serve --open`. Project Epiphany ya usa `compass/` como fuente de verdad (M4, en su semana de prueba). Nació del tablero en artifact de [Project Epiphany](../project-epiphany), que es su primer usuario. Por ahora es **Linux primero** (D15).
+A project organizer for video games that keeps its data in git. Tasks, milestones, lists and playtests are plain JSON files you can read, edit and version with nothing but git and a text editor. A local app (the `scompass` CLI, a hub with a web UI) and a dock for the Godot editor make them comfortable to use, but they are never the only place the data lives.
 
-## Documentación
+Everything runs on your machine: no accounts, no cloud, no telemetry. The only part that talks to an online service is the optional chat, which runs the Claude Code installed on your machine with your own account.
 
-| Qué | Dónde |
+> **Language:** the interface (web UI, Godot dock and CLI messages) and the documentation in `docs/` are currently in Spanish only. Translation is planned.
+
+<!-- screenshot: board -->
+
+## What it does
+
+- **Board per milestone.** Each milestone has a goal and a "done when" criterion; tasks move across To do, Paused, In progress, Review and Done. Tasks have steps, a description, notes, "how to test it", due dates, tags, priority, size, assignee, links between tasks, screenshots and a per-task history taken from git. There is also a list view with filters.
+- **Documents (GDD).** A library for the project's markdown documents, with search, git status and stable references from tasks to document sections. A Files tab shows the repo's files and their git status, and tasks can point to the scripts and scenes they touch.
+- **Playtests.** Playtest sessions put tasks in test order and record whether each one passed or failed, with a note.
+- **Agent decisions.** When an AI agent works on a task, it records the choices it made on its own and the questions it needs you to answer. You review them from the board or from the Home page.
+- **Home.** One page for every project on the machine: what is overdue or due today, the coming week, quick capture, lists with due dates and repetition, and templates to start a game, personal or empty project. It serves every project's board on a single port, with a tray icon.
+- **MCP server for Claude Code.** `scompass mcp` exposes the CLI as typed tools (list, show, add and move tasks, check steps, record decisions, search documents…), so an agent works on the board without shell commands. The web UI can also run a chat with the Claude Code installed on your machine, using your own account.
+- **Godot dock.** The "Tablero" (board) dock inside the Godot 4.8 editor shows the tasks, opens the scripts and scenes a task points to, and can start the hub. It reads the board on its own; editing needs the hub.
+- **Phone on your home network.** With `--lan`, the board and Home open from your phone on a trusted network.
+
+<!-- screenshot: home -->
+
+<!-- screenshot: dock -->
+
+## Principles
+
+1. **The data lives in git; the app is optional.** One JSON file per milestone and per task, in a `compass/` folder. If the app breaks or is not installed, everything can still be read and edited by hand.
+2. **Local first.** The hub listens on `127.0.0.1`. Nothing leaves your machine unless you push it to a git remote.
+3. **People, agents and the editor alike.** A web UI for people, a CLI with `--json` and an MCP server for agents, and a WebSocket the Godot dock uses to stay live.
+4. **Your boards are yours.** Boards live in your user data folder, not inside the project's repository, so a public game can keep its board private (see [Where the boards live](#where-the-boards-live)).
+
+## Requirements
+
+- Linux or Windows 10/11, x64. Developed on Linux, also tested on Windows.
+- Git.
+- Godot 4.8, for the dock.
+- With the release binary, nothing else: it carries its own Node. With the npm package (`.tgz`), Node.js 22 or newer.
+- For the chat in the web UI (optional): Claude Code installed and logged in (run `claude` once).
+
+## Install
+
+Download from the [latest release](https://github.com/dannroda/scope-compass/releases/latest):
+
+| File | What |
 |---|---|
-| Spec completo (qué, cómo, criterios de aceptación) | [`docs/spec.md`](docs/spec.md) |
-| Decisiones tomadas y por qué | [`docs/decisiones.md`](docs/decisiones.md) |
-| Plan de implementación (datos, fuente de verdad) | [`compass/`](compass/), con `scompass list` |
-| Plan en versión legible (generado) | [`docs/tareas.md`](docs/tareas.md) |
-| Tablero en artifact original (archivado, solo lectura) | https://claude.ai/artifact/JAiu8ZznTSLcDk8EzU3Zaj |
-| Mockups (web, teléfono, dock de Godot) | https://claude.ai/artifact/6QSijARPwJtsRd1t6wJGJ9 |
-| Código del artifact original | [`docs/reference/tablero-artifact.html`](docs/reference/tablero-artifact.html) |
+| `scompass-vX.Y.Z-linux-x64` | The CLI, hub and web UI for Linux, as one binary |
+| `scompass-vX.Y.Z-windows-x64.exe` | The same for Windows |
+| `scope-compass-addon-vX.Y.Z.zip` | The Godot addon (the dock) |
+| `SHA256SUMS` | Checksums of the files above |
 
-## Principios
+Check the download with `sha256sum -c SHA256SUMS --ignore-missing` (on Windows, `Get-FileHash <file>` and compare).
 
-1. **Los datos viven en git; la app es opcional.** Un archivo JSON por hito y por tarea, en `compass/` dentro de cada proyecto. Se leen y editan a mano (ver [`compass/README.md`](compass/README.md)).
-2. **Local primero.** El hub escucha en `127.0.0.1`. Con `--lan` se abre desde el teléfono en la red de casa, sin login (D36). El hosting privado viene después y usa git como almacenamiento.
-3. **Personas, agentes y el editor por igual.** UI web para personas, CLI con `--json` y un servidor MCP para agentes, WebSocket para el dock de Godot. La web trae un chat con el Claude Code instalado (solo en el mismo equipo, D43).
+**Hub and CLI.** Put the binary in a folder on your `PATH` named `scompass` (`scompass.exe` on Windows) and run `scompass --help`. On Linux, the repository's [`tools/install.sh`](tools/install.sh), run as `sh install.sh <path to scompass-vX.Y.Z-linux-x64>`, copies it to `~/.local/bin/scompass` and adds **Scope Compass** to the applications menu, which starts Home with a tray icon. The first run of each version extracts its contents (about 30 MB) to `~/.cache/scope-compass/runtime/` (`%LOCALAPPDATA%\scope-compass\runtime\` on Windows).
 
-## Estructura
+**Godot addon.** Unzip the addon at the root of your Godot project (it creates `addons/scope_compass/`), then enable **Scope Compass** in Project › Project Settings › Plugins. If the editor does not find `scompass` on the `PATH`, set its path in Editor Settings › `scope_compass/scompass_path`.
 
-```
-docs/                  spec, decisiones, export del plan, referencias
-schema/                JSON Schemas de hito y tarea
-hub/                   paquete Node: servidor + CLI scompass (M1–M2)
-web/                   UI del tablero, sin build step (M3)
-addons/scope_compass/  plugin de Godot: dock (M5)
-tools/                 build.mjs (paquete), install.sh (instalar y lanzador), prototipos en Python
-compass/               el tablero de Scope Compass mismo
-project.godot          el repo se abre en Godot para editarlo desde el editor
-```
+The full steps, including the npm package and Windows notes, are in [`docs/instalar.md`](docs/instalar.md) (Spanish).
 
-## Trabajar desde Godot
+## First steps
 
-El repo es un proyecto de Godot 4.8 para poder editar todo sin salir del editor y desarrollar el addon ahí mismo:
+- **All your projects:** `scompass home --tray --open` (or **Scope Compass** in the menu on Linux) opens Home in the browser. From there you can add existing projects or create new ones from a template.
+- **One project:** in the project's folder, `scompass init --template juego` creates a board (templates: `juego` for a game, `personal`, `vacio` for empty), or use **Crear compass/** (create compass/) in the Godot dock. Then `scompass serve --open`, or **Iniciar hub** (start hub) in the dock.
+- **From the terminal:** `scompass list`, `scompass add "Title" --milestone m00`, `scompass move <id> doing`. Add `--json` for machine-readable output.
+- **Claude Code:** register the MCP server once for all projects with `claude mcp add --scope user scompass -- scompass mcp`, and tell the agent about the board guide by adding this to the project's `AGENTS.md` or `CLAUDE.md`: "The task board is managed with scompass; read compass/AGENTS.md before touching it."
+- **From your phone:** `scompass home --tray --lan`, or "Activar acceso en la red" (enable network access) in the tray. There is no login: anyone on that network can view and edit, so use it only on a network you trust. See [SECURITY.md](SECURITY.md).
 
-1. Abrir `project.godot` en Godot.
-2. En *Editor Settings › Docks › FileSystem › TextFile Extensions*, agregar `js,html,css,json,md`.
-3. `compass/` no aparece en el FileSystem a propósito (tiene `.gdignore`).
+## Where the boards live
 
-## Build interna
+A project's board is always reached as `<project>/compass`, but by default that is a link (a symlink on Linux, a junction on Windows) to a folder in your user data directory:
 
-`node tools/build.mjs` deja en `dist/` el paquete del hub (`scope-compass-<versión>.tgz`, con la CLI, la UI web y los schemas), el zip del addon de Godot y `INSTALAR.md` con los pasos ([docs/instalar.md](docs/instalar.md)). La versión sale de `hub/package.json` y tiene que coincidir con la de `addons/scope_compass/plugin.cfg`.
+- Linux: `~/.local/share/scope-compass/boards/<name>/`
+- Windows: `%LOCALAPPDATA%\scope-compass\boards\<name>\`
+- `SCOMPASS_BOARDS` points it elsewhere.
 
-Para instalar: `sh install.sh` al lado del binario (`scompass-v<versión>-linux-x64`, no necesita Node) o del `.tgz` instala `scompass` y deja **Scope Compass** en el menú de aplicaciones (levanta el Inicio con ícono en la bandeja). Para desarrollar, `tools/install.sh --dev` en el repo: el `scompass` de `~/.local/bin` corre el `hub/bin/scompass.js` del repo, sin empaquetar.
+The link is excluded through the project's `.git/info/exclude`, so the project's repository carries no trace of it. To version your boards, either make the boards folder a git repository before creating the first board (one repository for all of them, each board a subfolder) or let each board get its own `git init`. Other options:
+
+- `scompass init --in-project` keeps the board inside the project, in the project's repository.
+- `git submodule add <url> compass` shares a board with other people.
+- `scompass board move` takes an existing in-project board out to the boards folder, keeping its history; `scompass board link <name>` links a board you cloned on another machine.
+
+## Documentation
+
+| What | Where |
+|---|---|
+| Installation and first use (Spanish) | [`docs/instalar.md`](docs/instalar.md) |
+| Full spec: data format, API, CLI, acceptance criteria (Spanish) | [`docs/spec.md`](docs/spec.md) |
+| Design decisions and why (Spanish) | [`docs/decisiones.md`](docs/decisiones.md) |
+| Guide for AI agents working on a board (Spanish) | [`addons/scope_compass/AGENTS.md`](addons/scope_compass/AGENTS.md) |
+| The hub package, its layout and tests (Spanish) | [`hub/README.md`](hub/README.md) |
+| JSON Schemas of the data | [`schema/`](schema/) |
+| Changes per release | [`CHANGELOG.md`](CHANGELOG.md) |
+| Contributing | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
+| Security | [`SECURITY.md`](SECURITY.md) |
+
+## License
+
+[MIT](LICENSE). The Godot addon carries its own copy of the license.

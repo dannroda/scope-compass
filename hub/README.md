@@ -2,9 +2,9 @@
 
 Paquete Node de Scope Compass: el servidor (API REST + WebSocket + UI web) y la CLI `scompass`.
 
-El diseño está en `../docs/spec.md` (§3, §5, §6, §9) y el plan en el tablero del repo (hitos M1 y M2).
+El diseño está en `../docs/spec.md` (§3, §5, §6, §9).
 
-Estructura prevista:
+Estructura:
 
 ```
 bin/scompass.js      CLI
@@ -35,7 +35,7 @@ test/                node:test
 cd hub && npm install && npm link     # deja `scompass` en el PATH
 scompass --help
 scompass list                          # desde cualquier carpeta dentro de un proyecto con compass/
-scompass --dir ../project-epiphany list --json
+scompass --dir <otro-proyecto> list --json
 scompass home list                     # proyectos conocidos en este equipo y el estado de su hub
 ```
 
@@ -45,10 +45,10 @@ El chat de la web (spec §32, §33) está en `src/chat.js` (el proceso de `claud
 
 Los tests usan un registro, una config y una carpeta de datos propios (`SCOMPASS_REGISTRY`, `SCOMPASS_CONFIG`, `SCOMPASS_DATA` en `npm test`): correrlos con `npm test`, no con `node --test` a secas, para no tocar `~/.config/scope-compass/` ni `~/.local/share/scope-compass/`.
 
-Sin `npm link`: `node hub/bin/scompass.js …`. Por ahora escribe siempre directo en `compass/`; cuando exista el hub (M2), usará la API si está corriendo.
+Sin `npm link`: `node hub/bin/scompass.js …` desde la raíz del repo. Si hay un hub o el Inicio sirviendo el proyecto, la CLI escribe a través de él; si no, directo en `compass/`.
 
 ## Tests
 
-`npm test` en `hub/`. Los tests que escriben usan `test/fixtures/compass/`, una copia congelada del tablero, para no depender del estado real de `compass/`. Los que comprueban propiedades de los datos reales (formato canónico, carga sin avisos, export idéntico a `tools/`) leen `../compass/` y `../../project-epiphany/compass/` si existe.
+`npm test` en `hub/`. Los tests que escriben usan `test/fixtures/compass/`, una copia congelada del tablero, para no depender del estado real de `compass/`. Los que comprueban propiedades de los datos reales (formato canónico, carga sin avisos, export idéntico a `tools/`) leen el `compass/` del repo (el tablero enlazado, §36).
 
 Los tests del dock (`test/dock.test.js`) lanzan Godot sin ventana con `test/godot/runner.gd`; usan el binario de `GODOT` o, si no está, `godot` del PATH. Se saltean solo si no hay ninguno (el de la captura del juego, 21.4, además necesita `xvfb-run`: corre un editor de verdad en una pantalla virtual); si Godot está pero no arranca (por ejemplo, el wrapper de godot-manager con una `.godot-version` que ya no está instalada), fallan con el motivo. Para ver el dock sin abrir el editor: `xvfb-run -a godot --path .. --script res://hub/test/godot/shot.gd -- <proyecto> <salida.png> [tarea]`.
