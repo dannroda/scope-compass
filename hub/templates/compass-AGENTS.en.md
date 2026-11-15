@@ -212,7 +212,7 @@ scompass doc changed gdd --since <etag>      # which sections changed since the 
 
 ### Reading a document again
 
-What you read from a document can go stale while you work: the user edits it, another session changes it, a `git pull` arrives or someone promotes a decision to the decisions document. Read it again before relying on it:
+What you read from a document can go stale while you work: the user edits it (in their editor, or a section from the web library, which saves without committing), another session changes it, a `git pull` arrives or someone promotes a decision to the decisions document. Read it again before relying on it:
 
 - before a decision, a code change or closing a task that depends on what it says, if you read it a while ago (another task in between, a long pause, or after a commit or a pull);
 - if an MCP tool brings "Notice: the document … changed since you read it";

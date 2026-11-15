@@ -650,8 +650,8 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - **Cuánto dura el código:** propuesta, 5 minutos.
   - **Un hub suelto con su propio `--lan`:** si acepta los dispositivos del Inicio (leería el mismo `devices.json`) o si su chat sigue solo local. Propuesta: solo local; desde el teléfono, el proyecto se usa a través del Inicio.
 
-## D61 · Editar documentos desde la web: por sección, con el etag del documento, sin commit (propuesta)
-**2026-11-15 · propuesta** · spec §50 · cambiaría D33 en un punto
+## D61 · Editar documentos desde la web: por sección, con el etag del documento, sin commit
+**2026-11-15 · vigente** · spec §50 · cambia D33 en un punto
 
 - **Qué:** editar una sección por vez desde la biblioteca, en Markdown, guardando con el etag del documento (D51). Si el documento cambió desde ese etag pero la sección no, el cambio se aplica igual; si la sección cambió, 409 con el texto actual. Sin commit, sin CLI ni MCP, sin editor del documento entero.
 - **Por qué ahora sí:** las dos razones de D33 eran duplicar el editor y perder cambios sin git. El etag con la caché de versiones y la comparación por sección de §41 detectan exactamente el caso que se perdía (la misma sección cambiada en el editor), y la caché guarda el texto que se reemplaza, así que *Deshacer* no depende de git. Limitarlo a una sección y a texto plano mantiene chica la parte que duplica al editor. El uso que lo justifica es corregir o completar una sección desde el teléfono o desde la vista de una tarea, sin abrir el editor.
@@ -661,6 +661,4 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Juntar por líneas con `git merge-file` cuando la misma sección cambió de los dos lados: un merge que la persona no ve en un texto de diseño; mejor mostrar los dos textos.
   - Commitear al guardar: mezclaría el diseño con commits que nadie revisó (D33).
   - WYSIWYG: una librería y otro formato que mantener para algo que se escribe en Markdown.
-- **Para decidir (preguntado):**
-  - **Si se hace:** sí, por sección (propuesta); o no, y D33 queda como está.
-  - **Desde dónde:** igual que el tablero, también desde la red con `--lan` (propuesta; *Promover* ya escribe documentos desde ahí); o solo desde este equipo, como el chat (§32).
+- **Respondido por Dann (2026-11-15):** se hace, por sección, y desde donde se edita el tablero, también con `--lan`.

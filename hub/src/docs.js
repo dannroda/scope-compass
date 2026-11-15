@@ -11,7 +11,7 @@ import { repoFiles } from './git.js';
 import { projectRel, realInside } from './paths.js';
 import { T } from './i18n.js';
 
-const HEADING = /^(#{1,6})[ \t]+(.+?)[ \t#]*$/;
+const HEADING = /^(#{1,6})[ \t]+(.+?)[ \t#]*\r?$/;
 const ID_COMMENT = /^<!--\s*id:\s*([a-z0-9][a-z0-9_-]*)\s*-->\s*$/;
 const FENCE = /^\s{0,3}(```|~~~)/;
 

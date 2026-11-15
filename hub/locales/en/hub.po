@@ -154,17 +154,44 @@ msgstr "reverted"
 msgid "sin revisar"
 msgstr "not reviewed"
 
-msgid "no hay un documento \"{0}\""
-msgstr "there's no document \"{0}\""
+msgid "el texto tiene que empezar con un título de nivel {0} ({1} …)"
+msgstr "the text has to start with a level {0} heading ({1} …)"
+
+msgid "«{0}» (línea {1}) crearía otra sección: dentro de la sección, los títulos van de nivel {2} o más"
+msgstr "“{0}” (line {1}) would create another section: inside the section, headings have to be level {2} or deeper"
+
+msgid "falta markdown: el texto de la sección"
+msgstr "missing markdown: the section's text"
+
+msgid "falta etag: el del documento que se leyó"
+msgstr "missing etag: the one of the document you read"
 
 msgid "no existe {0}"
 msgstr "{0} doesn't exist"
 
-msgid "falta since: el etag que se leyó"
-msgstr "since is missing: the etag that was read"
+msgid "{0} cambió desde que se leyó y no se encontró esa versión para comparar la sección"
+msgstr "{0} changed since it was read and that version wasn't found to compare the section"
+
+msgid "la sección «{0}» cambió en {1} desde que se leyó"
+msgstr "section “{0}” changed in {1} since it was read"
 
 msgid "no hay una sección \"{0}\" en {1}"
 msgstr "there's no section \"{0}\" in {1}"
+
+msgid "compass/config.json › forbidden[{0}]: /{1}/ no es una expresión regular válida ({2})"
+msgstr "compass/config.json › forbidden[{0}]: /{1}/ is not a valid regular expression ({2})"
+
+msgid "; y {0} más"
+msgstr "; and {0} more"
+
+msgid "no se guardó: {0}{1}"
+msgstr "not saved: {0}{1}"
+
+msgid "no hay un documento \"{0}\""
+msgstr "there's no document \"{0}\""
+
+msgid "falta since: el etag que se leyó"
+msgstr "since is missing: the etag that was read"
 
 msgid "id repetido: {0} (líneas {1} y {2})"
 msgstr "duplicate id: {0} (lines {1} and {2})"
@@ -729,15 +756,6 @@ msgstr "invalid id: {0}"
 
 msgid "el documento cambió desde que se leyó"
 msgstr "the document changed since it was read"
-
-msgid "compass/config.json › forbidden[{0}]: /{1}/ no es una expresión regular válida ({2})"
-msgstr "compass/config.json › forbidden[{0}]: /{1}/ is not a valid regular expression ({2})"
-
-msgid "; y {0} más"
-msgstr "; and {0} more"
-
-msgid "no se guardó: {0}{1}"
-msgstr "not saved: {0}{1}"
 
 msgid "fecha inexistente: {0}"
 msgstr "nonexistent date: {0}"

@@ -5,6 +5,7 @@ import { changeDocs, checkRefs, diffSections, docCoverage, findDoc, findSection,
 import { docDiff, docLog, docsStatus } from './git.js';
 import { renderBBCode, renderBlocks, renderMarkdown } from './render.js';
 import { docChanges, docText, rememberVersion } from './doc-versions.js';
+import { editSection } from './doc-edit.js';
 import { StoreError } from './store/json-files.js';
 import { T } from './i18n.js';
 
@@ -112,6 +113,15 @@ export function registerDocsApi(app, { store, projectDir, validators, onDocsChan
     // ?format=blocks: texto en BBCode y código crudo, para mostrarlo en un CodeEdit.
     if (req.query.format === 'blocks') return { alias: d.alias, path: d.path, etag, ...sectionInfo(d, s, links), blocks: renderBlocks(markdown) };
     return { alias: d.alias, path: d.path, etag, ...sectionInfo(d, s, links), markdown, html: renderMarkdown(markdown, inside) };
+  });
+
+  // Editar una sección (§50, D61): { markdown, etag } → { etag, previous, id, markdown }. 409 con error.current
+  // ({ etag, markdown } de la sección como está) si cambió desde el etag; 422 si el texto se sale de la sección o
+  // tiene un patrón prohibido. Sin commit; el watcher de documentos avisa a las demás pestañas.
+  app.put('/api/docs/:alias/sections/:id', async (req) => {
+    const all = await store.loadAll();
+    const d = getDoc(await loadDocs(projectDir, all.config), req.params.alias);
+    return editSection(projectDir, all.config, d, req.params.id, req.body ?? {});
   });
 
   // Agregar o quitar un documento (12.2): reescribe config.json › docs. path: un archivo o un patrón con *.

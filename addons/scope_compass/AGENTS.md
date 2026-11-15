@@ -212,7 +212,7 @@ scompass doc changed gdd --since <etag>      # qué secciones cambiaron desde el
 
 ### Volver a leer un documento
 
-Lo que leíste de un documento puede quedar viejo mientras trabajás: el usuario lo edita, otra sesión lo cambia, llega un `git pull` o alguien promueve una decisión al documento de decisiones. Volvé a leerlo antes de basarte en él:
+Lo que leíste de un documento puede quedar viejo mientras trabajás: el usuario lo edita (en su editor, o una sección desde la biblioteca de la web, que guarda sin commitear), otra sesión lo cambia, llega un `git pull` o alguien promueve una decisión al documento de decisiones. Volvé a leerlo antes de basarte en él:
 
 - antes de una decisión, de un cambio de código o de cerrar una tarea que dependen de lo que dice, si lo leíste hace rato (otra tarea en el medio, una pausa larga, o después de un commit o un pull);
 - si una herramienta del MCP trae «Aviso: el documento … cambió desde que lo leíste»;

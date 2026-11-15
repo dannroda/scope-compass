@@ -16,7 +16,7 @@ import { compileForbidden, describeMatch, findForbidden } from '../forbidden.js'
 import { T } from '../i18n.js';
 
 export class StoreError extends Error {
-  // code: invalid_argument | not_found | conflict | invalid_file | io_error | forbidden_pattern
+  // code: invalid_argument | not_found | conflict | invalid_file | io_error | forbidden_pattern | invalid_section
   constructor(code, message, extra = {}) {
     super(message);
     this.code = code;

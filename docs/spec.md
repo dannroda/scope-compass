@@ -1775,25 +1775,26 @@ scompass devices rm <id>    # desvincular
 - [ ] Desvincular corta el próximo pedido y cierra los WebSocket abiertos.
 - [ ] `devices.json` guarda solo el hash del token.
 
-## 50. Editar una sección desde la web (M26, propuesta)
+## 50. Editar una sección desde la web (M26)
 <!-- id: editar-seccion -->
 
-Propuesta, sin implementar (D61, preguntado). D33 descartaba editar documentos desde la web: duplica el editor, y sin git para resolver conflictos se pierden cambios. D42 ya deja que la app escriba documentos (*Promover*). Con el etag de documento de §41, el riesgo de pisar una edición hecha en el editor se puede detectar por sección.
+Aprobado por Dann el 2026-11-15 (D61); implementado en m26-06. D33 descartaba editar documentos desde la web: duplica el editor, y sin git para resolver conflictos se pierden cambios. D42 ya deja que la app escriba documentos (*Promover*). Con el etag de documento de §41, el riesgo de pisar una edición hecha en el editor se puede detectar por sección.
 
 - **Alcance:** una sección por vez, en texto Markdown, desde la vista de la sección en la biblioteca (§20). No es un editor del documento entero ni WYSIWYG, y no hay CLI ni herramienta del MCP: el agente y la persona en su equipo editan el archivo directamente.
 - **Guardar:** `PUT /api/docs/:alias/sections/:id` con `{ markdown, etag }`, donde `etag` es el del documento que dio el `GET` (§41).
   - Si el etag es el actual, se reemplaza la sección.
-  - Si es otro, se busca el texto viejo (caché de versiones o git) y se mira con `sectionChanges` si cambió *esa* sección o alguna de adentro. Si no cambió, el cambio se aplica sobre el texto actual: otra sección editada en el editor no bloquea. Si cambió, o si el texto viejo no aparece, la respuesta es 409 con el etag y el texto actual de la sección; la web muestra los dos para que la persona junte a mano.
+  - Si es otro, se busca el texto viejo (caché de versiones o git) y se mira con `sectionChanges` si cambió *esa* sección o alguna de adentro. Si no cambió, el cambio se aplica sobre el texto actual: otra sección editada en el editor no bloquea. Si cambió, o si el texto viejo no aparece, la respuesta es 409 (`conflict`) con `error.current: { etag, markdown }`, el etag del documento y el texto actual de la sección (`markdown: null` si la sección ya no está). La web muestra los dos para que la persona junte a mano.
   - Antes de escribir, el texto actual queda en la caché de versiones; la respuesta da `{ etag, previous }`. *Deshacer* vuelve a guardar el texto de `previous` con el etag nuevo, por el mismo camino.
-- **Qué se reemplaza:** el rango entero de la sección (título, línea del id, texto y las secciones de adentro), como lo da `sections/:id`. El texto nuevo tiene que empezar con un título del mismo nivel y no puede tener títulos de ese nivel o de uno mayor más abajo, porque crearía otra sección fuera del rango. Si no cumple, 422.
+- **Qué se reemplaza:** el rango entero de la sección (título, línea del id, texto y las secciones de adentro), como lo da `sections/:id`. El texto nuevo tiene que empezar con un título del mismo nivel y no puede tener títulos de ese nivel o de uno mayor más abajo, porque crearía otra sección fuera del rango (un título dentro de un bloque de código no cuenta). Si no cumple, 422 con el código `invalid_section`. El fin de línea del texto que llega no importa: se escribe con el del archivo.
 - **El id:** si el título cambia y la sección no tenía `<!-- id -->`, se le pone el id que tenía (como `doc stamp-ids`), para que las referencias de las tareas no se rompan. Un id explícito que se quita o se cambia en el texto vuelve a ponerse; para cambiar un id se edita el archivo.
 - **Cómo se escribe:** escritura atómica, con el fin de línea del archivo (LF o CRLF) y sin commit (D33, D42): el cambio queda en el árbol de trabajo, a la vista en la biblioteca, igual que *Promover*. El watcher de documentos avisa a las demás pestañas y al MCP (§41). Los patrones prohibidos (§42) se miran en el texto nuevo; si alguno aparece, 422 como en el store.
 - **Un editor abierto con el mismo archivo:** la mayoría de los editores recargan un archivo que cambió en el disco, o avisan si tienen cambios sin guardar. El caso que no se cubre es guardar desde el editor una copia vieja después de editar en la web, y eso git lo muestra en el diff.
-- **Quién puede:** lo mismo que escribe el tablero (pregunta abierta en D61: también desde la red con `--lan`, o solo desde este equipo).
+- **Quién puede:** lo mismo que escribe el tablero, también desde la red con `--lan` (D61).
+- **Archivos con CRLF:** el índice de secciones reconoce los títulos de un archivo con fin de línea CRLF (antes no veía ninguno).
 
 | Método | Ruta | Qué hace |
 |---|---|---|
-| `PUT` | `/api/docs/:alias/sections/:id` | `{markdown, etag}` → `{etag, previous}`; 409 con `{etag, markdown}` si la sección cambió; 422 si el texto se sale de la sección o tiene un patrón prohibido |
+| `PUT` | `/api/docs/:alias/sections/:id` | `{markdown, etag}` → `{etag, previous, id, markdown}`; 409 con `error.current: {etag, markdown}` si la sección cambió; 422 si el texto se sale de la sección o tiene un patrón prohibido |
 
 ### Criterios de aceptación
 

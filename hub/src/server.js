@@ -49,7 +49,7 @@ export function localOnly(app) {
   });
 }
 
-const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, invalid_file: 409, forbidden_pattern: 422, io_error: 500 };
+const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, invalid_file: 409, forbidden_pattern: 422, invalid_section: 422, io_error: 500 };
 
 // token: si se pasa, cada request tiene que traer `Authorization: Bearer <token>` (hosting, §12). En local no se usa.
 // watch: mira compass/ y publica los cambios externos (necesita validators).
