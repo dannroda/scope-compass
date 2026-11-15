@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadValidators } from '../src/schema.js';
 import { createJsonFilesStore, StoreError } from '../src/store/json-files.js';
-import { createServer, listen, VERSION } from '../src/server.js';
+import { createServer, listen, PROTOCOL, VERSION } from '../src/server.js';
 import { run } from '../src/cli.js';
 
 const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'compass');
@@ -26,7 +26,7 @@ test('GET /api/health devuelve versión y proyecto', async () => {
   const app = createServer({ projectDir: dir, store });
   const r = await app.inject('/api/health');
   assert.equal(r.statusCode, 200);
-  assert.deepEqual(r.json(), { ok: true, name: 'scope-compass', version: VERSION, project: dir, pid: process.pid });
+  assert.deepEqual(r.json(), { ok: true, name: 'scope-compass', version: VERSION, protocol: PROTOCOL, project: dir, pid: process.pid });
   await app.close();
 });
 
