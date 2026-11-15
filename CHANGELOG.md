@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-First public release. The interface and the documentation in `docs/` are in Spanish.
+First public release. The interface is in English and Spanish; the documentation in `docs/` is in Spanish.
 
 ### Data
 
@@ -55,4 +55,5 @@ First public release. The interface and the documentation in `docs/` are in Span
 - The Godot addon updates itself from GitHub releases (once a day when the editor opens; it can be turned off). The addon, the hub and the CLI check compatibility by a protocol number instead of the version: a hub that speaks another protocol is not used, and the dock offers the matching `scompass` binary.
 - A Claude Code plugin (`claude-plugin/`, with this repository as its marketplace) whose skill sends the agent to the board guide; it follows the Scope Compass version.
 - `scompass` does not need to be on the `PATH`: every run records its own path in the data folder, the Godot addon looks there, and `scompass mcp install` registers the MCP server in Claude Code with the full path.
+- The CLI, the web board, Home, the MCP server, the tray and the Godot dock in English and Spanish, following the system, browser or editor language; `scompass lang` and a selector in Settings choose one. Templates, the agent guide and the markdown export follow the board's language (`config.json › language`).
 - Releases built and published by GitHub Actions: tests on Linux and Windows, each binary built on its own platform, and `SHA256SUMS` with the downloads.

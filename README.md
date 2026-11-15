@@ -18,8 +18,9 @@ Everything runs on your machine: no accounts, no cloud, no telemetry. The only p
 - **Agent decisions.** When an AI agent works on a task, it records the choices it made on its own and the questions it needs you to answer. You review them from the board or from the Home page.
 - **Home.** One page for every project on the machine: what is overdue or due today, the coming week, quick capture, lists with due dates and repetition, and templates to start a game, personal or empty project. It serves every project's board on a single port, with a tray icon.
 - **MCP server for Claude Code.** `scompass mcp` exposes the CLI as typed tools (list, show, add and move tasks, check steps, record decisions, search documents…), so an agent works on the board without shell commands. The web UI can also run a chat with the Claude Code installed on your machine, using your own account.
-- **Godot dock.** The "Tablero" (board) dock inside the Godot 4.8 editor shows the tasks, opens the scripts and scenes a task points to, and can start the hub. It reads the board on its own; editing needs the hub.
+- **Godot dock.** The Board dock inside the Godot 4.8 editor shows the tasks, opens the scripts and scenes a task points to, and can start the hub. It reads the board on its own; editing needs the hub.
 - **Phone on your home network.** With `--lan`, the board and Home open from your phone on a trusted network.
+- **English and Spanish.** The CLI, the web, Home, the MCP and the dock follow your system, browser or Godot editor language; `scompass lang en|es` or the language selector in Settings picks one. New boards (their agent guide, export and template) come in the language you create them in.
 
 <!-- screenshot: home -->
 
@@ -62,10 +63,10 @@ The full steps, including the npm package and Windows notes, are in [`docs/insta
 ## First steps
 
 - **All your projects:** `scompass home --tray --open` (or **Scope Compass** in the menu on Linux) opens Home in the browser. From there you can add existing projects or create new ones from a template.
-- **One project:** in the project's folder, `scompass init --template juego` creates a board (templates: `juego` for a game, `personal`, `vacio` for empty), or use **Crear compass/** (create compass/) in the Godot dock. Then `scompass serve --open`, or **Iniciar hub** (start hub) in the dock.
+- **One project:** in the project's folder, `scompass init --template game` creates a board (templates: `game`, `personal`, `empty`; also `juego` and `vacio`), or use **Create compass/** in the Godot dock. Then `scompass serve --open`, or **Start hub** in the dock.
 - **From the terminal:** `scompass list`, `scompass add "Title" --milestone m00`, `scompass move <id> doing`. Add `--json` for machine-readable output.
 - **Claude Code:** register the MCP server once for all projects with `scompass mcp install` (it runs `claude mcp add --scope user` with the full path), and install the plugin, whose skill sends the agent to the board guide (`compass/AGENTS.md`): `/plugin marketplace add dannroda/scope-compass`, then `/plugin install scope-compass@scope-compass`. Without the plugin, add this to the project's `AGENTS.md` or `CLAUDE.md`: "The task board is managed with scompass; read compass/AGENTS.md before touching it."
-- **From your phone:** `scompass home --tray --lan`, or "Activar acceso en la red" (enable network access) in the tray. There is no login: anyone on that network can view and edit, so use it only on a network you trust. See [SECURITY.md](SECURITY.md).
+- **From your phone:** `scompass home --tray --lan`, or "Turn on network access" in the tray. There is no login: anyone on that network can view and edit, so use it only on a network you trust. See [SECURITY.md](SECURITY.md).
 
 ## Where the boards live
 

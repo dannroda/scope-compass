@@ -1647,3 +1647,25 @@ scompass merge-json <base> <nuestro> <de ellos> [<ruta>]   # sale con 0 si junt�
 - [x] El mismo campo cambiado distinto en los dos lados queda con marcadores y el store lo marca inválido; un resultado que no pasa el schema también queda en conflicto.
 - [x] Una tarea borrada de un lado y cambiada del otro da el conflicto de siempre de git.
 - [x] `init` y `update` registran el driver en el repo de `compass/` sin pisar uno ajeno.
+
+## 45. Interfaz en inglés y castellano (M32)
+
+La CLI, el MCP, el hub (sus mensajes de error), la web del tablero, el Inicio, la bandeja y el dock de Godot hablan castellano o inglés (D56). Los datos que escribe el usuario quedan como los escribió.
+
+- **Catálogos:** el texto fuente es el castellano del código y es la clave, como en gettext. En JS, ``T`Tarea ${id}` `` busca `"Tarea {0}"` en `hub/locales/en/<área>.po` (`cli`, `mcp`, `hub`, `web`, `home`); en GDScript, `I18n.t("Hub en %s") % url` en `addons/scope_compass/i18n/en.po`, que Godot carga solo. Sin entrada (o en castellano), el texto sale tal cual. Sin librerías (`hub/src/i18n.js`, `addons/scope_compass/i18n.gd`).
+- **El idioma:**
+  - `SCOMPASS_LANG=es|en` gana sobre todo (los tests lo fijan en `es`).
+  - Si no, el que eligió el usuario: `scompass lang es|en|auto` o el selector de Ajustes de la web y del Inicio, guardado en `<config>/settings.json › language`.
+  - Si no, el del sistema en la CLI y el MCP (`LC_ALL`, `LC_MESSAGES`, `LANG`; en Windows, el formato regional) y el del navegador (`Accept-Language`) en cada pedido al hub y al Inicio. Cada pedido corre con su idioma, también los errores del store.
+  - El dock: `SCOMPASS_LANG`, el ajuste del editor `scope_compass/language` (Auto, English, Español; se aplica al reabrir el editor) o el idioma del editor. Manda su idioma en `Accept-Language`, así los errores del hub le llegan igual. El editor no traduce los textos del dock con su propio catálogo.
+  - Un idioma que no es castellano cuenta como inglés.
+- **La web** carga `/i18n.js` antes que `app.js` y `home.js`: el idioma del pedido, el catálogo de la web y `T`. Los textos fijos del HTML se traducen al cargar (`I18N.dom`). `GET /api/lang` da `{ lang, chosen, forced }` y `PUT /api/lang { lang: 'es' | 'en' | null }` lo elige.
+- **El idioma del tablero** (`config.json › language`, `es` o `en`; sin él, `es`) es el de lo que se escribe en el tablero y no depende de quién mira: `compass/AGENTS.md` (`hub/templates/compass-AGENTS.en.md`), `compass/README.md`, el export markdown (que se llama `tasks.md`) y las entradas que agrega Promover. `init` lo pone según el idioma de la interfaz o `--lang`; el Inicio, según el de quien crea el proyecto. Las plantillas tienen su versión en `hub/templates/proyectos/en/` (mismos nombres; `init` también acepta `game` y `empty`). `update` deja la guía en el idioma del tablero.
+- **Comprobar:** `node tools/i18n.mjs check` lista lo que falta traducir, lo que sobra y los `{n}` o `%s` que no coinciden; `sync <área>` agrega los textos nuevos con el `msgstr` vacío. `hub/test/i18n.test.js` falla si un catálogo no está completo.
+
+### Criterios de aceptación
+
+- [x] Con el navegador en inglés, el tablero y el Inicio salen en inglés, y elegir Español en Ajustes los cambia (`ui-i18n`, `ui-home-i18n`).
+- [x] Con `SCOMPASS_LANG=en`, la CLI, los errores del hub, las descripciones del MCP y el dock salen en inglés (`i18n`, `i18n-hub`, `dock`).
+- [x] `init --lang en` crea el tablero con la guía, el README, el export y la plantilla en inglés, y `update` la mantiene.
+- [x] Los tests de siempre pasan con el idioma fijo en castellano, y cada texto que se usa está en el catálogo.

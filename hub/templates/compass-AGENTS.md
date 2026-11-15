@@ -32,7 +32,7 @@ Los hitos (`compass://milestone/<id>`), las tareas (`compass://task/<id>`) y los
 
 La web del tablero tiene un chat (botón *Chat*, solo en el mismo equipo) con el Claude Code instalado. Lanza `claude` en la carpeta del proyecto con el MCP `scompass` y las herramientas de lectura (`Read`, `Grep`, `Glob`), permitidas de antemano: no edita archivos ni corre comandos, y lo demás se niega sin preguntar. Si sos ese agente:
 
-- Un mensaje puede empezar con `Tarea abierta: <código> <título> (compass://task/<id>)`: es la tarea que el usuario tiene abierta; leela con `show_task` si hace falta.
+- Un mensaje puede empezar con `Tarea abierta: <código> <título> (compass://task/<id>)` (`Open task: …` con la interfaz en inglés): es la tarea que el usuario tiene abierta; leela con `show_task` si hace falta.
 - Lo que haya que editar o correr, decilo para hacerlo en la terminal.
 - Las reglas de esta guía valen igual: registrá las decisiones, pasá a `review` lo que termines.
 
@@ -256,6 +256,13 @@ scompass home add           # anota este proyecto sin levantar su hub (o: home a
 scompass home rm <carpeta>  # lo quita del registro; no toca sus datos
 scompass home               # levanta el Inicio (uno por usuario): GET /api/today junta lo vencido, de hoy y en curso, y lo de los próximos 7 días (week)
 ```
+
+## Idioma
+
+La CLI, el MCP, la web, el Inicio y el dock hablan castellano o inglés (§45). Los mensajes y las descripciones de las herramientas salen en el idioma de quien usa la app; los datos del tablero (títulos, notas) quedan como se escribieron.
+
+- `scompass lang` dice cuál se usa; `scompass lang es|en` lo fija para la CLI, la web y el Inicio (en `~/.config/scope-compass/settings.json`), y `scompass lang auto` vuelve a seguir al sistema (`LANG`) y al navegador. `SCOMPASS_LANG=es|en` gana sobre todo (para pruebas). El dock sigue al editor de Godot, o al ajuste `scope_compass/language` de la configuración del editor.
+- `config.json › language` (`es` o `en`) es el idioma del tablero: el de esta guía, `compass/README.md`, el export markdown y lo que trae la plantilla. `init` lo pone según el idioma de la interfaz (`--lang` lo elige); sin él, `es`. Si lo cambiás a mano, `scompass update` pasa esta guía al otro idioma (el README queda como está).
 
 ## Más
 

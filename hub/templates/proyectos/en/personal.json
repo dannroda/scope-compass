@@ -1,0 +1,13 @@
+{
+  "description": "Personal project: opens in Lists (to-dos with dates, shopping) and has a board for one-off projects",
+  "config": {
+    "views": ["lists", "board"]
+  },
+  "milestones": {
+    "m00": { "code": "G", "order": 0, "title": "General", "goal": "One-off projects with stages or steps. What you only check off goes in a list.", "done_when": [] }
+  },
+  "lists": {
+    "to-do": { "title": "To do", "order": 1, "items": [] },
+    "shopping": { "title": "Shopping", "order": 2, "items": [] }
+  }
+}

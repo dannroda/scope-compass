@@ -105,7 +105,7 @@ test('clean-room (§16.6, m30-04): reglas en AGENTS.md y docs/, patrones prohibi
 test('vacio (por defecto): lo de siempre, sin datos ni export', async () => {
   const r = await init('nada');
   assert.equal(r.code, 0, r.err);
-  assert.deepEqual(JSON.parse(await readFile(join(r.p, 'compass', 'config.json'), 'utf8')), { export_md: 'docs/tareas.md', port: 4711, project: 'nada' });
+  assert.deepEqual(JSON.parse(await readFile(join(r.p, 'compass', 'config.json'), 'utf8')), { export_md: 'docs/tareas.md', language: 'es', port: 4711, project: 'nada' });
   assert.deepEqual(await readdir(join(r.p, 'compass', 'milestones')), []);
   assert.ok(!existsSync(join(r.p, 'compass', 'lists')));
   assert.ok(!existsSync(join(r.p, 'docs')));

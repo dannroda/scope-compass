@@ -585,3 +585,12 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Elegir un lado ante el mismo campo cambiado distinto (el más nuevo por `updated_at`): pierde trabajo en silencio; el conflicto se ve y se decide.
   - `merge=union` de git: junta líneas sin entender el JSON, y deja archivos inválidos.
   - Registrar el driver en la config global del usuario: tocaría todos sus repos; va en el del tablero.
+
+## D56 · Interfaz en dos idiomas: el castellano del código como clave
+
+- **Qué:** cada texto visible se envuelve en ``T`…` `` (JS) o `I18n.t("…")` (GDScript) y su inglés está en un `.po` por área. El idioma sigue a `SCOMPASS_LANG`, al que eligió el usuario (uno para la CLI, la web y el Inicio) y después al sistema, al navegador o al editor de Godot. El tablero tiene su propio idioma (`config.json › language`) para lo que se escribe en él (spec §45).
+- **Por qué:** el código y los tests ya están en castellano. Con el castellano como clave, el castellano no necesita catálogo, los tests siguen buscando los mismos textos y alcanza con envolver cada uno. El `.po` lo carga Godot sin código y es el formato de godot-agent. Un solo idioma elegido evita que la web y los errores del hub salgan en idiomas distintos, y que el export cambie de idioma según quién escribió último.
+- **Descartado:**
+  - Claves abstractas (`task.moved`) o el inglés como texto fuente, como godot-agent (D46 allá): obliga a reescribir cada texto y cada test.
+  - JSON en lugar de `.po`, o una librería (i18next): una dependencia más para lo que hacen 200 líneas.
+  - Un selector por superficie (localStorage en la web): la web y el hub podían quedar en idiomas distintos.

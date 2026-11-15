@@ -125,7 +125,7 @@ test('init crea un compass/ válido y no pisa uno existente', async () => {
   const r = await cli(['--dir', p, 'init', '--project', 'Nuevo']);
   assert.equal(r.code, 0, r.err);
   assert.deepEqual((await readdir(join(p, 'compass'))).sort(), ['.gdignore', '.gitattributes', 'AGENTS.md', 'README.md', 'config.json', 'milestones', 'schema', 'tasks']);
-  assert.deepEqual(JSON.parse(await readFile(join(p, 'compass', 'config.json'), 'utf8')), { export_md: 'docs/tareas.md', port: 4711, project: 'Nuevo' });
+  assert.deepEqual(JSON.parse(await readFile(join(p, 'compass', 'config.json'), 'utf8')), { export_md: 'docs/tareas.md', language: 'es', port: 4711, project: 'Nuevo' });
   assert.equal((await cli(['list', '--json'], { cwd: p })).json().tasks.length, 0);
   assert.equal((await cli(['--dir', p, 'init'])).code, 1);
   // update: recién creada está al día; con el schema y la guía viejos, --check avisa y update los repone

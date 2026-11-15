@@ -18,6 +18,7 @@ Todo corre en tu equipo: sin cuentas, sin nube, sin telemetría. Lo único que h
 - **Decisiones de los agentes.** Cuando un agente de IA trabaja una tarea, registra lo que decidió solo y las preguntas que necesita que contestes. Se revisan desde el tablero o desde el Inicio.
 - **Inicio.** Una página con todos los proyectos del equipo: lo vencido o de hoy, la semana que viene, captura rápida, listas con fecha límite y repetición, y plantillas para empezar un proyecto de juego, personal o vacío. Sirve el tablero de cada proyecto en un solo puerto, con un ícono en la bandeja.
 - **Servidor MCP para Claude Code.** `scompass mcp` ofrece la CLI como herramientas tipadas (listar, ver, crear y mover tareas, tildar pasos, registrar decisiones, buscar en los documentos…), así un agente trabaja el tablero sin comandos de shell. La web además puede abrir un chat con el Claude Code instalado en tu equipo, con tu cuenta.
+- **Inglés y castellano.** La CLI, la web, el Inicio, el MCP y el dock siguen el idioma del sistema, del navegador o del editor de Godot; `scompass lang es|en` o el selector de Ajustes eligen uno. Los tableros nuevos (su guía para agentes, el export y la plantilla) salen en el idioma en que se crean.
 - **Dock de Godot.** El dock "Tablero" del editor de Godot 4.8 muestra las tareas, abre los scripts y las escenas que cita una tarea y puede levantar el hub. Lee el tablero por su cuenta; para editar necesita el hub.
 - **El teléfono en la red de casa.** Con `--lan`, el tablero y el Inicio se abren desde el teléfono en una red de confianza.
 

@@ -1,0 +1,18 @@
+{
+  "description": "Game project: board by milestones, lists for ideas and assets, and the documents in docs/, with the GDD",
+  "config": {
+    "views": ["board", "lists", "docs", "files"],
+    "docs": [{ "alias": "gdd", "path": "docs/gdd.md" }, { "alias": "docs", "path": "docs/**/*.md" }],
+    "description_templates": { "bug": "Steps to reproduce:\n1. \n\nExpected:\n\nWhat happened:" }
+  },
+  "milestones": {
+    "m00": { "code": "M0", "order": 0, "title": "Prototype", "goal": "The minimum playable to test the idea.", "done_when": [] }
+  },
+  "lists": {
+    "loose-ideas": { "title": "Loose ideas", "order": 1, "items": [] },
+    "assets-to-get": { "title": "Assets to get", "order": 2, "items": [] }
+  },
+  "files": {
+    "docs/gdd.md": "# Game design document\n<!-- id: gdd -->\n\n## Idea\n<!-- id: idea -->\n\nWhat the game is about, in one paragraph.\n\n## Mechanics\n<!-- id: mechanics -->\n\n## Open decisions\n<!-- id: open-decisions -->\n"
+  }
+}

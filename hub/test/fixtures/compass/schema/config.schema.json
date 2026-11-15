@@ -82,6 +82,14 @@
         ]
       }
     },
+    "language": {
+      "type": "string",
+      "enum": [
+        "es",
+        "en"
+      ],
+      "description": "Idioma del tablero (§45): el de compass/AGENTS.md, compass/README.md, el export markdown y los datos de la plantilla. Sin él, es"
+    },
     "decisions_doc": {
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9_/-]*$",
