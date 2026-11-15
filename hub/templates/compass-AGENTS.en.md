@@ -265,7 +265,7 @@ The CLI, the MCP, the web, Home and the dock speak Spanish or English (§45). Me
 
 ## More
 
-- `scompass --help`: all commands. A new project is created with `scompass init --template juego|personal|vacio` (or `game|personal|empty`).
+- `scompass --help`: all commands. A new project is created with `scompass init --template juego|personal|vacio|clean-room` (or `game|personal|empty`; `clean-room`: a clean-room reimplementation, with its rules in `docs/clean-room.md` and example forbidden patterns).
 - `compass/README.md`: file format and manual handling with git.
 - `compass/schema/`: JSON Schema for tasks, milestones, lists, playtest sessions and `config.json` (`views` picks the web's tabs: `board`, `lists`, `playtest`, `decisions`, `docs`, `files`).
 - Web settings (the gear on the board and on Home): preferences of whoever is looking, saved in their browser and not in `compass/`. For now, fantasy borders: pixel-art frames on buttons, cards and panels, always with the dark theme.

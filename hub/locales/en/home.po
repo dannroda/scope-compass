@@ -37,6 +37,9 @@ msgstr "Personal"
 msgid "Vacío"
 msgstr "Empty"
 
+msgid "Sala limpia"
+msgstr "Clean room"
+
 msgid "sin conexión con el Inicio"
 msgstr "no connection to Home"
 
