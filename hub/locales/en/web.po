@@ -1615,6 +1615,9 @@ msgstr "This conversation: "
 msgid " tokens · "
 msgstr " tokens · "
 
+msgid "Cuenta y límites"
+msgstr "Account and limits"
+
 msgid "con la tarea "
 msgstr "with the task "
 

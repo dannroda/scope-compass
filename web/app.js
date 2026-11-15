@@ -2780,7 +2780,9 @@
   // sigue a la derecha). Solo aparece si /api/chats responde: fuera de 127.0.0.1 el hub dice 403 y no hay botón.
   // La conversación se arma con la copia del hub (entries) más el turno en curso, que llega por el WebSocket.
   const CHAT_OPEN = 'chatOpen:' + BASE, CHAT_ID = 'chatId:' + BASE;
-  const C = { available: false, claude: true, open: pref(CHAT_OPEN) === '1', chats: [], id: pref(CHAT_ID) || null, entries: [], turn: null,
+  // En el teléfono (§49, 29.4) el panel va a pantalla completa: Atrás lo cierra, sigue al teclado y no se reabre solo.
+  const NARROW = matchMedia('(max-width: 760px)');
+  const C = { available: false, claude: true, open: pref(CHAT_OPEN) === '1' && !NARROW.matches, metaOpen: false, chats: [], id: pref(CHAT_ID) || null, entries: [], turn: null,
     listing: false, error: '', attach: null, confirmRemove: null,
     // Perfiles de Claude Code con su cuenta y sus límites (§33), el del proyecto y el elegido para una conversación nueva.
     profiles: [], profile: 'default', newProfile: null };
@@ -2843,13 +2845,34 @@
     renderChat();
     chatInput.focus();
   }
-  function chatToggle(open = !C.open) {
+  function chatToggle(open = !C.open, { fromHistory = false } = {}) {
+    const was = C.open;
     C.open = open;
+    // Una entrada en la historia, así Atrás cierra el chat y no se va del tablero (como el detalle, M16).
+    if (NARROW.matches && !fromHistory) {
+      if (open && !was) history.pushState({ ...history.state, chat: true }, '', location.href);
+      else if (!open && was && history.state?.chat) history.back();
+    }
     pref(CHAT_OPEN, open ? '1' : '0');
     if (open && !C.profiles.length) chatProfiles();
     if (open && C.id) chatLoad().then(renderChat); else renderChat();
     if (open) chatInput.focus();
+    fitChat();
   }
+  addEventListener('popstate', () => { if (C.open && NARROW.matches && !history.state?.chat) chatToggle(false, { fromHistory: true }); });
+  // Con el teclado abierto, el panel ocupa solo lo que se ve (visualViewport): el cuadro de texto queda a la vista. En
+  // iOS el teclado no achica la página; en Android, con interactive-widget=resizes-content, sí, y esto no cambia nada.
+  function fitChat() {
+    const vv = window.visualViewport;
+    if (!vv || !NARROW.matches || !C.open) { chatEl.style.removeProperty('top'); chatEl.style.removeProperty('height'); return; }
+    const stick = chatAtBottom();
+    chatEl.style.top = vv.offsetTop + 'px';
+    chatEl.style.height = vv.height + 'px';
+    if (stick) chatScroll();
+  }
+  window.visualViewport?.addEventListener('resize', fitChat);
+  window.visualViewport?.addEventListener('scroll', fitChat);
+  NARROW.addEventListener('change', () => { fitChat(); renderChat(); });
   // La tarea abierta en el detalle va con el mensaje, salvo que se la quite (vale hasta abrir otra).
   const chatTask = () => (S.openId && C.attach !== S.openId ? S.tasks.find((t) => t.id === S.openId) ?? null : null);
 
@@ -2984,7 +3007,12 @@
       const total = C.entries.reduce((n, e) => n + tokensOf(e.tokens), 0), cost = C.entries.reduce((n, e) => n + (e.cost ?? 0), 0);
       if (total || cost) kids.push(h('div', { class: 'chat-total' }, T('Esta conversación: ') + NUM.format(total) + T(' tokens · ') + USD.format(cost)));
     }
-    meta.replaceChildren(...kids);
+    // En el teléfono, la cuenta y los límites van plegados: el lugar es para la conversación.
+    if (NARROW.matches) {
+      const brief = p ? p.label + (p.account?.email ? ' · ' + p.account.email : '') : T('Cuenta y límites');
+      meta.replaceChildren(h('details', { class: 'chat-fold', open: C.metaOpen, ontoggle: (e) => { C.metaOpen = e.target.open; } },
+        h('summary', null, brief), ...kids));
+    } else meta.replaceChildren(...kids);
   }
   function chatEntry(e) {
     if (e.role === 'user') {
@@ -3067,6 +3095,7 @@
   // Responder una pregunta en la sesión que la hizo (25.8): el hub la retoma con --resume y le manda la respuesta.
   async function chatAnswer(t, d) {
     const text = T('Respuesta a tu pregunta en la tarea ') + (t.code ? t.code + ' ' : '') + '(' + t.id + '): «' + d.text + '»\n\n' + d.reply;
+    if (NARROW.matches && !C.open) history.pushState({ ...history.state, chat: true }, '', location.href);
     C.open = true;
     pref(CHAT_OPEN, '1');
     try {

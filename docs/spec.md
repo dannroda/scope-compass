@@ -1749,6 +1749,13 @@ Hoy el chat solo atiende a 127.0.0.1, también con `--lan` (§32, D43). Sin logi
   - Cada pedido válido anota `last_seen`, como mucho una vez por minuto.
   - Nada más cambia de permisos. El agente sigue con lectura y el tablero (§32), sin Bash ni Edit. El resto de la API con `--lan` ya estaba abierto a la red (D36) y no depende de la cookie.
   - Con token de hosting (§12) el chat sigue apagado.
+- **El panel en el teléfono** (hasta 760 px de ancho, como el detalle de la tarea):
+  - Va a pantalla completa encima del tablero, que no se desplaza por debajo.
+  - Abrirlo agrega una entrada a la historia: *Atrás* lo cierra sin salir del tablero, y × la saca.
+  - Con el teclado abierto, la altura sigue a `visualViewport` (en iOS el teclado no achica la página). En Android, `interactive-widget=resizes-content` hace lo mismo.
+  - El cuadro de texto usa 16 px, para que iOS no haga zoom.
+  - La cuenta y los límites quedan plegados en una línea con el perfil.
+  - No se vuelve a abrir solo al recargar.
 - **Revocar:**
   - En el Inicio, *Dispositivos vinculados* muestra el nombre, cuándo se vinculó y el último uso, con *Desvincular*. Por la CLI: `scompass devices` y `scompass devices rm <id>`.
   - Desvincular borra la entrada: el próximo pedido da 403, y los WebSocket abiertos de ese dispositivo se cierran enseguida (código 4403). El Inicio mira `devices.json` cada segundo, así que también los cierra si se desvinculó con la CLI, desde otro proceso.

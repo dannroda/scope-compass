@@ -209,3 +209,45 @@ test('cuenta, perfil y uso: el selector en una conversación nueva, las barras d
   assert.equal(await page.$eval('#chat-profile', (s) => s.value), 'trabajo');
 });
 
+
+test('en el teléfono (29.4): pantalla completa, Atrás lo cierra, sigue al teclado, la cuenta plegada y no se reabre solo', async () => {
+  await serve();
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  contexts.push(context);
+  const page = await open('127.0.0.1', '', context);
+  const before = page.url();
+  await page.click('#chat-btn');
+  await page.waitForSelector('#chat:not([hidden])');
+  assert.deepEqual(await page.locator('#chat').boundingBox(), { x: 0, y: 0, width: 390, height: 844 });
+  assert.equal(await page.evaluate(() => getComputedStyle(document.body).overflow), 'hidden', 'el tablero no se desplaza por debajo');
+  assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('chat-input')).fontSize), '16px');
+  // La cuenta y los límites, plegados.
+  await page.waitForSelector('#chat .chat-fold');
+  assert.equal(await page.locator('#chat .chat-fold').evaluate((d) => d.open), false);
+  await send(page, 'hola');
+  await page.waitForSelector('#chat .msg.bot .msg-text:text-is("eco: hola")');
+  // El teclado achica lo que se ve: el panel sigue al visualViewport y el cuadro de texto queda a la vista.
+  await page.setViewportSize({ width: 390, height: 480 });
+  await page.waitForFunction(() => document.getElementById('chat').getBoundingClientRect().height <= 480);
+  const box = await page.locator('#chat-input').boundingBox();
+  assert.ok(box.y + box.height <= 480, `el cuadro de texto termina en ${box.y + box.height}`);
+  await page.setViewportSize({ width: 390, height: 844 });
+  // Atrás cierra el chat sin irse del tablero.
+  await page.goBack();
+  await page.waitForSelector('#chat', { state: 'hidden' });
+  assert.equal(page.url(), before);
+  assert.equal(await page.isVisible('.card'), true);
+  // Con ×, se cierra y la entrada de la historia se va: Atrás no lo vuelve a abrir.
+  await page.click('#chat-btn');
+  await page.waitForSelector('#chat:not([hidden])');
+  await page.click('#chat .chat-head .close');
+  await page.waitForSelector('#chat', { state: 'hidden' });
+  assert.equal(await page.evaluate(() => history.state?.chat ?? null), null);
+  // Abierto al recargar, en el teléfono arranca cerrado.
+  await page.click('#chat-btn');
+  await page.waitForSelector('#chat:not([hidden])');
+  await page.reload();
+  await page.waitForSelector('.card');
+  await page.waitForTimeout(200);
+  assert.equal(await page.isVisible('#chat'), false);
+});
