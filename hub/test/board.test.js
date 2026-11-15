@@ -166,3 +166,113 @@ test('tablero enlazado en el hub: estado de git del tablero, capturas, watcher y
     for (const d of [dir, board, outside]) await rm(d, { recursive: true, force: true });
   }
 });
+
+// Repo de todos los tableros: SCOMPASS_BOARDS es la raíz de un repo y cada tablero es una subcarpeta.
+async function withSharedBoards(fn) {
+  const boards = await mkdtemp(join(tmpdir(), 'scompass-boards-'));
+  const prev = process.env.SCOMPASS_BOARDS;
+  process.env.SCOMPASS_BOARDS = boards;
+  const g = (...a) => execFileSync('git', ['-C', boards, '-c', 'user.name=Ana', '-c', 'user.email=a@a', ...a], { encoding: 'utf8' });
+  try {
+    g('init', '-q', '-b', 'main');
+    g('config', 'user.name', 'Ana'); g('config', 'user.email', 'a@a');
+    await fn(boards, g);
+  } finally {
+    if (prev === undefined) delete process.env.SCOMPASS_BOARDS; else process.env.SCOMPASS_BOARDS = prev;
+    await rm(boards, { recursive: true, force: true });
+  }
+}
+
+test('repo compartido: board move trae el historial en un commit y no toca lo sin commitear de otro tablero', async () => {
+  await withSharedBoards(async (boards, g) => {
+    // Otro tablero con algo sin commitear: el commit de board move no lo puede arrastrar ni pedir el árbol limpio.
+    await mkdir(join(boards, 'otro'));
+    await writeFile(join(boards, 'otro', 'config.json'), '{}\n');
+    g('add', '-A'); g('commit', '-qm', 'otro');
+    await writeFile(join(boards, 'otro', 'config.json'), '{"x":1}\n');
+
+    const { dir, git, cli } = await project();
+    try {
+      git('add', '-A'); git('commit', '-qm', 'primero');
+      const id = JSON.parse((await cli('list', '--json')).out).tasks[0].id;
+      await cli('move', id, 'doing');
+      git('add', '-A'); git('commit', '-qm', 'segundo');
+      await cli('move', id, 'review');
+
+      const r = await cli('board', 'move', 'juego', '--json');
+      assert.equal(r.code, 0, r.err);
+      const res = JSON.parse(r.out);
+      assert.equal(res.shared, true);
+      assert.equal(res.history, true);
+      assert.ok(!existsSync(join(boards, 'juego', '.git')), 'sin repo propio');
+      assert.equal(realpathSync(join(dir, 'compass')), realpathSync(join(boards, 'juego')));
+
+      // Un commit nuevo con dos padres: el HEAD de antes y la historia partida de compass/.
+      assert.equal(g('rev-list', '--count', '--merges', 'HEAD').trim(), '1');
+      assert.match(g('log', '-1', '--format=%s'), /^Tablero .* \(juego\/\), con su historial/);
+      assert.deepEqual(g('log', '--format=%s', '--', 'juego/tasks').trim().split('\n'), ['segundo', 'primero']);
+      // Lo del otro tablero sigue sin commitear, y lo de este que no estaba commiteado también.
+      const st = g('status', '--porcelain');
+      assert.match(st, /^ M otro\/config\.json$/m);
+      assert.match(st, new RegExp(`^ M juego/tasks/${id}\\.json$`, 'm'));
+
+      // Desde el proyecto, el historial y el estado salen del repo de tableros, con rutas compass/….
+      const h = JSON.parse((await cli('history', id, '--json')).out).entries;
+      assert.deepEqual(h.map((e) => e.subject), ['Sin commitear', 'segundo', 'primero']);
+      const info = await boardInfo(dir);
+      assert.equal(info.shared, true);
+      assert.equal(info.repoDir, realpathSync(boards));
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+test('init: el tablero va a la carpeta de tableros (subcarpeta del repo compartido); --in-project y los temporales, adentro', async () => {
+  await withSharedBoards(async (boards, g) => {
+    const dir = await mkdtemp(join(tmpdir(), 'scompass-board-'));
+    const cli = (cwd, ...argv) => { let out = ''; return run([...argv, '--json'], { cwd, out: { write: (s) => { out += s; } }, err: { write() {} } }).then((code) => ({ code, out })); };
+    try {
+      execFileSync('git', ['-C', dir, 'init', '-q']);
+      // Un proyecto en /tmp crea adentro, salvo --board.
+      const local = await mkdtemp(join(tmpdir(), 'scompass-board-'));
+      assert.equal((await cli(local, 'init')).code, 0);
+      assert.equal(boardKind(local), 'local');
+      await rm(local, { recursive: true, force: true });
+
+      const r = await cli(dir, 'init', '--board', 'nuevo', '--template', 'juego');
+      assert.equal(r.code, 0);
+      const res = JSON.parse(r.out);
+      assert.equal(res.board, join(boards, 'nuevo'));
+      assert.equal(res.shared, true);
+      assert.equal(res.config.export_md, 'compass/tareas.md');
+      assert.equal(boardKind(dir), 'linked');
+      assert.ok(!existsSync(join(boards, 'nuevo', '.git')));
+      assert.ok(existsSync(join(boards, 'nuevo', 'config.json')));
+      assert.ok(existsSync(join(dir, 'docs', 'gdd.md')), 'los documentos de la plantilla van al proyecto');
+      assert.match(readFileSync(join(dir, '.git', 'info', 'exclude'), 'utf8'), /^\/compass$/m);
+      assert.match(g('status', '--porcelain'), /^\?\? nuevo\/$/m);
+
+      // El mismo nombre otra vez: conflicto, y no queda nada a medio armar en el proyecto.
+      const other = await mkdtemp(join(tmpdir(), 'scompass-board-'));
+      assert.equal((await cli(other, 'init', '--board', 'nuevo')).code, 1);
+      assert.equal(boardKind(other), 'none');
+      await rm(other, { recursive: true, force: true });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+test('sin repo compartido, init --board crea el tablero con su propio git', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'scompass-board-'));
+  const name = `propio-${Date.now()}`;
+  try {
+    assert.equal(await run(['init', '--board', name], { cwd: dir, out: { write() {} }, err: { write() {} } }), 0);
+    assert.ok(existsSync(join(boardsDir(), name, '.git')));
+    assert.equal((await boardInfo(dir)).shared, false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+    await rm(join(boardsDir(), name), { recursive: true, force: true });
+  }
+});

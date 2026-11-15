@@ -204,20 +204,21 @@ scompass doc diff gdd                        # cambios sin commitear y las secci
 
 ## Dónde vive el tablero
 
-`compass/` puede ser una carpeta del proyecto, en su mismo repo, o estar en un repo propio, fuera del repo del proyecto, para no publicar el tablero con el código:
+Los tableros son del usuario, no del proyecto: `scompass init` crea el tablero en `~/.local/share/scope-compass/boards/<nombre>/` (en Windows, `%LOCALAPPDATA%\scope-compass\boards\`) y `compass/` queda como un enlace (symlink; junction en Windows) que el proyecto excluye en `.git/info/exclude`. Así el tablero no se publica con el código. Los tipos:
 
-- enlazado: `compass/` es un enlace (symlink; junction en Windows) a `~/.local/share/scope-compass/boards/<nombre>/` (en Windows, `%LOCALAPPDATA%\scope-compass\boards\`), un repo de git aparte, y el proyecto lo excluye en `.git/info/exclude`;
-- submódulo: `compass/` es un submódulo de git con el repo del tablero, para compartirlo con otros.
+- enlazado: lo de arriba. Si la carpeta de tableros es la raíz de un repo de git, ese repo es el de todos los tableros y cada uno es una subcarpeta; si no, cada tablero tiene su propio repo;
+- submódulo: `compass/` es un submódulo de git con el repo del tablero, para compartirlo con otros;
+- en el proyecto: una carpeta del proyecto, en su mismo repo (`init --in-project`, los tableros de antes y los de un proyecto en `/tmp`).
 
 Para la CLI, el MCP, la web y el dock da lo mismo: siempre es `<proyecto>/compass`. Lo que cambia es dónde se commitea (`git -C compass`).
 
 ```sh
 scompass board                   # dónde está: en el proyecto, enlazado o submódulo, con su rama y su origin (--json)
-scompass board move [<nombre>]   # lo saca a boards/<nombre> con su historial; compass/ queda como enlace y fuera del índice del proyecto
+scompass board move [<nombre>]   # saca un tablero de los de antes a boards/<nombre> con su historial; compass/ queda como enlace y fuera del índice del proyecto
 scompass board link <nombre>     # en otro equipo, después de clonar el repo del tablero en boards/<nombre>: crea el enlace
 ```
 
-`board move` pasa el export markdown a `compass/tareas.md` (adentro del tablero), deja lo que no estaba commiteado sin commitear en el tablero y no commitea nada: la baja de `compass/` en el proyecto queda en su índice para commitear. No lo corras con un hub o el Inicio sirviendo el proyecto.
+`board move` pasa el export markdown a `compass/tareas.md` (adentro del tablero) y deja lo que no estaba commiteado sin commitear en el tablero; la baja de `compass/` en el proyecto queda en su índice para commitear. Con el repo de todos los tableros, el historial entra en un commit (el único que hace la app); con un repo por tablero, no commitea nada. No lo corras con un hub o el Inicio sirviendo el proyecto.
 
 ## Proyectos del equipo
 

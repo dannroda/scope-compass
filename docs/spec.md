@@ -1385,10 +1385,12 @@ Cada uno tiene su test en `hub/test/m31-criteria.test.js`.
 
 ## 36. El tablero fuera del repo del proyecto (M32)
 
-Un proyecto que se hace público no tiene que publicar su tablero (notas internas, otros proyectos, links privados). `<proyecto>/compass` sigue siendo la única ruta que usan la CLI, el hub, el MCP, la web y el dock, pero puede ser de tres tipos (`hub/src/board.js`, D46):
+Un proyecto que se hace público no tiene que publicar su tablero (notas internas, otros proyectos, links privados), así que los tableros son del usuario del sistema. `<proyecto>/compass` sigue siendo la única ruta que usan la CLI, el hub, el MCP, la web y el dock, pero puede ser de tres tipos (`hub/src/board.js`, D46):
 
-- **local:** una carpeta del proyecto, en su mismo repo (lo de siempre).
-- **enlazado:** un enlace (symlink en Linux; junction en Windows, que no pide permisos) a `<datos>/boards/<nombre>/` (`~/.local/share/scope-compass/boards`; `%LOCALAPPDATA%\scope-compass\boards`; `SCOMPASS_BOARDS` la cambia), un repo de git propio. El proyecto lo excluye en `.git/info/exclude`, no en `.gitignore`: el repo público no tiene ningún rastro.
+- **enlazado (por defecto):** un enlace (symlink en Linux; junction en Windows, que no pide permisos) a `<datos>/boards/<nombre>/` (`~/.local/share/scope-compass/boards`; `%LOCALAPPDATA%\scope-compass\boards`; `SCOMPASS_BOARDS` la cambia). El proyecto lo excluye en `.git/info/exclude`, no en `.gitignore`: el repo público no tiene ningún rastro. El git es uno de dos:
+  - **repo de todos los tableros:** si la carpeta de tableros es la raíz de un repo (`git init` o un clon, con un remoto en GitHub si se quiere), cada tablero es una subcarpeta sin `.git` propio. Una carpeta de tableros dentro de otro repo (un `$HOME` versionado) no cuenta.
+  - **un repo por tablero:** si no, cada tablero tiene su propio `git init`, con su remoto si se quiere.
+- **local:** una carpeta del proyecto, en su mismo repo: `init --in-project`, los tableros de antes de esto y los de un proyecto en una carpeta temporal (como el registro del Inicio, que no los anota).
 - **submódulo:** `compass/` con su propio `.git` dentro del proyecto, para compartir el tablero con otros.
 
 Qué cambia según el tipo:
@@ -1399,8 +1401,9 @@ Qué cambia según el tipo:
 
 Comandos:
 
+- `scompass init`: crea el tablero en `<datos>/boards/<nombre>` (el nombre es `--board`, o el de `--project`, o el de la carpeta; uno que ya existe es un conflicto y sugiere `board link`) y lo enlaza. Los documentos de la plantilla (el GDD) van al proyecto. El export por defecto es `compass/tareas.md`. Si algo falla, no quedan ni el enlace ni la carpeta.
 - `scompass board`: el tipo, la carpeta real, la rama y el origin.
-- `scompass board move [<nombre>]`: saca un tablero local a `<datos>/boards/<nombre>` (por defecto, el `project` de `config.json`). Si `compass/` está en el repo del proyecto, su historial pasa al repo nuevo con `git subtree split`, con `compass/` como raíz. Lo de disco, también lo sin commitear, se copia encima y queda sin commitear. `compass/` se saca del índice del proyecto (queda para commitear), se reemplaza por el enlace y se excluye. Un export markdown fuera de `compass/` pasa a `compass/tareas.md` y el viejo se borra del disco y del índice. No commitea nada (§4.5) y se niega con un hub o el Inicio sirviendo el proyecto.
+- `scompass board move [<nombre>]`: saca un tablero local a `<datos>/boards/<nombre>` (por defecto, el `project` de `config.json`). Si `compass/` está en el repo del proyecto, su historial se parte con `git subtree split` (con `compass/` como raíz). Con un repo por tablero, se clona como el repo nuevo. Con el repo de todos los tableros, se reescribe commit por commit con `<nombre>/` adelante (mismos autores, fechas y mensajes; si no, `git log -- <nombre>/tasks/x.json` se corta, como pasa con `git subtree add`) y entra en un commit con dos padres, armado con un índice aparte para no pedir el árbol limpio: en ese repo casi siempre hay algo sin commitear de otro tablero. Es el único commit que hace la app. Lo de disco, también lo sin commitear, se copia encima y queda sin commitear. `compass/` se saca del índice del proyecto (queda para commitear), se reemplaza por el enlace y se excluye. Un export markdown fuera de `compass/` pasa a `compass/tareas.md` y el viejo se borra del disco y del índice. Fuera de ese commit no commitea nada (§4.5), y se niega con un hub o el Inicio sirviendo el proyecto.
 - `scompass board link <nombre|carpeta>`: crea el enlace a un tablero que ya existe (en otro equipo, después de clonar su repo) y lo excluye.
 
 ### Criterios de aceptación
@@ -1408,4 +1411,5 @@ Comandos:
 - [x] Después de `board move`, el tablero tiene el historial de `compass/` y lo sin commitear; el proyecto tiene `compass/` fuera del índice y en `info/exclude`.
 - [x] Con el tablero enlazado andan escribir, el export (adentro del tablero), el historial, el estado de git, las capturas y el watcher.
 - [x] `board link` en otro proyecto ve el mismo tablero.
+- [x] Con el repo de todos los tableros, `board move` trae el historial (el de cada tarea también) sin tocar lo sin commitear de otros tableros, e `init` crea una subcarpeta sin `.git`.
 - [ ] Probado en Windows (junction).

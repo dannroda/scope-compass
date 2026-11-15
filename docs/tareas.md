@@ -3568,11 +3568,16 @@ En scope-compass mismo: mover compass/ y docs/tareas.md al repo de tableros ante
 - [x] Tests: tablero enlazado (watcher, imágenes, historial, estado), move con historial, link
 - [x] Docs: AGENTS.md (las tres copias), instalar.md, spec y decisiones
 - [ ] Mover el tablero de scope-compass a la carpeta de datos (lo corre el usuario)
+- [x] Repo compartido: si la carpeta de tableros es la raíz de un repo, cada tablero es una subcarpeta sin .git propio
+  board move con historial lo agrega con un commit armado a mano (read-tree --prefix en un índice aparte, commit-tree con dos padres, update-ref): no pide el árbol limpio, así no choca con lo sin commitear de otros tableros.
+- [x] init crea el tablero en la carpeta de tableros y lo enlaza (--in-project para adentro; --board <nombre>)
+  Un proyecto en una carpeta temporal sigue creando adentro, como el registro del Inicio, que no anota los temporales. Export por defecto en compass/tareas.md.
 
 **Decisiones:**
-- ? ¿Un repo git por tablero (cada uno con su origin, y tu repo privado de tableros como superproyecto con submódulos) o un solo repo con todos los tableros en carpetas? · pregunta abierta
+- ✓ ¿Un repo git por tablero (cada uno con su origin, y tu repo privado de tableros como superproyecto con submódulos) o un solo repo con todos los tableros en carpetas?
   Por qué: Con un repo por tablero, compartir uno es agregarlo como submódulo en el proyecto. Con un solo repo es más simple para tu caso, pero para compartir uno hay que separarlo antes.
   Descartado: Un solo repo con todos los tableros; un repo por tablero sin superproyecto (cada uno suelto, con su origin).
+  Respuesta: Los dos modos: un repo por tablero o uno para todos. El usuario va a usar uno para todos. Además, los tableros pasan a ser del usuario por defecto: init los crea en la carpeta de tableros (--in-project para el caso de antes). Con el repo compartido, board move puede hacer un commit (git subtree add) para conservar el historial; es la única vez que la app commitea.
 - ! Los tableros van en la carpeta de datos del usuario (~/.local/share/scope-compass/boards, %LOCALAPPDATA% en Windows), no en la de config (~/.config). · sin revisar
   Por qué: Según XDG, ~/.config es para preferencias y ~/.local/share para datos; un tablero son datos. projects.js ya tiene las dos carpetas (líneas 19 y 31), así que no hace falta inventar ninguna.
   Descartado: ~/.config/scope-compass/boards, como dijo el usuario ("userconfig"), al lado de projects.json.
@@ -3580,20 +3585,23 @@ En scope-compass mismo: mover compass/ y docs/tareas.md al repo de tableros ante
   Por qué: <proyecto>/compass está fijo en unos 100 lugares (hub, CLI, MCP, addon, rutas de imágenes compass/images/… guardadas en las tareas). Con el enlace, todo eso sigue igual y el submódulo es el mismo caso. Cambian el git del tablero (estado e historial con git -C compass) y los chequeos de rutas, que ahora aceptan lo que está dentro del tablero enlazado. Con info/exclude, el repo del proyecto no tiene ningún rastro (ni una línea en .gitignore). La pregunta de un repo por tablero o uno con todos queda libre: los dos funcionan, porque git -C compass encuentra el repo que corresponda.
   Descartado: Un registro proyecto → tablero en projects.json y que el hub, la CLI, el MCP, el addon y las rutas de imágenes resuelvan la carpeta del tablero (lo de la propuesta original): toca casi todo y en otra máquina hay que volver a anotarlo igual. Un archivo puntero en el proyecto: deja rastro en el repo público.
 
-**Prueba:** hub/test/board.test.js: board move con historial (subtree split), lo sin commitear, export a compass/tareas.md, info/exclude y baja del índice; board move sin git y board link en otro proyecto; con el tablero enlazado, el hub da el estado de git del tablero, guarda y sirve capturas, el watcher ve cambios de afuera y realInside acepta el tablero pero no otra carpeta. A mano: scompass board move en un proyecto de prueba, después move, image add, history y board link en un segundo proyecto.
+**Prueba:** hub/test/board.test.js (6 tests): board move con un repo por tablero (historial, lo sin commitear, export, info/exclude, baja del índice); sin git y board link; con el tablero enlazado, estado de git, capturas, watcher y realInside; repo compartido: board move con historial en un commit con dos padres, sin tocar lo sin commitear de otro tablero, y el historial de la tarea completo; init en la carpeta de tableros (subcarpeta sin .git, export compass/tareas.md, conflicto de nombre sin restos), --in-project y temporales adentro; init sin repo compartido con su propio git. A mano: board move del tablero real de scope-compass sobre un clon.
 
 **Notas:** Hecho (2026-11-14):
-- hub/src/board.js: boardKind (none, local, linked, repo), boardInfo, linkedTarget, excludeBoard (/compass en .git/info/exclude, con el prefijo si el proyecto es una subcarpeta del repo), linkBoard y moveBoard. move usa git subtree split -b <rama temporal> y clona esa rama con --no-local; después copia lo de disco encima, así lo sin commitear llega sin commitear. No commitea nada.
+- hub/src/board.js: boardKind (none, local, linked, repo), boardInfo (con shared y repoDir), linkedTarget, excludeBoard (/compass en .git/info/exclude, con el prefijo si el proyecto es una subcarpeta del repo), sharedRepo, newBoard, linkBoard y moveBoard.
+- Repo de todos los tableros: si la carpeta de tableros es la raíz de un repo (no una carpeta dentro de otro, como un $HOME versionado), cada tablero es una subcarpeta sin .git. Si no, cada tablero tiene su git init.
+- board move: subtree split -b <rama temporal>. Con un repo por tablero, clon con --no-local. Con el repo compartido, importHistory: fetch, reescritura commit por commit con <nombre>/ adelante (prefixHistory: mktree + commit-tree con los mismos autores, fechas y mensajes; sin esto, git log -- <nombre>/tasks/x.json se corta en el commit de entrada, como con git subtree add) y un commit con dos padres armado con GIT_INDEX_FILE aparte, que no pide el árbol limpio. Después copia lo de disco encima: lo sin commitear queda sin commitear. Probado con un clon de scope-compass: 199 commits en 4 s, y history de una tarea muestra los commits viejos.
+- init: crea el tablero en la carpeta de tableros y lo enlaza (newBoard). --board <nombre>, --in-project. Un proyecto en una carpeta temporal crea adentro (así los tests y las pruebas no ensucian la carpeta de tableros). Export por defecto compass/tareas.md. Si init falla, se borran el enlace y la carpeta.
 - paths.js: realInside acepta lo que está dentro del destino de compass/ si es un enlace a un tablero (con config.json).
 - git.js boardStatus y history.js taskHistory corren git -C compass. Las rutas siguen saliendo como compass/….
-- files-api.js imageFile: las de compass/ se miran en el disco (el git del proyecto no las lista con el tablero enlazado o como submódulo).
+- files-api.js imageFile: las de compass/ se miran en el disco.
 - CLI: scompass board, board move [nombre], board link <nombre|carpeta>. move se niega con un hub o el Inicio sirviendo el proyecto.
 - Documentado en AGENTS.md (las tres copias), instalar.md, spec §36 y D46.
 
 Falta:
 - Probar en Windows (junction) por ssh win.
-- Mover el tablero de scope-compass: detener el Inicio (y los hubs), scompass board move, commitear la baja de compass/ en el proyecto y crear el repo privado del tablero. Lo decide el usuario.
-- El dock de Godot sigue ofreciendo "Crear compass/" local; para crearlo afuera desde ahí falta UI (después del backend, como siempre).
-- npm test completo se colgó en una corrida (más de una hora, en export-md); corridos de a un archivo, los 55 pasan. No parece de este cambio, pero hay que mirarlo.
+- Mover el tablero de scope-compass: git init (o clonar el repo de tableros) en ~/.local/share/scope-compass/boards, detener el Inicio y los hubs, scompass board move y commitear la baja de compass/ en el proyecto.
+- El Inicio, al crear un proyecto en la carpeta de datos, todavía le hace git init a la carpeta del proyecto; con el tablero afuera ese repo queda vacío.
+- npm test completo se colgó una vez (más de una hora, en export-md); corridos de a un archivo pasan todos. tray.test.js (§16.8, tres hubs con --tray) falla de forma intermitente, también en el commit anterior.
 
 **Bloquea a:** Auditoría para publicar: secretos, rutas personales y enlaces privados

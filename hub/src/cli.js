@@ -3,7 +3,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import { exportMarkdown } from './export-md.js';
@@ -26,9 +26,9 @@ import { boardStatus, docDiff, docLog, docsStatus, repoFiles } from './git.js';
 import { imageFile, repoFile } from './files-api.js';
 import { dropImage, IMAGE_EXT, importImage, insideProject, isImagePath } from './images.js';
 import { taskHistory } from './history.js';
-import { boardInfo, boardsDir, linkBoard, moveBoard } from './board.js';
+import { boardInfo, boardsDir, linkBoard, moveBoard, newBoard } from './board.js';
 import { promoteDecision } from './promote.js';
-import { forgetProject, projectsFile, projectsStatus, pruneTempProjects, recordProject, ProjectsError } from './projects.js';
+import { forgetProject, isTempPath, projectsFile, projectsStatus, pruneTempProjects, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listPlaytests, listTasks } from './views.js';
 import { checkItem, freeId, newItem, repeatOf, slugify } from './lists.js';
 import { migrateSessions, nextPlaytest, sessionState } from './playtests.js';
@@ -45,9 +45,12 @@ const LAN_WARNING = 'sin login: cualquiera en esta red puede ver y editar';
 
 const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
 
-  init [--project <nombre>] [--template juego|personal|vacio]
-                                            crea compass/ en el proyecto (la plantilla trae vistas, hitos, listas y
-                                            documentos iniciales; por defecto vacio)
+  init [--project <nombre>] [--template juego|personal|vacio] [--board <nombre>] [--in-project]
+                                            crea el tablero (la plantilla trae vistas, hitos, listas y documentos
+                                            iniciales; por defecto vacio). Va a la carpeta de tableros del usuario
+                                            (--board: con otro nombre que el del proyecto) y compass/ queda como
+                                            enlace, fuera del git del proyecto; --in-project lo crea adentro, como
+                                            antes (también si el proyecto está en una carpeta temporal)
   update [--check]                          pone al día los archivos generados de compass/ (schema/ y AGENTS.md,
                                             la guía para agentes); --check solo avisa y sale con 1 si hay algo viejo
   serve [--port 4711] [--open] [--force]    levanta el hub en 127.0.0.1 (uno por proyecto; Ctrl+C para cerrar)
@@ -193,7 +196,7 @@ const OPTIONS = {
   tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, size: { type: 'string' }, assignee: { type: 'string' },
   at: { type: 'string' }, review: { type: 'boolean' }, note: { type: 'string' },
   why: { type: 'string' }, alternatives: { type: 'string' }, ask: { type: 'boolean' }, session: { type: 'string' }, reply: { type: 'string' }, decisions: { type: 'string' },
-  pending: { type: 'boolean' }, revert: { type: 'boolean' },
+  pending: { type: 'boolean' }, revert: { type: 'boolean' }, 'in-project': { type: 'boolean' }, board: { type: 'string' },
   title: { type: 'string' }, description: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
@@ -368,38 +371,53 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     throw new StoreError('io_error', 'el Inicio se cerró pero no volvió en 10 s');
   }
 
+  // El resto de init, ya con compass/ (o el enlace del tablero, m32-10) en su lugar.
+  async function initBoard(tpl, board) {
+    for (const d of ['milestones', 'tasks', 'schema']) await mkdir(join(compass, d), { recursive: true });
+    for (const k of KINDS) await copyFile(join(SCHEMA_DIR, `${k}.schema.json`), join(compass, 'schema', `${k}.schema.json`));
+    await copyFile(join(TEMPLATES, 'compass-README.md'), join(compass, 'README.md'));
+    await copyFile(join(TEMPLATES, 'compass-AGENTS.md'), join(compass, 'AGENTS.md'));
+    await copyFile(join(TEMPLATES, 'compass-gitattributes'), join(compass, '.gitattributes'));
+    await writeFile(join(compass, '.gdignore'), '');
+    const config = { project: o.project || basename(project), export_md: board ? 'compass/tareas.md' : 'docs/tareas.md', port: 4711, ...tpl.config };
+    const res = parseDoc(JSON.stringify(config), 'config', validators);
+    if (!res.ok) throw new StoreError('invalid_argument', res.message);
+    await writeFile(join(compass, 'config.json'), canonical(config));
+    for (const [id, doc] of Object.entries(tpl.milestones ?? {})) await store.put('milestones', id, doc, { ifMatch: null });
+    for (const [id, doc] of Object.entries(tpl.lists ?? {})) await store.put('lists', id, doc, { ifMatch: null });
+    // Archivos del proyecto (el GDD de la plantilla juego): solo si no existen.
+    const files = { created: [], kept: [] };
+    for (const [rel, text] of Object.entries(tpl.files ?? {})) {
+      const path = join(project, rel);
+      if (existsSync(path)) { files.kept.push(rel); continue; }
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, text);
+      files.created.push(rel);
+    }
+    // Con datos iniciales, el export ya los muestra; sin datos (vacio) se genera en la primera escritura, como antes.
+    if (Object.keys(tpl.milestones ?? {}).length + Object.keys(tpl.lists ?? {}).length) await exportMarkdown(project, await store.loadAll());
+    try { await recordProject(project, { auto: true }); } catch (e) { warn(`aviso: no se anotó el proyecto en ${projectsFile()}: ${e.message}`); }
+    const extra = [...files.created.map((f) => `Creado ${f}`), ...files.kept.map((f) => `Ya existía ${f}: no se tocó`)];
+    return done({ dir: compass, config, template: tpl.name, files, ...(board && { board: board.target, shared: board.shared }) },
+      [`Creado ${board ? `${board.target} (plantilla ${tpl.name}), enlazado desde ${compass}` : `${compass} (plantilla ${tpl.name})`}`, ...extra, AGENTS_HINT].join('\n'));
+  }
+
   const commands = {
     async init() {
       if (existsSync(join(compass, 'config.json'))) throw new StoreError('conflict', `ya existe ${join(compass, 'config.json')}`);
       // Plantilla (spec §16.6, D25): config prearmada + datos iniciales, sin código propio. Se valida antes de crear nada.
       const tpl = await loadTemplate(o.template ?? 'vacio');
-      for (const d of ['milestones', 'tasks', 'schema']) await mkdir(join(compass, d), { recursive: true });
-      for (const k of KINDS) await copyFile(join(SCHEMA_DIR, `${k}.schema.json`), join(compass, 'schema', `${k}.schema.json`));
-      await copyFile(join(TEMPLATES, 'compass-README.md'), join(compass, 'README.md'));
-      await copyFile(join(TEMPLATES, 'compass-AGENTS.md'), join(compass, 'AGENTS.md'));
-      await copyFile(join(TEMPLATES, 'compass-gitattributes'), join(compass, '.gitattributes'));
-      await writeFile(join(compass, '.gdignore'), '');
-      const config = { project: o.project || basename(project), export_md: 'docs/tareas.md', port: 4711, ...tpl.config };
-      const res = parseDoc(JSON.stringify(config), 'config', validators);
-      if (!res.ok) throw new StoreError('invalid_argument', res.message);
-      await writeFile(join(compass, 'config.json'), canonical(config));
-      for (const [id, doc] of Object.entries(tpl.milestones ?? {})) await store.put('milestones', id, doc, { ifMatch: null });
-      for (const [id, doc] of Object.entries(tpl.lists ?? {})) await store.put('lists', id, doc, { ifMatch: null });
-      // Archivos del proyecto (el GDD de la plantilla juego): solo si no existen.
-      const files = { created: [], kept: [] };
-      for (const [rel, text] of Object.entries(tpl.files ?? {})) {
-        const path = join(project, rel);
-        if (existsSync(path)) { files.kept.push(rel); continue; }
-        await mkdir(dirname(path), { recursive: true });
-        await writeFile(path, text);
-        files.created.push(rel);
+      // Los tableros son del usuario (m32-10): afuera, salvo --in-project o un proyecto de prueba en /tmp (como el
+      // registro del Inicio, que no anota los temporales). --board fuerza afuera.
+      const outside = !o['in-project'] && (o.board !== undefined || !isTempPath(project));
+      const board = outside ? await newBoard(project, o.board ?? (o.project || basename(project))) : null;
+      try {
+        return await initBoard(tpl, board);
+      } catch (e) {
+        // Un tablero nuevo a medio armar no queda en la carpeta de tableros.
+        if (board) { await rm(board.path, { force: true }).catch(() => {}); await rm(board.target, { recursive: true, force: true }).catch(() => {}); }
+        throw e;
       }
-      // Con datos iniciales, el export ya los muestra; sin datos (vacio) se genera en la primera escritura, como antes.
-      if (Object.keys(tpl.milestones ?? {}).length + Object.keys(tpl.lists ?? {}).length) await exportMarkdown(project, await store.loadAll());
-      try { await recordProject(project, { auto: true }); } catch (e) { warn(`aviso: no se anotó el proyecto en ${projectsFile()}: ${e.message}`); }
-      const extra = [...files.created.map((f) => `Creado ${f}`), ...files.kept.map((f) => `Ya existía ${f}: no se tocó`)];
-      return done({ dir: compass, config, template: tpl.name, files },
-        [`Creado ${compass} (plantilla ${tpl.name})`, ...extra, AGENTS_HINT].join('\n'));
     },
 
     // schema/ y AGENTS.md al día con esta versión de Scope Compass (ver update.js).
@@ -711,9 +729,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (sub === undefined) {
         const info = await boardInfo(project);
         if (o.json) return done({ ...info, boards: boardsDir() });
-        print(`Tablero: ${KIND[info.kind]}`);
+        print(`Tablero: ${info.shared ? 'enlazado, en el repo de todos los tableros' : KIND[info.kind]}`);
         if (info.kind !== 'none') print(`  ${info.path}${info.target !== info.path ? ` → ${info.target}` : ''}`);
-        if (info.kind === 'linked' || info.kind === 'repo') print(info.repo === false ? '  sin repo de git' : `  rama ${info.branch ?? '(HEAD suelto)'} · origin ${info.remote ?? '(ninguno: git -C compass remote add origin <url>)'}`);
+        if (info.kind === 'linked' || info.kind === 'repo') print(info.repo === false ? '  sin repo de git' : `  ${info.shared ? `repo ${info.repoDir} · ` : ''}rama ${info.branch ?? '(HEAD suelto)'} · origin ${info.remote ?? `(ninguno: git -C ${info.repoDir} remote add origin <url>)`}`);
         if (info.kind === 'local') print(`Para sacarlo del repo del proyecto: scompass board move (va a ${boardsDir()})`);
         return 0;
       }
@@ -721,10 +739,10 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         // Con un hub mirando compass/, la carpeta desaparece debajo de él.
         if (hubsOf(project).length) throw new StoreError('conflict', 'hay un hub de este proyecto corriendo: detenelo (o el Inicio) antes de mover el tablero');
         const r = await moveBoard(project, arg);
-        const lines = [`Tablero movido a ${r.target}${r.history ? ', con su historial' : ''}`, `compass/ es ahora un enlace${r.exclude ? `, excluido en ${r.exclude}` : ''}`];
+        const lines = [`Tablero movido a ${r.target}${r.shared ? ', en el repo de todos los tableros' : ''}${r.history ? `, con su historial${r.shared ? ' (en un commit)' : ''}` : ''}`, `compass/ es ahora un enlace${r.exclude ? `, excluido en ${r.exclude}` : ''}`];
         if (r.exportFrom) lines.push(`El export markdown pasó de ${r.exportFrom} a ${r.exportTo} (dentro del tablero)`);
         if (r.history) lines.push('En el proyecto, compass/ quedó fuera del índice: commiteá ese cambio.');
-        lines.push(`Lo sin commitear quedó sin commitear en el tablero. Para un remoto: git -C ${r.target} remote add origin <url>`);
+        lines.push(`Lo sin commitear quedó sin commitear en el tablero.${r.shared ? '' : ` Para un remoto: git -C ${r.target} remote add origin <url>`}`);
         return done(r, lines.join('\n'));
       }
       if (sub === 'link') {

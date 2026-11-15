@@ -69,18 +69,23 @@ La guía del tablero está en `addons/scope_compass/AGENTS.md` y en `compass/AGE
 
 > El tablero de tareas se maneja con scompass; leé compass/AGENTS.md antes de tocarlo.
 
-## El tablero en un repo aparte
+## Los tableros, en la carpeta del usuario
 
-Para que el tablero no se publique con el proyecto (spec §36):
+Los tableros no van en el repo del proyecto (spec §36): `scompass init` (y "Crear compass/" del dock y del Inicio) los crea en `~/.local/share/scope-compass/boards/<nombre>/` (`%LOCALAPPDATA%\scope-compass\boards\` en Windows), y `compass/` queda como un enlace (junction en Windows) fuera del git del proyecto (`.git/info/exclude`).
+
+Para versionarlos, una de dos:
+
+- Un repo para todos los tableros: antes de crear el primero, `git init ~/.local/share/scope-compass/boards` (o clonar ahí tu repo de tableros), y opcionalmente `git -C ~/.local/share/scope-compass/boards remote add origin <url-de-un-repo-privado>`. Cada tablero es una subcarpeta.
+- Un repo por tablero: si la carpeta de tableros no es un repo, cada tablero nuevo tiene su propio `git init`; el remoto se agrega con `git -C compass remote add origin <url>`.
+
+Un tablero de antes, dentro del proyecto:
 
 ```sh
-scompass board move              # lo saca a ~/.local/share/scope-compass/boards/<nombre>, con su historial
+scompass board move              # lo saca a la carpeta de tableros, con su historial
 git commit -m "Saco el tablero"  # en el proyecto: la baja de compass/ quedó en el índice
-git -C compass remote add origin <url-de-un-repo-privado>
-git -C compass add -A && git -C compass commit -m "Tablero" && git -C compass push -u origin main
 ```
 
-`compass/` queda como un enlace (junction en Windows) y fuera del git del proyecto (`.git/info/exclude`). En otro equipo: clonar el repo del tablero en la carpeta de tableros y `scompass board link <nombre>` en el proyecto. Para compartirlo con otros, en lugar del enlace: `git submodule add <url> compass`. Antes de `board move`, detené el hub del proyecto y el Inicio.
+Con el repo de todos los tableros, el historial entra en un commit en ese repo; lo sin commitear queda sin commitear. En otro equipo: clonar el repo de tableros (o el del tablero) en la carpeta de tableros y `scompass board link <nombre>` en el proyecto. Para compartir un tablero con otros, en lugar del enlace: `git submodule add <url> compass`. Antes de `board move`, detené el hub del proyecto y el Inicio.
 
 ## Si se publica el proyecto antes que Scope Compass
 

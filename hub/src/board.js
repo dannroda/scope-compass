@@ -4,9 +4,11 @@
 //   - linked: un enlace (symlink; junction en Windows) a un tablero con su propio git en la carpeta de datos del
 //     usuario (<datos>/boards/<nombre>), excluido en .git/info/exclude: el repo del proyecto no tiene rastro de él;
 //   - repo: una carpeta con su propio .git dentro del proyecto, como un submódulo (el caso colaborativo).
+// La carpeta de tableros puede ser la raíz de un repo para todos los tableros (cada uno es una subcarpeta sin .git
+// propio) o una carpeta común, y entonces cada tablero tiene su repo (sharedRepo).
 // Lo que cambia según el tipo es qué git se usa para el estado y el historial del tablero (git -C compass, ver
 // git.js e history.js) y que las rutas dentro de un tablero enlazado cuentan como del proyecto (paths.js).
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { appendFile, readFile } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve } from 'node:path';
@@ -28,7 +30,56 @@ const gitOk = async (dir, args) => {
   return r.out;
 };
 
+// git con otro índice (GIT_INDEX_FILE), para armar un commit sin tocar el índice ni el árbol de trabajo.
+const gitEnv = (dir, args, env) => new Promise((done) => {
+  execFile('git', ['-C', dir, ...args], { timeout: 60000, windowsHide: true, maxBuffer: 32 << 20, env: { ...process.env, ...env } }, (err, stdout, stderr) => {
+    if (err) done(Promise.reject(new StoreError('io_error', `git ${args[0]}: ${(stderr || err.message).trim()}`)));
+    else done(stdout.trim());
+  });
+});
+
+// git con algo por stdin (mktree, commit-tree -F -).
+const gitIn = (dir, args, input, env = {}) => new Promise((done, fail) => {
+  const p = spawn('git', ['-C', dir, ...args], { windowsHide: true, env: { ...process.env, ...env } });
+  let out = '', err = '';
+  p.stdout.on('data', (d) => { out += d; });
+  p.stderr.on('data', (d) => { err += d; });
+  p.on('error', fail);
+  p.on('close', (code) => (code === 0 ? done(out.trim()) : fail(new StoreError('io_error', `git ${args[0]}: ${err.trim()}`))));
+  p.stdin.end(input);
+});
+
 const realOr = (p) => { try { return realpathSync(p); } catch { return resolve(p); } };
+
+/**
+ * La raíz del repo compartido de tableros, si la carpeta de tableros es la raíz de un repo (no una carpeta dentro de
+ * otro repo, como un $HOME versionado); si no, null y cada tablero tiene su propio repo.
+ */
+export async function sharedRepo() {
+  const dir = boardsDir();
+  if (!existsSync(dir)) return null;
+  const top = await git(dir, ['rev-parse', '--show-toplevel']);
+  return top.ok && realOr(top.out) === realOr(dir) ? realOr(dir) : null;
+}
+
+/**
+ * Crea la carpeta de un tablero nuevo en boardsDir()/<name>, con `git init` si no hay repo compartido, y enlaza
+ * <proyecto>/compass a ella (lo usa `init`). La carpeta queda vacía: el contenido lo escribe quien llama.
+ */
+export async function newBoard(projectDir, name) {
+  const n = folderName(name);
+  if (!n) throw new StoreError('invalid_argument', `nombre de tablero inválido: ${name}`);
+  const dest = join(boardsDir(), n);
+  if (existsSync(dest)) throw new StoreError('conflict', `ya existe el tablero ${dest}: elegí otro nombre (--board <nombre>) o enlazalo (scompass board link ${n})`);
+  const compass = join(projectDir, 'compass');
+  if ((() => { try { lstatSync(compass); return true; } catch { return false; } })()) throw new StoreError('conflict', `ya existe ${compass}`);
+  mkdirSync(dest, { recursive: true });
+  const shared = await sharedRepo();
+  if (!shared) await gitOk(dest, ['init', '-q', '-b', 'main']);
+  makeLink(dest, compass);
+  const exclude = await excludeBoard(projectDir);
+  return { path: compass, target: dest, shared: !!shared, exclude };
+}
 
 /** El tipo de tablero: 'none', 'local', 'linked' o 'repo'. */
 export function boardKind(projectDir) {
@@ -54,7 +105,11 @@ export async function boardInfo(projectDir) {
     info.remote = remote.ok ? remote.out : null;
     info.branch = branch.ok ? branch.out : null;
     // Un enlace a una carpeta sin git es válido, pero el estado y el historial del tablero quedan sin repo.
-    info.repo = (await git(path, ['rev-parse', '--git-dir'])).ok;
+    const top = await git(path, ['rev-parse', '--show-toplevel']);
+    info.repo = top.ok;
+    // shared: el tablero es una subcarpeta de un repo con varios (el de todos los tableros).
+    info.shared = top.ok && realOr(top.out) !== info.target;
+    if (top.ok) info.repoDir = realOr(top.out);
   }
   return info;
 }
@@ -106,9 +161,10 @@ export async function linkBoard(projectDir, target) {
 }
 
 /**
- * Saca el compass/ local del proyecto a boardsDir()/<name>, con su propio git, y deja el enlace. Si compass/ está en
- * el repo del proyecto, su historial pasa al repo nuevo (git subtree split) y se saca del índice del proyecto
- * (queda para commitear). Lo que no estaba commiteado se copia igual y queda sin commitear en el tablero: la app no
+ * Saca el compass/ local del proyecto a boardsDir()/<name> y deja el enlace. Sin repo compartido, el tablero tiene su
+ * propio git; con él, es una subcarpeta del repo de tableros. Si compass/ está en el repo del proyecto, su historial
+ * pasa al repo del tablero (git subtree split; con el repo compartido, en un commit, ver importHistory) y se saca del
+ * índice del proyecto (queda para commitear). Lo que no estaba commiteado se copia igual y queda sin commitear en el tablero: la app no
  * commitea (spec §4.5). El export markdown, si estaba fuera de compass/, pasa a compass/tareas.md y el viejo se
  * borra (es una copia del tablero). Devuelve qué hizo.
  */
@@ -127,8 +183,16 @@ export async function moveBoard(projectDir, name) {
   const prefix = top.ok ? (await gitOk(projectDir, ['rev-parse', '--show-prefix'])) + 'compass' : null;
   const tracked = top.ok && (await git(projectDir, ['log', '-1', '--format=%H', '--', 'compass'])).out !== '';
   mkdirSync(boardsDir(), { recursive: true });
+  const shared = await sharedRepo();
   let history = false;
-  if (tracked) {
+  if (shared) {
+    mkdirSync(dest);
+    if (tracked) {
+      history = true;
+      await importHistory({ shared, name: n, projectTop: top.out, prefix, label: config.project ?? n });
+    }
+    for (const e of readdirSync(dest)) rmSync(join(dest, e), { recursive: true, force: true });
+  } else if (tracked) {
     // subtree split arma la historia de compass/ como si siempre hubiera sido la raíz; se clona desde una rama
     // temporal del proyecto, que después se borra.
     const branch = `scompass-board-${Date.now()}`;
@@ -168,5 +232,59 @@ export async function moveBoard(projectDir, name) {
   rmSync(compass, { recursive: true, force: true });
   makeLink(dest, compass);
   const exclude = await excludeBoard(projectDir);
-  return { path: compass, target: dest, history, exclude, ...moved };
+  return { path: compass, target: dest, history, shared: !!shared, exclude, ...moved };
+}
+
+/**
+ * La historia partida de compass/ (con la raíz en el tablero), commit por commit con <name>/ adelante: mismos
+ * autores, fechas y mensajes, otros hashes. Sin esto, `git log -- <name>/tasks/x.json` (el historial de una tarea)
+ * se corta en el commit que la trae, porque antes los archivos estaban en tasks/; `git subtree add` tiene ese
+ * problema. Devuelve el commit nuevo de la punta.
+ */
+async function prefixHistory(repo, tip, name) {
+  const revs = (await gitOk(repo, ['rev-list', '--reverse', '--topo-order', tip])).split('\n').filter(Boolean);
+  const map = new Map();
+  for (const c of revs) {
+    const [tree, parents, an, ae, ad, cn, ce, cd, ...msg] = (await gitOk(repo, ['log', '-1', '--format=%T%x00%P%x00%an%x00%ae%x00%aI%x00%cn%x00%ce%x00%cI%x00%B', c])).split('\0');
+    const wrapped = await gitIn(repo, ['mktree'], `040000 tree ${tree}\t${name}\n`);
+    const ps = parents.split(' ').filter(Boolean).flatMap((p) => ['-p', map.get(p)]);
+    const env = { GIT_AUTHOR_NAME: an, GIT_AUTHOR_EMAIL: ae, GIT_AUTHOR_DATE: ad, GIT_COMMITTER_NAME: cn, GIT_COMMITTER_EMAIL: ce, GIT_COMMITTER_DATE: cd };
+    map.set(c, await gitIn(repo, ['commit-tree', wrapped, ...ps, '-F', '-'], msg.join('\0'), env));
+  }
+  return map.get(tip);
+}
+
+/**
+ * Con un repo compartido, el historial de compass/ entra como subcarpeta <name>/ en un commit con dos padres (el
+ * HEAD del repo y la historia de compass/ con <name>/ adelante, ver prefixHistory), como `git subtree add`, pero
+ * armado con un índice aparte:
+ * subtree add pide el árbol limpio, y en el repo de todos los tableros casi siempre hay algo sin commitear de otro.
+ * Es el único commit que hace la app (decisión del usuario, m32-10). Después, el índice real suma la subcarpeta y
+ * sus archivos se escriben en el disco.
+ */
+async function importHistory({ shared, name, projectTop, prefix, label }) {
+  const branch = `scompass-board-${Date.now()}`;
+  await gitOk(projectTop, ['subtree', 'split', '-q', `--prefix=${prefix}`, '-b', branch]);
+  let split;
+  try {
+    await gitOk(shared, ['fetch', '-q', '--no-tags', projectTop, `refs/heads/${branch}`]);
+    split = await gitOk(shared, ['rev-parse', 'FETCH_HEAD']);
+  } finally {
+    await git(projectTop, ['branch', '-D', branch]);
+  }
+  const head = await git(shared, ['rev-parse', '-q', '--verify', 'HEAD']);
+  const index = await gitOk(shared, ['rev-parse', '--path-format=absolute', '--git-path', `scompass-index-${Date.now()}`]);
+  const env = { GIT_INDEX_FILE: index };
+  try {
+    if (head.ok) await gitEnv(shared, ['read-tree', 'HEAD'], env);
+    await gitEnv(shared, ['read-tree', `--prefix=${name}/`, split], env);
+    const tree = await gitEnv(shared, ['write-tree'], env);
+    const history = await prefixHistory(shared, split, name);
+    const commit = await gitEnv(shared, ['commit-tree', tree, ...(head.ok ? ['-p', head.out] : []), '-p', history, '-m', `Tablero ${label} (${name}/), con su historial (scompass board move)`], {});
+    await gitOk(shared, ['update-ref', 'HEAD', commit]);
+  } finally {
+    rmSync(index, { force: true });
+  }
+  await gitOk(shared, ['read-tree', `--prefix=${name}/`, split]);
+  await gitOk(shared, ['checkout', '--', `${name}/`]);
 }
