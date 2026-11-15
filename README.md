@@ -6,9 +6,13 @@ A project organizer for video games that keeps its data in git. Tasks, milestone
 
 Everything runs on your machine: no accounts, no cloud, no telemetry. The only part that talks to an online service is the optional chat, which runs the Claude Code installed on your machine with your own account.
 
-> **Language:** the interface (web UI, Godot dock and CLI messages) and the documentation in `docs/` are currently in Spanish only. Translation is planned.
+> **Language:** the interface (web UI, Home, Godot dock, CLI and MCP) is in English and Spanish. The documentation in `docs/` is in Spanish.
 
-<!-- screenshot: board -->
+![Scope Compass board with To do, Paused, In progress, Review and Done columns, and a task open on the side with steps and decisions.](docs/images/en/board.png)
+<sub>The board in the browser: each task is a JSON file in compass/, and the open one shows its steps, its test and the agent's decisions.</sub>
+
+![Scope Compass Home: today's items from every project, the coming week and one card per project.](docs/images/en/home.png)
+<sub>Home brings every project on the machine together: what's overdue or due today, the week ahead, and agent questions waiting for an answer.</sub>
 
 ## What it does
 
@@ -22,9 +26,18 @@ Everything runs on your machine: no accounts, no cloud, no telemetry. The only p
 - **Phone on your home network.** With `--lan`, the board and Home open from your phone on a trusted network.
 - **English and Spanish.** The CLI, the web, Home, the MCP and the dock follow your system, browser or Godot editor language; `scompass lang en|es` or the language selector in Settings picks one. New boards (their agent guide, export and template) come in the language you create them in.
 
-<!-- screenshot: home -->
+More screenshots:
 
-<!-- screenshot: dock -->
+<table>
+<tr>
+<td width="50%"><img src="docs/images/en/playtest.png" alt="A playtest session with four tasks marked Works or Fails, with notes, and the task still to test open on the side."><br><sub>A playtest session: tasks are tested in order and each result, with its note, is saved in the task.</sub></td>
+<td width="50%"><img src="docs/images/en/decisions.png" alt="The decisions inbox with a decision to revert, an open question and an unreviewed decision."><br><sub>The decisions the agent made and the questions it asked you, in one place to review, revert or answer.</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/en/dock.png" alt="The Godot editor with a 2D scene and the Board dock on the right, listing the milestone's tasks by status."><br><sub>The Board dock inside Godot: the milestone's tasks, connected to the project's hub, without leaving the editor.</sub></td>
+<td width="50%"><img src="docs/images/en/phone.png" alt="Two phones: on the left the board as a single column, on the right a task with its milestone, priority and steps."><br><sub>On the phone, with scompass serve --lan: the same board, to jot things down or tick steps from the couch.</sub></td>
+</tr>
+</table>
 
 ## Principles
 

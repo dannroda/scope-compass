@@ -6,9 +6,13 @@ Un organizador de proyectos de videojuegos que guarda los datos en git. Las tare
 
 Todo corre en tu equipo: sin cuentas, sin nube, sin telemetría. Lo único que habla con un servicio en línea es el chat, que es opcional y corre el Claude Code instalado en tu equipo con tu propia cuenta.
 
-> **Idioma:** la interfaz (la web, el dock de Godot y los mensajes de la CLI) y la documentación de `docs/` están en castellano.
+> **Idioma:** la interfaz (la web, el Inicio, el dock de Godot, la CLI y el MCP) está en castellano y en inglés. La documentación de `docs/` está en castellano.
 
-<!-- screenshot: board -->
+![Tablero de Scope Compass con columnas Pendiente, Pausado, En curso, Revisión y Hecho, y una tarea abierta al costado con pasos y decisiones.](docs/images/es/board.png)
+<sub>El tablero en el navegador: cada tarea es un archivo JSON en compass/, y la abierta muestra sus pasos, la prueba y las decisiones del agente.</sub>
+
+![El Inicio de Scope Compass: lo de hoy de todos los proyectos, la semana que viene y una tarjeta por proyecto.](docs/images/es/home.png)
+<sub>El Inicio junta todos los proyectos del equipo: lo vencido y lo de hoy, la semana, y las preguntas de los agentes que esperan respuesta.</sub>
 
 ## Qué hace
 
@@ -22,9 +26,18 @@ Todo corre en tu equipo: sin cuentas, sin nube, sin telemetría. Lo único que h
 - **Dock de Godot.** El dock "Tablero" del editor de Godot 4.8 muestra las tareas, abre los scripts y las escenas que cita una tarea y puede levantar el hub. Lee el tablero por su cuenta; para editar necesita el hub.
 - **El teléfono en la red de casa.** Con `--lan`, el tablero y el Inicio se abren desde el teléfono en una red de confianza.
 
-<!-- screenshot: home -->
+Más capturas:
 
-<!-- screenshot: dock -->
+<table>
+<tr>
+<td width="50%"><img src="docs/images/es/playtest.png" alt="Una sesión de playtest con cuatro tareas marcadas Anda o Falla, con notas, y la tarea que falta probar abierta al costado."><br><sub>Una sesión de playtest: se prueban las tareas en orden y cada resultado, con su nota, queda en la tarea.</sub></td>
+<td width="50%"><img src="docs/images/es/decisions.png" alt="La bandeja de decisiones con una decisión a revertir, una pregunta abierta y una decisión sin revisar."><br><sub>Las decisiones que tomó el agente y las preguntas que te hizo, para revisarlas, revertirlas o responderlas en un lugar.</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/images/es/dock.png" alt="El editor de Godot con una escena 2D y el dock Tablero a la derecha, con las tareas del hito por estado."><br><sub>El dock Tablero dentro de Godot: las tareas del hito, conectadas al hub del proyecto, sin salir del editor.</sub></td>
+<td width="50%"><img src="docs/images/es/phone.png" alt="Dos teléfonos: a la izquierda el tablero en columna, a la derecha una tarea con su hito, prioridad y pasos."><br><sub>En el teléfono, con scompass serve --lan: el mismo tablero, para anotar o tildar desde el sillón.</sub></td>
+</tr>
+</table>
 
 ## Principios
 
