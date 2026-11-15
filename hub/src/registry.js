@@ -13,7 +13,7 @@ export function registryDir() {
 }
 
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
-const real = (p) => { try { return realpathSync(p); } catch { return p; } };
+const real = (p) => { try { return realpathSync.native(p); } catch { return p; } };
 // Escribe entero o nada (19.5): otro proceso que lee el registro nunca ve un archivo a medio escribir.
 function writeEntry(file, entry) {
   const tmp = `${file}.${process.pid}.tmp`;

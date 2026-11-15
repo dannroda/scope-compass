@@ -35,4 +35,4 @@ for mid, m in sorted(ms.items(), key=lambda kv: kv[1].get('order', 0)):
         if t.get('test'): L += [f"**Prueba:** {t['test']}", '']
         if t.get('notes'): L += [f"**Notas:** {t['notes']}", '']
         if t.get('refs'): L += ['**Referencias:** ' + ', '.join(f"`{r['doc']}#{r['section']}`" for r in t['refs']), '']
-open(a.out, 'w', encoding='utf-8').write('\n'.join(L).rstrip() + '\n')
+open(a.out, 'w', encoding='utf-8', newline='\n').write('\n'.join(L).rstrip() + '\n')

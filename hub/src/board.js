@@ -50,7 +50,7 @@ const gitIn = (dir, args, input, env = {}) => new Promise((done, fail) => {
   p.stdin.end(input);
 });
 
-const realOr = (p) => { try { return realpathSync(p); } catch { return resolve(p); } };
+const realOr = (p) => { try { return realpathSync.native(p); } catch { return resolve(p); } };
 
 /**
  * La raíz del repo compartido de tableros, si la carpeta de tableros es la raíz de un repo (no una carpeta dentro de
