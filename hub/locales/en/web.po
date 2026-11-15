@@ -1000,6 +1000,12 @@ msgstr "Copy link"
 msgid "Copiar enlace al documento"
 msgstr "Copy link to the document"
 
+msgid "Editar el Markdown de esta sección; se guarda en el archivo sin commitear"
+msgstr "Edit this section's Markdown; it's saved to the file without committing"
+
+msgid "Editar sección"
+msgstr "Edit section"
+
 msgid "Índice de "
 msgstr "Contents of "
 
@@ -1050,6 +1056,60 @@ msgstr "Go to a section"
 
 msgid "Índice"
 msgstr "Contents"
+
+msgid "No se pudo abrir la sección ("
+msgstr "Couldn't open the section ("
+
+msgid "Markdown de la sección"
+msgstr "Section Markdown"
+
+msgid "Editar «{0}» · {1}"
+msgstr "Edit “{0}” · {1}"
+
+msgid "Esta sección cambió en el archivo mientras la editabas. Juntá en tu texto lo que quieras conservar del otro y guardá de nuevo."
+msgstr "This section changed in the file while you were editing it. Bring into your text whatever you want to keep from the other one and save again."
+
+msgid "Tu texto"
+msgstr "Your text"
+
+msgid "En el archivo: la sección ya no está"
+msgstr "In the file: the section is gone"
+
+msgid "Ahora en el archivo"
+msgstr "Now in the file"
+
+msgid "Usar el del archivo"
+msgstr "Use the file's text"
+
+msgid "Markdown. Empieza con el título de nivel {0} ({1}) y lo de adentro va con títulos más chicos. Se guarda en el archivo sin commitear; el id de la sección no cambia."
+msgstr "Markdown. It starts with the level {0} heading ({1}) and anything inside uses smaller headings. It's saved to the file without committing; the section's id doesn't change."
+
+msgid "Guardando…"
+msgstr "Saving…"
+
+msgid "Descartar los cambios"
+msgstr "Discard changes"
+
+msgid "Sección guardada en "
+msgstr "Section saved to "
+
+msgid " (sin commitear)."
+msgstr " (not committed)."
+
+msgid "Sección guardada."
+msgstr "Section saved."
+
+msgid "Vuelve a poner el texto que tenía la sección antes de guardar"
+msgstr "Puts back the text the section had before saving"
+
+msgid "Se deshizo el cambio."
+msgstr "Change undone."
+
+msgid "No se pudo deshacer: la sección cambió desde que la guardaste."
+msgstr "Couldn't undo: the section changed since you saved it."
+
+msgid "No se pudo deshacer ("
+msgstr "Couldn't undo ("
 
 msgid "Filtrar archivos por nombre"
 msgstr "Filter files by name"

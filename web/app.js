@@ -16,6 +16,8 @@
     docs: [], view: 'board', doc: '', sec: '', refsOpen: new Set(), refSearch: null,
     // Biblioteca (M12): entradas de config.json › docs, búsqueda de texto, carpetas plegadas, alta y baja.
     docEntries: [], docQ: '', docResults: null, foldersClosed: new Set(), docAdd: false, docRemove: null, docDiff: false,
+    // Editar una sección (§50): la edición abierta y lo que se puede deshacer de la última que se guardó.
+    secEdit: null, secUndo: null,
     // Vínculos entre tareas: buscador abierto ({ type, q }) o null.
     linkSearch: null, fileSearch: null,
     // Pasos: detalles desplegados y el paso en edición ("tarea:índice").
@@ -87,6 +89,7 @@
     docDiff: (alias) => call('GET', '/api/docs/' + encodeURIComponent(alias) + '/diff'),
     docLog: (alias) => call('GET', '/api/docs/' + encodeURIComponent(alias) + '/log'),
     section: (alias, id) => call('GET', '/api/docs/' + encodeURIComponent(alias) + '/sections/' + encodeURIComponent(id)),
+    sectionSave: (alias, id, markdown, etag) => call('PUT', '/api/docs/' + encodeURIComponent(alias) + '/sections/' + encodeURIComponent(id), { markdown, etag }),
     lists: () => call('GET', '/api/lists'),
     git: () => call('GET', '/api/git'),
     files: () => call('GET', '/api/files'),
@@ -1661,6 +1664,7 @@
     const diff = changed(d) ? docGit(d, 'diff') : null;
     const touched = new Set(diff?.sections ?? []);
     const showDiff = S.docDiff && changed(d) && !searching;
+    const editing = S.secEdit && S.secEdit.alias === d.alias ? S.secEdit : null;
     info.replaceChildren(...[
       h('span', { class: 'pill' + (broken.length ? ' bad' : '') }, h('span', { class: 'dot' }), broken.length === 1 ? T('1 referencia rota') : broken.length + T(' referencias rotas')),
       // Enlace [[alias#id]] a la sección actual, para pegarlo en notas o pasos (6.6).
@@ -1668,8 +1672,14 @@
         T('Sin id: el enlace se rompe si cambiás el título')) : null,
       // Sin sección elegida, el enlace es al documento entero: [[alias]].
       h('button', { class: 'btn ghost small copy-link', type: 'button', title: T('Copia [[') + d.alias + (sec ? '#' + sec.id : '') + T(']] para pegar en notas o pasos'),
-        onclick: () => copy('[[' + d.alias + (sec ? '#' + sec.id : '') + ']]') }, sec ? T('Copiar enlace') : T('Copiar enlace al documento'))].filter(Boolean));
+        onclick: () => copy('[[' + d.alias + (sec ? '#' + sec.id : '') + ']]') }, sec ? T('Copiar enlace') : T('Copiar enlace al documento')),
+      sec && !editing && !searching && !showDiff && !d.missing ? h('button', { class: 'btn ghost small sec-edit-btn', type: 'button', title: T('Editar el Markdown de esta sección; se guarda en el archivo sin commitear'),
+        onclick: () => startSecEdit(d, sec) }, T('Editar sección')) : null,
+      undoBar(d)].filter(Boolean));
     const whole = tasksFor(d, null);
+    // Rearmar la vista saca el campo del documento y le quita el foco: se le devuelve con el cursor donde estaba.
+    const focused = editing && secEditBox?.contains(document.activeElement) ? document.activeElement : null;
+    const caret = focused && 'selectionStart' in focused ? [focused.selectionStart, focused.selectionEnd] : null;
     body.replaceChildren(h('div', { class: 'docs-grid' },
       h('div', { class: 'docs-side' },
         docTree(d),
@@ -1679,7 +1689,7 @@
         }, h('span', { class: 'toc-dot ' + cov.get(s.id).state }), h('span', { class: 't' }, rich(s.title)),
           touched.has(s.id) ? h('span', { class: 'chg', title: T('Cambió sin commitear') }, '±') : null,
           counts.get(s.id) ? h('span', { class: 'n' }, counts.get(s.id)) : null))) : null),
-      searching ? docResults() : showDiff ? diffView(d, diff) : article,
+      searching ? docResults() : showDiff ? diffView(d, diff) : editing ? secEditView(editing) : article,
       h('aside', { class: 'backlinks', 'aria-label': T('Ficha del documento') },
         docCard(d),
         docGitCard(d, diff),
@@ -1707,7 +1717,80 @@
         h('div', { class: 'sec-tasks' }, !sec ? null : counts.get(sec.id)
           ? [h('span', { class: 'label' }, counts.get(sec.id) === 1 ? T('1 tarea') : counts.get(sec.id) + T(' tareas')), ...tasksFor(d, sec.id).map(backlinkTask)]
           : h('span', { class: 'muted small' }, T('Sin tareas')))) : null);
-    if (!searching && !showDiff) observeHeadings(article); else docObserver?.disconnect();
+    if (!searching && !showDiff && !editing) observeHeadings(article); else docObserver?.disconnect();
+    if (focused) { focused.focus(); if (caret) focused.setSelectionRange(caret[0], caret[1]); }
+  }
+
+  // --- Editar una sección (M26, spec §50, D61) ---
+  // El Markdown de la sección en un campo; se guarda con el etag del documento. Si la sección cambió en el archivo
+  // mientras tanto (409), se muestran los dos textos para juntarlos a mano. Después de guardar queda Deshacer.
+  let secEditBox = null;
+  async function startSecEdit(d, sec) {
+    try {
+      const r = await api.section(d.alias, sec.id);
+      S.secEdit = { alias: d.alias, path: d.path, id: sec.id, title: sec.title, level: sec.level, original: r.markdown, etag: r.etag, text: r.markdown, busy: false, error: '', conflict: null, discard: false };
+      S.secUndo = null;
+      secEditBox = null;
+      renderDocs();
+      secEditBox?.querySelector('textarea')?.focus();
+    } catch (e) { toast(T('No se pudo abrir la sección (') + e.message + ').'); }
+  }
+  function secEditView(ed) {
+    if (secEditBox && secEditBox.dataset.key === ed.alias + '#' + ed.id && secEditBox.dataset.state === secEditState(ed)) return secEditBox;
+    const area = h('textarea', { class: 'sec-edit-text', spellcheck: 'true', 'aria-label': T('Markdown de la sección'),
+      oninput: (e) => { ed.text = e.target.value; ed.discard = false; },
+      onkeydown: (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveSecEdit(); } } });
+    area.value = ed.text;
+    const cancel = () => {
+      if (ed.text !== ed.original && !ed.discard) { ed.discard = true; secEditBox = null; renderDocs(); return; }
+      S.secEdit = null; secEditBox = null; renderDocs(true); scrollToSection();
+    };
+    secEditBox = h('div', { class: 'sec-edit', 'data-key': ed.alias + '#' + ed.id, 'data-state': secEditState(ed) },
+      h('div', { class: 'label' }, T`Editar «${rich(ed.title, true).textContent}» · ${ed.path}`),
+      ed.conflict ? h('p', { class: 'sec-edit-warn', role: 'alert' }, T('Esta sección cambió en el archivo mientras la editabas. Juntá en tu texto lo que quieras conservar del otro y guardá de nuevo.')) : null,
+      ed.conflict ? h('div', { class: 'sec-edit-two' },
+        h('div', null, h('div', { class: 'label' }, T('Tu texto')), area),
+        h('div', null, h('div', { class: 'label' }, ed.conflict.markdown === null ? T('En el archivo: la sección ya no está') : T('Ahora en el archivo')),
+          ed.conflict.markdown === null ? null : h('pre', { class: 'sec-edit-theirs' }, ed.conflict.markdown),
+          ed.conflict.markdown === null ? null : h('button', { class: 'btn ghost small', type: 'button', onclick: () => { ed.text = ed.conflict.markdown; secEditBox = null; renderDocs(); } }, T('Usar el del archivo'))))
+        : area,
+      ed.error ? h('p', { class: 'sec-edit-error', role: 'alert' }, ed.error) : null,
+      h('p', { class: 'muted small' }, T`Markdown. Empieza con el título de nivel ${ed.level} (${'#'.repeat(ed.level)}) y lo de adentro va con títulos más chicos. Se guarda en el archivo sin commitear; el id de la sección no cambia.`),
+      h('div', { class: 'row-actions' },
+        h('button', { class: 'btn primary small', type: 'button', disabled: ed.busy || (ed.conflict && ed.conflict.markdown === null), onclick: saveSecEdit }, ed.busy ? T('Guardando…') : T('Guardar')),
+        h('button', { class: 'btn ghost small', type: 'button', disabled: ed.busy, onclick: cancel }, ed.discard ? T('Descartar los cambios') : T('Cancelar'))));
+    return secEditBox;
+  }
+  const secEditState = (ed) => [ed.busy, ed.error, ed.conflict?.etag ?? '', ed.discard, ed.text === ed.conflict?.markdown].join('|');
+  async function saveSecEdit() {
+    const ed = S.secEdit;
+    if (!ed || ed.busy) return;
+    ed.busy = true; ed.error = ''; secEditBox = null; renderDocs();
+    // Lo que había en el archivo justo antes de guardar: con un 409 de por medio, el texto del otro.
+    const before = ed.conflict ? ed.conflict.markdown : ed.original;
+    try {
+      const r = await api.sectionSave(ed.alias, ed.id, ed.text, ed.conflict ? ed.conflict.etag : ed.etag);
+      S.secEdit = null; secEditBox = null;
+      S.secUndo = r.markdown === before ? null : { alias: ed.alias, id: ed.id, markdown: before, etag: r.etag };
+      toast(T('Sección guardada en ') + ed.path + T(' (sin commitear).'));
+      S.sec = ed.id;
+      docChanged(ed.alias);
+    } catch (e) {
+      ed.busy = false;
+      if (e.code === 'conflict' && e.current) ed.conflict = e.current;
+      else ed.error = e.message;
+      secEditBox = null; renderDocs();
+    }
+  }
+  function undoBar(d) {
+    const u = S.secUndo;
+    if (!u || u.alias !== d.alias) return null;
+    return h('span', { class: 'sec-undo' }, h('span', { class: 'muted small' }, T('Sección guardada.')),
+      h('button', { class: 'btn ghost small', type: 'button', title: T('Vuelve a poner el texto que tenía la sección antes de guardar'), onclick: async () => {
+        S.secUndo = null;
+        try { await api.sectionSave(u.alias, u.id, u.markdown, u.etag); toast(T('Se deshizo el cambio.')); docChanged(u.alias); }
+        catch (e) { toast(e.code === 'conflict' ? T('No se pudo deshacer: la sección cambió desde que la guardaste.') : T('No se pudo deshacer (') + e.message + ').'); renderDocs(); }
+      } }, T('Deshacer')));
   }
   // Al bajar por el documento, el índice y los backlinks siguen a la sección visible.
   function observeHeadings(article) {

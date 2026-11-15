@@ -576,3 +576,44 @@ test('§43: cobertura en el índice (hecha, abierta, adentro, sin tareas) y las 
   assert.equal(await page.textContent('.unplanned summary'), 'Secciones sin tareas · 1 de 4');
   await page.close();
 });
+
+test('§50: editar una sección desde la biblioteca, Deshacer, y los dos textos ante un cambio en el archivo', async () => {
+  const page = await open('#docs/gdd/camara');
+  await page.click('.sec-edit-btn');
+  const area = page.locator('.sec-edit-text');
+  assert.equal(await area.inputValue(), '## Cámara\n<!-- id: camara -->\n\nCámara cenital.\n');
+  await area.fill('## Cámara\n<!-- id: camara -->\n\nCámara libre.\n');
+  await page.click('.sec-edit .btn.primary');
+  await page.waitForSelector('.sec-edit', { state: 'detached' });
+  await page.waitForSelector('#sec-camara ~ p:has-text("Cámara libre.")');
+  assert.equal(await readFile(join(dir, 'gdd.md'), 'utf8'), GDD.replace('Cámara cenital.', 'Cámara libre.'));
+  // Deshacer deja el archivo como estaba.
+  await page.click('.sec-undo button');
+  await page.waitForSelector('#sec-camara ~ p:has-text("Cámara cenital.")');
+  assert.equal(await readFile(join(dir, 'gdd.md'), 'utf8'), GDD);
+  assert.equal(await page.locator('.sec-undo').count(), 0);
+  // Mientras se edita, la misma sección cambia en el editor: 409 y los dos textos.
+  await page.click('.sec-edit-btn');
+  await page.locator('.sec-edit-text').fill('## Cámara\n<!-- id: camara -->\n\nCámara mía.\n');
+  await writeFile(join(dir, 'gdd.md'), GDD.replace('Cámara cenital.', 'Cámara del editor.'));
+  await page.click('.sec-edit .btn.primary');
+  await page.waitForSelector('.sec-edit-two .sec-edit-theirs:has-text("Cámara del editor.")');
+  assert.equal(await page.locator('.sec-edit-text').inputValue(), '## Cámara\n<!-- id: camara -->\n\nCámara mía.\n');
+  assert.match(await readFile(join(dir, 'gdd.md'), 'utf8'), /Cámara del editor\./);
+  // Se juntan a mano y se guarda sobre el texto del archivo.
+  await page.locator('.sec-edit-text').fill('## Cámara\n<!-- id: camara -->\n\nCámara del editor y mía.\n');
+  await page.click('.sec-edit .btn.primary');
+  await page.waitForSelector('.sec-edit', { state: 'detached' });
+  assert.equal(await readFile(join(dir, 'gdd.md'), 'utf8'), GDD.replace('Cámara cenital.', 'Cámara del editor y mía.'));
+  // Un texto que se sale de la sección: el error del hub, sin escribir.
+  await page.click('.sec-edit-btn');
+  await page.locator('.sec-edit-text').fill('Sin título.\n');
+  await page.click('.sec-edit .btn.primary');
+  await page.waitForSelector('.sec-edit-error');
+  assert.equal(await readFile(join(dir, 'gdd.md'), 'utf8'), GDD.replace('Cámara cenital.', 'Cámara del editor y mía.'));
+  // Cancelar con cambios pide confirmar con un segundo clic.
+  await page.click('.sec-edit .btn.ghost:has-text("Cancelar")');
+  await page.click('.sec-edit .btn.ghost:has-text("Descartar los cambios")');
+  await page.waitForSelector('.sec-edit', { state: 'detached' });
+  await page.close();
+});

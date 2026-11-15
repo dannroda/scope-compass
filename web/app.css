@@ -251,6 +251,19 @@ a.link-task:hover code { text-decoration: underline; }
 .ref-matches button:hover, .ref-matches button:focus-visible { border-color: var(--line); background: var(--bg); }
 
 /* Contenido renderizado de los documentos */
+/* Editar una sección (§50): el Markdown en un campo; ante un 409, el texto propio y el del archivo lado a lado. */
+.sec-edit { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.sec-edit-text { width: 100%; min-height: 50vh; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 10px 12px; resize: vertical;
+  font-family: var(--font-mono); font-variant-ligatures: none; font-size: 14px; line-height: 1.5; tab-size: 2; }
+.sec-edit-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-width: 0; }
+.sec-edit-two > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sec-edit-theirs { margin: 0; min-height: 50vh; max-height: 70vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; border: 1px dashed var(--line);
+  background: var(--surface); border-radius: 8px; padding: 10px 12px; font-family: var(--font-mono); font-variant-ligatures: none; font-size: 14px; line-height: 1.5; }
+.sec-edit-two > div > .btn { align-self: flex-start; }
+.sec-edit-warn, .sec-edit-error { margin: 0; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--s-paused); background: var(--surface); }
+.sec-edit-error { border-color: var(--danger); }
+.sec-undo { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 760px) { .sec-edit-two { grid-template-columns: 1fr; } .sec-edit-text, .sec-edit-theirs { min-height: 30vh; } }
 .doc-body { font-size: 16px; line-height: 1.55; overflow-wrap: anywhere; min-width: 0; }
 .doc-body h1, .doc-body h2, .doc-body h3, .doc-body h4, .doc-body h5, .doc-body h6 { line-height: 1.25; margin: 1.2em 0 .4em; scroll-margin-top: 12px; }
 .doc-body h1 { font-family: var(--font-display); letter-spacing: .04em; font-size: 26px; }

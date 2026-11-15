@@ -1788,6 +1788,10 @@ Aprobado por Dann el 2026-11-15 (D61); implementado en m26-06. D33 descartaba ed
 - **Qué se reemplaza:** el rango entero de la sección (título, línea del id, texto y las secciones de adentro), como lo da `sections/:id`. El texto nuevo tiene que empezar con un título del mismo nivel y no puede tener títulos de ese nivel o de uno mayor más abajo, porque crearía otra sección fuera del rango (un título dentro de un bloque de código no cuenta). Si no cumple, 422 con el código `invalid_section`. El fin de línea del texto que llega no importa: se escribe con el del archivo.
 - **El id:** si el título cambia y la sección no tenía `<!-- id -->`, se le pone el id que tenía (como `doc stamp-ids`), para que las referencias de las tareas no se rompan. Un id explícito que se quita o se cambia en el texto vuelve a ponerse; para cambiar un id se edita el archivo.
 - **Cómo se escribe:** escritura atómica, con el fin de línea del archivo (LF o CRLF) y sin commit (D33, D42): el cambio queda en el árbol de trabajo, a la vista en la biblioteca, igual que *Promover*. El watcher de documentos avisa a las demás pestañas y al MCP (§41). Los patrones prohibidos (§42) se miran en el texto nuevo; si alguno aparece, 422 como en el store.
+- **Web:** con una sección elegida en la biblioteca, *Editar sección* cambia el texto renderizado por un campo con su Markdown (Ctrl+Enter guarda; *Cancelar* con cambios pide un segundo clic, *Descartar los cambios*).
+  - Ante un 409, el campo queda con el texto propio y al lado, el que está ahora en el archivo, con *Usar el del archivo*. Se juntan a mano y *Guardar* va con el etag nuevo. En el teléfono, uno debajo del otro.
+  - Un 422 se muestra debajo del campo, sin cerrarlo.
+  - Después de guardar, *Deshacer* queda junto a *Copiar enlace* hasta la próxima edición: vuelve a guardar el texto que había justo antes, que con un 409 de por medio es el del archivo. Si la sección cambió otra vez, no deshace y lo dice.
 - **Un editor abierto con el mismo archivo:** la mayoría de los editores recargan un archivo que cambió en el disco, o avisan si tienen cambios sin guardar. El caso que no se cubre es guardar desde el editor una copia vieja después de editar en la web, y eso git lo muestra en el diff.
 - **Quién puede:** lo mismo que escribe el tablero, también desde la red con `--lan` (D61).
 - **Archivos con CRLF:** el índice de secciones reconoce los títulos de un archivo con fin de línea CRLF (antes no veía ninguno).
@@ -1798,9 +1802,9 @@ Aprobado por Dann el 2026-11-15 (D61); implementado en m26-06. D33 descartaba ed
 
 ### Criterios de aceptación
 
-- [ ] Guardar una sección con el etag actual la reemplaza y deja el resto del archivo byte por byte igual, con su fin de línea.
-- [ ] Con un etag viejo, guardar anda si esa sección no cambió desde entonces y da 409 con el texto actual si cambió o si la versión vieja no aparece.
-- [ ] Un texto que empieza sin título del nivel de la sección, o que agrega un título de su nivel, da 422.
-- [ ] Cambiar el título de una sección sin id explícito le pone su id de antes.
-- [ ] *Deshacer* deja el archivo como estaba.
-- [ ] Nada se commitea.
+- [x] Guardar una sección con el etag actual la reemplaza y deja el resto del archivo byte por byte igual, con su fin de línea.
+- [x] Con un etag viejo, guardar anda si esa sección no cambió desde entonces y da 409 con el texto actual si cambió o si la versión vieja no aparece.
+- [x] Un texto que empieza sin título del nivel de la sección, o que agrega un título de su nivel, da 422.
+- [x] Cambiar el título de una sección sin id explícito le pone su id de antes.
+- [x] *Deshacer* deja el archivo como estaba.
+- [x] Nada se commitea.
