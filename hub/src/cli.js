@@ -251,9 +251,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   // El merge driver de git (§44): lo corre git con archivos temporales, sin proyecto ni hub.
   if (cmd === 'merge-json') {
     const [base, ours, theirs, path] = rest;
-    if (!base || !ours || !theirs) { warn('uso: scompass merge-json <base> <nuestro> <de ellos> [<ruta>]'); return 2; }
+    if (!base || !ours || !theirs) { warn(T('uso: scompass merge-json <base> <nuestro> <de ellos> [<ruta>]')); return 2; }
     const r = mergeFiles(resolve(cwd, base), resolve(cwd, ours), resolve(cwd, theirs), path ?? '');
-    if (r.code) warn(`scompass merge-json${path ? ` ${path}` : ''}: ${r.error ?? `conflicto en ${r.conflicts.join(', ')}`}`);
+    if (r.code) warn(`scompass merge-json${path ? ` ${path}` : ''}: ${r.error ?? T`conflicto en ${r.conflicts.join(', ')}`}`);
     return r.code;
   }
 

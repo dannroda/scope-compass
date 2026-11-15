@@ -26,6 +26,7 @@ With the CLI: `scompass list`, `scompass show <id>`, `scompass move <id> doing`,
 | Delete a task | Delete the file |
 | See a task's history | `git log -p compass/tasks/<id>.json` |
 | Recover something deleted | `git checkout <commit> -- compass/tasks/<id>.json` |
+| Merge two branches that touched the same task | Nothing special: the Scope Compass merge driver (`.gitattributes`, registered by `scompass update`) joins the changes field by field; there's only a conflict if both sides changed the same thing |
 
 ## Format
 

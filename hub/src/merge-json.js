@@ -10,6 +10,7 @@ import { canonical } from './store/canonical.js';
 import { COLLECTIONS } from './store/load.js';
 import { loadValidators, parseDoc } from './schema.js';
 import { selfCommand } from './self.js';
+import { T } from './i18n.js';
 
 const same = (x, y) => (x === undefined || y === undefined ? x === y : canonical(x) === canonical(y));
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -60,7 +61,7 @@ export function merge3(base, ours, theirs, path = '') {
     if (Array.isArray(a) && Array.isArray(b) && (o === undefined || Array.isArray(o))) return list(o ?? [], a, b, at);
     // Las fechas de cambio: la más nueva (ISO, así que se comparan como texto).
     if (/(^|\.)updated_at$/.test(at) && typeof a === 'string' && typeof b === 'string') return a > b ? a : b;
-    conflicts.push(at || '(raíz)');
+    conflicts.push(at || T('(raíz)'));
     return a;
   };
   const list = (o, a, b, at) => {
@@ -114,7 +115,7 @@ export function mergeFiles(baseFile, oursFile, theirsFile, path = '', { validato
   } catch {
     parsed = null;
   }
-  let conflicts = ['(no es JSON)'];
+  let conflicts = [T('(no es JSON)')];
   if (parsed) {
     const r = merge3(...parsed);
     conflicts = r.conflicts;
@@ -130,8 +131,8 @@ export function mergeFiles(baseFile, oursFile, theirsFile, path = '', { validato
     }
   }
   // Lo mismo que git sin driver: merge por líneas con marcadores.
-  const name = path || 'archivo';
-  const r = spawnSync('git', ['merge-file', '-L', `${name} (nuestro)`, '-L', `${name} (base)`, '-L', `${name} (de ellos)`, oursFile, baseFile, theirsFile], { encoding: 'utf8', windowsHide: true });
+  const name = path || T('archivo');
+  const r = spawnSync('git', ['merge-file', '-L', T`${name} (nuestro)`, '-L', T`${name} (base)`, '-L', T`${name} (de ellos)`, oursFile, baseFile, theirsFile], { encoding: 'utf8', windowsHide: true });
   // Aunque las líneas se junten solas, los dos lados cambiaron lo mismo (o no pasa el schema): conflicto igual.
   if (r.error || r.status < 0 || r.status > 127) return { code: 2, conflicts, fallback: true, error: r.error?.message ?? r.stderr };
   return { code: 1, conflicts, fallback: true };

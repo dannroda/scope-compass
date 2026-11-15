@@ -613,6 +613,24 @@ msgstr "a repeating item needs a due date (--due)"
 msgid "un ítem que se repite no se destilda: cambiale la fecha con `item set --due`"
 msgstr "a repeating item can't be unchecked: change its date with `item set --due`"
 
+msgid "(raíz)"
+msgstr "(root)"
+
+msgid "(no es JSON)"
+msgstr "(not JSON)"
+
+msgid "archivo"
+msgstr "file"
+
+msgid "{0} (nuestro)"
+msgstr "{0} (ours)"
+
+msgid "{0} (base)"
+msgstr "{0} (base)"
+
+msgid "{0} (de ellos)"
+msgstr "{0} (theirs)"
+
 msgid "Predeterminado"
 msgstr "Default"
 
@@ -651,9 +669,6 @@ msgstr "{0} was added to {1}, but the task couldn't be marked: {2}"
 
 msgid "marcadores de conflicto de git"
 msgstr "git conflict markers"
-
-msgid "(raíz)"
-msgstr "(root)"
 
 msgid "el hub solo atiende pedidos a localhost o a una IP"
 msgstr "the hub only serves requests to localhost or to an IP"
