@@ -61,7 +61,10 @@ test('prender y apagar: el hub arranca, aparece en /api/projects y se cierra', a
 });
 
 test('los hubs que prendió el Inicio mueren con él', async () => {
-  const { body } = await api('POST', '/api/projects/start', { path: p });
+  const r = await api('POST', '/api/projects/start', { path: p });
+  // Falló una vez con la suite entera sin hub en la respuesta (m10-10): que diga qué respondió.
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  const { body } = r;
   await home.close();
   for (let i = 0; i < 60 && alive(body.hub.pid); i++) await sleep(50);
   assert.ok(!alive(body.hub.pid));

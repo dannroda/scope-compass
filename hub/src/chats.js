@@ -194,7 +194,7 @@ export class ChatManager extends EventEmitter {
 
   /** Cierra los procesos; termina cuando está guardado lo que quedó de los turnos cortados. */
   async close() {
-    for (const p of this.procs.values()) p.close();
+    await Promise.all([...this.procs.values()].map((p) => p.close()));
     this.procs.clear();
     await Promise.all(this.pending);
   }

@@ -139,6 +139,8 @@ test('serve --tray: "Actualizar compass/" aparece con el schema viejo y lo pone 
     await call(service, '/MenuBar', 'com.canonical.dbusmenu', 'Event', 'isvu', [2, 'clicked', ['s', ''], 0]);
     for (let i = 0; i < 40 && (await readFile(schema, 'utf8')) === '{}\n'; i++) await sleep(50);
     assert.equal(await readFile(schema, 'utf8'), await readFile(join(REPO, 'schema', 'task.schema.json'), 'utf8'));
+    // La línea sale después de copiar y de registrar el merge driver (§44, un git que tarda con la máquina cargada).
+    for (let i = 0; i < 40 && !/compass\/ actualizado/.test(out); i++) await sleep(50);
     assert.match(out, /compass\/ actualizado: schema\/task\.schema\.json/);
     assert.deepEqual((await menuItems(service)).map((x) => x.label), ['Abrir tablero', 'Reiniciar hub', 'Detener hub'], 'el ítem se oculta');
     // Si vuelve a quedar viejo (otra versión de Scope Compass, o a mano), aparece al abrir el menú otra vez.

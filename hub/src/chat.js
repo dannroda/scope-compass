@@ -166,16 +166,21 @@ export class ChatProcess extends EventEmitter {
     return true;
   }
 
-  /** Cierra el proceso (sin uso, o al cerrar el hub). La conversación sigue con --resume. */
+  /**
+   * Cierra el proceso (sin uso, o al cerrar el hub). La conversación sigue con --resume. La promesa se cumple cuando
+   * el proceso terminó (a los 2 s se lo mata): el hub que cierra no deja un claude arrancando detrás.
+   */
   close() {
     clearTimeout(this.idle);
     const child = this.child;
-    if (!child) return;
+    if (!child) return Promise.resolve();
     if (this.busy) this.#endTurn({ event: 'end', ok: false, interrupted: true });
+    const closed = child.exitCode !== null || child.signalCode !== null ? Promise.resolve() : new Promise((r) => child.once('close', r));
     child.stdin.end();
     const t = setTimeout(() => child.kill(), 2000);
     t.unref();
     child.once('close', () => clearTimeout(t));
+    return closed;
   }
 
   async #start() {

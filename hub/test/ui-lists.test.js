@@ -48,7 +48,12 @@ async function open(hash = '') {
   return page;
 }
 const items = async (id = 'pendientes') => JSON.parse(await readFile(join(compass, 'lists', `${id}.json`), 'utf8')).items;
-const until = async (fn) => { for (let i = 0; i < 100; i++) { if (await fn()) return; await new Promise((r) => setTimeout(r, 30)); } assert.fail('no pasó a tiempo'); };
+// Hasta ~3 s. Si no llega, dice qué había (m10-10: falló a veces con la suite entera, sin rastro).
+const until = async (fn) => {
+  const t0 = Date.now();
+  for (let i = 0; i < 100; i++) { if (await fn()) return; await new Promise((r) => setTimeout(r, 30)); }
+  assert.fail(`no pasó a tiempo (${Date.now() - t0} ms): ${fn.toString()} · ítems: ${JSON.stringify(await items().catch((e) => e.message))}`);
+};
 
 test('config.views: abre en Listas, en ese orden, y sin Documentos', async () => {
   const page = await open();

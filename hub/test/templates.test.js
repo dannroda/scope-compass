@@ -117,3 +117,10 @@ test('una plantilla desconocida no crea nada', async () => {
   assert.match(r.err, /plantilla desconocida: kanban \(clean-room, juego, personal, vacio\)/);
   assert.ok(!existsSync(join(r.p, 'compass')));
 });
+
+test('el compass/ de los fixtures tiene los archivos generados al día (si no, la bandeja y el dock ofrecen «Actualizar»)', async () => {
+  const { outdatedFiles } = await import('../src/update.js');
+  const fixture = join(import.meta.dirname, 'fixtures', 'compass');
+  // AGENTS.md no está en el fixture a propósito (los tests lo copian cuando lo necesitan).
+  assert.deepEqual(outdatedFiles(fixture).filter((f) => f !== 'AGENTS.md'), []);
+});

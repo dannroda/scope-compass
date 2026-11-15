@@ -114,6 +114,18 @@ test('doc changed encuentra en git una versión commiteada que no está en la ca
 });
 
 test('la caché: una versión entregada queda guardada, y las de más de 30 días se borran', async () => {
+  // Una carpeta de datos propia: con npm test los demás archivos de test (otros procesos) comparten la de la corrida
+  // y entregan versiones en la misma caché mientras este test la cuenta.
+  const saved = process.env.SCOMPASS_DATA;
+  process.env.SCOMPASS_DATA = join(dir, 'datos');
+  try {
+    await cacheTest();
+  } finally {
+    if (saved === undefined) delete process.env.SCOMPASS_DATA; else process.env.SCOMPASS_DATA = saved;
+  }
+});
+
+async function cacheTest() {
   await rm(versionsDir(), { recursive: true, force: true });
   const { etag } = (await cli('doc', 'show', 'gdd', '--json')).json;
   assert.equal(await readFile(join(versionsDir(), `${etag}.md`), 'utf8'), GDD);
@@ -122,7 +134,7 @@ test('la caché: una versión entregada queda guardada, y las de más de 30 día
   await utimes(join(versionsDir(), `${old}.md`), t, t);
   await pruneVersions();
   assert.deepEqual(await readdir(versionsDir()), [`${etag}.md`]);
-});
+}
 
 test('API: etag en el documento y en la sección, y /changes', async () => {
   const app = createServer({ projectDir: dir, store: createJsonFilesStore(join(dir, 'compass'), { validators: V }), validators: V });
