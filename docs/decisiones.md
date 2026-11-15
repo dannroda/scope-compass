@@ -612,25 +612,25 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
 - **Respondido:** systemd con `scompass home`, y la rama `compass-sync`.
 - **Pendiente:** dónde corre, un equipo de casa siempre prendido o un VPS chico, siempre en Tailscale. m7-05 y m7-06 quedan para después.
 
-## D58 · Chat con agy: por ACP, con scompass pasado por sesión y los permisos contestados por el hub (borrador)
-**2026-11-15 · borrador (preguntado)** · spec §47
+## D58 · Chat con agy: por ACP, con ajustes propios del chat y los permisos contestados por el hub
+**2026-11-15 · vigente** · spec §47 · respondido por Dann
 
-- **Qué:** propuesta de m27-01 para m27-02, todavía sin implementar (spec §47). El hub lanza `agy acp` y le habla JSON-RPC por stdio.
-  - Pasa `scompass` en `session/new`.
-  - Arranca la sesión en modo `default` o `plan`.
-  - Contesta cada `session/request_permission`: sí a `scompass` y a las lecturas, no a todo lo demás.
+- **Qué:** el chat también anda con Antigravity CLI.
+  - El hub lanza `agy acp --app-data-dir scope-compass-chat` y le pasa `scompass` en `session/new`.
+  - Contesta cada `session/request_permission`: sí a las lecturas y a `scompass`, no a todo lo demás.
+  - Los ajustes del chat están en `~/.gemini/scope-compass-chat/settings.json` (`agentMode: ""`, `toolPermission: "strict"`). Si no dicen eso, el chat no arranca.
+  - El motor se elige por equipo en Ajustes, con `claude` por defecto si están los dos.
 - **Por qué:**
-  - ACP es el único camino que registra el MCP solo para el chat sin tocar la config global de agy ni el repo del proyecto.
-  - Deja el permiso en manos del hub, como `--allowedTools` y `dontAsk` con `claude`.
-  - Trae el texto en partes, las herramientas, el corte y la reanudación (`session/resume`) en un protocolo público que también hablan otros agentes.
+  - **ACP:** es el único camino que registra el MCP solo para el chat, sin tocar la config global de agy ni el repo. Además deja el permiso en manos del hub y trae el texto en partes, las herramientas, el corte y la reanudación.
+  - **Ajustes propios del chat:** con la config del usuario no alcanza. En la prueba real, con `agentMode: auto` agy escribió un archivo del proyecto sin pedir permiso, y ACP no tiene `session/set_mode`. Con ajustes propios del chat, el mismo `write_file` pidió permiso y el hub lo negó; el login siguió andando. Las reglas `permissions.allow` del usuario no saltean el pedido al hub.
+  - **La vigilancia:** cubre que un cambio de agy, o de esos ajustes, vuelva a dejar pasar ediciones. Si pasa, el hub corta el proceso en lugar de seguir.
 - **Descartado:**
-  - `agy -p --input-format stream-json --output-format stream-json`: es lo más parecido al chat de hoy, pero no tiene un MCP por corrida. Habría que escribir en `~/.gemini/config/mcp_config.json` (lo verían todas las sesiones del usuario) o en `.agents/` del proyecto. Además, su formato de eventos no está documentado.
-  - `--dangerously-skip-permissions`: aprueba todo.
-  - Confiar solo en `--sandbox` o en el modo: no impiden editar dentro del proyecto.
-- **Para decidir (preguntado):**
-  - **ACP o print:** propuesta, ACP.
-  - **Cómo se elige el motor** (`claude` o `agy`): por proyecto, por equipo o por conversación. Propuesta: por equipo, en Ajustes, con `claude` si están los dos.
-  - **Gastar unos turnos mínimos de la cuenta de Dann** para ver los eventos reales y comprobar si sus reglas `permissions.allow` (p. ej. `command(godot)`) saltean el pedido de permiso al hub.
+  - `agy -p` con stream-json: no tiene un MCP por corrida y su formato de eventos no está documentado.
+  - Cambiar el `agentMode` global del usuario: afecta todo su uso de agy.
+  - Un hook `PreToolUse` en `.agents/` o en un plugin: escribe en el repo o en la config del usuario.
+  - Aceptar que el chat con agy edite: baja lo que promete §32.
+  - `--gemini-dir` aparte: pierde el login.
+- **Respondido por Dann (2026-11-15):** ACP; el motor por equipo en Ajustes, con `claude` por defecto; ajustes aislados del chat dentro de `~/.gemini`, sin tocar los globales.
 
 ## D60 · Vincular el teléfono al chat: código de un solo uso, token por dispositivo en una cookie, solo para el chat
 
