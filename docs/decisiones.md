@@ -522,3 +522,13 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Que el plugin o el addon traigan el binario: pesado y depende de la plataforma.
   - Un `scompass update` que se actualice a sí mismo: reemplazar el ejecutable que corre (y en Windows, bloqueado) a cambio de poco, si el dock ya ofrece la descarga directa.
 
+## D50 · Plugin de Claude Code: la skill en este repo y el MCP por `scompass mcp install`
+
+- **Qué:** el plugin `scope-compass` vive en `claude-plugin/` de este repo, que también es un marketplace. Trae una skill que manda a `compass/AGENTS.md`, y no trae el MCP: se registra con `scompass mcp install`. Su versión es la de Scope Compass y la sube `release.mjs` (spec §40).
+- **Por qué:** un `.mcp.json` con `command: "scompass"` vuelve a depender del PATH (D48), y no hay forma documentada de elegir el comando por sistema ni de leer `<datos>/scompass.json`. Con el plugin acá, su versión sale con cada release sin coordinar con otro repo, y godot-agent-plugins lo referencia sin copiarlo, como a los plugins de awesome-gamedev-agent-skills.
+- **Descartado:**
+  - `.mcp.json` con `scompass` del PATH: falla justo donde D48 quiso que ande, en Windows y con el editor lanzado desde el menú.
+  - `userConfig` con la ruta del binario (`${user_config.…}` en `command`): obliga a elegir el archivo al habilitar el plugin y queda mal al mover o actualizar el binario.
+  - Un lanzador en el plugin que lea `scompass.json`: necesita sh en Linux y otro en Windows, y `command` no varía por sistema.
+  - Copiar el plugin a godot-agent-plugins: dos copias, y la versión ahí no seguiría a la de los releases.
+  - Poner toda la guía en la skill: quedaría vieja respecto del `compass/AGENTS.md` de cada tablero.

@@ -1486,3 +1486,18 @@ Scope Compass tiene tres partes que se actualizan por separado: el binario `scom
 - [x] El updater elige el zip del addon entre los assets (no un binario), descarta borradores y prereleases, rechaza un zip de otra versión e instala sin borrar lo que agregó el usuario.
 - [x] El aviso de versión nueva: *Después* la recuerda; en el repo de Scope Compass no busca.
 - [ ] Probado con un release real: actualizar el addon desde el dock y bajar el binario desde el aviso.
+
+## 40. Plugin de Claude Code (M32)
+
+Hasta acá, para que Claude Code trabaje un tablero había que registrar el MCP con `scompass mcp install` y además pedirle al agente, en el `CLAUDE.md` del proyecto, que lea `compass/AGENTS.md`. El plugin hace lo segundo solo, y el harness de godot-agent lo muestra en Extensiones.
+
+- **Qué trae:** la skill `scope-compass` (`claude-plugin/skills/scope-compass/SKILL.md`), que se activa con un proyecto que tiene `compass/` o cuando se habla del tablero. Es corta a propósito: manda a leer `compass/AGENTS.md`, que `scompass update` mantiene al día con cada versión, y resume el flujo (doing, pasos, decisiones, review, etags). Así la skill no queda vieja cuando cambian las reglas.
+- **El MCP no viene en el plugin:** el `.mcp.json` de un plugin tiene un `command` fijo, sin variantes por sistema, y no puede leer la ruta que anotó la instalación (§37); con `scompass` a secas dependería del PATH, que es justo lo que D48 evita. Se registra con `scompass mcp install` (la ruta entera, en el scope de usuario). Si las herramientas no están, la skill le dice al agente que lo corra, con el comando de `<datos>/scompass.json` si `scompass` no está en el PATH, y que pida `/mcp`.
+- **Dónde vive:** en este repo, `claude-plugin/`. El repo es también un marketplace (`.claude-plugin/marketplace.json`, fuente `./claude-plugin`): `/plugin marketplace add dannroda/scope-compass` y `/plugin install scope-compass@scope-compass`. El marketplace `godot-agent` (dannroda/godot-agent-plugins) lo lista con una fuente `git-subdir` que apunta a esta carpeta, sin copiarlo; esa entrada la agrega quien mantiene ese repo.
+- **Versión:** la del plugin es la de Scope Compass. `tools/release.mjs bump` la sube junto con `hub/package.json` y `plugin.cfg`, y `check` exige que coincidan. Claude Code compara la `version` de `plugin.json`, así que `claude plugin update` (o la actualización automática) solo ve un cambio en cada release, no en cada commit de main.
+
+### Criterios de aceptación
+
+- [x] `claude plugin validate` pasa con el marketplace del repo y con el plugin.
+- [x] `release.mjs bump` sube la versión del plugin y `check` falla si no coincide; el repo tiene las tres versiones iguales.
+- [ ] Instalado desde el marketplace del repo y desde `godot-agent`, la skill aparece en un proyecto con `compass/` y, sin el MCP, el agente lo registra con `scompass mcp install`.

@@ -22,7 +22,7 @@ Para tenerlo en Claude Code en todos los proyectos (toma el de la carpeta de la 
 scompass mcp install
 ```
 
-Eso corre `claude mcp add --scope user scompass -- <ruta entera de scompass> mcp`, así que no hace falta que `scompass` esté en el PATH.
+Eso corre `claude mcp add --scope user scompass -- <ruta entera de scompass> mcp`, así que no hace falta que `scompass` esté en el PATH. El plugin `scope-compass` de Claude Code (`/plugin marketplace add dannroda/scope-compass`) no trae el MCP: trae una skill que manda a leer esta guía.
 
 Los hitos (`compass://milestone/<id>`), las tareas (`compass://task/<id>`) y los documentos (`compass://doc/<alias>`) se adjuntan con `@scompass:…`.
 

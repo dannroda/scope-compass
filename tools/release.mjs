@@ -3,14 +3,15 @@
 // en los runners de Linux y de Windows; lo que tiene lógica está en funciones exportadas, con tests en
 // hub/test/release.test.js.
 //
-//   node tools/release.mjs bump <patch|minor|major|X.Y.Z>   sube la versión en hub/package.json (y su lock) y en
-//                                                            addons/scope_compass/plugin.cfg; imprime la nueva
+//   node tools/release.mjs bump <patch|minor|major|X.Y.Z>   sube la versión en hub/package.json (y su lock), en
+//                                                            addons/scope_compass/plugin.cfg y en el plugin de
+//                                                            Claude Code (claude-plugin/); imprime la nueva
 //   node tools/release.mjs changelog <X.Y.Z> [AAAA-MM-DD]   pasa «## [Unreleased]» de CHANGELOG.md a
 //                                                            «## [X.Y.Z] - fecha» (falla si está vacía)
 //   node tools/release.mjs notes <X.Y.Z>                     imprime las notas: la sección de esa versión del
 //                                                            CHANGELOG más cómo instalar
-//   node tools/release.mjs check <vX.Y.Z>                    falla si el tag, package.json y plugin.cfg no
-//                                                            tienen la misma versión
+//   node tools/release.mjs check <vX.Y.Z>                    falla si el tag, package.json, plugin.cfg y el
+//                                                            plugin de Claude Code no tienen la misma versión
 //   node tools/release.mjs sums <carpeta>                    escribe SHA256SUMS con los archivos de la carpeta
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -21,6 +22,8 @@ export const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PKG = ['hub', 'package.json'];
 const LOCK = ['hub', 'package-lock.json'];
 const PLUGIN = ['addons', 'scope_compass', 'plugin.cfg'];
+// El plugin de Claude Code (spec §40): su versión es la de Scope Compass, para que se actualice con cada release.
+const CLAUDE_PLUGIN = ['claude-plugin', '.claude-plugin', 'plugin.json'];
 const CHANGELOG = 'CHANGELOG.md';
 const SEMVER = /^(\d+)\.(\d+)\.(\d+)$/;
 const UNRELEASED = 'Unreleased';
@@ -47,6 +50,7 @@ export function readVersions(repo = REPO) {
   return {
     hub: JSON.parse(readFileSync(join(repo, ...PKG), 'utf8')).version,
     addon: PLUGIN_VERSION.exec(readFileSync(join(repo, ...PLUGIN), 'utf8'))?.[1],
+    claude: JSON.parse(readFileSync(join(repo, ...CLAUDE_PLUGIN), 'utf8')).version,
   };
 }
 
@@ -69,12 +73,15 @@ export function writeVersion(repo, version) {
   const text = readFileSync(cfg, 'utf8');
   if (!PLUGIN_VERSION.test(text)) throw new ReleaseError(`no version="…" line in ${PLUGIN.join('/')}`);
   writeFileSync(cfg, text.replace(PLUGIN_VERSION, `version="${version}"`));
+  const claude = join(repo, ...CLAUDE_PLUGIN);
+  writeFileSync(claude, setJsonVersion(readFileSync(claude, 'utf8'), version, false));
 }
 
-// La versión de hub/package.json manda: plugin.cfg tiene que coincidir (tools/build.mjs también lo exige).
+// La versión de hub/package.json manda: plugin.cfg y el plugin de Claude Code tienen que coincidir (tools/build.mjs
+// también lo exige para plugin.cfg).
 export function bump(repo, how) {
-  const { hub, addon } = readVersions(repo);
-  if (hub !== addon) throw new ReleaseError(`versions differ: hub/package.json ${hub}, plugin.cfg ${addon}`);
+  const { hub, addon, claude } = readVersions(repo);
+  if (hub !== addon || hub !== claude) throw new ReleaseError(`versions differ: hub/package.json ${hub}, plugin.cfg ${addon}, ${CLAUDE_PLUGIN.join('/')} ${claude}`);
   const next = nextVersion(hub, how);
   writeVersion(repo, next);
   return next;
@@ -83,9 +90,9 @@ export function bump(repo, how) {
 export function checkVersions(repo, tag) {
   const m = /^v(\d+\.\d+\.\d+)$/.exec(tag ?? '');
   if (!m) throw new ReleaseError(`the tag must be vX.Y.Z, got '${tag}'`);
-  const { hub, addon } = readVersions(repo);
-  if (hub !== m[1] || addon !== m[1]) {
-    throw new ReleaseError(`versions differ: tag ${tag}, hub/package.json ${hub}, addons/scope_compass/plugin.cfg ${addon}`);
+  const { hub, addon, claude } = readVersions(repo);
+  if (hub !== m[1] || addon !== m[1] || claude !== m[1]) {
+    throw new ReleaseError(`versions differ: tag ${tag}, hub/package.json ${hub}, addons/scope_compass/plugin.cfg ${addon}, ${CLAUDE_PLUGIN.join('/')} ${claude}`);
   }
   return m[1];
 }
@@ -178,10 +185,10 @@ export function sha256sums(dir) {
 // --- CLI ---
 
 const USAGE = `usage: node tools/release.mjs <command>
-  bump <patch|minor|major|X.Y.Z>   bump hub/package.json (and its lock) and plugin.cfg; prints the new version
+  bump <patch|minor|major|X.Y.Z>   bump hub/package.json (and its lock), plugin.cfg and the Claude Code plugin; prints the new version
   changelog <X.Y.Z> [YYYY-MM-DD]   turn '## [Unreleased]' of CHANGELOG.md into '## [X.Y.Z] - date'
   notes <X.Y.Z>                    print the release notes: that CHANGELOG section plus how to install
-  check <vX.Y.Z>                   fail unless the tag, hub/package.json and plugin.cfg have the same version
+  check <vX.Y.Z>                   fail unless the tag, hub/package.json, plugin.cfg and the Claude Code plugin have the same version
   sums <dir>                       write <dir>/SHA256SUMS with the files of <dir>`;
 
 function exact(v) {

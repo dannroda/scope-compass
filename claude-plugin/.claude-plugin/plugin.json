@@ -1,0 +1,18 @@
+{
+  "name": "scope-compass",
+  "version": "0.1.0",
+  "description": "Work on a Scope Compass task board (the compass/ folder of a game project): read the board guide, use the scompass MCP tools or CLI, move tasks through the workflow, check steps and record decisions.",
+  "author": {
+    "name": "Daniel Rodriguez Aires"
+  },
+  "homepage": "https://github.com/dannroda/scope-compass",
+  "repository": "https://github.com/dannroda/scope-compass",
+  "license": "MIT",
+  "keywords": [
+    "godot",
+    "task-board",
+    "project-management",
+    "mcp",
+    "scope-compass"
+  ]
+}

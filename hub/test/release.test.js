@@ -14,11 +14,14 @@ import {
 } from '../../tools/release.mjs';
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'tools', 'release.mjs');
+const REAL = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 let repo;
 
-function fakeRepo(hub = '0.1.0', addon = hub) {
+function fakeRepo(hub = '0.1.0', addon = hub, claude = hub) {
   mkdirSync(join(repo, 'hub'), { recursive: true });
   mkdirSync(join(repo, 'addons', 'scope_compass'), { recursive: true });
+  mkdirSync(join(repo, 'claude-plugin', '.claude-plugin'), { recursive: true });
+  writeFileSync(join(repo, 'claude-plugin', '.claude-plugin', 'plugin.json'), `{\n  "name": "scope-compass",\n  "version": "${claude}",\n  "license": "MIT"\n}\n`);
   writeFileSync(join(repo, 'hub', 'package.json'), `{\n  "name": "scope-compass",\n  "version": "${hub}",\n  "private": true\n}\n`);
   writeFileSync(join(repo, 'hub', 'package-lock.json'), JSON.stringify({
     name: 'scope-compass', version: hub, lockfileVersion: 3,
@@ -67,10 +70,11 @@ test('nextVersion: patch, minor, major y una versión exacta (con o sin v)', () 
   assert.throws(() => nextVersion('0.1', 'patch'), ReleaseError);
 });
 
-test('bump: sube package.json, su lock y plugin.cfg sin tocar el resto', () => {
+test('bump: sube package.json, su lock, plugin.cfg y el plugin de Claude Code sin tocar el resto', () => {
   fakeRepo();
   assert.equal(bump(repo, 'minor'), '0.2.0');
-  assert.deepEqual(readVersions(repo), { hub: '0.2.0', addon: '0.2.0' });
+  assert.deepEqual(readVersions(repo), { hub: '0.2.0', addon: '0.2.0', claude: '0.2.0' });
+  assert.equal(readFileSync(join(repo, 'claude-plugin', '.claude-plugin', 'plugin.json'), 'utf8'), '{\n  "name": "scope-compass",\n  "version": "0.2.0",\n  "license": "MIT"\n}\n');
   assert.equal(readFileSync(join(repo, 'hub', 'package.json'), 'utf8'), '{\n  "name": "scope-compass",\n  "version": "0.2.0",\n  "private": true\n}\n');
   const lock = JSON.parse(readFileSync(join(repo, 'hub', 'package-lock.json'), 'utf8'));
   assert.equal(lock.version, '0.2.0');
@@ -82,7 +86,9 @@ test('bump: sube package.json, su lock y plugin.cfg sin tocar el resto', () => {
 test('bump: con versiones distintas en el hub y el addon no sube nada', () => {
   fakeRepo('0.1.0', '0.1.1');
   assert.throws(() => bump(repo, 'patch'), /versions differ/);
-  assert.deepEqual(readVersions(repo), { hub: '0.1.0', addon: '0.1.1' });
+  assert.deepEqual(readVersions(repo), { hub: '0.1.0', addon: '0.1.1', claude: '0.1.0' });
+  fakeRepo('0.1.0', '0.1.0', '0.0.9');
+  assert.throws(() => bump(repo, 'patch'), /plugin\.json 0\.0\.9/);
 });
 
 test('checkVersions: el tag, package.json y plugin.cfg tienen que coincidir', () => {
@@ -92,6 +98,8 @@ test('checkVersions: el tag, package.json y plugin.cfg tienen que coincidir', ()
   assert.throws(() => checkVersions(repo, '1.2.3'), /must be vX\.Y\.Z/);
   fakeRepo('1.2.3', '1.2.2');
   assert.throws(() => checkVersions(repo, 'v1.2.3'), /plugin\.cfg 1\.2\.2/);
+  fakeRepo('1.2.3', '1.2.3', '1.2.0');
+  assert.throws(() => checkVersions(repo, 'v1.2.3'), /claude-plugin\/\.claude-plugin\/plugin\.json 1\.2\.0/);
 });
 
 test('releaseChangelog: Unreleased pasa a la versión con fecha, queda vacío arriba y los links de comparación se actualizan', () => {
@@ -184,4 +192,16 @@ test('CLI: un comando que no existe muestra el uso, los errores salen sin stack 
   writeFileSync(join(repo, 'x'), 'x');
   execFileSync(process.execPath, [SCRIPT, 'sums', repo]);
   assert.equal(readFileSync(join(repo, 'SHA256SUMS'), 'utf8'), `${createHash('sha256').update('x').digest('hex')}  x\n`);
+});
+
+// §40: el plugin de Claude Code del repo sale con la versión de Scope Compass, y su skill tiene name y description.
+test('el repo: hub, addon y plugin de Claude Code con la misma versión; la skill con su frontmatter', () => {
+  const { hub } = readVersions(REAL);
+  assert.equal(checkVersions(REAL, `v${hub}`), hub);
+  const skill = readFileSync(join(REAL, 'claude-plugin', 'skills', 'scope-compass', 'SKILL.md'), 'utf8');
+  const front = /^---\n([\s\S]*?)\n---\n/.exec(skill)?.[1] ?? '';
+  assert.match(front, /^name: scope-compass$/m);
+  assert.match(front, /^description: .{40,}$/m);
+  const market = JSON.parse(readFileSync(join(REAL, '.claude-plugin', 'marketplace.json'), 'utf8'));
+  assert.deepEqual(market.plugins.map((p) => [p.name, p.source]), [['scope-compass', './claude-plugin']]);
 });

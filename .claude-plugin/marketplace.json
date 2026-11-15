@@ -1,0 +1,22 @@
+{
+  "name": "scope-compass",
+  "owner": {
+    "name": "Daniel Rodriguez Aires"
+  },
+  "metadata": {
+    "description": "Scope Compass: a local task board for game projects, with the data in git, a web UI, a Godot dock and an MCP server."
+  },
+  "plugins": [
+    {
+      "name": "scope-compass",
+      "source": "./claude-plugin",
+      "description": "Work on a Scope Compass task board (compass/): the board guide as a skill, with the scompass MCP tools or CLI.",
+      "category": "productivity",
+      "keywords": [
+        "godot",
+        "task-board",
+        "mcp"
+      ]
+    }
+  ]
+}
