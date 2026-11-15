@@ -33,7 +33,7 @@ beforeEach(async () => {
   vida = join(root, 'Vida');
   juego = join(root, 'Juego');
   await run(['--dir', vida, '--direct', 'init', '--template', 'personal', '--project=Vida'], quiet);
-  await run(['--dir', juego, '--direct', 'init', '--template', 'juego', '--project=Project Epiphany'], quiet);
+  await run(['--dir', juego, '--direct', 'init', '--template', 'juego', '--project=Gran Juego'], quiet);
   const sv = createJsonFilesStore(join(vida, 'compass'), { validators: V });
   await sv.put('lists', 'rutina', { title: 'Rutina', order: 0, items: [
     { text: 'Meditar', done: false, due: day(-1), repeat: { every: 'day' } },

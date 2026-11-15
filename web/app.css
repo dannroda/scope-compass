@@ -655,7 +655,7 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
 @media (max-width: 760px) { .files-grid { grid-template-columns: minmax(0, 1fr); } .files-side { position: static; max-height: 45vh; } }
 
 /* Bordes de fantasía (19.16): opcionales, desde Ajustes (se guarda en el navegador, scompass.fantasy). Marcos 9-slice
-   de Project Epiphany (Kenney, CC0, en frames/) a tamaño 1:1 y con píxel nítido: a otra escala las líneas de un píxel
+   de Kenney (Fantasy UI Borders, CC0, en frames/) a tamaño 1:1 y con píxel nítido: a otra escala las líneas de un píxel
    se pierden. El modo usa siempre la paleta oscura, porque los marcos traen su fondo oscuro. border-image no tiene
    esquinas redondeadas ni usa el color del borde; las medidas son el corte de cada imagen. */
 /* Un grupo por marco; cada regla repite el reinicio porque :is() toma la especificidad de su selector más fuerte. */

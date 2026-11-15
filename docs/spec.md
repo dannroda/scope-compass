@@ -4,13 +4,13 @@ Organizador de proyectos de videojuegos: tablero de tareas por hito, con los dat
 
 **Estado:** en diseño. Plan de implementación en el tablero del repo (`compass/`, ver `README.md`). Prioridad actual: que funcione **local**.
 **Nombre:** Scope Compass. CLI: `scompass`. Carpeta de datos en cada proyecto: `compass/`.
-**Origen:** el tablero en artifact de Project Epiphany, https://claude.ai/artifact/DPeQdjQUUsQv7zCz7Tu5aY (creado el 2026-09-29). Primer proyecto usuario: `../project-epiphany`.
+**Origen:** un tablero hecho como artifact de Claude para un proyecto de juego (creado el 2026-09-29), que fue también el primer proyecto usuario.
 **Referencias en este repo:**
 - `docs/reference/tablero-artifact.html`: el código fuente completo del artifact (UI + lógica), base del port de §7.
 - `tools/artifact_to_md.py`: prototipo del export a markdown (§6, `export md`).
 - `tools/artifact_to_tablero.py`: prototipo del import desde el artifact (§8).
 - `docs/decisiones.md`: registro de las decisiones tomadas y por qué.
-- Mockups de la app web, el teléfono y el dock de Godot: https://claude.ai/artifact/6QSijARPwJtsRd1t6wJGJ9
+- Mockups de la app web, el teléfono y el dock de Godot: se hicieron como artifact, fuera del repo.
 
 ---
 
@@ -589,7 +589,7 @@ Para respetar el principio de §1 también hosteado, **git sigue siendo el almac
 
 **Objetivo:** que Scope Compass sirva para organizar todo, no solo proyectos de juego. Una página de **Inicio** junta todos los proyectos del equipo, y un proyecto puede usarse para cosas personales ("Vida") con **listas** además del tablero. Todo sigue siendo **local**. El mirror always-on queda para después (§12).
 
-Mockups: https://claude.ai/artifact/H842sKGxHz1oGH7qgZhYvY
+Mockups: se hicieron como artifact, fuera del repo.
 
 **Principio:** cada `compass/` sigue siendo individual y un hub sigue sirviendo un solo proyecto. El Inicio es un proceso aparte que los conoce y los coordina, no un hub que los reemplaza (D24). Un proyecto personal es un proyecto normal creado con otra plantilla (D25).
 
@@ -708,7 +708,7 @@ Cada uno tiene su test en `hub/test/m8-criteria.test.js`, salvo el de la bandeja
 
 **Objetivo:** que el Inicio se sienta como una sola app. Un solo puerto, ningún proceso que esperar, y todo proyecto del registro editable al instante. Reemplaza la parte de D24 que pedía un hub aparte por proyecto aun con el Inicio corriendo (D29).
 
-- **Con el Inicio corriendo, el Inicio sirve cada proyecto** en `/p/<clave>/`: tablero, API, WebSocket, detección de cambios y export. Es el mismo código del hub, montado bajo esa ruta, y se activa la primera vez que se lo pide. La clave sale del nombre de la carpeta (`vida`, `project-epiphany`), sin repetirse.
+- **Con el Inicio corriendo, el Inicio sirve cada proyecto** en `/p/<clave>/`: tablero, API, WebSocket, detección de cambios y export. Es el mismo código del hub, montado bajo esa ruta, y se activa la primera vez que se lo pide. La clave sale del nombre de la carpeta (`vida`, `mi-juego`), sin repetirse.
 - **Sin Inicio, el hub suelto sigue igual** (`scompass serve`, el dock).
 - **Un solo proceso escribe cada `compass/`.** El registro de hubs anota quién sirve cada proyecto: un hub suelto, o el Inicio con su ruta (`base: "/p/<clave>"`). Si ya hay un hub suelto de un proyecto, el Inicio le reenvía los pedidos (HTTP y WebSocket) en lugar de servirlo él.
 - **CLI y dock** encuentran el proyecto en el registro y usan su `base`. El "Iniciar hub" del dock, con el Inicio corriendo, activa el proyecto en el Inicio en lugar de levantar otro proceso. Desde 21.1 el dock lo hace solo al abrirse, en Reintentar y en el sondeo sin hub; si el Inicio se niega, no insiste hasta Reintentar.
@@ -1112,7 +1112,7 @@ Lo que encontró la auditoría completa después de M18 (seguridad, backend, web
   - En tablet táctil, la barra de abajo de Documentos no repite el índice lateral; el selector de la barra corta con …; los avisos empiezan con mayúscula; el alias inválido de *+ Documento* avisa en castellano; la ruta de un proyecto en el Inicio va en un renglón, cortada con …
 - **Tableros de prueba en el Inicio (19.14):** cada tablero creado para probar algo quedaba anotado en `projects.json` y el Inicio se llenaba de *no encontrado*. `init` y `serve` no anotan solos un proyecto en una carpeta temporal (`os.tmpdir()`, `/tmp`, `/var/tmp`), salvo que `projects.json` también sea temporal (tests aislados); `home add` sí lo anota. El Inicio, al arrancar, olvida los temporales que ya no existen. Y cada archivo de test importa `test/isolate.js`, que con `node --test` directo (sin `npm test`) pone un registro, una config y una carpeta de datos temporales.
 - **Ícono dorado (19.15):** el ícono de la bandeja (el SVG del tema) y el favicon usan el dorado de la interfaz, `#d9a441`, como el dibujo de respaldo de la bandeja; antes eran grises.
-- **Bordes de fantasía (19.16):** después de los mockups con los marcos de Project Epiphany (*Fantasy UI Borders* de Kenney, CC0, recoloreados), la web los suma como modo opcional. Un botón de Ajustes (engranaje) en el tablero y en el Inicio abre un diálogo con *Bordes de fantasía*; se guarda en el navegador (`scompass.fantasy`), se aplica antes de pintar (`settings.js` en el `<head>`) y sigue en las otras pestañas. Botones, tarjetas, columnas, resumen, detalle, campos, diálogos y tarjetas del Inicio llevan su marco, y también Listas, Documentos (árbol, índice, artículo, ficha, código) y Archivos (árbol, ficha, código, imágenes) y el modo lista del tablero en 9-slice (`border-image`) a tamaño 1:1 y con píxel nítido; el modo usa siempre la paleta oscura, porque los marcos traen su fondo. El hub y el Inicio sirven `frames/*.png`.
+- **Bordes de fantasía (19.16):** después de los mockups con los marcos de un proyecto de juego (*Fantasy UI Borders* de Kenney, CC0, recoloreados), la web los suma como modo opcional. Un botón de Ajustes (engranaje) en el tablero y en el Inicio abre un diálogo con *Bordes de fantasía*; se guarda en el navegador (`scompass.fantasy`), se aplica antes de pintar (`settings.js` en el `<head>`) y sigue en las otras pestañas. Botones, tarjetas, columnas, resumen, detalle, campos, diálogos y tarjetas del Inicio llevan su marco, y también Listas, Documentos (árbol, índice, artículo, ficha, código) y Archivos (árbol, ficha, código, imágenes) y el modo lista del tablero en 9-slice (`border-image`) a tamaño 1:1 y con píxel nítido; el modo usa siempre la paleta oscura, porque los marcos traen su fondo. El hub y el Inicio sirven `frames/*.png`.
 
 ### 27.1 Criterios de aceptación de M19
 <!-- id: criterios-auditoria -->

@@ -32,10 +32,12 @@ async function python(src, board, title) {
 }
 const dateOf = (md) => md.match(/^> Generado: (\S+)$/m)[1];
 
-for (const [name, dir] of [['Scope Compass', join(REPO, 'compass')], ['Project Epiphany', join(REPO, '..', 'project-epiphany', 'compass')]]) {
-  test(`misma salida que tools/artifact_to_md.py: ${name}`, { skip: !existsSync(dir) && 'no está el proyecto' }, async (t) => {
+// El segundo es un proyecto real de afuera (SCOMPASS_TEST_PROJECT, la carpeta que tiene compass/); sin la variable se saltea.
+const REAL = process.env.SCOMPASS_TEST_PROJECT;
+for (const [name, dir] of [['Scope Compass', join(REPO, 'compass')], ['Proyecto real', REAL && join(REAL, 'compass')]]) {
+  test(`misma salida que tools/artifact_to_md.py: ${name}`, { skip: !(dir && existsSync(dir)) && 'no está el proyecto' }, async (t) => {
     const all = await loadCompass(dir, V);
-    const board = all.config.board_url ?? 'https://claude.ai/artifact/x';
+    const board = all.config.board_url ?? 'https://example.com/tablero';
     const expected = await python(dir, board, name);
     if (expected === null) return t.skip('sin python3');
     // El prototipo de Python es anterior a los vínculos (D22), las listas (D25), las fechas (D26), a etiquetas, prioridad y

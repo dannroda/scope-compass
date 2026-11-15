@@ -5,7 +5,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument('src', help='carpeta con milestones/ y tasks/ (export del artifact o compass/)')
 ap.add_argument('out', help='archivo .md de salida')
 ap.add_argument('--title', default='Scope Compass', help='nombre del proyecto para el título')
-ap.add_argument('--board', default='https://claude.ai/artifact/JAiu8ZznTSLcDk8EzU3Zaj', help='URL del tablero')
+ap.add_argument('--board', default='https://example.com/tablero', help='URL del tablero')
 a = ap.parse_args()
 
 load = lambda d: {os.path.basename(p)[:-5]: json.load(open(p, encoding='utf-8')) for p in glob.glob(f'{a.src}/{d}/*.json')}

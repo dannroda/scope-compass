@@ -60,7 +60,7 @@ Hub en Node con API REST y WebSocket; la UI es el código del artifact portado; 
 Cada sección referenciable lleva `<!-- id: nombre -->` debajo del título. Las tareas guardan `refs: [{doc, section}]`.
 
 - **Por qué:** "§11.3" cambia al insertar una sección y el título se renombra; el comentario es invisible en cualquier visor.
-- **Estado:** `project-epiphany/gdd.md` ya tiene sus 28 ids estampados, y sus tareas de M0 ya tienen `refs`.
+- **Estado:** el `gdd.md` del primer proyecto de juego ya tiene sus 28 ids estampados, y sus tareas de M0 ya tienen `refs`.
 
 ## D8 · Orden: v1 local → v1.5 dock de Godot → v2 documentos → hosting
 **2026-09-29 · vigente** · spec §2, §11, §12
@@ -128,7 +128,7 @@ v1 se desarrolla y se prueba solo en Linux. Windows no se prueba ni bloquea ning
 
 Migrado con `scompass import artifact` desde el último export del artifact: 8 hitos y 13 tareas, todos sin cambios respecto de `compass/`. Se quitó `board_url` de `compass/config.json`.
 
-- **Por qué:** M1 cerrado, la CLI ya alcanza para trabajar el tablero, y usar la herramienta en su propio desarrollo es la mejor forma de encontrar lo que falta antes de migrar Epiphany (M4).
+- **Por qué:** M1 cerrado, la CLI ya alcanza para trabajar el tablero, y usar la herramienta en su propio desarrollo es la mejor forma de encontrar lo que falta antes de migrar el primer proyecto de juego (M4).
 - **Costo aceptado:** hasta M3 no hay UI; el tablero se ve en `docs/tareas.md` o con `scompass list`.
 - **El artifact** queda archivado y sin sincronización. No se borra: tiene el historial de antes de la migración.
 
@@ -215,7 +215,7 @@ Además del registro de hubs vivos (en `$XDG_RUNTIME_DIR`, se borra al reiniciar
 **2026-10-04 · vigente** · spec §4.2 · `hub/src/store/json-files.js` (`taskIdFor`) · reemplaza el id aleatorio de §4.2
 
 - **Qué:** una tarea nueva en `m05` recibe `m5-12` (el número más alto del hito + 1), igual que las importadas. El Store lo calcula dentro de su cola, así que la CLI, la web, el dock y el Inicio dan el mismo resultado. Un hito con otro tipo de id sigue usando uno aleatorio de 8 caracteres.
-- **Por qué:** salió del primer uso en Epiphany (4.2): con ids al azar (`tagr1kge`) las tareas nuevas se leían mal en git y en la CLI al lado de las importadas (`m0-03`).
+- **Por qué:** salió del primer uso en un proyecto de juego (4.2): con ids al azar (`tagr1kge`) las tareas nuevas se leían mal en git y en la CLI al lado de las importadas (`m0-03`).
 - **Costo aceptado:** dos ramas que crean una tarea en el mismo hito a la vez generan el mismo nombre de archivo y git lo marca como conflicto add/add; se resuelve renombrando una. Con un solo usuario trabajando en una rama a la vez es raro. Las tareas que ya tienen id aleatorio no se renombran (cambiaría su historial en git y las referencias).
 - **Descartado:** renumerar ids al mover una tarea de hito (rompe `links`, referencias e historial).
 

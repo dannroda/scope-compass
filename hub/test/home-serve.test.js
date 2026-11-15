@@ -51,8 +51,8 @@ afterEach(async () => {
 });
 
 test('projectKeys: el nombre de la carpeta como slug, sin repetir', () => {
-  const keys = projectKeys([{ path: '/a/Vida' }, { path: '/b/vida' }, { path: '/c/Project Epiphany' }]);
-  assert.deepEqual([...keys.values()], ['vida', 'vida-2', 'project-epiphany']);
+  const keys = projectKeys([{ path: '/a/Vida' }, { path: '/b/vida' }, { path: '/c/Gran Juego' }]);
+  assert.deepEqual([...keys.values()], ['vida', 'vida-2', 'gran-juego']);
 });
 
 test('19.5: projectKeys conserva las claves ya dadas aunque se quite un proyecto', () => {

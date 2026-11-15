@@ -20,7 +20,7 @@
   "code": "0.3",
   "created_at": "2026-09-29T20:00:00Z",
   "milestone": "m00",
-  "notes": "Validador: `uv run tools/validate.py compass ../project-epiphany/compass` (schemas, formato canónico, conflictos, hitos inexistentes). La copia del schema de config en `project-epiphany/compass/schema/` queda para cuando Epiphany adopte la CLI (M4).",
+  "notes": "Validador: `uv run tools/validate.py compass ../mi-juego/compass` (schemas, formato canónico, conflictos, hitos inexistentes). La copia del schema de config en `mi-juego/compass/schema/` queda para cuando el juego adopte la CLI (M4).",
   "order": 3,
   "refs": [
     {
@@ -29,7 +29,7 @@
     }
   ],
   "status": "done",
-  "test": "Los JSON de `compass/` y de `project-epiphany/compass/` validan contra `schema/`.",
+  "test": "Los JSON de `compass/` y de `mi-juego/compass/` validan contra `schema/`.",
   "title": "Schemas",
   "updated_at": "2026-09-29T22:00:00Z"
 }

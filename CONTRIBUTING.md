@@ -28,7 +28,7 @@ cd hub && node scripts/run-tests.js test/cli.test.js   # one file
 
 Always go through `npm test` or `scripts/run-tests.js`, not plain `node --test`: the runner gives the tests their own registry, config and data folders, so they never touch your real `~/.config/scope-compass/` or `~/.local/share/scope-compass/`.
 
-The dock tests launch Godot headless (`GODOT`, or `godot` on the `PATH`) and are skipped when there is none; the game screenshot test also needs `xvfb-run`. See [`hub/README.md`](hub/README.md) for details.
+The dock tests launch Godot headless (`GODOT`, or `godot` on the `PATH`) and are skipped when there is none; the game screenshot test also needs `xvfb-run`. A few tests also run against a real project from outside this repo (a folder with `compass/` and a `gdd.md`): point `SCOMPASS_TEST_PROJECT` at it, or they are skipped. See [`hub/README.md`](hub/README.md) for details.
 
 ## Style
 

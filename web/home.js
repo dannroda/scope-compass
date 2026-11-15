@@ -1,4 +1,4 @@
-// Inicio de Scope Compass (spec §16.2, mockups en https://claude.ai/artifact/H842sKGxHz1oGH7qgZhYvY): la franja
+// Inicio de Scope Compass (spec §16.2): la franja
 // "Hoy" y una tarjeta por proyecto del registro. Los datos vienen de la API del Inicio (hub/src/home.js).
 (function () {
   const S = { projects: [], today: [], week: [], templates: [], dataDir: '', sep: '/', loaded: false, offline: false, connected: false,

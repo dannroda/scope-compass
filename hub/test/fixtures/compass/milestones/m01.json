@@ -1,7 +1,7 @@
 {
   "code": "M1",
   "done_when": [
-    "`scompass import artifact` migra los datos de Project Epiphany sin diferencias.",
+    "`scompass import artifact` migra los datos del primer proyecto de juego sin diferencias.",
     "`list`, `show`, `add`, `move`, `check` y `export md` funcionan sin servidor.",
     "`export md` produce lo mismo que `tools/artifact_to_md.py`.",
     "Un JSON inválido o con marcadores de conflicto se reporta y nunca se sobrescribe."

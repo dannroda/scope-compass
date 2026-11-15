@@ -1,4 +1,4 @@
-<title>Tablero Epiphany</title>
+<title>Tablero</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Cinzel:wght@700&family=JetBrains+Mono:wght@500&display=swap">
@@ -115,7 +115,7 @@ main.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); ga
 
 <div class="wrap">
   <header class="top">
-    <h1>Project Epiphany <small>tareas hacia el MVP</small></h1>
+    <h1>Mi juego <small>tareas hacia el MVP</small></h1>
     <button class="btn primary" id="new-btn" type="button">Nueva tarea</button>
   </header>
   <nav class="miles" id="miles" aria-label="Hitos"></nav>
@@ -148,8 +148,8 @@ main.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); ga
 
   function pref(k, v) {
     try {
-      if (v === undefined) return localStorage.getItem('epiphany.' + k);
-      localStorage.setItem('epiphany.' + k, v);
+      if (v === undefined) return localStorage.getItem('tablero.' + k);
+      localStorage.setItem('tablero.' + k, v);
     } catch (e) { return null; }
   }
 

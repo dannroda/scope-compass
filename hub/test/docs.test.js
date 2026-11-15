@@ -10,7 +10,9 @@ import { loadDocs, parseSections, resolveRef, searchDocs, sectionMarkdown, slugi
 import { run } from '../src/cli.js';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const EPIPHANY = join(REPO, '..', 'project-epiphany');
+// Un proyecto real de afuera con gdd.md y compass/ (SCOMPASS_TEST_PROJECT); sin la variable, esos tests se saltean.
+const REAL = process.env.SCOMPASS_TEST_PROJECT;
+const hasReal = (p) => !!REAL && existsSync(join(REAL, p));
 
 const MD = `# Juego
 <!-- id: juego -->
@@ -104,19 +106,19 @@ test('las refs de las tareas de este repo resuelven contra sus documentos', { sk
   assert.deepEqual(broken, []);
 });
 
-test('doc list y doc show --raw con el GDD de Epiphany', { skip: !existsSync(join(EPIPHANY, 'gdd.md')) && 'no está project-epiphany' }, async () => {
+test('doc list y doc show --raw con el GDD de un proyecto real', { skip: !hasReal('gdd.md') && 'sin SCOMPASS_TEST_PROJECT' }, async () => {
   let out = '';
   const io = { out: { write: (s) => { out += s; } }, err: { write() {} }, cwd: REPO };
-  assert.equal(await run(['--dir', EPIPHANY, '--direct', 'doc', 'list', '--json'], io), 0);
+  assert.equal(await run(['--dir', REAL, '--direct', 'doc', 'list', '--json'], io), 0);
   const gdd = JSON.parse(out).docs.find((d) => d.alias === 'gdd');
   assert.ok(gdd.sections.length >= 28);
-  // Una sección con id cualquiera: el GDD de Epiphany cambia.
+  // Una sección con id cualquiera: el GDD real cambia.
   const sec = gdd.sections.find((x) => x.explicit);
   out = '';
-  assert.equal(await run(['--dir', EPIPHANY, '--direct', 'doc', 'show', `gdd#${sec.id}`, '--raw'], io), 0);
+  assert.equal(await run(['--dir', REAL, '--direct', 'doc', 'show', `gdd#${sec.id}`, '--raw'], io), 0);
   assert.match(out, new RegExp(`^#{${sec.level}} `));
   assert.ok(out.includes(`<!-- id: ${sec.id} -->`));
-  assert.equal(await run(['--dir', EPIPHANY, '--direct', 'doc', 'show', 'gdd#no-existe'], io), 1);
+  assert.equal(await run(['--dir', REAL, '--direct', 'doc', 'show', 'gdd#no-existe'], io), 1);
 });
 
 // --- 6.2: refs check, ref add/rm, stamp-ids ---
@@ -313,11 +315,11 @@ test('stamp-ids estampa el slug actual (las refs frágiles siguen resolviendo) y
   }
 });
 
-test('refs check en los proyectos reales: este repo sin rotas; Epiphany, que el chequeo corra', async () => {
+test('refs check en los proyectos reales: este repo sin rotas; el de afuera, que el chequeo corra', async () => {
   const quiet = { out: { write() {} }, err: { write() {} } };
   assert.equal(await run(['--dir', REPO, '--direct', 'refs', 'check'], quiet), 0);
-  // En Epiphany una referencia rota es un dato que otra sesión está editando, no un error del código.
-  if (existsSync(join(EPIPHANY, 'compass'))) assert.ok([0, 1].includes(await run(['--dir', EPIPHANY, '--direct', 'refs', 'check'], quiet)));
+  // En el proyecto de afuera una referencia rota es un dato que otra sesión está editando, no un error del código.
+  if (hasReal('compass')) assert.ok([0, 1].includes(await run(['--dir', REAL, '--direct', 'refs', 'check'], quiet)));
 });
 
 // --- 6.8: citas "§N.N" → propuestas de refs ---
@@ -345,13 +347,13 @@ test('refs suggest: también "en el GDD (§4.3)"', () => {
   assert.deepEqual(s.map((x) => x.ref), ['gdd#input']);
 });
 
-// Los datos reales de Epiphany cambian (hay otra sesión trabajándolos): solo se comprueba que toda propuesta
+// Los datos del proyecto real cambian (hay otra sesión trabajándolos): solo se comprueba que toda propuesta
 // apunte a una sección que existe.
-test('refs suggest con Epiphany: toda propuesta apunta a una sección existente', { skip: !existsSync(join(EPIPHANY, 'gdd.md')) && 'no está project-epiphany' }, async () => {
+test('refs suggest con un proyecto real: toda propuesta apunta a una sección existente', { skip: !hasReal('gdd.md') && 'sin SCOMPASS_TEST_PROJECT' }, async () => {
   let out = '';
-  assert.equal(await run(['--dir', EPIPHANY, '--direct', 'refs', 'suggest', '--json'], { out: { write: (s) => { out += s; } }, err: { write() {} } }), 0);
-  const config = JSON.parse(await (await import('node:fs/promises')).readFile(join(EPIPHANY, 'compass', 'config.json'), 'utf8'));
-  const docs = await loadDocs(EPIPHANY, config);
+  assert.equal(await run(['--dir', REAL, '--direct', 'refs', 'suggest', '--json'], { out: { write: (s) => { out += s; } }, err: { write() {} } }), 0);
+  const config = JSON.parse(await (await import('node:fs/promises')).readFile(join(REAL, 'compass', 'config.json'), 'utf8'));
+  const docs = await loadDocs(REAL, config);
   for (const x of JSON.parse(out).suggestions) assert.ok(resolveRef(docs, x.ref).section, x.ref);
 });
 

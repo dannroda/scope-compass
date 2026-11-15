@@ -14,7 +14,8 @@ import { run } from '../src/cli.js';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const FIXTURE = join(REPO, 'hub', 'test', 'fixtures', 'compass');
-const EPIPHANY = join(REPO, '..', 'project-epiphany', 'compass');
+// Un proyecto real de afuera (la carpeta que tiene compass/), para los criterios que se miden con datos reales.
+const REAL = process.env.SCOMPASS_TEST_PROJECT && join(process.env.SCOMPASS_TEST_PROJECT, 'compass');
 const hasGit = (() => { try { execFileSync('git', ['--version']); return true; } catch { return false; } })();
 let dir;
 
@@ -46,29 +47,29 @@ test('compass/schema/ es copia exacta de schema/', { skip: !existsSync(join(REPO
   }
 });
 
-test('§14: import artifact migra los hitos y las tareas de Epiphany sin diferencias', { skip: !existsSync(EPIPHANY) && 'no está project-epiphany' }, async () => {
+test('§14: import artifact migra los hitos y las tareas de un proyecto real sin diferencias', { skip: !(REAL && existsSync(REAL)) && 'sin SCOMPASS_TEST_PROJECT' }, async () => {
   const exp = join(dir, 'export');
   for (const c of ['milestones', 'tasks']) {
     await mkdir(join(exp, c), { recursive: true });
-    for (const name of await readdir(join(EPIPHANY, c))) {
-      const doc = JSON.parse(await readFile(join(EPIPHANY, c, name), 'utf8'));
+    for (const name of await readdir(join(REAL, c))) {
+      const doc = JSON.parse(await readFile(join(REAL, c, name), 'utf8'));
       if (c === 'tasks') delete doc.created_at;
       await writeFile(join(exp, c, name), JSON.stringify({ ...doc, version: 2 }));
     }
   }
-  const p = join(dir, 'epiphany');
-  await cp(EPIPHANY, join(p, 'compass'), { recursive: true });
+  const p = join(dir, 'real');
+  await cp(REAL, join(p, 'compass'), { recursive: true });
   let out = '';
   const code = await run(['--dir', p, 'import', 'artifact', exp, '--json'], { out: { write: (s) => { out += s; } }, err: { write() {} } });
   assert.equal(code, 0);
   const r = JSON.parse(out);
-  // Epiphany cambia (hay otra sesión trabajándolo): todo lo que tiene tiene que quedar igual.
-  assert.equal(r.milestones.unchanged.length, (await readdir(join(EPIPHANY, 'milestones'))).length);
-  assert.equal(r.tasks.unchanged.length, (await readdir(join(EPIPHANY, 'tasks'))).length);
+  // El proyecto real cambia (puede haber otra sesión trabajándolo): todo lo que tiene tiene que quedar igual.
+  assert.equal(r.milestones.unchanged.length, (await readdir(join(REAL, 'milestones'))).length);
+  assert.equal(r.tasks.unchanged.length, (await readdir(join(REAL, 'tasks'))).length);
   assert.ok(r.tasks.unchanged.length >= 10);
   for (const c of ['milestones', 'tasks']) {
-    for (const name of await readdir(join(EPIPHANY, c))) {
-      assert.equal(await readFile(join(p, 'compass', c, name), 'utf8'), await readFile(join(EPIPHANY, c, name), 'utf8'));
+    for (const name of await readdir(join(REAL, c))) {
+      assert.equal(await readFile(join(p, 'compass', c, name), 'utf8'), await readFile(join(REAL, c, name), 'utf8'));
     }
   }
 });
