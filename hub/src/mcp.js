@@ -16,6 +16,7 @@ const INSTRUCTIONS = `Tablero de tareas del proyecto (compass/, formato de Scope
 - Cada vez que elijas entre alternativas razonables que el usuario podría haber querido distinto (formato, nombre visible, dejar algo afuera, una dependencia, un comportamiento por defecto), registralo con add_decision (why, alternatives); si le preguntaste, con ask y después reply_decision con la respuesta. Antes de seguir una tarea, mirá si tiene decisiones a revertir (list_decisions con states revert): deshacelas y marcalas reverted con review_decision.
 - Las escrituras devuelven la tarea con su etag; pasalo en etag para no pisar un cambio ajeno (si cambió, falla con conflicto: volvé a leerla).
 - Los cambios quedan como archivos modificados en compass/: commitealos solo si te lo piden.
+- Documentos: show_doc da el etag del documento; con since (el etag que ya tenés) dice si cambió sin repetir el texto. Si un resultado trae un aviso de que un documento que leíste cambió, volvé a leerlo antes de basarte en él.
 - dir opera sobre otro proyecto (la carpeta que tiene compass/).`;
 
 const STATUSES = ['todo', 'paused', 'doing', 'review', 'done'];
@@ -63,8 +64,8 @@ const TOOLS = [
   { name: 'list_docs', read: true, description: 'Documentos del proyecto (los de config.json) con su índice de secciones.', props: {}, argv: () => [[], ['doc', 'list']] },
   { name: 'search_docs', read: true, description: 'Líneas de los documentos con todas las palabras (sin tildes ni mayúsculas), con la sección donde está cada una.',
     props: { text: str('texto a buscar') }, required: ['text'], argv: (a) => [[], ['doc', 'search', a.text]] },
-  { name: 'show_doc', read: true, description: 'Un documento entero (alias) o una sección (alias#id), en markdown.',
-    props: { ref: str('alias o alias#id-de-sección (list_docs los muestra)') }, required: ['ref'], argv: (a) => [[], ['doc', 'show', a.ref]] },
+  { name: 'show_doc', read: true, description: 'Un documento entero (alias) o una sección (alias#id), en markdown, con el etag del documento. Con since (el etag que ya leíste): si no cambió, contesta solo eso; si cambió, el texto y qué secciones cambiaron, se agregaron o se quitaron.',
+    props: { ref: str('alias o alias#id-de-sección (list_docs los muestra)'), since: str('etag del documento que ya leíste (lo dio show_doc)') }, required: ['ref'], argv: (a) => [[], ['doc', 'show', a.ref]] },
 
   { name: 'add_task', description: 'Crea una tarea en un hito (el id sale solo: siguiente número del hito). Con una etiqueta que tiene plantilla y sin description, la descripción arranca con la plantilla.',
     props: { title: str('título'), milestone: str('id del hito (m05)'), code: str('número visible (5.9)'), status: str('estado inicial (todo por defecto)', { enum: STATUSES }),
@@ -154,6 +155,17 @@ export async function serveMcp({ project, stdin = process.stdin, out = process.s
     const t = TOOLS.find((x) => x.name === name);
     if (!t) throw new RpcError(-32602, `herramienta desconocida: ${name}`);
     for (const k of t.required ?? []) if (a[k] === undefined) return { content: [{ type: 'text', text: `falta ${k}` }], isError: true };
+    // show_doc con since (§41): si el documento no cambió, no se repite el texto.
+    let changes = null;
+    if (name === 'show_doc' && a.since) {
+      const c = await cli([`--since=${a.since}`, '--', 'doc', 'changed', a.ref], a.dir);
+      try { changes = JSON.parse(c.out); } catch { return { content: [{ type: 'text', text: failure(c) }], isError: true }; }
+      if (!changes.changed) {
+        remember(a.dir, changes.alias, changes.etag);
+        const same = { ...changes, note: 'sin cambios desde since: vale lo que ya leíste' };
+        return { content: [{ type: 'text', text: JSON.stringify(same) }], structuredContent: same };
+      }
+    }
     const [flags, positional] = t.argv(a);
     // Las opciones antes de --, así un título que empieza con - es un título.
     const r = await cli([...flags, '--', ...positional], a.dir);
@@ -164,7 +176,52 @@ export async function serveMcp({ project, stdin = process.stdin, out = process.s
     if (r.err) content.push({ type: 'text', text: r.err });
     let data;
     try { data = JSON.parse(r.out); } catch { /* no es JSON */ }
+    if (name === 'show_doc' && data?.etag) {
+      remember(a.dir, data.alias, data.etag);
+      if (changes) {
+        data = { ...data, changes: { since: changes.since, known: changes.known, sections: changes.sections } };
+        content[0] = { type: 'text', text: JSON.stringify(data) };
+      }
+    }
     return { content, ...(data && typeof data === 'object' && !Array.isArray(data) && { structuredContent: data }) };
+  }
+
+  // Documentos que esta sesión leyó (§41): el servidor es un proceso por sesión de Claude Code, así que lo recuerda
+  // acá y no en el hub. "<dir>\0<alias>" → { dir, alias, etag (el que leyó), warned (el último que avisó) }.
+  const seen = new Map();
+  function remember(dir, alias, etag) {
+    if (alias && etag) seen.set(`${dir ?? ''}\0${alias}`, { dir, alias, etag, warned: etag });
+  }
+  // Después de cada herramienta: un aviso por cada documento leído que cambió desde entonces, una vez por versión.
+  async function docNotices() {
+    if (!seen.size) return [];
+    const notices = [];
+    for (const dir of new Set([...seen.values()].map((x) => x.dir))) {
+      const r = await cli(['doc', 'list'], dir);
+      let docs;
+      try { docs = JSON.parse(r.out).docs; } catch { continue; }
+      for (const x of [...seen.values()].filter((v) => v.dir === dir)) {
+        const now = docs.find((d) => d.alias === x.alias)?.etag ?? null;
+        if (now === x.warned) continue;
+        x.warned = now;
+        if (now === null) { notices.push(`Aviso: el documento ${x.alias}, que leíste, ya no está (se borró o se quitó de compass/config.json).`); continue; }
+        const c = await cli([`--since=${x.etag}`, '--', 'doc', 'changed', x.alias], dir);
+        let what = '';
+        try {
+          const { sections: s } = JSON.parse(c.out);
+          if (s) what = [['cambiaron', s.changed], ['nuevas', s.added], ['quitadas', s.removed]].filter(([, ids]) => ids.length).map(([l, ids]) => `${l}: ${ids.join(', ')}`).join('; ');
+        } catch { /* sin secciones */ }
+        notices.push(`Aviso: el documento ${x.alias} cambió desde que lo leíste${what ? ` (secciones ${what})` : ''}. Volvé a leerlo con show_doc (since: ${x.etag}) antes de basarte en él.`);
+      }
+    }
+    return notices;
+  }
+  async function callToolWithNotices(p) {
+    const res = await callTool(p);
+    const notices = await docNotices();
+    if (!notices.length) return res;
+    return { ...res, content: [...res.content, ...notices.map((text) => ({ type: 'text', text }))],
+      ...(res.structuredContent && { structuredContent: { ...res.structuredContent, avisos: notices } }) };
   }
 
   // Recursos (22.5): para adjuntar con @ en Claude Code.
@@ -190,7 +247,9 @@ export async function serveMcp({ project, stdin = process.stdin, out = process.s
       const { tasks } = must(await cli([`--milestone=${id}`, '--', 'list']));
       text = JSON.stringify({ ...ms, tasks });
     } else {
-      text = must(await cli(['--', 'doc', 'show', id])).markdown;
+      const d = must(await cli(['--', 'doc', 'show', id]));
+      remember(undefined, d.alias, d.etag);
+      text = d.markdown;
       mimeType = 'text/markdown';
     }
     return { contents: [{ uri, mimeType, text }] };
@@ -210,7 +269,7 @@ export async function serveMcp({ project, stdin = process.stdin, out = process.s
     }),
     ping: () => ({}),
     'tools/list': () => ({ tools: toolList }),
-    'tools/call': callTool,
+    'tools/call': callToolWithNotices,
     'resources/list': listResources,
     'resources/templates/list': () => templates,
     'resources/read': readResource

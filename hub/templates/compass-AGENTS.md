@@ -26,6 +26,8 @@ Eso corre `claude mcp add --scope user scompass -- <ruta entera de scompass> mcp
 
 Los hitos (`compass://milestone/<id>`), las tareas (`compass://task/<id>`) y los documentos (`compass://doc/<alias>`) se adjuntan con `@scompass:…`.
 
+`show_doc` da el `etag` del documento (también al leer una sección). Pasalo como `since` para preguntar si cambió: si no cambió, contesta solo eso, sin el texto; si cambió, trae el texto y `changes` con las secciones cambiadas, nuevas y quitadas. Si después de leer un documento un resultado trae «Aviso: el documento … cambió desde que lo leíste», alguien lo editó mientras trabajabas: volvé a leerlo antes de seguir basándote en él.
+
 ## Chat
 
 La web del tablero tiene un chat (botón *Chat*, solo en el mismo equipo) con el Claude Code instalado. Lanza `claude` en la carpeta del proyecto con el MCP `scompass` y las herramientas de lectura (`Read`, `Grep`, `Glob`), permitidas de antemano: no edita archivos ni corre comandos, y lo demás se niega sin preguntar. Si sos ese agente:

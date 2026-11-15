@@ -244,3 +244,41 @@ test('add_decision con ask guarda la sesión de Claude Code del servidor (CLAUDE
   const r2 = await s.tool('add_decision', { id: 'm1-04', text: 'Usar X' });
   assert.equal(r2.structuredContent.decisions.at(-1).session, undefined);
 });
+
+// §41 (m26-03): show_doc con etag y since, y el aviso cuando un documento que la sesión leyó cambia.
+test('show_doc: etag, since sin cambios no repite el texto, y con cambios trae las secciones', async () => {
+  const s = mcp();
+  const first = await s.tool('show_doc', { ref: 'spec#alcance' });
+  const { etag } = data(first);
+  assert.match(etag, /^[0-9a-f]{40}$/);
+  assert.deepEqual(first.structuredContent.etag, etag);
+  const same = await s.tool('show_doc', { ref: 'spec#alcance', since: etag });
+  assert.equal(data(same).changed, false);
+  assert.ok(!('markdown' in data(same)), 'no repite el texto');
+  await writeFile(join(dir, 'docs', 'spec.md'), '# Spec\n\n## Alcance\n<!-- id: alcance -->\n\nQué entra y qué no.\n\n## Fuera\n<!-- id: fuera -->\n\nLo demás.\n');
+  const changed = data(await s.tool('show_doc', { ref: 'spec', since: etag }));
+  assert.match(changed.markdown, /Qué entra y qué no/);
+  assert.notEqual(changed.etag, etag);
+  assert.deepEqual(changed.changes.sections, { changed: ['spec', 'alcance'], added: ['fuera'], removed: [] });
+  assert.equal(data(await s.tool('show_doc', { ref: 'spec', since: changed.etag })).changed, false);
+});
+
+test('aviso: un documento que la sesión leyó y cambió se avisa una vez, en el resultado de la herramienta siguiente', async () => {
+  const s = mcp();
+  const text = (r) => r.content.map((c) => c.text).join('\n');
+  const { etag } = data(await s.tool('show_doc', { ref: 'spec' }));
+  assert.ok(!/Aviso/.test(text(await s.tool('list_milestones'))), 'sin cambios no avisa');
+  await writeFile(join(dir, 'docs', 'spec.md'), '# Spec\n\n## Alcance\n<!-- id: alcance -->\n\nOtra cosa.\n');
+  const r = await s.tool('show_task', { id: 'm1-04' });
+  assert.match(text(r), new RegExp(`Aviso: el documento spec cambió desde que lo leíste \\(secciones cambiaron: spec, alcance\\)\\. Volvé a leerlo con show_doc \\(since: ${etag}\\)`));
+  assert.equal(r.structuredContent.avisos.length, 1);
+  assert.equal(r.structuredContent.id, 'm1-04', 'el resultado sigue siendo el de la herramienta');
+  assert.ok(!/Aviso/.test(text(await s.tool('list_milestones'))), 'una vez por versión');
+  // Volver a leerlo deja de avisar; un cambio nuevo avisa de nuevo. Lo leído por un recurso (@) también cuenta.
+  await s.request('resources/read', { uri: 'compass://doc/spec' });
+  await writeFile(join(dir, 'docs', 'spec.md'), '# Spec\n');
+  assert.match(text(await s.tool('list_milestones')), /quitadas: alcance/);
+  // Sin leer documentos, nunca hay aviso.
+  const other = mcp();
+  assert.ok(!/Aviso/.test(text(await other.tool('list_milestones'))));
+});
