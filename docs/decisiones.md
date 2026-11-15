@@ -594,3 +594,20 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Claves abstractas (`task.moved`) o el inglés como texto fuente, como godot-agent (D46 allá): obliga a reescribir cada texto y cada test.
   - JSON en lugar de `.po`, o una librería (i18next): una dependencia más para lo que hacen 200 líneas.
   - Un selector por superficie (localStorage en la web): la web y el hub podían quedar en idiomas distintos.
+
+## D57 · Espejo de los tableros: el repo de tableros, una rama del servidor y nada automático en la rama de trabajo
+
+- **Qué:** el servidor privado (§12) sirve un clon del repo de tableros (§36), no de los proyectos. Corre como un servicio de usuario de systemd con `scompass home`. Escribe en una rama propia, `compass-sync`: commits agrupados de `scompass-bot`, push enseguida, y junta `origin/main` con el merge driver (§44). Este equipo trae esa rama con aviso y un botón (m7-05), sin commits automáticos en `main`. El chat queda solo en este equipo (spec §12.1).
+- **Por qué:**
+  - Desde §36 el tablero no está en el repo del código, así que un clon del repo de tableros sirve para todos los proyectos sin llevar código al servidor.
+  - Con una rama propia del servidor, nada cambia la historia de `main` sin que el usuario lo traiga.
+  - El merge driver hace que traer esa rama casi nunca dé conflicto.
+  - Sin una cuenta de Claude en el servidor no hay credenciales que cuidar ahí.
+- **Descartado:**
+  - Un clon de cada proyecto en el servidor: lleva el código a otra máquina para mostrar el tablero. Los documentos sí necesitan el proyecto, así que se clona solo el que se quiera leer desde el teléfono.
+  - Que el servidor pushee a `main`: más simple, pero commits ajenos entran en la rama de trabajo sin aviso, y un `pull` con cambios sin commitear acá falla.
+  - Commits automáticos también en este equipo: contradice §4.5, donde commitear el tablero es decisión del usuario.
+  - El chat en el servidor: pide una cuenta de Claude ahí y abre el acceso a los archivos desde la red.
+  - Docker, como decía §12: suma una dependencia y una forma de correr distinta de la de este equipo. Corre como un servicio de usuario de systemd con `scompass home` (respondido por el usuario).
+- **Respondido:** systemd con `scompass home`, y la rama `compass-sync`.
+- **Pendiente:** dónde corre, un equipo de casa siempre prendido o un VPS chico, siempre en Tailscale. m7-05 y m7-06 quedan para después.

@@ -532,23 +532,34 @@ Un plugin de editor (`addons/scopecompass/`, GDScript) con tres niveles de integ
 
 **Mientras tanto, en casa:** `scompass home --lan` abre el Inicio en la red local, con la PC encendida y sin login (§5.1). D36 compara las opciones para salir de casa: la recomendada es Tailscale.
 
-- **Mismo hub, otro lugar:** una imagen Docker del mismo código, con `DocSource` en modo upload. **El `Store` sigue siendo archivos JSON**, dentro de un clon del repo en el servidor (§12.1).
-- **Privacidad:** preferentemente sin exponerlo a internet, dentro de una red privada tipo Tailscale (teléfono y PC en la misma red). Alternativa: túnel con login delante (por ejemplo Cloudflare Tunnel + Access).
+- **Mismo hub, otro lugar:** el mismo `scompass home` (el binario o el paquete de npm), sirviendo los tableros de un clon del repo de tableros (§12.1). **El `Store` sigue siendo archivos JSON.** Corre como un servicio de usuario de systemd, igual que en este equipo y sin Docker (D57).
+- **Privacidad:** sin exponerlo a internet: dentro de Tailscale, con el teléfono y este equipo en la misma red privada (D36). Alternativa, si algún día hace falta: un túnel con login delante (por ejemplo Cloudflare Tunnel + Access).
 - **Autenticación:** se activa el token del hub. El plugin de Godot y la CLI lo mandan en cada request y al abrir el WebSocket (`wss://`).
 - **Teléfono:** la misma UI web como PWA instalable, con caché del último estado para leer sin conexión.
-- **Docs:** el plugin de Godot sube `gdd.md` al hub cada vez que se guarda.
-- **Migración local → hosteado:** no hay migración de datos: el servidor clona el repo.
+- **Chat:** solo en este equipo. El servidor no tiene una cuenta de Claude, y el chat solo atiende a `127.0.0.1` y se apaga con token (§32).
+- **Migración local → hosteado:** no hay migración de datos: el servidor clona el repo de tableros.
 
-### 12.1 Sincronización con git en modo hosteado
+### 12.1 Espejo de los tableros entre este equipo y el servidor (M7)
 <!-- id: git-sync -->
 
-Para respetar el principio de §1 también hosteado, **git sigue siendo el almacenamiento**:
-- El servidor trabaja sobre un clon del repo (hace falta un remoto privado: hoy el repo no tiene ninguno).
-- Los cambios hechos desde el teléfono se escriben en `compass/` y se commitean solos, agrupados (por ejemplo, 30 s sin cambios → un commit `compass: m0-03 → doing, 2 pasos tildados`), y se hace push.
-- El servidor hace `pull` periódico y antes de cada push. Si hay conflicto, **no hace push**: muestra un aviso en la UI y queda esperando a que se resuelva a mano. Nunca fuerza nada.
-- En la PC, un `git pull` trae los cambios del teléfono; el hub local o el plugin los ven con el watcher.
-- Si el servidor muere, no se pierde nada salvo lo que no llegó a pushear. El aviso de "cambios sin sincronizar" en la UI hace visible ese riesgo.
-- Los commits automáticos del servidor van solo sobre `compass/` y con un autor propio (`scompass-bot`), para distinguirlos en el historial.
+Pedido: revisar tareas y decisiones desde el teléfono con este equipo apagado, con lo de acá y lo del servidor como espejos. Desde §36 los tableros viven en el repo de tableros del usuario (`<datos>/boards`, con `origin` en GitHub), separado del código de los proyectos, así que lo que se espeja es ese repo, no los proyectos. **Git sigue siendo el almacenamiento** (§1), y el merge driver (§44) junta los cambios de los dos lados a la misma tarea.
+
+- **Qué se espeja:**
+  - El repo de tableros entero: un solo clon en el servidor alcanza para todos los proyectos. Antes, cuando el tablero vivía en el repo de cada proyecto, hacía falta un clon por proyecto, con el código adentro.
+  - Un tablero con su propio repo (un repo por tablero) es un clon más.
+  - Un tablero local (dentro del repo del proyecto) no se espeja: primero `scompass board move`.
+- **Documentos:** viven en el repo de cada proyecto, no en el de tableros. Sin un clon del proyecto, el servidor muestra el tablero sin la vista Documentos, y las referencias se ven como texto (sin desplegar la sección). Un proyecto cuyos documentos se quieran leer en el teléfono se clona además, de solo lectura (`pull`, nunca `push`).
+- **Ramas:** el servidor no escribe en la rama de trabajo (`main`).
+  - Escribe en una rama propia, `compass-sync`, y cada vez que sincroniza junta `origin/main` en ella. Así, lo que se pushea desde acá le llega.
+  - Acá, la rama del servidor se trae con aviso (m7-05): el Inicio y el dock muestran «hay cambios del servidor» y un botón la junta en `main`, con el merge driver.
+  - Nada se commitea solo en la rama de trabajo de este equipo: commitear el tablero sigue siendo una decisión del usuario (§4.5). Si hay cambios sin commitear en los mismos archivos, el botón pide commitearlos antes, porque git no junta sobre un archivo modificado.
+- **Commits del servidor:** solo en la carpeta de tableros. Van agrupados (por ejemplo, 30 s sin cambios hacen un commit «compass: m0-03 → doing, 2 pasos tildados»), con un autor propio (`scompass-bot`) para distinguirlos en el historial, y con push enseguida.
+- **Conflictos:** el servidor hace `fetch` periódico y antes de cada push. Junta `origin/main` en `compass-sync` con el merge driver.
+  - Si queda un conflicto (los dos lados cambiaron el mismo campo), **no hace push ni fuerza nada**: deja el merge sin hacer, muestra un aviso en la UI y sigue sirviendo su versión.
+  - El conflicto se resuelve acá, al traer la rama, como cualquier otro de git.
+- **Pérdida:** si el servidor muere, solo se pierde lo que no llegó a pushear. El aviso de «cambios sin sincronizar» en la UI del servidor hace visible ese riesgo.
+- **Cómo corre:** un servicio de usuario de systemd con `scompass home` (D57). Es lo nativo, igual que en este equipo, sin Docker.
+- **Dónde corre:** todavía sin decidir. Puede ser un equipo de casa siempre prendido o un VPS chico, siempre dentro de Tailscale. m7-05 y m7-06 quedan para cuando se decida.
 
 ## 13. Futuro chico (sin módulo propio)
 <!-- id: futuro -->
