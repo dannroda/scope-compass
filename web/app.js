@@ -855,18 +855,22 @@
       title: T('Arrastrá para cambiar el ancho · doble clic: ancho original'),
       onpointerdown: (e) => {
         e.preventDefault();
-        const handle = e.currentTarget;
-        handle.setPointerCapture(e.pointerId);
+        e.currentTarget.setPointerCapture(e.pointerId);
         document.body.classList.add('resizing');
-        const move = (ev) => setDetailWidth(window.innerWidth - ev.clientX, false);
-        const up = () => {
-          handle.removeEventListener('pointermove', move);
+        // En window y no en el borde: si el detalle se vuelve a dibujar a mitad del arrastre (llega la historia, una
+        // sección citada o un cambio por el WebSocket), el borde es otro elemento y el arrastre tiene que seguir.
+        const move = (ev) => { if (ev.pointerId === e.pointerId) setDetailWidth(window.innerWidth - ev.clientX, false); };
+        const up = (ev) => {
+          if (ev.pointerId !== e.pointerId) return;
+          removeEventListener('pointermove', move);
+          removeEventListener('pointerup', up);
+          removeEventListener('pointercancel', up);
           document.body.classList.remove('resizing');
           setDetailWidth(detailWidth(), true);
         };
-        handle.addEventListener('pointermove', move);
-        handle.addEventListener('pointerup', up, { once: true });
-        handle.addEventListener('pointercancel', up, { once: true });
+        addEventListener('pointermove', move);
+        addEventListener('pointerup', up);
+        addEventListener('pointercancel', up);
       },
       onkeydown: (e) => {
         const step = e.shiftKey ? 96 : 24;

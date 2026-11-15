@@ -354,6 +354,11 @@ test('el panel de detalle se agranda arrastrando su borde, con el teclado, y se 
   const box = await page.locator('#detail .resize').boundingBox();
   await page.mouse.move(box.x + 4, box.y + 300);
   await page.mouse.down();
+  // Un cambio de la tarea a mitad del arrastre vuelve a dibujar el detalle (como cuando llegan la historia o una
+  // sección citada, que en un equipo lento pasa justo entonces): el arrastre sigue igual.
+  await page.mouse.move(box.x - 20, box.y + 300);
+  await fetch(new URL('api/tasks/m1-03', url), { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ notes: 'cambiada mientras se arrastra' }) });
+  await page.waitForFunction(() => document.getElementById('detail').textContent.includes('cambiada mientras se arrastra'));
   await page.mouse.move(1440 - 800, box.y + 300, { steps: 5 });
   await page.mouse.up();
   assert.ok(Math.abs(await width() - 800) <= 2, `ancho ${await width()}`);
