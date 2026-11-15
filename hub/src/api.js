@@ -7,6 +7,7 @@ import { checkItem, freeId, slugify } from './lists.js';
 import { dropImage, MAX_IMAGE, saveImage } from './images.js';
 import { promoteDecision } from './promote.js';
 import { taskHistory } from './history.js';
+import { T } from './i18n.js';
 
 const quote = (etag) => `"${etag}"`;
 const unquote = (v) => v.trim().replace(/^W\//, '').replace(/^"(.*)"$/, '$1');
@@ -15,7 +16,7 @@ const unquote = (v) => v.trim().replace(/^W\//, '').replace(/^"(.*)"$/, '$1');
 function preconditions(req) {
   const ifNoneMatch = req.headers['if-none-match'];
   if (ifNoneMatch !== undefined) {
-    if (ifNoneMatch.trim() !== '*') throw new StoreError('invalid_argument', 'If-None-Match solo admite *');
+    if (ifNoneMatch.trim() !== '*') throw new StoreError('invalid_argument', T('If-None-Match solo admite *'));
     return { ifMatch: null };
   }
   const ifMatch = req.headers['if-match'];
@@ -26,7 +27,7 @@ function preconditions(req) {
 // Cuerpo de escritura: un objeto JSON. `id` y `etag` se ignoran (vienen de una lectura previa).
 function body(req) {
   const b = req.body;
-  if (b === null || typeof b !== 'object' || Array.isArray(b)) throw new StoreError('invalid_argument', 'el cuerpo tiene que ser un objeto JSON');
+  if (b === null || typeof b !== 'object' || Array.isArray(b)) throw new StoreError('invalid_argument', T('el cuerpo tiene que ser un objeto JSON'));
   const { id, etag, ...doc } = b;
   return doc;
 }
@@ -54,7 +55,7 @@ export function registerApi(app, { store, projectDir, publish }) {
 
   app.get('/api/tasks', async (req) => {
     const { milestone, status } = req.query;
-    if (status && !STATUSES.includes(status)) throw new StoreError('invalid_argument', `estado inválido: ${status}`);
+    if (status && !STATUSES.includes(status)) throw new StoreError('invalid_argument', T`estado inválido: ${status}`);
     const all = await store.loadAll();
     return { tasks: listTasks(all, { milestone, status }), warnings: all.warnings };
   });
@@ -89,7 +90,7 @@ export function registerApi(app, { store, projectDir, publish }) {
   // Capturas (18.4, D38): { data: base64 } se guarda en compass/images/ y se suma a images de la tarea. If-Match opcional.
   app.post('/api/tasks/:id/images', { bodyLimit: Math.ceil(MAX_IMAGE * 4 / 3) + 4096 }, async (req, reply) => {
     const data = req.body?.data;
-    if (typeof data !== 'string' || !data) throw new StoreError('invalid_argument', 'falta data (la imagen en base64)');
+    if (typeof data !== 'string' || !data) throw new StoreError('invalid_argument', T('falta data (la imagen en base64)'));
     const cur = await store.get('tasks', req.params.id);
     const path = await saveImage(projectDir, req.params.id, Buffer.from(data.replace(/^data:[^,]*,/, ''), 'base64'));
     const { ifMatch } = preconditions(req);
@@ -106,7 +107,7 @@ export function registerApi(app, { store, projectDir, publish }) {
     const path = String(req.query.path ?? '');
     const cur = await store.get('tasks', req.params.id);
     const images = cur.doc.images ?? [];
-    if (!images.includes(path)) throw new StoreError('not_found', `${req.params.id} no tiene la captura ${path}`);
+    if (!images.includes(path)) throw new StoreError('not_found', T`${req.params.id} no tiene la captura ${path}`);
     const next = images.filter((x) => x !== path);
     const { ifMatch } = preconditions(req);
     const r = wrote('tasks', await store.patch('tasks', req.params.id, { images: next.length ? next : null }, { ifMatch: ifMatch ?? cur.etag }));
@@ -138,7 +139,7 @@ export function registerApi(app, { store, projectDir, publish }) {
   // Crear con el id que saldría en la CLI (slug del título, -2 si ya existe), al final de la barra lateral.
   app.post('/api/lists', async (req, reply) => {
     const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
-    if (!title) throw new StoreError('invalid_argument', 'falta el título');
+    if (!title) throw new StoreError('invalid_argument', T('falta el título'));
     const { items } = await store.list('lists');
     const id = freeId(slugify(title), items.map((l) => l.id));
     const order = Math.max(0, ...items.map((l) => l.doc.order ?? 0)) + 1;
@@ -150,9 +151,9 @@ export function registerApi(app, { store, projectDir, publish }) {
   const itemOf = async (req) => {
     const cur = await store.get('lists', req.params.id);
     const pre = preconditions(req);
-    if (pre.ifMatch !== undefined && pre.ifMatch !== cur.etag) throw new StoreError('conflict', 'la lista cambió desde que se leyó', { current: cur });
+    if (pre.ifMatch !== undefined && pre.ifMatch !== cur.etag) throw new StoreError('conflict', T('la lista cambió desde que se leyó'), { current: cur });
     const n = req.body?.n;
-    if (!Number.isInteger(n) || n < 1 || n > cur.doc.items.length) throw new StoreError('invalid_argument', `ítem inexistente: ${n} (la lista tiene ${cur.doc.items.length})`);
+    if (!Number.isInteger(n) || n < 1 || n > cur.doc.items.length) throw new StoreError('invalid_argument', T`ítem inexistente: ${n} (la lista tiene ${cur.doc.items.length})`);
     return { cur, n, items: cur.doc.items };
   };
 
@@ -169,7 +170,7 @@ export function registerApi(app, { store, projectDir, publish }) {
   app.post('/api/lists/:id/task', async (req, reply) => {
     const { cur, n, items } = await itemOf(req);
     const it = items[n - 1];
-    if (it.task) throw new StoreError('conflict', `el ítem ${n} ya pasó a la tarea ${it.task}`);
+    if (it.task) throw new StoreError('conflict', T`el ítem ${n} ya pasó a la tarea ${it.task}`);
     const milestone = req.body?.milestone;
     await store.get('milestones', typeof milestone === 'string' ? milestone : '');
     const t = wrote('tasks', await store.create('tasks', { milestone, title: it.text, code: req.body?.code ?? '', status: 'todo', checklist: [], test: '', notes: '', refs: [] }));
@@ -201,9 +202,9 @@ export function registerApi(app, { store, projectDir, publish }) {
   // { title, tasks? }: tasks, ids de tareas que ya existen, para arrancarla cargada (sin repetir).
   app.post('/api/playtests', async (req, reply) => {
     const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
-    if (!title) throw new StoreError('invalid_argument', 'falta el título');
+    if (!title) throw new StoreError('invalid_argument', T('falta el título'));
     const tasks = req.body?.tasks ?? [];
-    if (!Array.isArray(tasks) || tasks.some((x) => typeof x !== 'string')) throw new StoreError('invalid_argument', 'tasks tiene que ser una lista de ids');
+    if (!Array.isArray(tasks) || tasks.some((x) => typeof x !== 'string')) throw new StoreError('invalid_argument', T('tasks tiene que ser una lista de ids'));
     for (const t of tasks) await store.get('tasks', t);
     const { items } = await store.list('playtests');
     const id = freeId(slugify(title, 'playtest'), items.map((p) => p.id));

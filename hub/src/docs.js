@@ -9,6 +9,7 @@ import { parseDoc } from './schema.js';
 import { StoreError } from './store/json-files.js';
 import { repoFiles } from './git.js';
 import { projectRel, realInside } from './paths.js';
+import { T } from './i18n.js';
 
 const HEADING = /^(#{1,6})[ \t]+(.+?)[ \t#]*$/;
 const ID_COMMENT = /^<!--\s*id:\s*([a-z0-9][a-z0-9_-]*)\s*-->\s*$/;
@@ -48,7 +49,7 @@ export function parseSections(text) {
     s.end = end;
     // Un id explícito repetido es un error del documento; un slug repetido se desambigua.
     if (seen.has(s.id)) {
-      if (s.explicit && seen.get(s.id).explicit) warnings.push({ code: 'duplicate_id', message: `id repetido: ${s.id} (líneas ${seen.get(s.id).start + 1} y ${s.start + 1})` });
+      if (s.explicit && seen.get(s.id).explicit) warnings.push({ code: 'duplicate_id', message: T`id repetido: ${s.id} (líneas ${seen.get(s.id).start + 1} y ${s.start + 1})` });
       let n = 2;
       while (seen.has(`${s.id}-${n}`)) n++;
       if (!s.explicit) s.id = `${s.id}-${n}`;
@@ -95,7 +96,7 @@ export async function loadDocs(projectDir, config) {
     const inside = projectRel(path) && (await realInside(projectDir, join(projectDir, path)));
     const text = inside ? await readFile(join(projectDir, path), 'utf8').catch(() => null) : null;
     if (text === null) {
-      out.push({ alias, path, missing: true, sections: [], lines: [], warnings: [{ code: 'missing_doc', message: inside ? `no existe ${path}` : `${path} está fuera del proyecto` }] });
+      out.push({ alias, path, missing: true, sections: [], lines: [], warnings: [{ code: 'missing_doc', message: inside ? T`no existe ${path}` : T`${path} está fuera del proyecto` }] });
       continue;
     }
     out.push({ alias, path: relative(projectDir, join(projectDir, path)).split(sep).join('/'), ...parseSections(text) });
@@ -122,28 +123,28 @@ export async function changeDocs(projectDir, validators, { add, remove }) {
     entry = docs.find((d) => d.alias === remove);
     if (!entry) {
       const glob = docs.find((d) => d.path.includes('*') && String(remove).startsWith(d.alias + '/'));
-      throw new StoreError('not_found', glob ? `"${remove}" sale del patrón ${glob.path}: quitá "${glob.alias}" o sacá el archivo de ahí` : `no hay un documento "${remove}"`);
+      throw new StoreError('not_found', glob ? T`"${remove}" sale del patrón ${glob.path}: quitá "${glob.alias}" o sacá el archivo de ahí` : T`no hay un documento "${remove}"`);
     }
     next = docs.filter((d) => d !== entry);
   } else {
     const alias = String(add?.alias ?? '');
-    if (!ALIAS.test(alias)) throw new StoreError('invalid_argument', `alias inválido: "${alias}" (minúsculas, números, - y _; empieza con letra o número)`);
+    if (!ALIAS.test(alias)) throw new StoreError('invalid_argument', T`alias inválido: "${alias}" (minúsculas, números, - y _; empieza con letra o número)`);
     const raw = String(add?.path ?? '');
     const abs = isAbsolute(raw) ? relative(projectDir, raw).split(sep).join('/') : raw;
     const rel = projectRel(abs);
-    if (!raw || !rel || !(await realInside(projectDir, join(projectDir, globBase(rel) || '.')))) throw new StoreError('invalid_argument', `la ruta tiene que estar dentro del proyecto: ${raw}`);
-    if (!rel.endsWith('.md')) throw new StoreError('invalid_argument', `un documento es un archivo .md (o un patrón que termina en .md): ${raw}`);
-    if (rel === config.export_md) throw new StoreError('invalid_argument', `${rel} es el export markdown del tablero: no es un documento`);
+    if (!raw || !rel || !(await realInside(projectDir, join(projectDir, globBase(rel) || '.')))) throw new StoreError('invalid_argument', T`la ruta tiene que estar dentro del proyecto: ${raw}`);
+    if (!rel.endsWith('.md')) throw new StoreError('invalid_argument', T`un documento es un archivo .md (o un patrón que termina en .md): ${raw}`);
+    if (rel === config.export_md) throw new StoreError('invalid_argument', T`${rel} es el export markdown del tablero: no es un documento`);
     if (!rel.includes('*')) {
-      if (!(await stat(join(projectDir, rel)).then((s) => s.isFile(), () => false)) || !(await realInside(projectDir, join(projectDir, rel)))) throw new StoreError('not_found', `no existe el archivo ${rel}`);
+      if (!(await stat(join(projectDir, rel)).then((s) => s.isFile(), () => false)) || !(await realInside(projectDir, join(projectDir, rel)))) throw new StoreError('not_found', T`no existe el archivo ${rel}`);
       // En un repo, un archivo que git ignora (un .env, un secreto) no se publica como documento.
       const listed = await repoFiles(projectDir, rel);
-      if (listed && !listed.includes(rel)) throw new StoreError('invalid_argument', `git ignora ${rel}: no se puede declarar como documento`);
+      if (listed && !listed.includes(rel)) throw new StoreError('invalid_argument', T`git ignora ${rel}: no se puede declarar como documento`);
     }
     const same = docs.find((d) => d.alias === alias);
-    if (same) throw new StoreError('conflict', `ya hay un documento "${alias}" (${same.path})`);
+    if (same) throw new StoreError('conflict', T`ya hay un documento "${alias}" (${same.path})`);
     const dup = docs.find((d) => d.path === rel);
-    if (dup) throw new StoreError('conflict', `${rel} ya está declarado como "${dup.alias}"`);
+    if (dup) throw new StoreError('conflict', T`${rel} ya está declarado como "${dup.alias}"`);
     entry = { alias, path: rel };
     next = [...docs, entry];
   }
@@ -179,7 +180,7 @@ export const refText = (doc, section) => (section ? `${doc}#${section}` : doc);
 export const LINK = /\[\[([^\]#\s]+)(?:#([a-z0-9][a-z0-9_-]*))?\]\]/g;
 
 // Los textos de una tarea donde puede haber enlaces o citas, con dónde está cada uno.
-const taskTexts = (t) => [['description', t.description], ['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).flatMap((c, i) => [[`paso ${i + 1}`, c.text], [`paso ${i + 1} (detalle)`, c.detail]])];
+const taskTexts = (t) => [['description', t.description], ['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).flatMap((c, i) => [[T`paso ${i + 1}`, c.text], [T`paso ${i + 1} (detalle)`, c.detail]])];
 
 /**
  * Referencias de las tareas que no resuelven: refs estructuradas y enlaces [[alias#id]] o [[alias]] en la descripción,

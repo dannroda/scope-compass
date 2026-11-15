@@ -21,6 +21,7 @@ import { resourceDir } from './schema.js';
 import { boardStatus, docsStatus } from './git.js';
 import { docFiles } from './docs.js';
 import { liveHome } from './registry.js';
+import { langRoutes, T } from './i18n.js';
 
 export const VERSION = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8')).version;
 import { PROTOCOL } from './protocol.js';
@@ -40,10 +41,10 @@ export function localOnly(app) {
     const host = req.headers.host ?? '';
     const origin = req.headers.origin;
     if (!/^(localhost|\d{1,3}(\.\d{1,3}){3}|\[[\da-f:.]+\])(:\d+)?$/i.test(host)) {
-      return reply.code(403).send({ error: { code: 'forbidden', message: 'el hub solo atiende pedidos a localhost o a una IP' } });
+      return reply.code(403).send({ error: { code: 'forbidden', message: T('el hub solo atiende pedidos a localhost o a una IP') } });
     }
     if (origin !== undefined && origin !== `http://${host}`) {
-      return reply.code(403).send({ error: { code: 'forbidden', message: `el hub no atiende pedidos de otra página (${origin})` } });
+      return reply.code(403).send({ error: { code: 'forbidden', message: T`el hub no atiende pedidos de otra página (${origin})` } });
     }
   });
 }
@@ -63,6 +64,8 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   // Al cerrar se cortan todas las conexiones: con la UI abierta (que reintenta cada 0,5 s) el cierre
   // podía quedar esperando una conexión nueva o el cierre educado de un WebSocket.
   const app = Fastify({ logger, forceCloseConnections: true });
+  // Cada pedido corre con su idioma (§45): /i18n.js, PUT /api/lang y los mensajes de error.
+  langRoutes(app);
   app.decorate('events', new EventEmitter());
   // Pestañas del tablero que pueden avisar con una notificación (mensaje `presence`, §5.5). focusBoard le pide a
   // la más reciente que llame la atención y devuelve false si no hay ninguna (entonces hay que abrir una).
@@ -111,7 +114,7 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   if (token) {
     app.addHook('onRequest', async (req, reply) => {
       if (req.headers.authorization !== `Bearer ${token}`) {
-        return reply.code(401).send({ error: { code: 'unauthenticated', message: 'falta el token o es inválido' } });
+        return reply.code(401).send({ error: { code: 'unauthenticated', message: T('falta el token o es inválido') } });
       }
     });
   }
@@ -133,19 +136,19 @@ export function createServer({ projectDir, store, validators, watch = false, exp
     return reply.code(500).send({ error: { code: 'io_error', message: err.message } });
   });
   app.setNotFoundHandler((req, reply) =>
-    reply.code(404).send({ error: { code: 'not_found', message: `no existe ${req.method} ${req.url}` } }));
+    reply.code(404).send({ error: { code: 'not_found', message: T`no existe ${req.method} ${req.url}` } }));
 
   app.get('/api/health', async () => ({ ok: true, name: 'scope-compass', version: VERSION, protocol: PROTOCOL, project: projectDir, pid: process.pid }));
   // Reiniciar el hub (carga código nuevo). Responde antes de cerrar; el hub nuevo toma el mismo puerto.
   app.post('/api/restart', async (req, reply) => {
-    if (!onRestart) throw new StoreError('invalid_argument', 'este hub no se puede reiniciar desde la API');
+    if (!onRestart) throw new StoreError('invalid_argument', T('este hub no se puede reiniciar desde la API'));
     reply.code(202).send({ ok: true, restarting: true });
     setImmediate(onRestart);
     return reply;
   });
   // Apagar el hub. Responde antes de cerrar.
   app.post('/api/shutdown', async (req, reply) => {
-    if (!onShutdown) throw new StoreError('invalid_argument', 'este hub no se puede apagar desde la API');
+    if (!onShutdown) throw new StoreError('invalid_argument', T('este hub no se puede apagar desde la API'));
     reply.code(202).send({ ok: true, stopping: true });
     setImmediate(onShutdown);
     return reply;
@@ -204,14 +207,14 @@ export function createServer({ projectDir, store, validators, watch = false, exp
 
   app.get('/api/config', async () => {
     const { config } = await store.loadAll();
-    if (!config) throw new StoreError('invalid_file', 'compass/config.json falta o es inválido');
+    if (!config) throw new StoreError('invalid_file', T('compass/config.json falta o es inválido'));
     return config;
   });
 
   // dir: '', 'fonts' o 'frames' (los marcos de los bordes de fantasía, 19.16). name: un solo segmento, sin rutas relativas: no se puede salir de web/.
   const serveWeb = async (reply, dir, name) => {
     const ext = name.slice(name.lastIndexOf('.'));
-    const missing = new StoreError('not_found', `no existe /${dir ? dir + '/' : ''}${name}`);
+    const missing = new StoreError('not_found', T`no existe /${dir ? dir + '/' : ''}${name}`);
     if (!WEB_TYPES[ext] || !/^[\w.-]+$/.test(name) || name.startsWith('.')) throw missing;
     const body = await readFile(join(webDir, dir, name)).catch(() => null);
     if (!body) throw missing;

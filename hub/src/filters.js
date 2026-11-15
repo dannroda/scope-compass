@@ -3,10 +3,12 @@
 import { dueState, parseDue } from './dates.js';
 import { openBlockers } from './links.js';
 import { decisionState } from './decisions.js';
+import { T } from './i18n.js';
 
 export const DUE_FILTERS = ['overdue', 'today', 'week', 'none'];
 export const PRIORITIES = ['high', 'medium', 'low'];
-export const PRIORITY_LABEL = { high: 'alta', medium: 'media', low: 'baja' };
+// Con getters: en el idioma de quien lo pide (§45).
+export const PRIORITY_LABEL = { get high() { return T('alta'); }, get medium() { return T('media'); }, get low() { return T('baja'); } };
 // Estimación (18.3): chica, mediana o grande.
 export const SIZES = ['s', 'm', 'l'];
 

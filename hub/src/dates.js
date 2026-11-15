@@ -1,4 +1,5 @@
 // Fechas límite (spec §16.5, D26): `due` en tareas e ítems de lista, YYYY-MM-DD o YYYY-MM-DDTHH:MM en hora local.
+import { T } from './i18n.js';
 
 const DUE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/;
 
@@ -45,10 +46,11 @@ export const localDay = (iso) => { const d = new Date(iso); return `${d.getFullY
 /** "2026-10-11 14:05" en hora local, de cualquier fecha ISO (UTC o con zona). */
 export const localStamp = (iso) => { const d = new Date(iso); return `${localDay(iso)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 
-export const EVERY = { day: 'cada día', week: 'cada semana', month: 'cada mes', year: 'cada año' };
-const EVERY_N = { day: 'días', week: 'semanas', month: 'meses', year: 'años' };
+// Con getters: el texto sale en el idioma de quien lo pide (§45), no en el de cuando se cargó el módulo.
+export const EVERY = { get day() { return T('cada día'); }, get week() { return T('cada semana'); }, get month() { return T('cada mes'); }, get year() { return T('cada año'); } };
+const EVERY_N = { day: (n) => T`cada ${n} días`, week: (n) => T`cada ${n} semanas`, month: (n) => T`cada ${n} meses`, year: (n) => T`cada ${n} años` };
 /** "cada mes", "cada 2 días": el texto de un repeat { every, interval? } (31.6). */
-export const repeatLabel = (r) => ((r.interval ?? 1) > 1 ? `cada ${r.interval} ${EVERY_N[r.every]}` : EVERY[r.every]);
+export const repeatLabel = (r) => ((r.interval ?? 1) > 1 ? EVERY_N[r.every](r.interval) : EVERY[r.every]);
 
 const pad = (n) => String(n).padStart(2, '0');
 const daysIn = (y, m) => new Date(y, m + 1, 0).getDate(); // m desde 0
@@ -61,7 +63,7 @@ const daysIn = (y, m) => new Date(y, m + 1, 0).getDate(); // m desde 0
  */
 export function nextDue(due, every, interval = 1) {
   const d = parseDue(due);
-  if (!d || !EVERY[every] || !Number.isInteger(interval) || interval < 1) throw new Error(`no se puede repetir ${due} ${every} ${interval}`);
+  if (!d || !EVERY[every] || !Number.isInteger(interval) || interval < 1) throw new Error(T`no se puede repetir ${due} ${every} ${interval}`);
   let y = d.getFullYear(), m = d.getMonth(), day = d.getDate();
   if (every === 'day' || every === 'week') {
     const n = new Date(y, m, day + interval * (every === 'day' ? 1 : 7));

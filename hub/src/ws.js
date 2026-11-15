@@ -5,6 +5,7 @@ import { StoreError } from './store/json-files.js';
 import { flat } from './views.js';
 import { isLoopback } from './chat-api.js';
 import { PROTOCOL } from './protocol.js';
+import { T } from './i18n.js';
 
 // Plugin de Fastify: app.register(registerWs, { store, publish, version, boards }).
 // boards: Set con el `send` de cada pestaña del tablero que puede notificar (ver app.focusBoard).
@@ -38,7 +39,7 @@ export function attachSocket(socket, { app, store, publish, version, boards, loc
     try {
       msg = JSON.parse(String(data));
     } catch {
-      return send({ type: 'error', req: null, code: 'invalid_argument', message: 'mensaje que no es JSON' });
+      return send({ type: 'error', req: null, code: 'invalid_argument', message: T('mensaje que no es JSON') });
     }
     const req = msg?.req ?? null;
     if (msg?.type === 'presence') {
@@ -47,10 +48,10 @@ export function attachSocket(socket, { app, store, publish, version, boards, loc
       return;
     }
     try {
-      if (msg?.type !== 'update') throw new StoreError('invalid_argument', `tipo de mensaje desconocido: ${msg?.type}`);
-      if (msg.collection !== 'tasks') throw new StoreError('invalid_argument', 'update solo admite la colección tasks');
+      if (msg?.type !== 'update') throw new StoreError('invalid_argument', T`tipo de mensaje desconocido: ${msg?.type}`);
+      if (msg.collection !== 'tasks') throw new StoreError('invalid_argument', T('update solo admite la colección tasks'));
       if (!msg.patch || typeof msg.patch !== 'object' || Array.isArray(msg.patch)) {
-        throw new StoreError('invalid_argument', 'falta patch (objeto)');
+        throw new StoreError('invalid_argument', T('falta patch (objeto)'));
       }
       const { id: _id, etag: _etag, ...patch } = msg.patch;
       const r = await store.patch('tasks', msg.id, patch, msg.etag === undefined ? {} : { ifMatch: msg.etag });

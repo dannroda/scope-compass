@@ -9,6 +9,7 @@ import { canonical } from './store/canonical.js';
 import { writeAtomic } from './store/atomic.js';
 import { COLLECTIONS } from './store/load.js';
 import { isValidId } from './store/json-files.js';
+import { T } from './i18n.js';
 
 const readJson = async (path) => JSON.parse(await readFile(path, 'utf8'));
 
@@ -32,9 +33,9 @@ export async function importArtifact(src, compassDir, { validators, overwrite = 
     for (const name of await listJson(join(src, collection))) {
       const id = name.slice(0, -5);
       const bad = (message) => { r.invalid.push(id); report.warnings.push({ path: `${collection}/${name}`, message }); };
-      if (!isValidId(id)) { bad('id inválido como nombre de archivo'); continue; }
+      if (!isValidId(id)) { bad(T('id inválido como nombre de archivo')); continue; }
       let doc;
-      try { doc = await readJson(join(src, collection, name)); } catch (e) { bad(`JSON inválido: ${e.message}`); continue; }
+      try { doc = await readJson(join(src, collection, name)); } catch (e) { bad(T`JSON inválido: ${e.message}`); continue; }
       delete doc.version;
       delete doc.id;
 
@@ -43,7 +44,7 @@ export async function importArtifact(src, compassDir, { validators, overwrite = 
       let current = null;
       if (text !== null) {
         const res = parseDoc(text, kind, validators);
-        if (!res.ok) { bad(`el destino compass/${collection}/${name} es inválido (${res.code}): no se pisa`); continue; }
+        if (!res.ok) { bad(T`el destino compass/${collection}/${name} es inválido (${res.code}): no se pisa`); continue; }
         current = res.doc;
       }
       if (kind === 'task') {
@@ -69,7 +70,7 @@ export async function importArtifact(src, compassDir, { validators, overwrite = 
     const id = name.slice(0, -5);
     if (report.tasks.invalid.includes(id)) continue;
     const { milestone } = await readJson(join(src, 'tasks', name));
-    if (!milestoneIds.has(milestone)) report.warnings.push({ path: `tasks/${name}`, message: `hito inexistente: ${milestone}` });
+    if (!milestoneIds.has(milestone)) report.warnings.push({ path: `tasks/${name}`, message: T`hito inexistente: ${milestone}` });
   }
   return report;
 }

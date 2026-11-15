@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildMenu, compassPixmap } from './tray-menu.js';
 import { startWinTray } from './tray-win.js';
+import { T } from './i18n.js';
 
 const ICON_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'icons');
 const WATCHER = 'org.kde.StatusNotifierWatcher';
@@ -44,7 +45,7 @@ export async function startTray(opts) {
 }
 
 async function startDbusTray({ title, tooltip, items, onActivate, busAddress = process.env.DBUS_SESSION_BUS_ADDRESS }) {
-  if (!busAddress) throw new Error('no hay bus de sesión de D-Bus');
+  if (!busAddress) throw new Error(T('no hay bus de sesión de D-Bus'));
   const bus = dbus.sessionBus({ busAddress });
   await new Promise((resolve, reject) => {
     bus.connection.once('connect', resolve);

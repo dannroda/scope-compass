@@ -6,6 +6,7 @@ import { docDiff, docLog, docsStatus } from './git.js';
 import { renderBBCode, renderBlocks, renderMarkdown } from './render.js';
 import { docChanges, docText, rememberVersion } from './doc-versions.js';
 import { StoreError } from './store/json-files.js';
+import { T } from './i18n.js';
 
 // Tareas que referencian cada sección, "<ruta>#<id>", o el documento entero, "<ruta>" → [{ id, code, title, status, milestone }].
 function backlinks(docs, tasks) {
@@ -35,7 +36,7 @@ async function context(store, projectDir) {
 
 function getDoc(docs, alias) {
   const d = docs.find((x) => x.alias === alias);
-  if (!d) throw new StoreError('not_found', `no hay un documento "${alias}"`);
+  if (!d) throw new StoreError('not_found', T`no hay un documento "${alias}"`);
   return d;
 }
 
@@ -82,12 +83,12 @@ export function registerDocsApi(app, { store, projectDir, validators, onDocsChan
   app.get('/api/docs/:alias/changes', async (req) => {
     const { docs } = await context(store, projectDir);
     const d = getDoc(docs, req.params.alias);
-    if (d.missing) throw new StoreError('not_found', `no existe ${d.path}`);
+    if (d.missing) throw new StoreError('not_found', T`no existe ${d.path}`);
     const since = String(req.query.since ?? '');
-    if (!since) throw new StoreError('invalid_argument', 'falta since: el etag que se leyó');
+    if (!since) throw new StoreError('invalid_argument', T('falta since: el etag que se leyó'));
     const section = req.query.section ? String(req.query.section) : null;
     const c = await docChanges(projectDir, d, since, section);
-    if (section && !findSection(d, section) && !c.sections?.removed.includes(section)) throw new StoreError('not_found', `no hay una sección "${section}" en ${d.path}`);
+    if (section && !findSection(d, section) && !c.sections?.removed.includes(section)) throw new StoreError('not_found', T`no hay una sección "${section}" en ${d.path}`);
     return c;
   });
 
@@ -102,7 +103,7 @@ export function registerDocsApi(app, { store, projectDir, validators, onDocsChan
     const { docs, links } = await context(store, projectDir);
     const d = getDoc(docs, req.params.alias);
     const s = findSection(d, req.params.id);
-    if (!s) throw new StoreError('not_found', `no hay una sección "${req.params.id}" en ${d.path}`);
+    if (!s) throw new StoreError('not_found', T`no hay una sección "${req.params.id}" en ${d.path}`);
     const inside = d.sections.filter((x) => x.start >= s.start && x.start < s.end);
     const markdown = sectionMarkdown(d, s);
     const etag = await rememberVersion(docText(d));

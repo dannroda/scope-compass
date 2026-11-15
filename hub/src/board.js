@@ -15,6 +15,7 @@ import { isAbsolute, join, relative, resolve } from 'node:path';
 import { canonical } from './store/canonical.js';
 import { StoreError } from './store/json-files.js';
 import { folderName, projectsDataDir } from './projects.js';
+import { T } from './i18n.js';
 
 const WIN = process.platform === 'win32';
 
@@ -68,11 +69,11 @@ export async function sharedRepo() {
  */
 export async function newBoard(projectDir, name) {
   const n = folderName(name);
-  if (!n) throw new StoreError('invalid_argument', `nombre de tablero inválido: ${name}`);
+  if (!n) throw new StoreError('invalid_argument', T`nombre de tablero inválido: ${name}`);
   const dest = join(boardsDir(), n);
-  if (existsSync(dest)) throw new StoreError('conflict', `ya existe el tablero ${dest}: elegí otro nombre (--board <nombre>) o enlazalo (scompass board link ${n})`);
+  if (existsSync(dest)) throw new StoreError('conflict', T`ya existe el tablero ${dest}: elegí otro nombre (--board <nombre>) o enlazalo (scompass board link ${n})`);
   const compass = join(projectDir, 'compass');
-  if ((() => { try { lstatSync(compass); return true; } catch { return false; } })()) throw new StoreError('conflict', `ya existe ${compass}`);
+  if ((() => { try { lstatSync(compass); return true; } catch { return false; } })()) throw new StoreError('conflict', T`ya existe ${compass}`);
   mkdirSync(dest, { recursive: true });
   const shared = await sharedRepo();
   if (!shared) await gitOk(dest, ['init', '-q', '-b', 'main']);
@@ -133,7 +134,7 @@ export async function excludeBoard(projectDir) {
   const text = await readFile(file.out, 'utf8').catch(() => '');
   if (!text.split(/\r?\n/).includes(line)) {
     mkdirSync(join(file.out, '..'), { recursive: true });
-    await appendFile(file.out, `${text && !text.endsWith('\n') ? '\n' : ''}# Tablero de Scope Compass, en su propio repo (scompass board)\n${line}\n`);
+    await appendFile(file.out, T`${text && !text.endsWith('\n') ? '\n' : ''}# Tablero de Scope Compass, en su propio repo (scompass board)\n${line}\n`);
   }
   return file.out;
 }
@@ -149,12 +150,12 @@ function makeLink(target, compass) {
  */
 export async function linkBoard(projectDir, target) {
   const dir = isAbsolute(target) || target.includes('/') || target.includes('\\') ? resolve(target) : join(boardsDir(), target);
-  if (!existsSync(join(dir, 'config.json'))) throw new StoreError('not_found', `${dir} no es un tablero (no tiene config.json)`);
+  if (!existsSync(join(dir, 'config.json'))) throw new StoreError('not_found', T`${dir} no es un tablero (no tiene config.json)`);
   const compass = join(projectDir, 'compass');
   // lstat y no existsSync: un enlace roto también ocupa el lugar.
-  if ((() => { try { lstatSync(compass); return true; } catch { return false; } })()) throw new StoreError('conflict', `ya existe ${compass}`);
+  if ((() => { try { lstatSync(compass); return true; } catch { return false; } })()) throw new StoreError('conflict', T`ya existe ${compass}`);
   const rel = relative(realOr(projectDir), realOr(dir));
-  if (!rel || (!rel.startsWith('..') && !isAbsolute(rel))) throw new StoreError('invalid_argument', `el tablero tiene que estar fuera del proyecto: ${dir}`);
+  if (!rel || (!rel.startsWith('..') && !isAbsolute(rel))) throw new StoreError('invalid_argument', T`el tablero tiene que estar fuera del proyecto: ${dir}`);
   makeLink(realOr(dir), compass);
   const exclude = await excludeBoard(projectDir);
   return { path: compass, target: realOr(dir), exclude };
@@ -171,13 +172,13 @@ export async function linkBoard(projectDir, target) {
 export async function moveBoard(projectDir, name) {
   const compass = join(projectDir, 'compass');
   const kind = boardKind(projectDir);
-  if (kind === 'none') throw new StoreError('not_found', `no hay ${join(compass, 'config.json')}`);
-  if (kind !== 'local') throw new StoreError('conflict', `el tablero ya está en su propio repo (${kind === 'linked' ? 'enlazado a ' + realOr(compass) : 'compass/.git'})`);
+  if (kind === 'none') throw new StoreError('not_found', T`no hay ${join(compass, 'config.json')}`);
+  if (kind !== 'local') throw new StoreError('conflict', T`el tablero ya está en su propio repo (${kind === 'linked' ? T`enlazado a ${realOr(compass)}` : 'compass/.git'})`);
   const config = JSON.parse(readFileSync(join(compass, 'config.json'), 'utf8'));
   const n = folderName(name ?? config.project);
-  if (!n) throw new StoreError('invalid_argument', `nombre de tablero inválido: ${name ?? config.project}`);
+  if (!n) throw new StoreError('invalid_argument', T`nombre de tablero inválido: ${name ?? config.project}`);
   const dest = join(boardsDir(), n);
-  if (existsSync(dest)) throw new StoreError('conflict', `ya existe ${dest}`);
+  if (existsSync(dest)) throw new StoreError('conflict', T`ya existe ${dest}`);
 
   const top = await git(projectDir, ['rev-parse', '--show-toplevel']);
   const prefix = top.ok ? (await gitOk(projectDir, ['rev-parse', '--show-prefix'])) + 'compass' : null;

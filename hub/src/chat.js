@@ -13,6 +13,7 @@ import { createInterface } from 'node:readline';
 import { projectsFile } from './projects.js';
 import { cleanEnv, profileEnv } from './profiles.js';
 import { selfCommand } from './self.js';
+import { T } from './i18n.js';
 
 const WIN = process.platform === 'win32';
 export const IDLE_MS = 10 * 60 * 1000;
@@ -40,7 +41,7 @@ export function findClaude(env = process.env) {
   return null;
 }
 
-const PROMPT = (name) => `Sos el chat de Scope Compass del proyecto «${name}», en la web del tablero. El tablero se opera con las herramientas del MCP scompass y valen las reglas de compass/AGENTS.md: registrá las decisiones que tomes sin consultar (add_decision) y las preguntas que hagas, y pasá a review las tareas que termines. Podés leer los archivos del proyecto; no podés editarlos ni correr comandos: si hace falta, decí qué hacer en la terminal. Contestá en el idioma del usuario, corto.`;
+const PROMPT = (name) => T`Sos el chat de Scope Compass del proyecto «${name}», en la web del tablero. El tablero se opera con las herramientas del MCP scompass y valen las reglas de compass/AGENTS.md: registrá las decisiones que tomes sin consultar (add_decision) y las preguntas que hagas, y pasá a review las tareas que termines. Podés leer los archivos del proyecto; no podés editarlos ni correr comandos: si hace falta, decí qué hacer en la terminal. Contestá en el idioma del usuario, corto.`;
 
 /** Los argumentos de claude (§32): la primera vez fija el id de la sesión, después la retoma. */
 export function claudeArgs({ session, resume, mcpConfig, promptFile }) {
@@ -138,7 +139,7 @@ export class ChatProcess extends EventEmitter {
   get alive() { return this.child !== null; }
 
   async send(text) {
-    if (this.busy) throw new ChatError('busy', 'hay un turno en curso');
+    if (this.busy) throw new ChatError('busy', T('hay un turno en curso'));
     this.busy = true;
     clearTimeout(this.idle);
     try {
@@ -179,7 +180,7 @@ export class ChatProcess extends EventEmitter {
 
   async #start() {
     const exe = findClaude(this.env);
-    if (!exe) throw new ChatError('claude_missing', 'no se encontró claude (Claude Code); instalalo y entrá con `claude` una vez');
+    if (!exe) throw new ChatError('claude_missing', T('no se encontró claude (Claude Code); instalalo y entrá con `claude` una vez'));
     const dir = chatDir(this.projectDir);
     await mkdir(dir, { recursive: true });
     const mcpConfig = join(dir, 'mcp.json');
@@ -211,7 +212,7 @@ export class ChatProcess extends EventEmitter {
       child.once('spawn', resolve);
       child.once('error', (e) => {
         if (this.child === child) this.child = null;
-        reject(e.code === 'ENOENT' ? new ChatError('claude_missing', `no se pudo lanzar ${exe}`) : e);
+        reject(e.code === 'ENOENT' ? new ChatError('claude_missing', T`no se pudo lanzar ${exe}`) : e);
       });
     });
     // close y no exit: llega después de leer toda la salida, así un resultado que llegó al final no se pierde.
@@ -234,7 +235,7 @@ export class ChatProcess extends EventEmitter {
           said = e.message;
         }
       }
-      this.emit('event', { event: 'error', code: 'claude_exit', message: said.trim() || `claude terminó (código ${code})` });
+      this.emit('event', { event: 'error', code: 'claude_exit', message: said.trim() || T`claude terminó (código ${code})` });
       this.#endTurn({ event: 'end', ok: false, interrupted: false });
     });
   }

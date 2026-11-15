@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { buildMenu, compassIco } from './tray-menu.js';
+import { T } from './i18n.js';
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'tray-win.ps1');
 
@@ -36,9 +37,9 @@ export async function startWinTray({ title, tooltip, items, onActivate, timeoutM
   };
   await new Promise((resolve, reject) => {
     const fail = (why) => { clearTimeout(timer); reject(new Error(why)); };
-    const timer = setTimeout(() => { ps.kill(); fail('PowerShell no mostró el ícono a tiempo'); }, timeoutMs);
-    ps.once('error', (e) => fail(e.code === 'ENOENT' ? 'no está powershell.exe' : e.message));
-    ps.once('exit', () => fail(`PowerShell se cerró${err.trim() ? `: ${err.trim().split('\n').at(-1)}` : ''}`));
+    const timer = setTimeout(() => { ps.kill(); fail(T('PowerShell no mostró el ícono a tiempo')); }, timeoutMs);
+    ps.once('error', (e) => fail(e.code === 'ENOENT' ? T('no está powershell.exe') : e.message));
+    ps.once('exit', () => fail(T`PowerShell se cerró${err.trim() ? `: ${err.trim().split('\n').at(-1)}` : ''}`));
     lines.on('line', (line) => {
       let m;
       try { m = JSON.parse(line); } catch { return; }

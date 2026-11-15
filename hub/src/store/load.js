@@ -3,6 +3,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join, relative, sep } from 'node:path';
 import { parseDoc } from '../schema.js';
+import { T } from '../i18n.js';
 
 // Ruta relativa al proyecto, siempre con "/" (también en Windows), como en git.
 const rel = (compassDir, path) => relative(dirname(compassDir), path).split(sep).join('/');
@@ -30,7 +31,7 @@ export async function loadCompass(compassDir, validators) {
   const cfgPath = join(compassDir, 'config.json');
   const cfg = await readFile(cfgPath, 'utf8').catch(() => null);
   if (cfg === null) {
-    out.warnings.push({ code: 'missing_config', path: rel(compassDir, cfgPath), message: 'falta config.json' });
+    out.warnings.push({ code: 'missing_config', path: rel(compassDir, cfgPath), message: T('falta config.json') });
   } else {
     const res = parseDoc(cfg, 'config', validators);
     if (res.ok) out.config = res.doc;
@@ -43,7 +44,7 @@ export async function loadCompass(compassDir, validators) {
   }
   for (const [id, t] of out.tasks) {
     if (!out.milestones.has(t.milestone)) {
-      out.warnings.push({ code: 'unknown_milestone', path: rel(compassDir, join(compassDir, 'tasks', `${id}.json`)), message: `hito inexistente: ${t.milestone}` });
+      out.warnings.push({ code: 'unknown_milestone', path: rel(compassDir, join(compassDir, 'tasks', `${id}.json`)), message: T`hito inexistente: ${t.milestone}` });
     }
   }
   return out;

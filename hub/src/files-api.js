@@ -8,6 +8,7 @@ import { docDiff, docLog, docsStatus, repoBranch, repoFiles } from './git.js';
 import { renderCode, renderMarkdown } from './render.js';
 import { StoreError } from './store/json-files.js';
 import { projectRel, realInside } from './paths.js';
+import { T } from './i18n.js';
 
 const MAX_TEXT = 1 << 20; // un texto más grande no se muestra (ni su diff entero): se avisa
 const IMAGES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' };
@@ -24,7 +25,7 @@ export async function repoFile(projectDir, raw) {
   const g = await docsStatus(projectDir);
   const ok = path && !path.startsWith('/') && !/(^|\/)\.\.(\/|$)/.test(path) && !/[\\\0]/.test(path) &&
     ((await repoFiles(projectDir, path))?.includes(path) || Object.hasOwn(g.status, path));
-  if (!ok) throw new StoreError('not_found', `no hay un archivo "${path}" en el repo (o git lo ignora)`);
+  if (!ok) throw new StoreError('not_found', T`no hay un archivo "${path}" en el repo (o git lo ignora)`);
   // hasOwn: una ruta como "constructor" no puede pasar por una clave heredada del objeto (19.2).
   return { path, git: Object.hasOwn(g.status, path) ? g.status[path] : 'clean', abs: join(projectDir, path) };
 }
@@ -40,7 +41,7 @@ export async function imageFile(projectDir, raw) {
   if (!path.startsWith('compass/') && (await docsStatus(projectDir)).repo) return repoFile(projectDir, path);
   const ok = projectRel(path) === path && IMAGES[extname(path).toLowerCase()] &&
     (await lstat(join(projectDir, path)).then((s) => s.isFile(), () => false)) && (await realInside(projectDir, join(projectDir, path)));
-  if (!ok) throw new StoreError('not_found', `no hay una imagen "${path}" en el proyecto`);
+  if (!ok) throw new StoreError('not_found', T`no hay una imagen "${path}" en el proyecto`);
   return { path, git: null, abs: join(projectDir, path) };
 }
 
@@ -90,9 +91,9 @@ export function registerFilesApi(app, { projectDir }) {
   app.get('/api/files/raw', async (req, reply) => {
     const { path, abs } = await imageFile(projectDir, req.query.path);
     const type = IMAGES[extname(path).toLowerCase()];
-    if (!type) throw new StoreError('invalid_argument', `${path} no es una imagen`);
+    if (!type) throw new StoreError('invalid_argument', T`${path} no es una imagen`);
     const st = await lstat(abs).catch(() => null);
-    if (!st?.isFile()) throw new StoreError('not_found', `${path} no está en el disco`);
+    if (!st?.isFile()) throw new StoreError('not_found', T`${path} no está en el disco`);
     reply.header('content-type', type).header('x-content-type-options', 'nosniff').header('content-security-policy', "default-src 'none'; sandbox");
     return readFile(abs);
   });

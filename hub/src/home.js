@@ -30,6 +30,7 @@ import { pickFolder } from './desktop.js';
 import { folderName, forgetProject, loadProjects, projectsDataDir, projectsFile, projectsStatus, ProjectsError, recordProject } from './projects.js';
 import { hubsOf, listHubs } from './registry.js';
 import { localOnly, PROTOCOL, VERSION, WEB_DIR } from './server.js';
+import { langRoutes, T } from './i18n.js';
 import { createHttpStore, detectHub, hubCompatible } from './store/http.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { loadCompass } from './store/load.js';
@@ -50,6 +51,7 @@ const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, inva
 // (medio segundo: un hub que se levanta se ve en el Inicio en menos de 1 s, §16.8).
 export function createHomeServer({ validators, now = () => new Date(), pollMs = 500, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null }) {
   const app = Fastify({ logger, forceCloseConnections: true });
+  langRoutes(app);
   localOnly(app);
   const events = new EventEmitter();
   app.decorate('events', events);
@@ -78,14 +80,14 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     req.log.error(err);
     return reply.code(500).send({ error: { code: 'io_error', message: err.message } });
   });
-  app.setNotFoundHandler((req, reply) => reply.code(404).send({ error: { code: 'not_found', message: `no existe ${req.method} ${req.url}` } }));
+  app.setNotFoundHandler((req, reply) => reply.code(404).send({ error: { code: 'not_found', message: T`no existe ${req.method} ${req.url}` } }));
 
   // Solo se actúa sobre proyectos del registro: el Inicio no escribe en carpetas que nadie le pidió.
   const known = (path) => {
-    if (typeof path !== 'string' || !path) throw new StoreError('invalid_argument', 'falta path');
+    if (typeof path !== 'string' || !path) throw new StoreError('invalid_argument', T('falta path'));
     const p = projectsStatus().find((x) => x.path === path);
-    if (!p) throw new StoreError('not_found', `${path} no está en el registro (importalo primero)`);
-    if (!p.found) throw new StoreError('not_found', `no se encuentra ${join(path, 'compass')}`);
+    if (!p) throw new StoreError('not_found', T`${path} no está en el registro (importalo primero)`);
+    if (!p.found) throw new StoreError('not_found', T`no se encuentra ${join(path, 'compass')}`);
     return p;
   };
   const compassOf = (path) => join(path, 'compass');
@@ -148,14 +150,14 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
 
   // Reiniciar el Inicio (9.8): responde antes de cerrar; el nuevo toma el mismo puerto (lo hace `scompass home`).
   app.post('/api/restart', async (req, reply) => {
-    if (!onRestart) throw new StoreError('invalid_argument', 'este Inicio no se puede reiniciar desde la API');
+    if (!onRestart) throw new StoreError('invalid_argument', T('este Inicio no se puede reiniciar desde la API'));
     reply.code(202).send({ ok: true, restarting: true });
     setImmediate(onRestart);
     return reply;
   });
   // Apagar el Inicio (§18): lo mismo que Ctrl+C, en todas las plataformas.
   app.post('/api/shutdown', async (req, reply) => {
-    if (!onShutdown) throw new StoreError('invalid_argument', 'este Inicio no se puede apagar desde la API');
+    if (!onShutdown) throw new StoreError('invalid_argument', T('este Inicio no se puede apagar desde la API'));
     reply.code(202).send({ ok: true, stopping: true });
     setImmediate(onShutdown);
     return reply;
@@ -173,8 +175,8 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     return { removed };
   });
 
-  app.get('/api/templates', async () => ({
-    templates: await Promise.all((await listTemplates()).map(async (n) => ({ name: n, description: (await loadTemplate(n)).description ?? '' }))),
+  app.get('/api/templates', async (req) => ({
+    templates: await Promise.all((await listTemplates()).map(async (n) => ({ name: n, description: (await loadTemplate(n, req.lang)).description ?? '' }))),
     data_dir: projectsDataDir(),
     sep
   }));
@@ -187,19 +189,20 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     const { template = 'vacio' } = req.body ?? {};
     const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
     const dirName = folderName(name);
-    if (!dirName) throw new StoreError('invalid_argument', name ? `"${name}" no sirve como nombre de carpeta (sin \\ / : * ? " < > |)` : 'falta el nombre del proyecto');
+    if (!dirName) throw new StoreError('invalid_argument', name ? T`"${name}" no sirve como nombre de carpeta (sin \\ / : * ? " < > |)` : T('falta el nombre del proyecto'));
     const parent = typeof req.body?.parent === 'string' && req.body.parent.trim() ? req.body.parent.trim() : projectsDataDir();
-    if (!isAbsolute(parent)) throw new StoreError('invalid_argument', 'la carpeta tiene que ser una ruta absoluta');
-    if (!(await loadTemplate(template))) throw new StoreError('invalid_argument', `plantilla desconocida: ${template}`);
+    if (!isAbsolute(parent)) throw new StoreError('invalid_argument', T('la carpeta tiene que ser una ruta absoluta'));
+    if (!(await loadTemplate(template))) throw new StoreError('invalid_argument', T`plantilla desconocida: ${template}`);
     const path = join(parent, dirName);
-    if (existsSync(path)) throw new StoreError('conflict', `ya existe ${path}: elegí otro nombre u otra carpeta`);
+    if (existsSync(path)) throw new StoreError('conflict', T`ya existe ${path}: elegí otro nombre u otra carpeta`);
     await mkdir(path, { recursive: true });
     const inRepo = await new Promise((r) => execFile('git', ['-C', path, 'rev-parse', '--is-inside-work-tree'], { windowsHide: true }, (err) => r(!err)));
     const gitInit = !inRepo && await new Promise((r) => execFile('git', ['-C', path, 'init', '-q'], { windowsHide: true }, (err) => r(!err)));
     // --project=<nombre>: un nombre que empieza con - no se toma por otra opción (19.8).
-    const args = ['--dir', path, 'init', '--template', template, '--json', ...(name ? [`--project=${name}`] : [])];
+    // El tablero en el idioma de quien lo crea (§45); los mensajes de init, también.
+    const args = ['--dir', path, 'init', '--template', template, '--lang', req.lang, '--json', ...(name ? [`--project=${name}`] : [])];
     const r = await new Promise((resolve) => {
-      const child = spawn(...selfCommand(args), { stdio: ['ignore', 'pipe', 'pipe'], env: process.env, windowsHide: true });
+      const child = spawn(...selfCommand(args), { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, SCOMPASS_LANG: req.lang }, windowsHide: true });
       let out = '', err = '';
       child.stdout.on('data', (d) => { out += d; });
       child.stderr.on('data', (d) => { err += d; });
@@ -210,7 +213,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
       await rm(path, { recursive: true, force: true }).catch(() => {});
       let e = null;
       try { e = JSON.parse(r.err.trim().split('\n').at(-1)).error; } catch { /* no era JSON */ }
-      throw new StoreError(e?.code ?? 'io_error', e?.message ?? (r.err.trim() || `scompass init salió con ${r.code}`));
+      throw new StoreError(e?.code ?? 'io_error', e?.message ?? (r.err.trim() || T`scompass init salió con ${r.code}`));
     }
     emit({ type: 'projects' });
     return reply.code(201).send({ ...JSON.parse(r.out), path, git_init: !!gitInit });
@@ -220,15 +223,15 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   // el diálogo lo abre el Inicio con el del escritorio (desktop.js: kdialog o zenity, o el de Windows).
   app.post('/api/pick-folder', async (req) => {
     const start = typeof req.body?.start === 'string' ? req.body.start : projectsDataDir();
-    const r = await pickFolder(start, 'Dónde crear el proyecto');
-    if (!r) throw new StoreError('not_found', 'no hay un selector de carpetas (instalá kdialog o zenity); escribí la ruta');
+    const r = await pickFolder(start, T('Dónde crear el proyecto'));
+    if (!r) throw new StoreError('not_found', T('no hay un selector de carpetas (instalá kdialog o zenity); escribí la ruta'));
     return r;
   });
 
   // Que el Inicio sirva un proyecto ya (el "Iniciar hub" del dock con el Inicio corriendo, D29). Si no estaba en
   // el registro, se anota. Devuelve su base.
   app.post('/api/projects/activate', async (req) => {
-    if (typeof req.body?.path !== 'string' || !req.body.path) throw new StoreError('invalid_argument', 'falta path');
+    if (typeof req.body?.path !== 'string' || !req.body.path) throw new StoreError('invalid_argument', T('falta path'));
     // El dock puede mandarla con "/" al final o con un symlink en el camino: la del registro es la resuelta.
     let path = resolve(req.body.path);
     try { path = realpathSync(path); } catch { /* no existe: known() lo dice */ }
@@ -254,10 +257,10 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   app.post('/api/projects/add-item', async (req, reply) => {
     const { path, list, text, due, etag } = req.body ?? {};
     known(path);
-    if (typeof list !== 'string' || !list) throw new StoreError('invalid_argument', 'falta list');
+    if (typeof list !== 'string' || !list) throw new StoreError('invalid_argument', T('falta list'));
     const store = await storeFor(path);
     const cur = await store.get('lists', list);
-    if (etag !== undefined && etag !== cur.etag) throw new StoreError('conflict', 'la lista cambió desde que se leyó', { current: { id: cur.id, etag: cur.etag, ...cur.doc } });
+    if (etag !== undefined && etag !== cur.etag) throw new StoreError('conflict', T('la lista cambió desde que se leyó'), { current: { id: cur.id, etag: cur.etag, ...cur.doc } });
     const item = newItem({ text: typeof text === 'string' ? text.trim() : text, due: due || undefined }, now().toISOString());
     const w = await store.patch('lists', list, { items: [...cur.doc.items, item] }, { ifMatch: cur.etag });
     await afterWrite(path, store, 'lists', list, w);
@@ -269,9 +272,9 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     known(path);
     const store = await storeFor(path);
     const cur = await store.get('lists', list);
-    if (etag !== undefined && etag !== cur.etag) throw new StoreError('conflict', 'la lista cambió desde que se leyó', { current: { id: cur.id, etag: cur.etag, ...cur.doc } });
+    if (etag !== undefined && etag !== cur.etag) throw new StoreError('conflict', T('la lista cambió desde que se leyó'), { current: { id: cur.id, etag: cur.etag, ...cur.doc } });
     const items = cur.doc.items;
-    if (!Number.isInteger(n) || n < 1 || n > items.length) throw new StoreError('invalid_argument', `ítem inexistente: ${n} (la lista tiene ${items.length})`);
+    if (!Number.isInteger(n) || n < 1 || n > items.length) throw new StoreError('invalid_argument', T`ítem inexistente: ${n} (la lista tiene ${items.length})`);
     let r;
     try { r = checkItem(items[n - 1], { undo: !!undo }); } catch (e) { throw new StoreError(e.code ?? 'invalid_argument', e.message); }
     const w = await store.patch('lists', list, { items: items.with(n - 1, r.item) }, { ifMatch: cur.etag });
@@ -282,7 +285,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   app.post('/api/projects/move-task', async (req) => {
     const { path, id, status, etag } = req.body ?? {};
     known(path);
-    if (!STATUSES.includes(status)) throw new StoreError('invalid_argument', `estado inválido: ${status}`);
+    if (!STATUSES.includes(status)) throw new StoreError('invalid_argument', T`estado inválido: ${status}`);
     const store = await storeFor(path);
     const w = await store.patch('tasks', id, { status }, etag === undefined ? {} : { ifMatch: etag });
     await afterWrite(path, store, 'tasks', id, w);
@@ -311,7 +314,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
       await sleep(50);
     }
     child.kill();
-    throw new StoreError('io_error', `el hub no arrancó${err.trim() ? `: ${err.trim().split('\n').at(-1)}` : ''}`);
+    throw new StoreError('io_error', T`el hub no arrancó${err.trim() ? `: ${err.trim().split('\n').at(-1)}` : ''}`);
   }
 
   // Un hub atado a otro proceso que no lanzó el Inicio (el dock de Godot).
@@ -320,10 +323,10 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   async function stopHub(path, { force = false } = {}) {
     known(path);
     const running = standaloneOf(path);
-    if (!running.length) throw new StoreError('not_found', `${path} no tiene un hub corriendo`);
+    if (!running.length) throw new StoreError('not_found', T`${path} no tiene un hub corriendo`);
     // Uno atado a otro proceso (el dock de Godot) se apaga solo con force: el editor se queda sin hub.
     const foreign = running.filter(isForeign);
-    if (foreign.length && !force) throw new StoreError('conflict', 'ese hub lo abrió el dock de Godot (u otro programa): el editor se queda sin hub hasta que lo vuelva a iniciar', { foreign: true });
+    if (foreign.length && !force) throw new StoreError('conflict', T('ese hub lo abrió el dock de Godot (u otro programa): el editor se queda sin hub hasta que lo vuelva a iniciar'), { foreign: true });
     // Cierre ordenado en todas las plataformas (§18): a un hijo se le corta la entrada (--exit-on-stdin-close) y a
     // los demás se les pide por la API. Si en 3 s sigue vivo, kill (SIGTERM en Linux; en Windows, en seco).
     await Promise.all(running.map((h) => children.has(h.pid)
@@ -333,7 +336,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     for (const h of running) if (alive(h.pid)) { try { process.kill(h.pid); } catch { /* ya no estaba */ } }
     for (let i = 0; i < 40 && running.some((h) => alive(h.pid)); i++) await sleep(50);
     const still = running.filter((h) => alive(h.pid));
-    if (still.length) throw new StoreError('io_error', `el hub (PID ${still.map((h) => h.pid).join(', ')}) no se cerró en 5 s`);
+    if (still.length) throw new StoreError('io_error', T`el hub (PID ${still.map((h) => h.pid).join(', ')}) no se cerró en 5 s`);
     poll();
     return { stopped: running.map((h) => ({ pid: h.pid, port: h.port })) };
   }
@@ -390,7 +393,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   // La página del Inicio (web/home.*), con los estilos y las fuentes del tablero. Rutas fijas, como en el hub.
   const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png' };
   const serveWeb = async (reply, rel) => {
-    const missing = new StoreError('not_found', `no existe /${rel}`);
+    const missing = new StoreError('not_found', T`no existe /${rel}`);
     const ext = rel.slice(rel.lastIndexOf('.'));
     if (!TYPES[ext] || !/^((fonts|frames)\/)?[\w.-]+$/.test(rel) || rel.split('/').pop().startsWith('.')) throw missing;
     const body = await readFile(join(webDir, rel)).catch(() => null);

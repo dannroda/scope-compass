@@ -1,0 +1,338 @@
+# hub/locales/en/mcp.po: los textos de hub/src/mcp.js en inglés (spec §45). msgid: el castellano del código.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid "Tablero de tareas del proyecto (compass/, formato de Scope Compass). Estas herramientas son la CLI scompass: usalas en lugar de correr scompass por Bash.\n- Hitos con id m00, m01…; tareas con id m5-12 (o ids viejos al azar). Estados: todo (Pendiente), paused, doing, review, done.\n- Al empezar una tarea, move_task a doing; al avanzar, check_step (pasos desde 1, como los muestra show_task); al terminar, completá test y notes con update_task y pasala a review.\n- Trabajo nuevo que aparece: add_task con description (qué y por qué). Si una tarea depende de otra, add_link en lugar de anotarlo.\n- Cada vez que elijas entre alternativas razonables que el usuario podría haber querido distinto (formato, nombre visible, dejar algo afuera, una dependencia, un comportamiento por defecto), registralo con add_decision (why, alternatives); si le preguntaste, con ask y después reply_decision con la respuesta. Antes de seguir una tarea, mirá si tiene decisiones a revertir (list_decisions con states revert): deshacelas y marcalas reverted con review_decision.\n- Las escrituras devuelven la tarea con su etag; pasalo en etag para no pisar un cambio ajeno (si cambió, falla con conflicto: volvé a leerla).\n- Los cambios quedan como archivos modificados en compass/: commitealos solo si te lo piden.\n- Documentos: show_doc da el etag del documento; con since (el etag que ya tenés) dice si cambió sin repetir el texto. Si un resultado trae un aviso de que un documento que leíste cambió, volvé a leerlo antes de basarte en él.\n- dir opera sobre otro proyecto (la carpeta que tiene compass/)."
+msgstr "The project's task board (compass/, Scope Compass format). These tools are the scompass CLI: use them instead of running scompass through Bash.\n- Milestones have ids m00, m01…; tasks have ids like m5-12 (or old random ids). Statuses: todo (To do), paused, doing, review, done.\n- When you start a task, move_task to doing; as you progress, check_step (steps from 1, as show_task lists them); when you finish, fill in test and notes with update_task and move it to review.\n- New work that comes up: add_task with a description (what and why). If a task depends on another, use add_link instead of writing it down.\n- Every time you choose between reasonable alternatives the user might have wanted differently (a format, a visible name, leaving something out, a dependency, a default behavior), record it with add_decision (why, alternatives); if you asked them, use ask and then reply_decision with the answer. Before continuing a task, check whether it has decisions to revert (list_decisions with states revert): undo them and mark them reverted with review_decision.\n- Writes return the task with its etag; pass it as etag so you don't overwrite someone else's change (if it changed, it fails with a conflict: read it again).\n- Changes stay as modified files in compass/: commit them only if asked.\n- Documents: show_doc gives the document's etag; with since (the etag you already have) it tells whether it changed without repeating the text. If a result carries a notice that a document you read changed, read it again before relying on it.\n- dir works on another project (the folder that has compass/)."
+
+msgid "id de la tarea (m5-02)"
+msgstr "task id (m5-02)"
+
+msgid "etag que devolvió la última lectura: si la tarea cambió desde entonces, falla con conflicto"
+msgstr "etag returned by the last read: if the task changed since then, it fails with a conflict"
+
+msgid "carpeta de otro proyecto (la que tiene compass/); por defecto, el de esta sesión"
+msgstr "folder of another project (the one with compass/); by default, this session's"
+
+msgid "fecha límite, YYYY-MM-DD o YYYY-MM-DDTHH:MM (hora local)"
+msgstr "due date, YYYY-MM-DD or YYYY-MM-DDTHH:MM (local time)"
+
+msgid "Tareas, por hito y en orden, con id, etag, estado, pasos y vínculos. Sin filtros, todas."
+msgstr "Tasks, by milestone and in order, with id, etag, status, steps and links. Without filters, all of them."
+
+msgid "id del hito (m05)"
+msgstr "milestone id (m05)"
+
+msgid "estados"
+msgstr "statuses"
+
+msgid "todas las palabras en código, título o id, sin tildes ni mayúsculas"
+msgstr "all the words in code, title or id, ignoring accents and case"
+
+msgid "vencimiento"
+msgstr "due"
+
+msgid "true: solo bloqueadas; false: solo sin bloquear"
+msgstr "true: only blocked; false: only unblocked"
+
+msgid "solo con pasos sin tildar"
+msgstr "only with unchecked steps"
+
+msgid "solo con referencias a documentos"
+msgstr "only with references to documents"
+
+msgid "con alguna de estas etiquetas"
+msgstr "with any of these tags"
+
+msgid "prioridades"
+msgstr "priorities"
+
+msgid "estimaciones"
+msgstr "sizes"
+
+msgid "responsables (none: sin responsable)"
+msgstr "assignees (none: unassigned)"
+
+msgid "con alguna decisión en estos estados: open (pregunta sin respuesta), pending (tomada sin consultar, sin revisar), revert (a revertir)"
+msgstr "with a decision in any of these states: open (unanswered question), pending (made without asking, not reviewed), revert (to revert)"
+
+msgid "Una tarea entera, con su etag."
+msgstr "A whole task, with its etag."
+
+msgid "Qué cambió en la tarea en cada commit de git, y lo que hay sin commitear."
+msgstr "What changed in the task in each git commit, and what's uncommitted."
+
+msgid "Hitos, en orden."
+msgstr "Milestones, in order."
+
+msgid "Un hito: objetivo, criterios de terminado (done_when) y fecha objetivo."
+msgstr "A milestone: goal, done criteria (done_when) and target date."
+
+msgid "Vínculos (bloquea, bloqueada por, relacionada) de una tarea, o de todas; broken lista los que apuntan a tareas que no existen."
+msgstr "Links (blocks, blocked by, related) of a task, or of all of them; broken lists the ones pointing to tasks that don't exist."
+
+msgid "id de la tarea; sin él, todas"
+msgstr "task id; without it, all"
+
+msgid "Sesiones de playtest, con sus tareas (items) en el orden de prueba; el resultado de cada prueba está en la tarea, no en la sesión."
+msgstr "Playtest sessions, with their tasks (items) in test order; each test's result is in the task, not in the session."
+
+msgid "Una sesión de playtest: las tareas en el orden de prueba (el resultado está en cada tarea, en playtest)."
+msgstr "A playtest session: the tasks in test order (the result is in each task, under playtest)."
+
+msgid "id de la sesión"
+msgstr "session id"
+
+msgid "Decisiones de todo el proyecto, la más nueva primero, con su tarea, su número (n) y su estado. Sin states, todas."
+msgstr "Decisions across the whole project, newest first, with their task, number (n) and state. Without states, all of them."
+
+msgid "open (pregunta sin respuesta), pending (tomada sin consultar, sin revisar), revert (a revertir)"
+msgstr "open (unanswered question), pending (made without asking, not reviewed), revert (to revert)"
+
+msgid "Documentos del proyecto (los de config.json) con su índice de secciones."
+msgstr "The project's documents (those in config.json) with their section index."
+
+msgid "Líneas de los documentos con todas las palabras (sin tildes ni mayúsculas), con la sección donde está cada una."
+msgstr "Document lines containing all the words (ignoring accents and case), with the section each one is in."
+
+msgid "texto a buscar"
+msgstr "text to search for"
+
+msgid "Un documento entero (alias) o una sección (alias#id), en markdown, con el etag del documento. Con since (el etag que ya leíste): si no cambió, contesta solo eso; si cambió, el texto y qué secciones cambiaron, se agregaron o se quitaron."
+msgstr "A whole document (alias) or a section (alias#id), in markdown, with the document's etag. With since (the etag you already read): if it didn't change, it answers just that; if it changed, the text and which sections changed, were added or were removed."
+
+msgid "alias o alias#id-de-sección (list_docs los muestra)"
+msgstr "alias or alias#section-id (list_docs shows them)"
+
+msgid "etag del documento que ya leíste (lo dio show_doc)"
+msgstr "etag of the document you already read (show_doc gave it)"
+
+msgid "Crea una tarea en un hito (el id sale solo: siguiente número del hito). Con una etiqueta que tiene plantilla y sin description, la descripción arranca con la plantilla."
+msgstr "Creates a task in a milestone (the id is automatic: the milestone's next number). With a tag that has a template and no description, the description starts from the template."
+
+msgid "título"
+msgstr "title"
+
+msgid "número visible (5.9)"
+msgstr "visible number (5.9)"
+
+msgid "estado inicial (todo por defecto)"
+msgstr "initial status (todo by default)"
+
+msgid "qué hay que hacer y por qué"
+msgstr "what needs doing and why"
+
+msgid "etiquetas (usá las que ya existen)"
+msgstr "tags (use existing ones)"
+
+msgid "prioridad"
+msgstr "priority"
+
+msgid "estimación"
+msgstr "size"
+
+msgid "responsable"
+msgstr "assignee"
+
+msgid "Cambia solo los campos que se pasan. \"\" quita description, due, tags, priority, size o assignee."
+msgstr "Changes only the fields you pass. \"\" removes description, due, tags, priority, size or assignee."
+
+msgid "qué y por qué (el pedido)"
+msgstr "what and why (the request)"
+
+msgid "lo que va saliendo al trabajarla: decisiones, hallazgos, lo que el siguiente necesita saber"
+msgstr "what comes up while working on it: decisions, findings, what the next person needs to know"
+
+msgid "cómo se comprueba que está terminada"
+msgstr "how to check it's done"
+
+msgid "número visible"
+msgstr "visible number"
+
+msgid "id del hito al que se mueve"
+msgstr "id of the milestone it moves to"
+
+msgid "estado"
+msgstr "status"
+
+msgid "etiquetas (reemplaza la lista; [] las quita)"
+msgstr "tags (replaces the list; [] removes them)"
+
+msgid "Borra una tarea (y sus capturas guardadas por la app que nadie más cita). Los vínculos de otras tareas hacia ella quedan rotos."
+msgstr "Deletes a task (and the screenshots the app saved for it that nothing else cites). Links from other tasks to it become broken."
+
+msgid "Cambia el estado de una tarea."
+msgstr "Changes a task's status."
+
+msgid "estado nuevo"
+msgstr "new status"
+
+msgid "Agrega un paso al final del checklist."
+msgstr "Adds a step at the end of the checklist."
+
+msgid "una línea corta"
+msgstr "a short line"
+
+msgid "el cómo y el porqué"
+msgstr "the how and the why"
+
+msgid "Cambia el texto o el detalle de un paso (\"\" en detail lo quita)."
+msgstr "Changes a step's text or detail (\"\" in detail removes it)."
+
+msgid "número de paso, desde 1"
+msgstr "step number, from 1"
+
+msgid "texto"
+msgstr "text"
+
+msgid "detalle"
+msgstr "detail"
+
+msgid "Quita un paso. Los siguientes se corren un número: para quitar varios, empezá por el más alto o volvé a leer la tarea."
+msgstr "Removes a step. The following ones shift down by one: to remove several, start with the highest or read the task again."
+
+msgid "Tilda un paso (undo: lo destilda)."
+msgstr "Checks a step (undo: unchecks it)."
+
+msgid "destildarlo"
+msgstr "uncheck it"
+
+msgid "Registra una decisión en la tarea: sin ask, la tomaste sin consultar (queda sin revisar hasta que el usuario la revisa); con ask, es una pregunta al usuario (queda abierta hasta que responde)."
+msgstr "Records a decision in the task: without ask, you made it without asking (it stays not reviewed until the user reviews it); with ask, it's a question for the user (it stays open until they answer)."
+
+msgid "qué decidiste, en una línea; con ask, la pregunta"
+msgstr "what you decided, in one line; with ask, the question"
+
+msgid "por qué"
+msgstr "why"
+
+msgid "qué descartaste"
+msgstr "what you discarded"
+
+msgid "es una pregunta al usuario"
+msgstr "it's a question for the user"
+
+msgid "Revisa una decisión tomada sin consultar: ok, revert (a revertir; reply dice qué hacer) o reverted (ya la deshiciste). Las preguntas se responden con reply_decision."
+msgstr "Reviews a decision made without asking: ok, revert (to revert; reply says what to do) or reverted (you already undid it). Questions are answered with reply_decision."
+
+msgid "número de decisión, desde 1"
+msgstr "decision number, from 1"
+
+msgid "revisión"
+msgstr "review"
+
+msgid "qué hacer en su lugar"
+msgstr "what to do instead"
+
+msgid "Responde una pregunta abierta de la tarea."
+msgstr "Answers an open question in the task."
+
+msgid "la respuesta"
+msgstr "the answer"
+
+msgid "Agrega una decisión resuelta (revisada con ok o pregunta respondida) como entrada D-n al final del documento de decisiones del proyecto, y la marca en la tarea. Solo si el usuario lo pide o si es una decisión de diseño que cambia la spec."
+msgstr "Adds a resolved decision (reviewed as ok, or an answered question) as a D-n entry at the end of the project's decisions document, and marks it in the task. Only if the user asks for it or if it's a design decision that changes the spec."
+
+msgid "Quita una decisión de la tarea. Las siguientes se corren un número: para quitar varias, empezá por la más alta o volvé a leer la tarea."
+msgstr "Removes a decision from the task. The following ones shift down by one: to remove several, start with the highest or read the task again."
+
+msgid "Vincula dos tareas (reemplaza el vínculo que tuvieran). blocked-by: id no puede avanzar hasta que other esté en Revisión o Hecha."
+msgstr "Links two tasks (replaces any link they had). blocked-by: id can't move forward until other is in Review or Done."
+
+msgid "tipo"
+msgstr "type"
+
+msgid "id de la otra tarea"
+msgstr "id of the other task"
+
+msgid "Quita el vínculo entre dos tareas."
+msgstr "Removes the link between two tasks."
+
+msgid "Agrega una referencia a un documento entero (alias) o a una sección (alias#id)."
+msgstr "Adds a reference to a whole document (alias) or to a section (alias#id)."
+
+msgid "alias o alias#id"
+msgstr "alias or alias#id"
+
+msgid "Quita una referencia."
+msgstr "Removes a reference."
+
+msgid "Vincula un archivo del repo a la tarea (un script, una escena; ruta desde la raíz o res://)."
+msgstr "Links a repo file to the task (a script, a scene; path from the root or res://)."
+
+msgid "ruta"
+msgstr "path"
+
+msgid "Desvincula un archivo de la tarea."
+msgstr "Unlinks a file from the task."
+
+msgid "Anota cómo salió la prueba de una tarea de una sesión: pass (anda), fail (falla) o reset (sin probar). Se guarda en la tarea."
+msgstr "Records how a session task's test went: pass (works), fail (fails) or reset (untested). It's saved in the task."
+
+msgid "id de la tarea o su posición en la sesión"
+msgstr "task id or its position in the session"
+
+msgid "resultado"
+msgstr "result"
+
+msgid "lo que se vio (\"\" la quita)"
+msgstr "what was seen (\"\" removes it)"
+
+msgid "scompass salió con {0}"
+msgstr "scompass exited with {0}"
+
+msgid "herramienta desconocida: {0}"
+msgstr "unknown tool: {0}"
+
+msgid "falta {0}"
+msgstr "missing {0}"
+
+msgid "sin cambios desde since: vale lo que ya leíste"
+msgstr "no changes since since: what you already read still holds"
+
+msgid "Aviso: el documento {0}, que leíste, ya no está (se borró o se quitó de compass/config.json)."
+msgstr "Notice: the document {0}, which you read, is gone (it was deleted or removed from compass/config.json)."
+
+msgid "cambiaron"
+msgstr "changed"
+
+msgid "nuevas"
+msgstr "added"
+
+msgid "quitadas"
+msgstr "removed"
+
+msgid " (secciones {0})"
+msgstr " (sections {0})"
+
+msgid "Aviso: el documento {0} cambió desde que lo leíste{1}. Volvé a leerlo con show_doc (since: {2}) antes de basarte en él."
+msgstr "Notice: the document {0} changed since you read it{1}. Read it again with show_doc (since: {2}) before relying on it."
+
+msgid "recurso desconocido: {0}"
+msgstr "unknown resource: {0}"
+
+msgid "Tarea"
+msgstr "Task"
+
+msgid "Una tarea entera, con su etag (id: m5-02)"
+msgstr "A whole task, with its etag (id: m5-02)"
+
+msgid "Hito"
+msgstr "Milestone"
+
+msgid "Un hito con sus tareas (id: m05)"
+msgstr "A milestone with its tasks (id: m05)"
+
+msgid "Documento"
+msgstr "Document"
+
+msgid "Un documento (alias) o una sección (alias#id), en markdown"
+msgstr "A document (alias) or a section (alias#id), in markdown"
+
+msgid "JSON inválido"
+msgstr "invalid JSON"
+
+msgid "método desconocido: {0}"
+msgstr "unknown method: {0}"

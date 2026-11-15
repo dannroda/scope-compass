@@ -9,6 +9,7 @@ import { createServer } from './server.js';
 import { createJsonFilesStore } from './store/json-files.js';
 import { attachSocket } from './ws.js';
 import { isLoopback } from './chat-api.js';
+import { T } from './i18n.js';
 
 /**
  * Clave de cada proyecto en la URL (/p/<clave>/): el nombre de su carpeta como slug, sin repetir, en orden. keys: las
@@ -21,7 +22,7 @@ export function projectKeys(projects, keys = new Map()) {
 }
 
 // Cabeceras que pasan del navegador al hub y de vuelta.
-const IN = ['content-type', 'if-match', 'if-none-match', 'accept'];
+const IN = ['content-type', 'if-match', 'if-none-match', 'accept', 'accept-language'];
 // nosniff y la CSP con sandbox de /api/files/raw también pasan (19.8).
 const OUT = ['content-type', 'etag', 'location', 'cache-control', 'x-content-type-options', 'content-security-policy'];
 
@@ -62,7 +63,7 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
     return standalone && !live.has(p.path) ? { port: standalone.port } : null;
   };
 
-  const missing = (reply, key) => reply.code(404).send({ error: { code: 'not_found', message: `no hay un proyecto "${key}" en el Inicio` } });
+  const missing = (reply, key) => reply.code(404).send({ error: { code: 'not_found', message: T`no hay un proyecto "${key}" en el Inicio` } });
 
   app.get('/p/:key', (req, reply) => reply.redirect(`/p/${encodeURIComponent(req.params.key)}/`));
 
@@ -76,7 +77,7 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
     const local = isLoopback(req.socket.remoteAddress);
     // Sobre la ruta decodificada, para que "/api/%63hats" no se saltee el chequeo.
     if (!local && /^api\/chats(\/|$)/.test(req.params['*'])) {
-      return reply.code(403).send({ error: { code: 'forbidden', message: 'el chat solo anda en este equipo (127.0.0.1)' } });
+      return reply.code(403).send({ error: { code: 'forbidden', message: T('el chat solo anda en este equipo (127.0.0.1)') } });
     }
     const headers = Object.fromEntries(IN.filter((h) => req.headers[h] !== undefined).map((h) => [h, req.headers[h]]));
     const payload = req.body === undefined || req.body === null ? undefined : typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
@@ -85,7 +86,7 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
     let status, outHeaders, body;
     if (proxy) {
       const r = await fetch(`http://127.0.0.1:${proxy.port}${url}`, { method: req.method, headers, body: payload }).catch(() => null);
-      if (!r) return reply.code(502).send({ error: { code: 'io_error', message: 'el hub del proyecto no responde' } });
+      if (!r) return reply.code(502).send({ error: { code: 'io_error', message: T('el hub del proyecto no responde') } });
       status = r.status;
       outHeaders = Object.fromEntries(OUT.filter((h) => r.headers.get(h) !== null).map((h) => [h, r.headers.get(h)]));
       body = Buffer.from(await r.arrayBuffer());
@@ -104,7 +105,7 @@ export function registerProjectRoutes(app, { validators, projects, onChange, por
   app.register(async (scope) => {
     scope.get('/p/:key/ws', { websocket: true }, async (socket, req) => {
       const p = find(req.params.key);
-      if (!p) { socket.close(4404, 'no existe el proyecto'); return; }
+      if (!p) { socket.close(4404, T('no existe el proyecto')); return; }
       const proxy = route(p);
       const local = isLoopback(req.socket.remoteAddress);
       if (!proxy) {

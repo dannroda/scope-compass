@@ -13,6 +13,7 @@ import { COLLECTIONS, loadCollection, loadCompass } from './load.js';
 import { parseDoc } from '../schema.js';
 import { isValidDue } from '../dates.js';
 import { compileForbidden, describeMatch, findForbidden } from '../forbidden.js';
+import { T } from '../i18n.js';
 
 export class StoreError extends Error {
   // code: invalid_argument | not_found | conflict | invalid_file | io_error | forbidden_pattern
@@ -50,11 +51,11 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
   };
 
   const checkCollection = (collection) => {
-    if (!COLLECTIONS[collection]) throw new StoreError('invalid_argument', `colección desconocida: ${collection}`);
+    if (!COLLECTIONS[collection]) throw new StoreError('invalid_argument', T`colección desconocida: ${collection}`);
   };
   const pathOf = (collection, id) => {
     checkCollection(collection);
-    if (!isValidId(id)) throw new StoreError('invalid_argument', `id inválido: ${id}`);
+    if (!isValidId(id)) throw new StoreError('invalid_argument', T`id inválido: ${id}`);
     return join(compassDir, collection, `${id}.json`);
   };
 
@@ -75,7 +76,7 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
 
   function checkMatch(current, ifMatch) {
     if (ifMatch !== undefined && ifMatch !== (current ? current.etag : null)) {
-      throw new StoreError('conflict', 'el documento cambió desde que se leyó', { current });
+      throw new StoreError('conflict', T('el documento cambió desde que se leyó'), { current });
     }
   }
 
@@ -113,7 +114,7 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
     if (!res.ok) throw new StoreError('invalid_argument', res.message, { details: res.details });
     // El schema mira el formato; una fecha que no existe (2026-02-30) se rechaza al ponerla (19.8). Una que ya estaba
     // en el archivo no impide editar otra cosa.
-    if (doc.due !== undefined && doc.due !== current?.doc.due && !isValidDue(doc.due)) throw new StoreError('invalid_argument', `fecha inexistente: ${doc.due}`);
+    if (doc.due !== undefined && doc.due !== current?.doc.due && !isValidDue(doc.due)) throw new StoreError('invalid_argument', T`fecha inexistente: ${doc.due}`);
     await checkForbidden(collection, id, res.doc);
     try {
       // La carpeta puede faltar en un proyecto de antes de esa colección (lists/, D25; playtests/, D39).
@@ -137,7 +138,7 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
 
     get: (collection, id) => serial(async () => {
       const cur = await readCurrent(collection, id);
-      if (!cur) throw new StoreError('not_found', `no existe ${collection}/${id}`);
+      if (!cur) throw new StoreError('not_found', T`no existe ${collection}/${id}`);
       return cur;
     }),
 
@@ -155,7 +156,7 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
       if (id === undefined) {
         do id = randomId(); while (await readCurrent(collection, id).catch(() => true));
       } else if (await readCurrent(collection, id).catch(() => true)) {
-        throw new StoreError('conflict', `ya existe ${collection}/${id}`);
+        throw new StoreError('conflict', T`ya existe ${collection}/${id}`);
       }
       // Sin order, la tarea va al final de su hito. Se calcula dentro de la cola: dos altas a la vez no lo repiten.
       if (collection === 'tasks' && doc.order === undefined) {
@@ -176,7 +177,7 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
     // Merge de primer nivel: los arrays se reemplazan enteros y null borra el campo.
     patch: (collection, id, patch, { ifMatch } = {}) => serial(async () => {
       const cur = await readCurrent(collection, id);
-      if (!cur) throw new StoreError('not_found', `no existe ${collection}/${id}`);
+      if (!cur) throw new StoreError('not_found', T`no existe ${collection}/${id}`);
       checkMatch(cur, ifMatch);
       const next = { ...cur.doc };
       for (const [k, v] of Object.entries(patch)) {
@@ -188,12 +189,12 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
 
     delete: (collection, id, { ifMatch } = {}) => serial(async () => {
       const cur = await readCurrent(collection, id);
-      if (!cur) throw new StoreError('not_found', `no existe ${collection}/${id}`);
+      if (!cur) throw new StoreError('not_found', T`no existe ${collection}/${id}`);
       checkMatch(cur, ifMatch);
       if (collection === 'milestones') {
         const { docs } = await loadCollection(compassDir, 'tasks', validators);
         const used = [...docs].filter(([, t]) => t.milestone === id).map(([tid]) => tid);
-        if (used.length) throw new StoreError('conflict', `el hito ${id} tiene ${used.length} tareas`, { tasks: used });
+        if (used.length) throw new StoreError('conflict', T`el hito ${id} tiene ${used.length} tareas`, { tasks: used });
       }
       try {
         await rm(pathOf(collection, id));

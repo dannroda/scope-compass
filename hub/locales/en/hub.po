@@ -1,0 +1,728 @@
+# hub/locales/en/hub.po: los textos de hub/src en inglés (spec §45). msgid: el castellano del código.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid "If-None-Match solo admite *"
+msgstr "If-None-Match only accepts *"
+
+msgid "el cuerpo tiene que ser un objeto JSON"
+msgstr "the body must be a JSON object"
+
+msgid "estado inválido: {0}"
+msgstr "invalid status: {0}"
+
+msgid "falta data (la imagen en base64)"
+msgstr "missing data (the image in base64)"
+
+msgid "{0} no tiene la captura {1}"
+msgstr "{0} doesn't have the screenshot {1}"
+
+msgid "falta el título"
+msgstr "missing title"
+
+msgid "la lista cambió desde que se leyó"
+msgstr "the list changed since it was read"
+
+msgid "ítem inexistente: {0} (la lista tiene {1})"
+msgstr "no such item: {0} (the list has {1})"
+
+msgid "el ítem {0} ya pasó a la tarea {1}"
+msgstr "item {0} was already turned into task {1}"
+
+msgid "tasks tiene que ser una lista de ids"
+msgstr "tasks must be a list of ids"
+
+msgid "nombre de tablero inválido: {0}"
+msgstr "invalid board name: {0}"
+
+msgid "ya existe el tablero {0}: elegí otro nombre (--board <nombre>) o enlazalo (scompass board link {1})"
+msgstr "board {0} already exists: pick another name (--board <name>) or link it (scompass board link {1})"
+
+msgid "ya existe {0}"
+msgstr "{0} already exists"
+
+msgid "{0}# Tablero de Scope Compass, en su propio repo (scompass board)\n{1}\n"
+msgstr "{0}# Scope Compass board, in its own repo (scompass board)\n{1}\n"
+
+msgid "{0} no es un tablero (no tiene config.json)"
+msgstr "{0} is not a board (it has no config.json)"
+
+msgid "el tablero tiene que estar fuera del proyecto: {0}"
+msgstr "the board must be outside the project: {0}"
+
+msgid "no hay {0}"
+msgstr "{0} not found"
+
+msgid "enlazado a {0}"
+msgstr "linked to {0}"
+
+msgid "el tablero ya está en su propio repo ({0})"
+msgstr "the board is already in its own repo ({0})"
+
+msgid "task tiene que ser el id de una tarea"
+msgstr "task must be a task id"
+
+msgid "no existe la tarea {0}"
+msgstr "task {0} doesn't exist"
+
+msgid "falta text"
+msgstr "missing text"
+
+msgid "el chat está apagado en un hub con token"
+msgstr "the chat is off on a hub with a token"
+
+msgid "el chat solo anda en este equipo (127.0.0.1)"
+msgstr "the chat only works on this computer (127.0.0.1)"
+
+msgid "falta profile"
+msgstr "missing profile"
+
+msgid "session tiene que ser un texto"
+msgstr "session must be a string"
+
+msgid "profile tiene que ser un texto"
+msgstr "profile must be a string"
+
+msgid "Sos el chat de Scope Compass del proyecto «{0}», en la web del tablero. El tablero se opera con las herramientas del MCP scompass y valen las reglas de compass/AGENTS.md: registrá las decisiones que tomes sin consultar (add_decision) y las preguntas que hagas, y pasá a review las tareas que termines. Podés leer los archivos del proyecto; no podés editarlos ni correr comandos: si hace falta, decí qué hacer en la terminal. Contestá en el idioma del usuario, corto."
+msgstr "You are the Scope Compass chat for the project “{0}”, in the board's web page. The board is operated with the tools of the scompass MCP, and the rules in compass/AGENTS.md apply: record the decisions you make without asking (add_decision) and the questions you ask, and move the tasks you finish to review. You can read the project's files; you can't edit them or run commands: if needed, say what to do in the terminal. Answer in the user's language, briefly."
+
+msgid "hay un turno en curso"
+msgstr "a turn is already in progress"
+
+msgid "no se encontró claude (Claude Code); instalalo y entrá con `claude` una vez"
+msgstr "claude (Claude Code) wasn't found; install it and log in with `claude` once"
+
+msgid "no se pudo lanzar {0}"
+msgstr "couldn't launch {0}"
+
+msgid "claude terminó (código {0})"
+msgstr "claude exited (code {0})"
+
+msgid "Tarea abierta: {0}{1} (compass://task/{2})\n\n{3}"
+msgstr "Open task: {0}{1} (compass://task/{2})\n\n{3}"
+
+msgid "no hay una conversación {0}"
+msgstr "there's no conversation {0}"
+
+msgid "session tiene que ser el id de una sesión de Claude Code"
+msgstr "session must be a Claude Code session id"
+
+msgid "no hay un perfil {0} de Claude Code en este equipo"
+msgstr "there's no Claude Code profile {0} on this computer"
+
+msgid "cada día"
+msgstr "every day"
+
+msgid "cada semana"
+msgstr "every week"
+
+msgid "cada mes"
+msgstr "every month"
+
+msgid "cada año"
+msgstr "every year"
+
+msgid "cada {0} días"
+msgstr "every {0} days"
+
+msgid "cada {0} semanas"
+msgstr "every {0} weeks"
+
+msgid "cada {0} meses"
+msgstr "every {0} months"
+
+msgid "cada {0} años"
+msgstr "every {0} years"
+
+msgid "no se puede repetir {0} {1} {2}"
+msgstr "can't repeat {0} {1} {2}"
+
+msgid "respondida"
+msgstr "answered"
+
+msgid "pregunta abierta"
+msgstr "open question"
+
+msgid "a revertir"
+msgstr "to revert"
+
+msgid "revertida"
+msgstr "reverted"
+
+msgid "sin revisar"
+msgstr "not reviewed"
+
+msgid "no hay un documento \"{0}\""
+msgstr "there's no document \"{0}\""
+
+msgid "no existe {0}"
+msgstr "{0} doesn't exist"
+
+msgid "falta since: el etag que se leyó"
+msgstr "since is missing: the etag that was read"
+
+msgid "no hay una sección \"{0}\" en {1}"
+msgstr "there's no section \"{0}\" in {1}"
+
+msgid "id repetido: {0} (líneas {1} y {2})"
+msgstr "duplicate id: {0} (lines {1} and {2})"
+
+msgid "{0} está fuera del proyecto"
+msgstr "{0} is outside the project"
+
+msgid "\"{0}\" sale del patrón {1}: quitá \"{2}\" o sacá el archivo de ahí"
+msgstr "\"{0}\" comes from the pattern {1}: remove \"{2}\" or move the file out of there"
+
+msgid "alias inválido: \"{0}\" (minúsculas, números, - y _; empieza con letra o número)"
+msgstr "invalid alias: \"{0}\" (lowercase letters, digits, - and _; starts with a letter or digit)"
+
+msgid "la ruta tiene que estar dentro del proyecto: {0}"
+msgstr "the path must be inside the project: {0}"
+
+msgid "un documento es un archivo .md (o un patrón que termina en .md): {0}"
+msgstr "a document is a .md file (or a pattern ending in .md): {0}"
+
+msgid "{0} es el export markdown del tablero: no es un documento"
+msgstr "{0} is the board's markdown export: it isn't a document"
+
+msgid "no existe el archivo {0}"
+msgstr "file {0} doesn't exist"
+
+msgid "git ignora {0}: no se puede declarar como documento"
+msgstr "git ignores {0}: it can't be declared as a document"
+
+msgid "ya hay un documento \"{0}\" ({1})"
+msgstr "there's already a document \"{0}\" ({1})"
+
+msgid "{0} ya está declarado como \"{1}\""
+msgstr "{0} is already declared as \"{1}\""
+
+msgid "paso {0}"
+msgstr "step {0}"
+
+msgid "paso {0} (detalle)"
+msgstr "step {0} (detail)"
+
+msgid "Pendiente"
+msgstr "To do"
+
+msgid "Pausado"
+msgstr "Paused"
+
+msgid "En curso"
+msgstr "In progress"
+
+msgid "Revisión"
+msgstr "Review"
+
+msgid "Hecho"
+msgstr "Done"
+
+msgid " · pregunta abierta"
+msgstr " · open question"
+
+msgid " · sin revisar"
+msgstr " · not reviewed"
+
+msgid " · a revertir"
+msgstr " · to revert"
+
+msgid " · revertida"
+msgstr " · reverted"
+
+msgid "Por qué"
+msgstr "Why"
+
+msgid "Descartado"
+msgstr "Discarded"
+
+msgid "Respuesta"
+msgstr "Answer"
+
+msgid "Qué hacer"
+msgstr "What to do"
+
+msgid "{0} (no existe)"
+msgstr "{0} (doesn't exist)"
+
+msgid "# Tareas — {0}"
+msgstr "# Tasks — {0}"
+
+msgid "> Copia local del tablero {0}. El tablero es la fuente de verdad; este archivo se regenera desde ahí."
+msgstr "> Local copy of the board {0}. The board is the source of truth; this file is regenerated from it."
+
+msgid "> Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera."
+msgstr "> Export of `compass/`, which is the source of truth. Don't edit: changes go in `compass/` or through `scompass`, and this file is regenerated."
+
+msgid "> Generado: {0}"
+msgstr "> Generated: {0}"
+
+msgid ", {0} en revisión"
+msgstr ", {0} in review"
+
+msgid "**Fecha objetivo:** {0}"
+msgstr "**Target date:** {0}"
+
+msgid " (atrasado)"
+msgstr " (late)"
+
+msgid "**Hecho cuando:**"
+msgstr "**Done when:**"
+
+msgid "**Vence:** {0}"
+msgstr "**Due:** {0}"
+
+msgid "**Terminada:** {0}"
+msgstr "**Finished:** {0}"
+
+msgid "**Prioridad:** {0}"
+msgstr "**Priority:** {0}"
+
+msgid "**Tamaño:** {0}"
+msgstr "**Size:** {0}"
+
+msgid "**Responsable:** {0}"
+msgstr "**Assignee:** {0}"
+
+msgid "**Etiquetas:** "
+msgstr "**Tags:** "
+
+msgid "**Decisiones:**"
+msgstr "**Decisions:**"
+
+msgid "**Prueba:** {0}"
+msgstr "**Test:** {0}"
+
+msgid "**Notas:** {0}"
+msgstr "**Notes:** {0}"
+
+msgid "**Referencias:** "
+msgstr "**References:** "
+
+msgid "**Archivos:** "
+msgstr "**Files:** "
+
+msgid "**Capturas:** "
+msgstr "**Screenshots:** "
+
+msgid "**Bloquea a:** "
+msgstr "**Blocks:** "
+
+msgid "**Bloqueada por:** "
+msgstr "**Blocked by:** "
+
+msgid "**Relacionadas:** "
+msgstr "**Related:** "
+
+msgid "## Listas"
+msgstr "## Lists"
+
+msgid " · vence {0}"
+msgstr " · due {0}"
+
+msgid " · se repite {0}"
+msgstr " · repeats {0}"
+
+msgid " · → tarea {0}"
+msgstr " · → task {0}"
+
+msgid "## Playtest"
+msgstr "## Playtest"
+
+msgid "  ({0}/{1} probadas)"
+msgstr "  ({0}/{1} tested)"
+
+msgid " · **falla**"
+msgstr " · **fails**"
+
+msgid " · anda"
+msgstr " · works"
+
+msgid "export_md tiene que ser un .md dentro del proyecto: {0}"
+msgstr "export_md must be a .md inside the project: {0}"
+
+msgid "Proyecto"
+msgstr "Project"
+
+msgid "export_md sale del proyecto por un enlace simbólico: {0}"
+msgstr "export_md leaves the project through a symlink: {0}"
+
+msgid "no hay un archivo \"{0}\" en el repo (o git lo ignora)"
+msgstr "there's no file \"{0}\" in the repo (or git ignores it)"
+
+msgid "no hay una imagen \"{0}\" en el proyecto"
+msgstr "there's no image \"{0}\" in the project"
+
+msgid "{0} no es una imagen"
+msgstr "{0} isn't an image"
+
+msgid "{0} no está en el disco"
+msgstr "{0} isn't on disk"
+
+msgid "alta"
+msgstr "high"
+
+msgid "media"
+msgstr "medium"
+
+msgid "baja"
+msgstr "low"
+
+msgid "Título"
+msgstr "Title"
+
+msgid "Estado"
+msgstr "Status"
+
+msgid "Hito"
+msgstr "Milestone"
+
+msgid "Código"
+msgstr "Code"
+
+msgid "Vence"
+msgstr "Due"
+
+msgid "Prioridad"
+msgstr "Priority"
+
+msgid "Tamaño"
+msgstr "Size"
+
+msgid "Responsable"
+msgstr "Assignee"
+
+msgid "Descripción"
+msgstr "Description"
+
+msgid "Notas"
+msgstr "Notes"
+
+msgid "Cómo probarlo"
+msgstr "How to test it"
+
+msgid "Pasos"
+msgstr "Steps"
+
+msgid "Etiquetas"
+msgstr "Tags"
+
+msgid "Referencias"
+msgstr "References"
+
+msgid "Archivos"
+msgstr "Files"
+
+msgid "Capturas"
+msgstr "Screenshots"
+
+msgid "Vínculos"
+msgstr "Links"
+
+msgid "Playtest"
+msgstr "Playtest"
+
+msgid "Decisiones"
+msgstr "Decisions"
+
+msgid "anda"
+msgstr "works"
+
+msgid "falla"
+msgstr "fails"
+
+msgid "agregada"
+msgstr "added"
+
+msgid "quitada"
+msgstr "removed"
+
+msgid "editada"
+msgstr "edited"
+
+msgid "agregadas"
+msgstr "added"
+
+msgid "quitadas"
+msgstr "removed"
+
+msgid "editadas"
+msgstr "edited"
+
+msgid "agregado"
+msgstr "added"
+
+msgid "quitado"
+msgstr "removed"
+
+msgid "editado"
+msgstr "edited"
+
+msgid "bloquea a"
+msgstr "blocks"
+
+msgid "relacionada con"
+msgstr "related to"
+
+msgid "tildado {0}"
+msgstr "checked {0}"
+
+msgid "destildado {0}"
+msgstr "unchecked {0}"
+
+msgid "detalle editado"
+msgstr "detail edited"
+
+msgid "reordenados"
+msgstr "reordered"
+
+msgid "sin probar"
+msgstr "untested"
+
+msgid "nota agregada"
+msgstr "note added"
+
+msgid "nota quitada"
+msgstr "note removed"
+
+msgid "nota editada"
+msgstr "note edited"
+
+msgid "(JSON inválido en este commit)"
+msgstr "(invalid JSON in this commit)"
+
+msgid "Sin commitear"
+msgstr "Uncommitted"
+
+msgid "no hay un proyecto \"{0}\" en el Inicio"
+msgstr "there's no project \"{0}\" in Home"
+
+msgid "el hub del proyecto no responde"
+msgstr "the project's hub isn't responding"
+
+msgid "no existe el proyecto"
+msgstr "the project doesn't exist"
+
+msgid "no existe {0} {1}"
+msgstr "{0} {1} doesn't exist"
+
+msgid "falta path"
+msgstr "missing path"
+
+msgid "{0} no está en el registro (importalo primero)"
+msgstr "{0} isn't in the registry (import it first)"
+
+msgid "no se encuentra {0}"
+msgstr "{0} not found"
+
+msgid "este Inicio no se puede reiniciar desde la API"
+msgstr "this Home can't be restarted from the API"
+
+msgid "este Inicio no se puede apagar desde la API"
+msgstr "this Home can't be shut down from the API"
+
+msgid "\"{0}\" no sirve como nombre de carpeta (sin \\ / : * ? \" < > |)"
+msgstr "\"{0}\" can't be used as a folder name (no \\ / : * ? \" < > |)"
+
+msgid "falta el nombre del proyecto"
+msgstr "missing project name"
+
+msgid "la carpeta tiene que ser una ruta absoluta"
+msgstr "the folder must be an absolute path"
+
+msgid "plantilla desconocida: {0}"
+msgstr "unknown template: {0}"
+
+msgid "ya existe {0}: elegí otro nombre u otra carpeta"
+msgstr "{0} already exists: pick another name or another folder"
+
+msgid "scompass init salió con {0}"
+msgstr "scompass init exited with {0}"
+
+msgid "Dónde crear el proyecto"
+msgstr "Where to create the project"
+
+msgid "no hay un selector de carpetas (instalá kdialog o zenity); escribí la ruta"
+msgstr "there's no folder picker (install kdialog or zenity); type the path"
+
+msgid "falta list"
+msgstr "missing list"
+
+msgid "el hub no arrancó{0}"
+msgstr "the hub didn't start{0}"
+
+msgid "{0} no tiene un hub corriendo"
+msgstr "{0} has no hub running"
+
+msgid "ese hub lo abrió el dock de Godot (u otro programa): el editor se queda sin hub hasta que lo vuelva a iniciar"
+msgstr "that hub was opened by the Godot dock (or another program): the editor will have no hub until it starts it again"
+
+msgid "el hub (PID {0}) no se cerró en 5 s"
+msgstr "the hub (PID {0}) didn't close within 5 s"
+
+msgid "no existe /{0}"
+msgstr "/{0} doesn't exist"
+
+msgid "la imagen pesa más de {0} MB"
+msgstr "the image is larger than {0} MB"
+
+msgid "no es una imagen PNG, JPEG, GIF ni WebP"
+msgstr "it isn't a PNG, JPEG, GIF or WebP image"
+
+msgid "{0} apunta fuera del proyecto"
+msgstr "{0} points outside the project"
+
+msgid "no existe"
+msgstr "doesn't exist"
+
+msgid "id inválido como nombre de archivo"
+msgstr "invalid id as a file name"
+
+msgid "JSON inválido: {0}"
+msgstr "invalid JSON: {0}"
+
+msgid "el destino compass/{0}/{1} es inválido ({2}): no se pisa"
+msgstr "the destination compass/{0}/{1} is invalid ({2}): not overwritten"
+
+msgid "hito inexistente: {0}"
+msgstr "no such milestone: {0}"
+
+msgid "--interval va con --repeat"
+msgstr "--interval goes with --repeat"
+
+msgid "repetición inválida: {0} (day, week, month, year)"
+msgstr "invalid repeat: {0} (day, week, month, year)"
+
+msgid "intervalo inválido: {0} (un entero desde 1)"
+msgstr "invalid interval: {0} (an integer from 1)"
+
+msgid "falta el texto"
+msgstr "missing text"
+
+msgid "fecha inválida: {0} (YYYY-MM-DD o YYYY-MM-DDTHH:MM)"
+msgstr "invalid date: {0} (YYYY-MM-DD or YYYY-MM-DDTHH:MM)"
+
+msgid "un ítem que se repite necesita fecha límite (--due)"
+msgstr "a repeating item needs a due date (--due)"
+
+msgid "un ítem que se repite no se destilda: cambiale la fecha con `item set --due`"
+msgstr "a repeating item can't be unchecked: change its date with `item set --due`"
+
+msgid "Predeterminado"
+msgstr "Default"
+
+msgid "{0}: JSON inválido ({1}); corregilo o borralo"
+msgstr "{0}: invalid JSON ({1}); fix it or delete it"
+
+msgid "{0}: se esperaba { \"projects\": [{ \"path\", … }] }; corregilo o borralo"
+msgstr "{0}: expected { \"projects\": [{ \"path\", … }] }; fix it or delete it"
+
+msgid "{0} sigue tomado: si no corre otro scompass, borralo"
+msgstr "{0} is still locked: if no other scompass is running, delete it"
+
+msgid "{0} no está en el registro"
+msgstr "{0} isn't in the registry"
+
+msgid "Pregunta"
+msgstr "Question"
+
+msgid "**{0} · vigente** · tarea {1}"
+msgstr "**{0} · current** · task {1}"
+
+msgid "decisión inexistente: {0} (la tarea tiene {1})"
+msgstr "no such decision: {0} (the task has {1})"
+
+msgid "la decisión {0} ya está en {1}"
+msgstr "decision {0} is already in {1}"
+
+msgid "la decisión {0} no está resuelta: se promueve una revisada con ok o una pregunta respondida"
+msgstr "decision {0} isn't resolved: you can promote one reviewed as ok or an answered question"
+
+msgid "no hay un documento \"{0}\": declaralo con scompass doc add {1} <ruta>, o poné otro alias en config.json › decisions_doc"
+msgstr "there's no document \"{0}\": declare it with scompass doc add {1} <path>, or set another alias in config.json › decisions_doc"
+
+msgid "{0} quedó agregada en {1}, pero la tarea no se pudo marcar: {2}"
+msgstr "{0} was added to {1}, but the task couldn't be marked: {2}"
+
+msgid "marcadores de conflicto de git"
+msgstr "git conflict markers"
+
+msgid "(raíz)"
+msgstr "(root)"
+
+msgid "el hub solo atiende pedidos a localhost o a una IP"
+msgstr "the hub only serves requests to localhost or to an IP"
+
+msgid "el hub no atiende pedidos de otra página ({0})"
+msgstr "the hub doesn't serve requests from another page ({0})"
+
+msgid "falta el token o es inválido"
+msgstr "the token is missing or invalid"
+
+msgid "este hub no se puede reiniciar desde la API"
+msgstr "this hub can't be restarted from the API"
+
+msgid "este hub no se puede apagar desde la API"
+msgstr "this hub can't be shut down from the API"
+
+msgid "compass/config.json falta o es inválido"
+msgstr "compass/config.json is missing or invalid"
+
+msgid "no existe /{0}{1}"
+msgstr "/{0}{1} doesn't exist"
+
+msgid "PowerShell no mostró el ícono a tiempo"
+msgstr "PowerShell didn't show the icon in time"
+
+msgid "no está powershell.exe"
+msgstr "powershell.exe isn't available"
+
+msgid "PowerShell se cerró{0}"
+msgstr "PowerShell exited{0}"
+
+msgid "no hay bus de sesión de D-Bus"
+msgstr "there's no D-Bus session bus"
+
+msgid "mensaje que no es JSON"
+msgstr "message isn't JSON"
+
+msgid "tipo de mensaje desconocido: {0}"
+msgstr "unknown message type: {0}"
+
+msgid "update solo admite la colección tasks"
+msgstr "update only supports the tasks collection"
+
+msgid "falta patch (objeto)"
+msgstr "missing patch (object)"
+
+msgid "no se pudo hablar con el hub en {0}: {1}"
+msgstr "couldn't reach the hub at {0}: {1}"
+
+msgid "crear sin id solo en tasks"
+msgstr "creating without an id only works in tasks"
+
+msgid "colección desconocida: {0}"
+msgstr "unknown collection: {0}"
+
+msgid "id inválido: {0}"
+msgstr "invalid id: {0}"
+
+msgid "el documento cambió desde que se leyó"
+msgstr "the document changed since it was read"
+
+msgid "fecha inexistente: {0}"
+msgstr "nonexistent date: {0}"
+
+msgid "no existe {0}/{1}"
+msgstr "{0}/{1} doesn't exist"
+
+msgid "ya existe {0}/{1}"
+msgstr "{0}/{1} already exists"
+
+msgid "el hito {0} tiene {1} tareas"
+msgstr "milestone {0} has {1} tasks"
+
+msgid "falta config.json"
+msgstr "config.json is missing"

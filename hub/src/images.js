@@ -6,6 +6,7 @@ import { extname, join, relative, resolve, sep } from 'node:path';
 import { writeAtomic } from './store/atomic.js';
 import { StoreError } from './store/json-files.js';
 import { realInside } from './paths.js';
+import { T } from './i18n.js';
 
 export const IMAGE_EXT = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
 export const IMAGES_DIR = 'compass/images';
@@ -34,12 +35,12 @@ async function freeName(projectDir, taskId, ext, now) {
 
 /** Guarda una imagen (Buffer) para la tarea en compass/images/ y devuelve su ruta desde la raíz del proyecto. */
 export async function saveImage(projectDir, taskId, buf, now = new Date()) {
-  if (buf.length > MAX_IMAGE) throw new StoreError('invalid_argument', `la imagen pesa más de ${MAX_IMAGE >> 20} MB`);
+  if (buf.length > MAX_IMAGE) throw new StoreError('invalid_argument', T`la imagen pesa más de ${MAX_IMAGE >> 20} MB`);
   const ext = imageKind(buf);
-  if (!ext) throw new StoreError('invalid_argument', 'no es una imagen PNG, JPEG, GIF ni WebP');
+  if (!ext) throw new StoreError('invalid_argument', T('no es una imagen PNG, JPEG, GIF ni WebP'));
   await mkdir(join(projectDir, IMAGES_DIR), { recursive: true });
   // compass/images como enlace simbólico a otra parte no recibe archivos (19.2).
-  if (!(await realInside(projectDir, join(projectDir, IMAGES_DIR)))) throw new StoreError('invalid_argument', `${IMAGES_DIR} apunta fuera del proyecto`);
+  if (!(await realInside(projectDir, join(projectDir, IMAGES_DIR)))) throw new StoreError('invalid_argument', T`${IMAGES_DIR} apunta fuera del proyecto`);
   const rel = await freeName(projectDir, taskId, ext, now);
   await writeAtomic(join(projectDir, rel), buf);
   return rel;
@@ -47,7 +48,7 @@ export async function saveImage(projectDir, taskId, buf, now = new Date()) {
 
 /** Copia a compass/images/ una imagen de fuera del proyecto (scompass image add con una ruta de afuera). */
 export async function importImage(projectDir, taskId, absPath, now = new Date()) {
-  const buf = await readFile(absPath).catch((e) => { throw new StoreError('not_found', `${absPath}: ${e.code === 'ENOENT' ? 'no existe' : e.message}`); });
+  const buf = await readFile(absPath).catch((e) => { throw new StoreError('not_found', `${absPath}: ${e.code === 'ENOENT' ? T('no existe') : e.message}`); });
   return saveImage(projectDir, taskId, buf, now);
 }
 

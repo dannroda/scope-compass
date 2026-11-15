@@ -6,6 +6,7 @@ import { parseDoc } from '../schema.js';
 import { StoreError } from './json-files.js';
 import { hubsOf } from '../registry.js';
 import { PROTOCOL } from '../protocol.js';
+import { T } from '../i18n.js';
 
 const unflat = ({ id, etag, ...doc }) => ({ id, etag, doc });
 
@@ -58,7 +59,7 @@ export function createHttpStore(base, compassDir, { validators }) {
         body: body === undefined ? undefined : JSON.stringify(body)
       });
     } catch (e) {
-      throw new StoreError('io_error', `no se pudo hablar con el hub en ${base}: ${e.cause?.code ?? e.message}`);
+      throw new StoreError('io_error', T`no se pudo hablar con el hub en ${base}: ${e.cause?.code ?? e.message}`);
     }
     if (r.status === 204) return null;
     const data = await r.json().catch(() => null);
@@ -100,7 +101,7 @@ export function createHttpStore(base, compassDir, { validators }) {
 
     async create(collection, doc, id) {
       if (id !== undefined) return unflat(await call('PUT', `/api/${enc(collection)}/${enc(id)}`, { body: doc, headers: pre({ ifMatch: null }) }));
-      if (collection !== 'tasks') throw new StoreError('invalid_argument', `crear sin id solo en tasks`);
+      if (collection !== 'tasks') throw new StoreError('invalid_argument', T`crear sin id solo en tasks`);
       return unflat(await call('POST', '/api/tasks', { body: doc }));
     },
 

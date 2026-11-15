@@ -7,6 +7,7 @@ import { ChatError, findClaude } from './chat.js';
 import { ChatManager } from './chats.js';
 import { accountOf, loadLimits } from './profiles.js';
 import { StoreError } from './store/json-files.js';
+import { T } from './i18n.js';
 
 /** Si una dirección es del mismo equipo (127.0.0.1, ::1 o 127.0.0.1 escrita como IPv6). */
 export const isLoopback = (addr) => addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
@@ -28,21 +29,21 @@ export function registerChatApi(app, { projectDir, store, emit, token = null, en
   // La tarea abierta en la web, para nombrarla en el mensaje.
   const taskOf = async (id) => {
     if (id === undefined || id === null) return undefined;
-    if (typeof id !== 'string') throw new ChatError('invalid_argument', 'task tiene que ser el id de una tarea');
+    if (typeof id !== 'string') throw new ChatError('invalid_argument', T('task tiene que ser el id de una tarea'));
     const r = await store.get('tasks', id).catch(() => null);
-    if (!r) throw new ChatError('invalid_argument', `no existe la tarea ${id}`);
+    if (!r) throw new ChatError('invalid_argument', T`no existe la tarea ${id}`);
     return { id: r.id, code: r.doc.code, title: r.doc.title };
   };
   const textOf = (body) => {
     const text = body?.text;
-    if (typeof text !== 'string' || !text.trim()) throw new ChatError('invalid_argument', 'falta text');
+    if (typeof text !== 'string' || !text.trim()) throw new ChatError('invalid_argument', T('falta text'));
     return text;
   };
 
   app.register(async (scope) => {
     scope.addHook('onRequest', async (req) => {
-      if (token) throw new ChatError('forbidden', 'el chat está apagado en un hub con token');
-      if (!isLoopback(req.socket.remoteAddress)) throw new ChatError('forbidden', 'el chat solo anda en este equipo (127.0.0.1)');
+      if (token) throw new ChatError('forbidden', T('el chat está apagado en un hub con token'));
+      if (!isLoopback(req.socket.remoteAddress)) throw new ChatError('forbidden', T('el chat solo anda en este equipo (127.0.0.1)'));
     });
     scope.setErrorHandler((err, req, reply) => {
       if (err instanceof ChatError || err instanceof StoreError) {
@@ -68,15 +69,15 @@ export function registerChatApi(app, { projectDir, store, emit, token = null, en
     });
     scope.put('/api/chats/profile', async (req) => {
       const profile = req.body?.profile;
-      if (typeof profile !== 'string') throw new ChatError('invalid_argument', 'falta profile');
+      if (typeof profile !== 'string') throw new ChatError('invalid_argument', T('falta profile'));
       return { profile: await (await chats()).setProfile(profile) };
     });
     scope.post('/api/chats', async (req, reply) => {
       const text = textOf(req.body);
       const session = req.body.session ?? undefined;
-      if (session !== undefined && typeof session !== 'string') throw new ChatError('invalid_argument', 'session tiene que ser un texto');
+      if (session !== undefined && typeof session !== 'string') throw new ChatError('invalid_argument', T('session tiene que ser un texto'));
       const profile = req.body.profile ?? undefined;
-      if (profile !== undefined && typeof profile !== 'string') throw new ChatError('invalid_argument', 'profile tiene que ser un texto');
+      if (profile !== undefined && typeof profile !== 'string') throw new ChatError('invalid_argument', T('profile tiene que ser un texto'));
       const chat = await (await chats()).create(text, { task: await taskOf(req.body.task), session, profile });
       return reply.code(201).send(chat);
     });

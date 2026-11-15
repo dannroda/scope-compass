@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { ChatError, ChatProcess, chatDir } from './chat.js';
 import { DEFAULT_PROFILE, listProfiles, saveLimits, sessionProfile } from './profiles.js';
 import { writeAtomic } from './store/atomic.js';
+import { T } from './i18n.js';
 
 const TITLE = 60;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -23,14 +24,14 @@ export function chatTitle(text) {
 /** El mensaje que recibe claude: con una tarea abierta en la web, la nombra delante (el agente la lee con show_task). */
 export function withTask(text, task) {
   if (!task) return text;
-  return `Tarea abierta: ${task.code ? `${task.code} ` : ''}${task.title} (compass://task/${task.id})\n\n${text}`;
+  return T`Tarea abierta: ${task.code ? `${task.code} ` : ''}${task.title} (compass://task/${task.id})\n\n${text}`;
 }
 
 export function chatStore(projectDir, { now = () => new Date().toISOString() } = {}) {
   const dir = chatDir(projectDir);
   const index = join(dir, 'index.json');
   const copy = (id) => {
-    if (!UUID.test(id)) throw new ChatError('not_found', `no hay una conversación ${id}`);
+    if (!UUID.test(id)) throw new ChatError('not_found', T`no hay una conversación ${id}`);
     return join(dir, `${id}.jsonl`);
   };
   // Las escrituras del índice, de a una (un solo proceso sirve el proyecto). fn recibe las conversaciones y el
@@ -126,7 +127,7 @@ export class ChatManager extends EventEmitter {
   /** Una conversación con su copia, si hay un turno en curso y lo que va de él. */
   async get(id) {
     const chat = await this.store.get(id);
-    if (!chat) throw new ChatError('not_found', `no hay una conversación ${id}`);
+    if (!chat) throw new ChatError('not_found', T`no hay una conversación ${id}`);
     const turn = this.turns.get(id);
     return { chat, entries: await this.store.read(id), busy: !!turn, turn: turn ? { text: turn.text, tools: turn.tools } : null };
   }
@@ -137,7 +138,7 @@ export class ChatManager extends EventEmitter {
    * solo se le manda el mensaje.
    */
   async create(text, { task, session, profile } = {}) {
-    if (session && !UUID.test(session)) throw new ChatError('invalid_argument', 'session tiene que ser el id de una sesión de Claude Code');
+    if (session && !UUID.test(session)) throw new ChatError('invalid_argument', T('session tiene que ser el id de una sesión de Claude Code'));
     const known = session ? await this.store.get(session) : null;
     if (known) {
       await this.send(known.id, text, { task });
@@ -161,7 +162,7 @@ export class ChatManager extends EventEmitter {
 
   async send(id, text, { task } = {}) {
     const chat = await this.store.get(id);
-    if (!chat) throw new ChatError('not_found', `no hay una conversación ${id}`);
+    if (!chat) throw new ChatError('not_found', T`no hay una conversación ${id}`);
     const proc = this.#proc(chat);
     await proc.send(withTask(text, task));
     // El fin del turno espera a que esté guardado el mensaje, así la copia queda en orden.
@@ -176,7 +177,7 @@ export class ChatManager extends EventEmitter {
   profiles() { return listProfiles(this.env); }
   profileOf(id) {
     const p = this.profiles().find((x) => x.id === (id ?? DEFAULT_PROFILE));
-    if (!p) throw new ChatError('invalid_argument', `no hay un perfil ${id} de Claude Code en este equipo`);
+    if (!p) throw new ChatError('invalid_argument', T`no hay un perfil ${id} de Claude Code en este equipo`);
     return p;
   }
   async setProfile(id) {
@@ -188,7 +189,7 @@ export class ChatManager extends EventEmitter {
     this.procs.get(id)?.close();
     this.procs.delete(id);
     this.turns.delete(id);
-    if (!await this.store.remove(id)) throw new ChatError('not_found', `no hay una conversación ${id}`);
+    if (!await this.store.remove(id)) throw new ChatError('not_found', T`no hay una conversación ${id}`);
   }
 
   /** Cierra los procesos; termina cuando está guardado lo que quedó de los turnos cortados. */

@@ -8,6 +8,7 @@ import { dirname, join } from 'node:path';
 import { claudeSpawn, findClaude } from './chat.js';
 import { projectsFile } from './projects.js';
 import { writeAtomic } from './store/atomic.js';
+import { T } from './i18n.js';
 
 export const DEFAULT_PROFILE = 'default';
 const ACCOUNT_MS = 10 * 60 * 1000;
@@ -16,7 +17,7 @@ const home = (env) => env.HOME || env.USERPROFILE || homedir();
 
 /** Los perfiles del equipo: [{ id, label, dir, default? }], el predeterminado primero y los demás por nombre. */
 export function listProfiles(env = process.env) {
-  const out = [{ id: DEFAULT_PROFILE, label: 'Predeterminado', dir: join(home(env), '.claude'), default: true }];
+  const out = [{ id: DEFAULT_PROFILE, label: T('Predeterminado'), dir: join(home(env), '.claude'), default: true }];
   const base = env.SCOMPASS_CLAUDE_PROFILES || join(home(env), '.claude-profiles');
   let names = [];
   try { names = readdirSync(base).sort((a, b) => a.localeCompare(b)); } catch {}
