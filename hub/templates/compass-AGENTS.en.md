@@ -22,9 +22,11 @@ To have it in Claude Code in every project (it takes the one of the session's fo
 scompass mcp install
 ```
 
-That runs `claude mcp add --scope user scompass -- <full path of scompass> mcp`, so `scompass` doesn't need to be on the PATH.
+That runs `claude mcp add --scope user scompass -- <full path of scompass> mcp`, so `scompass` doesn't need to be on the PATH. The `scope-compass` Claude Code plugin (`/plugin marketplace add dannroda/scope-compass`) doesn't bring the MCP: it brings a skill that tells the agent to read this guide.
 
 Milestones (`compass://milestone/<id>`), tasks (`compass://task/<id>`) and documents (`compass://doc/<alias>`) are attached with `@scompass:…`.
+
+`show_doc` gives the document's `etag` (also when reading a section). Pass it as `since` to ask whether it changed: if it didn't, it answers just that, without the text; if it did, it brings the text and `changes` with the changed, added and removed sections. If, after you read a document, a result carries "Notice: the document … changed since you read it", someone edited it while you worked: read it again before relying on it any further.
 
 ## Chat
 
@@ -202,7 +204,26 @@ scompass doc rm enemies                      # stops declaring it; the file isn'
 scompass doc search "double jump"            # lines with all the words, with their section
 scompass doc status                          # git state of each document and its last commit
 scompass doc diff gdd                        # uncommitted changes and the sections they touch
+scompass doc changed gdd --since <etag>      # which sections changed since the etag doc show gave (exits with 1 if it changed)
 ```
+
+### Reading a document again
+
+What you read from a document can go stale while you work: the user edits it, another session changes it, a `git pull` arrives or someone promotes a decision to the decisions document. Read it again before relying on it:
+
+- before a decision, a code change or closing a task that depends on what it says, if you read it a while ago (another task in between, a long pause, or after a commit or a pull);
+- if an MCP tool brings "Notice: the document … changed since you read it";
+- after `decision promote`, if you'll keep using the decisions document;
+- when a task cites a section (`refs` or `[[alias#id]]`) that you read in another task.
+
+To avoid reading it all again, ask whether it changed with the `etag` that `doc show --json` (or `show_doc`) gave you, which is the document's even if you read a section:
+
+```sh
+scompass doc changed gdd --since <etag>          # exits with 0 if it didn't change and with 1 if it did, with the sections
+scompass doc changed gdd#combat --since <etag>   # only that section and the ones inside it
+```
+
+With the MCP, `show_doc` with `since` does the same and, if it changed, already brings the new text. Read again only the sections that changed, were added or were removed and matter to you. If it says it didn't find the old version (`known: false`), read it whole. If what changed contradicts something you already did, say so and record it as a decision instead of carrying on with the old version.
 
 ## Where the board lives
 
@@ -238,7 +259,7 @@ scompass home               # starts Home (one per user): GET /api/today gathers
 The CLI, the MCP, the web, Home and the dock speak Spanish or English (§45). Messages and tool descriptions come out in the language of whoever uses the app; the board's data (titles, notes) stays as it was written.
 
 - `scompass lang` says which one is used; `scompass lang es|en` sets it for the CLI, the web and Home (in `~/.config/scope-compass/settings.json`), and `scompass lang auto` goes back to following the system (`LANG`) and the browser. `SCOMPASS_LANG=es|en` wins over everything (for tests). The dock follows the Godot editor, or the `scope_compass/language` setting in the editor settings.
-- `config.json › lang` (`es` or `en`) is the board's language: that of this guide, `compass/README.md`, the markdown export and what the template brings. `init` sets it from the interface language (`--lang` chooses it); without it, `es`. After editing it by hand, run `scompass update`: the guide and the README switch to the other language.
+- `config.json › language` (`es` or `en`) is the board's language: that of this guide, `compass/README.md`, the markdown export and what the template brings. `init` sets it from the interface language (`--lang` chooses it); without it, `es`. If you change it by hand, `scompass update` switches this guide to the other language (the README stays as it is).
 
 ## More
 
@@ -246,4 +267,5 @@ The CLI, the MCP, the web, Home and the dock speak Spanish or English (§45). Me
 - `compass/README.md`: file format and manual handling with git.
 - `compass/schema/`: JSON Schema for tasks, milestones, lists, playtest sessions and `config.json` (`views` picks the web's tabs: `board`, `lists`, `playtest`, `decisions`, `docs`, `files`).
 - Web settings (the gear on the board and on Home): preferences of whoever is looking, saved in their browser and not in `compass/`. For now, fantasy borders: pixel-art frames on buttons, cards and panels, always with the dark theme.
+- **Versions:** `scompass`, the Godot addon and the MCP update separately and don't need the same version, only the same protocol (`protocol` in `/api/health`). If the CLI finds a hub for this project with another protocol, it doesn't use it: it writes directly to `compass/` and says so on stderr. It isn't an error; that hub was left by an old scompass and has to be restarted with the new one. The dock offers to download the scompass from the same release as the addon, and tells you when a new addon version comes out.
 - `scompass update`: brings `compass/schema/`, this guide and `compass/.gitattributes` (LF on Windows too) up to date when Scope Compass was updated (`--check` only reports). The Godot dock offers it with the "Update" button, and the hub's tray with "Update compass/". `scompass update --all` (or "Update all" on Home) does the same in every project Home knows.
