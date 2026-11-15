@@ -485,3 +485,20 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Un archivo puntero en el proyecto: deja rastro en el repo público.
   - Commitear el tablero nuevo al moverlo con un repo por tablero: no hace falta para conservar el historial (es un clon), y la app no commitea (§4.5).
   - `git subtree add`: pide el árbol limpio y corta el historial de cada archivo.
+
+## D47 · Releases: a mano desde Actions, el commit y el tag recién con todo armado
+**2026-11-14 · vigente** · spec §35.1
+
+- **Qué:** `.github/workflows/release.yml` se lanza a mano (Run workflow sobre main, con `bump` = patch, minor, major o X.Y.Z) o con un tag `vX.Y.Z` pusheado a mano. Corre el CI, arma el binario de Linux y el de Windows, cada uno en su runner, y el zip del addon; commitea «Release vX.Y.Z» con el tag y publica con `gh release create`, con las notas de la sección del CHANGELOG (en inglés, Keep a Changelog) y `SHA256SUMS`. La lógica (versión, CHANGELOG, notas, chequeo de versiones, sumas) está en `tools/release.mjs`.
+- **Por qué así:** es la convención del proyecto hermano godot-agent (bump a mano, Unreleased → versión, la release falla si Unreleased está vacía, notas desde el CHANGELOG). El tag pusheado a mano queda como alternativa para cuando el `GITHUB_TOKEN` no puede pushear a main.
+- **Por qué el commit va al final y no al principio:** en godot-agent el commit y el tag se pushean antes de empaquetar. Acá el build tarda más y corre en dos sistemas: si el de Windows falla después del push, la versión queda quemada (el tag existe y Unreleased ya se vació). Por eso cada job aplica la versión nueva sobre el mismo commit (es determinística: versión y fecha salen del job `prepare`) y el push (`--atomic`, commit y tag juntos) es el anteúltimo paso. Si main avanzó durante la corrida, el push falla y no se publica nada.
+- **Por qué Node y no sh o Python:** los pasos corren en Windows también, y Node ya está en todos los runners del proyecto. Sin dependencias.
+- **Por qué `upload-artifact` y `download-artifact`:** son acciones oficiales de GitHub (`actions/`), igual que checkout y setup-node; pasan los binarios de cada runner al job que publica, y así la release se crea entera en un solo `gh release create`, sin borradores a medio subir.
+- **Por qué el `.tgz` no va en la release:** README e instalar.md ofrecen el binario como camino principal y el `.tgz` como alternativa para quien ya tiene Node y clona el repo (`node tools/build.mjs`). Subirlo es una línea en el workflow si hace falta.
+- **Por qué `install.sh` no va en la release:** el README lo nombra desde el repo (`sh tools/install.sh <ruta al binario>`), y acepta la ruta como argumento.
+- **El zip del addon** lleva `addons/scope_compass/` desde la raíz, solo lo versionado, y adentro los README, el CHANGELOG y la LICENSE; los links relativos de los README pasan a GitHub en el tag, porque esos archivos no viajan en el zip.
+- **Descartado:**
+  - Release solo por tag (sin workflow_dispatch): obliga a subir las versiones y el CHANGELOG a mano antes, que es lo que el bump automatiza.
+  - Commit y tag al principio, como godot-agent: un build que falla deja una versión quemada.
+  - Acciones de terceros para el changelog o la release: `gh` ya viene en los runners.
+  - Un borrador de release al que cada runner sube su binario: deja borradores colgados cuando un build falla.

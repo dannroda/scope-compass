@@ -1,0 +1,62 @@
+name: CI
+
+# Los tests del hub en Linux y en Windows (spec §35). También los llama release.yml antes de publicar.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+# Un push nuevo a la misma rama o PR cancela la corrida vieja; en main no se cancela nada. El release lo llama con
+# su propio nombre de workflow, así que no comparte grupo con el push a main.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  test:
+    name: Tests (${{ matrix.os }} · Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    # La corrida completa a veces se cuelga (un test que no cierra su proceso): mejor un fallo que seis horas.
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        # 26: la del binario (--build-sea pide 25.5 o más nueva). 22: la mínima del .tgz (engines de package.json).
+        node: ['26']
+        include:
+          - os: ubuntu-latest
+            node: '22'
+    defaults:
+      run:
+        working-directory: hub
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: hub/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Los tests de la UI usan Chromium con Playwright como librería (D18).
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      # Varios tests hacen commits en repos de prueba.
+      - name: Git identity
+        run: |
+          git config --global user.name "CI"
+          git config --global user.email "ci@users.noreply.github.com"
+
+      - name: Tests
+        run: npm test
+        timeout-minutes: 25

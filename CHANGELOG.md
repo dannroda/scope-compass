@@ -47,3 +47,4 @@ First public release. The interface and the documentation in `docs/` are in Span
 
 - Standalone binaries for Linux x64 and Windows x64 that do not need Node, and the Godot addon as a zip. `node tools/build.mjs` also builds the hub as an npm package (`.tgz`) for systems with Node 22 or newer.
 - `tools/install.sh` installs `scompass` on Linux and adds a launcher for Home to the applications menu.
+- Releases built and published by GitHub Actions: tests on Linux and Windows, each binary built on its own platform, and `SHA256SUMS` with the downloads.

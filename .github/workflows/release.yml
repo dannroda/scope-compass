@@ -1,0 +1,184 @@
+name: Release
+
+# Publica una release de Scope Compass (spec §35, D47). Dos formas de lanzarla:
+#
+# - A mano, desde Actions → Release → Run workflow, sobre main: elige la versión (patch, minor, major o X.Y.Z), corre
+#   los tests, sube la versión en hub/package.json y en addons/scope_compass/plugin.cfg, pasa la sección
+#   «## [Unreleased]» de CHANGELOG.md a la versión nueva (si está vacía, falla), arma el binario de Linux y el de
+#   Windows y el zip del addon, y recién con todo armado commitea «Release vX.Y.Z» en main, pone el tag y publica.
+#   Si algo falla antes, no queda nada pusheado.
+# - Pusheando un tag vX.Y.Z hecho a mano: el commit del tag ya tiene que traer las versiones y la sección
+#   «## [X.Y.Z]» del CHANGELOG. No commitea nada.
+#
+# En los dos casos verifica que el tag, hub/package.json y plugin.cfg digan la misma versión, y la release lleva las
+# notas de esa sección del CHANGELOG (en inglés) más cómo instalar, los binarios, el zip y SHA256SUMS.
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "patch, minor, major or an exact version (X.Y.Z)"
+        required: true
+        default: patch
+      prerelease:
+        description: "Mark as a pre-release"
+        type: boolean
+        default: false
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  # --build-sea (el binario) necesita Node 25.5 o más nuevo.
+  NODE_VERSION: '26'
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  # Decide la versión y valida el CHANGELOG antes de armar nada. No escribe en el repo: cada job que necesita el árbol
+  # con la versión nueva la vuelve a aplicar sobre el mismo commit (es determinística: versión y fecha fijas).
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      date: ${{ steps.version.outputs.date }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Version
+        id: version
+        env:
+          BUMP: ${{ inputs.bump }}
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$EVENT" = workflow_dispatch ]; then
+            if [ "$REF" != refs/heads/main ]; then
+              echo "::error::run the release from main (this run is on $REF)"
+              exit 1
+            fi
+            VERSION=$(node tools/release.mjs bump "$BUMP")
+            DATE=$(date -u +%F)
+            if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+              echo "::error::tag v$VERSION already exists"
+              exit 1
+            fi
+            node tools/release.mjs changelog "$VERSION" "$DATE"
+          else
+            VERSION=${REF_NAME#v}
+            DATE=
+          fi
+          node tools/release.mjs check "v$VERSION"
+          node tools/release.mjs notes "$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+
+  # Cada binario se arma en su plataforma (Node SEA no cruza). El de Linux trae además el zip del addon.
+  build:
+    needs: [test, prepare]
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            assets: |
+              dist/scompass-v*-linux-x64
+              dist/scope-compass-addon-v*.zip
+          - os: windows-latest
+            assets: |
+              dist/scompass-v*-windows-x64.exe
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      DATE: ${{ needs.prepare.outputs.date }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Apply the version
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          node tools/release.mjs bump "$VERSION"
+          node tools/release.mjs changelog "$VERSION" "$DATE"
+
+      - name: Build
+        shell: bash
+        run: |
+          node tools/release.mjs check "v$VERSION"
+          node tools/build.mjs
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: dist-${{ matrix.os }}
+          path: ${{ matrix.assets }}
+          if-no-files-found: error
+
+  publish:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      DATE: ${{ needs.prepare.outputs.date }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: actions/download-artifact@v6
+        with:
+          path: release
+          merge-multiple: true
+
+      - name: Notes and checksums
+        run: |
+          if [ "${{ github.event_name }}" = workflow_dispatch ]; then
+            node tools/release.mjs bump "$VERSION"
+            node tools/release.mjs changelog "$VERSION" "$DATE"
+          fi
+          node tools/release.mjs check "v$VERSION"
+          node tools/release.mjs notes "$VERSION" > notes.md
+          cat notes.md
+          node tools/release.mjs sums release
+          ls -l release
+
+      # Recién acá se escribe en el repo. --atomic: o entran el commit en main y el tag, o ninguno (por ejemplo, si
+      # main avanzó durante la corrida).
+      - name: Commit and tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Release v$VERSION"
+          git tag "v$VERSION"
+          git push --atomic origin HEAD:refs/heads/main "refs/tags/v$VERSION"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ inputs.prerelease && '--prerelease' || '' }}
+        run: |
+          gh release create "v$VERSION" release/* \
+            --verify-tag \
+            --title "v$VERSION" \
+            --notes-file notes.md \
+            $PRERELEASE

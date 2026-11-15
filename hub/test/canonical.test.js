@@ -2,6 +2,7 @@ import './isolate.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +10,8 @@ import { canonical } from '../src/store/canonical.js';
 import { isTempFile, renameRetrying, writeAtomic } from '../src/store/atomic.js';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+// El tablero de este repo ya no viaja en el repo (D46): en un clon limpio, como el del CI, compass/ no está.
+const NO_BOARD = !existsSync(join(REPO, 'compass')) && 'sin compass/ en el repo (el tablero vive aparte, D46)';
 
 async function compassFiles(dir) {
   const out = [join(dir, 'config.json')];
@@ -45,7 +48,7 @@ test('los arrays conservan su orden y se omiten claves undefined', () => {
   assert.equal(canonical({ b: [3, 1, 2], a: undefined }), '{\n  "b": [\n    3,\n    1,\n    2\n  ]\n}\n');
 });
 
-test('ida y vuelta: los JSON de compass/ ya están en formato canónico', async () => {
+test('ida y vuelta: los JSON de compass/ ya están en formato canónico', { skip: NO_BOARD }, async () => {
   const files = await compassFiles(join(REPO, 'compass'));
   assert.ok(files.length > 10);
   for (const f of files) {

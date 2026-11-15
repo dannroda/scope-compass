@@ -3,15 +3,19 @@
 //   scope-compass-<v>.tgz        hub + CLI + UI web + schemas (npm install -g <archivo>)
 //   scompass-v<v>-<so>-<arq>     el mismo paquete como ejecutable, sin Node instalado (Node SEA, tools/sea-main.cjs);
 //                                solo el de la plataforma donde corre el build (.exe en Windows)
-//   scope-compass-addon-<v>.zip  addons/scope_compass/ para copiar a un proyecto de Godot
+//   scope-compass-addon-v<v>.zip addons/scope_compass/ para copiar a un proyecto de Godot, con los README,
+//                                CHANGELOG.md y LICENSE del repo adentro
 //   INSTALAR.md                  los pasos
-// Uso: node tools/build.mjs   (desde cualquier carpeta del repo)
+// Uso: node tools/build.mjs   (desde cualquier carpeta del repo). La release de GitHub (.github/workflows/release.yml,
+// spec §35) lo corre en Linux y en Windows.
 import { execFileSync, execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { absoluteLinks } from './release.mjs';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(REPO, 'dist');
@@ -79,22 +83,42 @@ try {
   console.error(`No se pudo armar el binario: hace falta Node 25.5 o más nuevo (--build-sea); este es ${process.version}.`);
   throw e;
 }
-// Que arranque de verdad, con su runtime en una carpeta aparte (no la caché del usuario).
-const smoke = join(SEA, 'runtime');
-execFileSync(join(DIST, bin), ['list', '--dir', REPO, '--milestone', 'm00'], { env: { ...process.env, SCOMPASS_RUNTIME_DIR: smoke }, stdio: 'ignore' });
+// Que arranque de verdad: crea un tablero (las plantillas salen del paquete extraído) y lo lista. Todo en carpetas
+// aparte (no la caché ni el registro del usuario), fuera del repo; el repo ya no trae compass/ (D46).
+const smoke = mkdtempSync(join(tmpdir(), 'scompass-build-'));
+const smokeEnv = { ...process.env, SCOMPASS_RUNTIME_DIR: join(smoke, 'runtime'), SCOMPASS_REGISTRY: join(smoke, 'registry'), SCOMPASS_CONFIG: join(smoke, 'config'), SCOMPASS_DATA: join(smoke, 'data') };
+mkdirSync(join(smoke, 'project'), { recursive: true });
+for (const args of [['init', '--in-project'], ['list']]) {
+  execFileSync(join(DIST, bin), [...args, '--dir', join(smoke, 'project')], { env: smokeEnv, stdio: ['ignore', 'ignore', 'inherit'] });
+}
+rmSync(smoke, { recursive: true, force: true });
 rmSync(SEA, { recursive: true });
 rmSync(STAGE, { recursive: true });
 
-// Addon: solo los archivos versionados (sin .godot ni restos locales).
-const zip = `scope-compass-addon-${pkg.version}.zip`;
+// Addon: solo los archivos versionados (sin .godot ni restos locales), y adentro de addons/scope_compass/ los README
+// (inglés y castellano), el CHANGELOG y la LICENSE del repo. Se arma en una carpeta aparte para no ensuciar el addon del repo.
+const zip = `scope-compass-addon-v${pkg.version}.zip`;
+const ADDON = join(DIST, 'addon');
 const addonFiles = run('git', ['ls-files', 'addons/scope_compass']).split('\n');
+for (const f of addonFiles) cpSync(join(REPO, f), join(ADDON, f));
+// Los links relativos del README van a archivos que no viajan en el zip: pasan a GitHub, fijados al tag.
+const slug = process.env.GITHUB_REPOSITORY
+  || /github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/.exec((() => { try { return run('git', ['remote', 'get-url', 'origin']); } catch { return ''; } })())?.[1];
+const EXTRA = ['README.md', 'README.es.md', 'CHANGELOG.md', 'LICENSE'];
+for (const f of EXTRA) {
+  let text;
+  try { text = readFileSync(join(REPO, f), 'utf8'); } catch (e) { if (e.code === 'ENOENT') { console.error(`(sin ${f}: el zip va sin él)`); continue; } throw e; }
+  if (f.startsWith('README') && slug) text = absoluteLinks(text, slug, `v${pkg.version}`, EXTRA);
+  writeFileSync(join(ADDON, 'addons', 'scope_compass', f), text);
+}
 // En Windows no hay zip: el tar.exe que trae Windows 10/11 (bsdtar) arma un .zip con -a.
-if (WIN) execFileSync('tar.exe', ['-a', '-c', '-f', join(DIST, zip), ...addonFiles], { cwd: REPO });
+if (WIN) execFileSync('tar.exe', ['-a', '-c', '-f', join(DIST, zip), 'addons'], { cwd: ADDON });
 else {
   // Sin zip instalado (Arch no lo trae), bsdtar de libarchive arma el mismo .zip.
-  try { execFileSync('zip', ['-q', '-X', join(DIST, zip), ...addonFiles], { cwd: REPO }); }
-  catch (e) { if (e.code !== 'ENOENT') throw e; execFileSync('bsdtar', ['-a', '-c', '-f', join(DIST, zip), ...addonFiles], { cwd: REPO }); }
+  try { execFileSync('zip', ['-q', '-X', '-r', join(DIST, zip), 'addons'], { cwd: ADDON }); }
+  catch (e) { if (e.code !== 'ENOENT') throw e; execFileSync('bsdtar', ['-a', '-c', '-f', join(DIST, zip), 'addons'], { cwd: ADDON }); }
 }
+rmSync(ADDON, { recursive: true });
 
 cpSync(join(REPO, 'tools', 'install.sh'), join(DIST, 'install.sh')); // Linux: npm install -g y el lanzador del menú
 writeFileSync(join(DIST, 'INSTALAR.md'), readFileSync(join(REPO, 'docs', 'instalar.md'), 'utf8')

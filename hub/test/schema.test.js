@@ -2,6 +2,7 @@ import './isolate.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +11,8 @@ import { loadCompass } from '../src/store/load.js';
 import { canonical } from '../src/store/canonical.js';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+// El tablero de este repo ya no viaja en el repo (D46): en un clon limpio, como el del CI, compass/ no está.
+const NO_BOARD = !existsSync(join(REPO, 'compass')) && 'sin compass/ en el repo (el tablero vive aparte, D46)';
 const FIXTURE = join(REPO, 'hub', 'test', 'fixtures', 'compass');
 const V = loadValidators();
 const task = { milestone: 'm00', title: 'x', status: 'todo' };
@@ -51,7 +54,7 @@ test('config: puerto fuera de rango y alias inválido', () => {
   assert.equal(res.details.length, 2);
 });
 
-test('los datos reales de compass/ cargan sin avisos', async () => {
+test('los datos reales de compass/ cargan sin avisos', { skip: NO_BOARD }, async () => {
   const c = await loadCompass(join(REPO, 'compass'), V);
   assert.deepEqual(c.warnings, []);
   assert.equal(c.config.project, 'Scope Compass');

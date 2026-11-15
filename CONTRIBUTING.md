@@ -17,6 +17,8 @@ The repository is also a Godot 4.8 project, so the addon can be developed inside
 
 `node tools/build.mjs` builds the npm package, the addon zip and the standalone binary for the current platform into `dist/` (the binary needs Node 25.5 or newer). The versions in `hub/package.json` and `addons/scope_compass/plugin.cfg` must match.
 
+Releases are published by the **Release** workflow (Actions → Release → Run workflow on `main`, choosing `patch`, `minor`, `major` or an exact version): it runs the tests on Linux and Windows, bumps both versions, turns `## [Unreleased]` of `CHANGELOG.md` into the new version, builds both binaries and the addon zip, commits `Release vX.Y.Z` with its tag and publishes the release with `SHA256SUMS`. The steps are in [`docs/spec.md`](docs/spec.md) §35.1 (Spanish).
+
 ## Tests
 
 ```sh

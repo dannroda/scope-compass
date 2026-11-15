@@ -1371,10 +1371,30 @@ Cada uno tiene su test en `hub/test/m31-criteria.test.js`.
 
 ## 35. Distribución (M32)
 
-- **Descargas de cada release:** `scompass-v<versión>-linux-x64`, `scompass-v<versión>-windows-x64.exe`, el zip del addon y el `.tgz` de npm, todos con la misma versión (D45).
+- **Descargas de cada release:** `scompass-v<versión>-linux-x64`, `scompass-v<versión>-windows-x64.exe`, `scope-compass-addon-v<versión>.zip` y `SHA256SUMS`, todos con la misma versión (D45, D47). El `.tgz` de npm no va en la release: lo arma `node tools/build.mjs` desde un clon.
 - **El binario** es un Node SEA que trae el paquete entero. La primera vez que corre una versión lo extrae a `~/.cache/scope-compass/runtime/<versión>-<hash>/` (en Windows, `%LOCALAPPDATA%\scope-compass\runtime\`; `SCOMPASS_RUNTIME_DIR` la cambia) y lo carga desde ahí (`tools/sea-main.cjs`). Las versiones viejas quedan en la caché.
 - **Relanzarse:** el hub que se reinicia, el Inicio que prende hubs o corre `init`, y el MCP del chat usan `selfCommand` (`hub/src/self.js`). Desde el repo o npm es `node bin/scompass.js`; en el binario, el ejecutable solo.
-- **Armarlo:** `node tools/build.mjs` arma el binario de la plataforma donde corre (hace falta Node 25.5 o más nuevo, por `--build-sea`) y lo prueba con `list`. Para tener los de Linux y Windows, el build corre en cada plataforma.
+- **Armarlo:** `node tools/build.mjs` arma el binario de la plataforma donde corre (hace falta Node 25.5 o más nuevo, por `--build-sea`) y lo prueba con `init` y `list` sobre un tablero temporal. Para tener los de Linux y Windows, el build corre en cada plataforma. El zip del addon trae `addons/scope_compass/` desde la raíz, solo lo versionado, y adentro los README (inglés y castellano), `CHANGELOG.md` y `LICENSE`; los links relativos de los README pasan a GitHub, fijados al tag.
+- **CI** (`.github/workflows/ci.yml`): en cada push y PR a main, `npm test` en Linux y Windows con Node 26 (la del binario) y en Linux también con Node 22 (la mínima del `.tgz`). Con `timeout-minutes`, porque la corrida completa a veces se cuelga.
+
+### 35.1 Publicar una release
+
+La publica `.github/workflows/release.yml` (D47), con la lógica en `tools/release.mjs` (Node, para que ande igual en los runners de Linux y de Windows; tests en `hub/test/release.test.js`).
+
+1. Antes: los cambios de la versión están en `CHANGELOG.md`, en inglés y formato Keep a Changelog, bajo `## [Unreleased]`. Con esa sección vacía la release falla.
+2. **A mano (lo normal):** Actions → Release → Run workflow sobre main, con `bump` = `patch`, `minor`, `major` o una versión exacta `X.Y.Z` (la primera release, `0.1.0`: la versión que ya tienen los archivos), y opcionalmente *pre-release*. El workflow:
+   - corre el CI (los tests en Linux y Windows);
+   - calcula la versión, valida que el tag no exista y que Unreleased tenga algo;
+   - arma el binario en Linux y en Windows, y el zip del addon en Linux, sobre el árbol con la versión nueva aplicada (`release.mjs bump` y `changelog`, con la misma fecha en todos los jobs);
+   - con todo armado, commitea «Release vX.Y.Z» (versión en `hub/package.json`, su lock y `plugin.cfg`; Unreleased pasa a `## [X.Y.Z] - fecha` y, si están, los links de comparación del final se actualizan) y pushea a main el commit y el tag en un solo `git push --atomic`;
+   - escribe `SHA256SUMS` y publica con `gh release create vX.Y.Z <archivos> --title vX.Y.Z --notes-file notes.md [--prerelease]`. Las notas son la sección de la versión en el CHANGELOG más un párrafo de cómo instalar.
+   Si algo falla antes del push, no queda nada en el repo y se puede volver a correr.
+3. **Pusheando un tag `vX.Y.Z` a mano:** el commit del tag ya trae las versiones y la sección `## [X.Y.Z]` del CHANGELOG. El workflow corre lo mismo menos el bump y el commit.
+4. En los dos casos, cada job verifica que el tag, `hub/package.json` y `plugin.cfg` digan la misma versión (`release.mjs check`).
+
+Lo mismo a mano, en un equipo: `node tools/release.mjs bump <cómo>`, `node tools/release.mjs changelog <X.Y.Z>`, `node tools/release.mjs notes <X.Y.Z>`, `node tools/build.mjs` y `node tools/release.mjs sums dist`.
+
+Si main tiene protección de rama que no deja pushear al `GITHUB_TOKEN`, el paso del commit falla: hay que permitirle a GitHub Actions saltear la protección, o usar el camino del tag.
 - **Instalar:** `install.sh` prefiere el binario: lo copia a `~/.local/bin/scompass`. El dock lo encuentra en el PATH; en Windows también acepta `scompass.exe` de `where`.
 
 ### Criterios de aceptación
@@ -1382,6 +1402,8 @@ Cada uno tiene su test en `hub/test/m31-criteria.test.js`.
 - [ ] El binario corre `init`, `list`, `serve` (con la web), `home` (crea proyectos y prende hubs) y `mcp` en un equipo sin Node.
 - [ ] Dos `scompass` que arrancan a la vez por primera vez no rompen la carpeta de la caché.
 - [ ] El repo (`node hub/bin/scompass.js`) y el `.tgz` siguen andando igual.
+- [ ] Run workflow de Release con `bump` publica la release con los dos binarios, el zip y `SHA256SUMS`, y deja en main el commit «Release vX.Y.Z» con su tag.
+- [ ] Con `## [Unreleased]` vacío, o con versiones distintas en el tag, `package.json` y `plugin.cfg`, la release falla sin publicar ni pushear nada.
 
 ## 36. El tablero fuera del repo del proyecto (M32)
 
