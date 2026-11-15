@@ -990,7 +990,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     // Patrones prohibidos (§42) en lo que se editó a mano: los JSON de compass/ (también los que no pasan el schema) y
     // los documentos declarados. Para un pre-commit: sale con 1 si encuentra algo.
     async lint() {
-      const config = JSON.parse(await readFile(join(compass, 'config.json'), 'utf8').catch(() => { throw new StoreError('not_found', 'no hay compass/config.json'); }));
+      const config = JSON.parse(await readFile(join(compass, 'config.json'), 'utf8').catch(() => { throw new StoreError('not_found', T('no hay compass/config.json')); }));
       const { patterns, errors } = compileForbidden(config);
       const findings = errors.map((e) => ({ file: 'compass/config.json', where: `forbidden[${e.index}]`, pattern: e.source, problem: 'invalid_pattern', message: e.message }));
       const jsonFiles = async (rel) => {
@@ -1007,7 +1007,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (patterns.length) {
         for (const rel of await jsonFiles('')) {
           let doc;
-          try { doc = JSON.parse(await readFile(join(compass, rel), 'utf8')); } catch { warn(`aviso: compass/${rel} no es JSON; no se revisó`); continue; }
+          try { doc = JSON.parse(await readFile(join(compass, rel), 'utf8')); } catch { warn(T`aviso: compass/${rel} no es JSON; no se revisó`); continue; }
           files++;
           for (const m of findForbidden(doc, patterns)) findings.push({ file: `compass/${rel}`, ...m });
         }
@@ -1020,10 +1020,10 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         }
       }
       if (o.json) print(JSON.stringify({ patterns: patterns.length, files, findings }));
-      else if (!patterns.length && !errors.length) print('Sin patrones prohibidos en compass/config.json › forbidden.');
+      else if (!patterns.length && !errors.length) print(T('Sin patrones prohibidos en compass/config.json › forbidden.'));
       else {
-        for (const f of findings) print(f.problem === 'invalid_pattern' ? `${f.file} › ${f.where}: /${f.pattern}/ no es una expresión regular válida (${f.message})` : describeMatch(f.file, f));
-        print(findings.length ? `${findings.length} coincidencias en ${new Set(findings.map((f) => f.file)).size} archivos.` : `Sin coincidencias: ${patterns.length} patrones en ${files} archivos.`);
+        for (const f of findings) print(f.problem === 'invalid_pattern' ? T`${f.file} › ${f.where}: /${f.pattern}/ no es una expresión regular válida (${f.message})` : describeMatch(f.file, f));
+        print(findings.length ? T`${findings.length} coincidencias en ${new Set(findings.map((f) => f.file)).size} archivos.` : T`Sin coincidencias: ${patterns.length} patrones en ${files} archivos.`);
       }
       return findings.length ? 1 : 0;
     },

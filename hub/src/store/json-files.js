@@ -88,12 +88,12 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
     const { patterns, errors } = compileForbidden(config);
     if (errors.length) {
       const e = errors[0];
-      throw new StoreError('invalid_file', `compass/config.json › forbidden[${e.index}]: /${e.source}/ no es una expresión regular válida (${e.message})`);
+      throw new StoreError('invalid_file', T`compass/config.json › forbidden[${e.index}]: /${e.source}/ no es una expresión regular válida (${e.message})`);
     }
     const hits = findForbidden(doc, patterns);
     if (!hits.length) return;
     const file = `compass/${collection}/${id}.json`;
-    throw new StoreError('forbidden_pattern', `no se guardó: ${hits.slice(0, 3).map((m) => describeMatch(file, m)).join('; ')}${hits.length > 3 ? `; y ${hits.length - 3} más` : ''}`, { matches: hits });
+    throw new StoreError('forbidden_pattern', T`no se guardó: ${hits.slice(0, 3).map((m) => describeMatch(file, m)).join('; ')}${hits.length > 3 ? T`; y ${hits.length - 3} más` : ''}`, { matches: hits });
   }
 
   async function write(collection, id, doc, current) {

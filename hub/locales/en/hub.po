@@ -370,6 +370,9 @@ msgstr "medium"
 msgid "baja"
 msgstr "low"
 
+msgid "{0}{1}{2}: «{3}» coincide con el patrón prohibido /{4}/{5}"
+msgstr "{0}{1}{2}: «{3}» matches the forbidden pattern /{4}/{5}"
+
 msgid "Título"
 msgstr "Title"
 
@@ -711,6 +714,15 @@ msgstr "invalid id: {0}"
 
 msgid "el documento cambió desde que se leyó"
 msgstr "the document changed since it was read"
+
+msgid "compass/config.json › forbidden[{0}]: /{1}/ no es una expresión regular válida ({2})"
+msgstr "compass/config.json › forbidden[{0}]: /{1}/ is not a valid regular expression ({2})"
+
+msgid "; y {0} más"
+msgstr "; and {0} more"
+
+msgid "no se guardó: {0}{1}"
+msgstr "not saved: {0}{1}"
 
 msgid "fecha inexistente: {0}"
 msgstr "nonexistent date: {0}"

@@ -101,6 +101,7 @@ scompass milestone set m08 --due 2026-11-01                   # the milestone's 
 - Steps are numbered from 1, as `scompass show` shows them.
 - To avoid overwriting someone else's change, pass `--etag <etag>` (the one `--json` returns): if the task changed, it fails with a conflict. Read it again and retry.
 - A task is deleted by deleting its file in `compass/tasks/`.
+- If a write fails with `forbidden_pattern`, the text matches one of the project's forbidden patterns (`compass/config.json › forbidden`; the message gives the field, the pattern and why). Nothing was saved: say it another way, without that text, and don't copy it to another field or to a document. `scompass lint` checks what was edited by hand in `compass/` and in the documents, and exits with 1 if it finds something.
 
 ## Links between tasks
 
