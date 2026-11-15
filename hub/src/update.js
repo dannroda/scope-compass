@@ -2,7 +2,7 @@
 // Compass cambia, por ejemplo con un campo nuevo en las tareas. updateCompass los vuelve a copiar; no toca los
 // datos, config.json ni README.md. Lo usan `scompass update` y la bandeja del hub. De la guía hay una copia igual en
 // addons/scope_compass/AGENTS.md (un test las compara).
-import { copyFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { KINDS, SCHEMA_DIR } from './schema.js';
@@ -22,4 +22,20 @@ export function updateCompass(compass) {
   mkdirSync(join(compass, 'schema'), { recursive: true });
   for (const [src, rel] of generated()) if (stale.has(rel)) copyFileSync(src, join(compass, rel));
   return [...stale];
+}
+
+/**
+ * Pone al día el compass/ de cada proyecto encontrado que lo tenga desactualizado (§38). Con check, solo dice cuáles.
+ * Devuelve [{ path, name, files }] con las rutas como compass/<archivo>, solo los que tenían algo viejo.
+ */
+export function updateAllCompasses(projects, { check = false } = {}) {
+  const out = [];
+  for (const p of projects) {
+    if (!p.found) continue;
+    const compass = join(p.path, 'compass');
+    if (!existsSync(join(compass, 'config.json'))) continue;
+    const files = check ? outdatedFiles(compass) : updateCompass(compass);
+    if (files.length) out.push({ path: p.path, name: p.name, files: files.map((f) => 'compass/' + f) });
+  }
+  return out;
 }

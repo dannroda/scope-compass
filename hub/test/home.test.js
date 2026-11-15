@@ -335,3 +335,20 @@ test('actualizar compass/ desde el Inicio, sin hub: la tarjeta lo marca y la API
   assert.ok(!(await api('GET', '/api/projects')).body.projects.find((x) => x.path === b).outdated.includes('schema/task.schema.json'));
   assert.equal((await api('POST', '/api/projects/update', { path: join(root, 'otro') })).status, 404);
 });
+
+test('Actualizar todos (§38): pone al día el compass/ de cada proyecto desactualizado y dice cuáles', async () => {
+  const { writeFile: wf, readFile: rf } = await import('node:fs/promises');
+  const sa = join(a, 'compass', 'schema', 'task.schema.json');
+  const sb = join(b, 'compass', 'AGENTS.md');
+  await wf(sa, '{}\n');
+  await wf(sb, 'viejo\n');
+  const r = await api('POST', '/api/projects/update-all');
+  assert.equal(r.status, 200);
+  const byPath = Object.fromEntries(r.body.updated.map((x) => [x.path, x.files]));
+  assert.ok(byPath[a]?.includes('compass/schema/task.schema.json'), JSON.stringify(r.body));
+  assert.ok(byPath[b]?.includes('compass/AGENTS.md'), JSON.stringify(r.body));
+  assert.notEqual(await rf(sa, 'utf8'), '{}\n');
+  assert.notEqual(await rf(sb, 'utf8'), 'viejo\n');
+  assert.ok((await api('GET', '/api/projects')).body.projects.every((x) => !x.outdated?.length));
+  assert.deepEqual((await api('POST', '/api/projects/update-all')).body, { updated: [] });
+});

@@ -508,3 +508,17 @@ test('decide --ask guarda la sesión de Claude Code que pregunta (§32): de CLAU
   assert.equal(bad.code, 2);
   assert.match(bad.err, /--session tiene que ser/);
 });
+
+test('update --all (§38): --check lista los proyectos desactualizados del Inicio y sin --check los pone al día', async () => {
+  const { recordProject } = await import('../src/projects.js');
+  const { writeFile: wf } = await import('node:fs/promises');
+  await recordProject(dir);
+  await wf(join(dir, 'compass', 'AGENTS.md'), 'viejo\n');
+  const check = await cli(['update', '--all', '--check']);
+  assert.equal(check.code, 1);
+  assert.ok(check.out.includes(`(${dir}): `) && check.out.includes('compass/AGENTS.md'), check.out);
+  const r = await cli(['update', '--all', '--json']);
+  assert.equal(r.code, 0, r.err);
+  assert.ok(r.json().updated.some((x) => x.path === dir && x.files.includes('compass/AGENTS.md')));
+  assert.equal((await cli(['update', '--all', '--check'])).code, 0);
+});

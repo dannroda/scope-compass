@@ -1451,3 +1451,17 @@ Instalar scompass no tiene que obligar a tocar el PATH: en Windows es un paso ma
 - [x] El dock encuentra la instalación anotada sin PATH ni ruta configurada, y no usa una anotada que ya no existe.
 - [x] `scompass mcp install` registra el MCP con la ruta entera; sin claude, dice qué correr.
 - [ ] Probado en Windows con el binario fuera del PATH.
+
+## 38. Actualizar todos los tableros (M32)
+
+Cuando sale una versión de Scope Compass con un schema o una guía para agentes nueva, cada tablero queda con `schema/`, `AGENTS.md` o `.gitattributes` viejos. Actualizarlos uno por uno, desde cada tarjeta del Inicio o con `scompass update` en cada proyecto, no escala con muchos proyectos.
+
+- **En el Inicio:** junto a *Agregar proyecto* aparece **Actualizar todos (n)** cuando hay dos o más proyectos desactualizados (con uno solo alcanza el botón de su tarjeta). El tooltip lista los proyectos. Corre `POST /api/projects/update-all`, que pone al día cada proyecto encontrado y devuelve `{ updated: [{ path, name, files }] }`, solo con los que tenían algo viejo.
+- **En la CLI:** `scompass update --all` hace lo mismo con los proyectos que conoce el Inicio. `--check` solo los lista y sale con 1 si hay alguno, y `--json` da la misma forma que la API.
+- Varios proyectos con el mismo tablero (worktrees o enlaces a la misma carpeta) lo actualizan una sola vez: para el segundo ya está al día.
+- No toca los datos, `config.json` ni el README, igual que `update`. Los cambios quedan sin commitear en el repo de cada tablero.
+
+### Criterios de aceptación
+
+- [x] Con dos tableros desactualizados, el botón aparece con el número, los pone al día a los dos y desaparece.
+- [x] `update --all --check` lista los desactualizados y sale con 1; `update --all` los actualiza y después `--check` sale con 0.

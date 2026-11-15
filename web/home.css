@@ -103,6 +103,8 @@ a.tag:hover { text-decoration: underline; }
 .capture input[type="text"] { flex: 1 1 260px; font-size: 16px; }
 .capture select { flex: 0 1 220px; }
 .sec-head .add-btn { margin-left: auto; }
+.sec-head #update-all:not([hidden]) { margin-left: auto; }
+.sec-head #update-all:not([hidden]) + .add-btn { margin-left: 0; }
 section > .add { margin-bottom: 16px; }
 /* Teléfono (31.1): lo mío en la primera pantalla. Sin la fecha ni los subtítulos; Anotar en dos filas; las áreas
    en una fila que se desplaza de costado; filas más bajas. */

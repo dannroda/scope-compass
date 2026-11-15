@@ -219,6 +219,18 @@ test('agregar: importar una carpeta y crear un proyecto con plantilla', async ()
   }
 });
 
+test('Actualizar todos (§38): con dos o más tableros desactualizados, un botón los pone al día a todos', async () => {
+  for (const p of [vida, juego]) await writeFile(join(p, 'compass', 'AGENTS.md'), 'viejo\n');
+  const page = await open();
+  const btn = page.locator('#update-all');
+  await btn.waitFor({ state: 'visible' });
+  assert.equal(await btn.textContent(), 'Actualizar todos (2)');
+  await btn.click();
+  await btn.waitFor({ state: 'hidden' });
+  for (const p of [vida, juego]) assert.notEqual(await readFile(join(p, 'compass', 'AGENTS.md'), 'utf8'), 'viejo\n');
+  assert.equal(await page.locator('.outdated').count(), 0);
+});
+
 test('en el teléfono no hay scroll horizontal', async () => {
   const page = await open({ viewport: { width: 390, height: 844 } });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);

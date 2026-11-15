@@ -35,7 +35,7 @@ import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { loadCompass } from './store/load.js';
 import { byToday, summarize, todayOf, weekOf } from './summary.js';
 import { registerProjectRoutes } from './home-serve.js';
-import { outdatedFiles, updateCompass } from './update.js';
+import { outdatedFiles, updateAllCompasses, updateCompass } from './update.js';
 import { boardStatus, repoWorktree } from './git.js';
 import { listTemplates, loadTemplate } from './templates.js';
 import { STATUSES } from './views.js';
@@ -135,6 +135,14 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     const updated = updateCompass(compassOf(p.path));
     emit({ type: 'projects' });
     return { updated: updated.map((f) => 'compass/' + f) };
+  });
+
+  // Actualizar todos (§38): los compass/ desactualizados de todos los proyectos conocidos, en una sola vez. Varios
+  // proyectos con el mismo tablero (worktrees, enlaces) lo actualizan una vez: el segundo ya lo encuentra al día.
+  app.post('/api/projects/update-all', async () => {
+    const updated = updateAllCompasses(projectsStatus());
+    if (updated.length) emit({ type: 'projects' });
+    return { updated };
   });
 
   // Reiniciar el Inicio (9.8): responde antes de cerrar; el nuevo toma el mismo puerto (lo hace `scompass home`).

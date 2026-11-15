@@ -18,7 +18,7 @@ import { createHttpStore, detectHub, hubVersions } from './store/http.js';
 import { createServer, freePortFrom, listen, VERSION } from './server.js';
 import { serveMcp } from './mcp.js';
 import { startTray } from './tray.js';
-import { outdatedFiles, TEMPLATES, updateCompass } from './update.js';
+import { outdatedFiles, TEMPLATES, updateAllCompasses, updateCompass } from './update.js';
 import { listTemplates, loadTemplate as loadTemplateFile } from './templates.js';
 import { hubsOf, listHubs, liveHome, registerHub, unregisterHub } from './registry.js';
 import { createHomeServer } from './home.js';
@@ -54,6 +54,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
                                             antes (también si el proyecto está en una carpeta temporal)
   update [--check]                          pone al día los archivos generados de compass/ (schema/ y AGENTS.md,
                                             la guía para agentes); --check solo avisa y sale con 1 si hay algo viejo
+  update --all [--check]                    lo mismo en todos los proyectos que conoce el Inicio
   serve [--port 4711] [--open] [--force]    levanta el hub en 127.0.0.1 (uno por proyecto; Ctrl+C para cerrar)
         [--lan]                             también en la red, para el teléfono (sin login: solo en una red de
                                             confianza, como la de casa)
@@ -199,7 +200,7 @@ const OPTIONS = {
   tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, size: { type: 'string' }, assignee: { type: 'string' },
   at: { type: 'string' }, review: { type: 'boolean' }, note: { type: 'string' },
   why: { type: 'string' }, alternatives: { type: 'string' }, ask: { type: 'boolean' }, session: { type: 'string' }, reply: { type: 'string' }, decisions: { type: 'string' },
-  pending: { type: 'boolean' }, revert: { type: 'boolean' }, 'in-project': { type: 'boolean' }, board: { type: 'string' },
+  pending: { type: 'boolean' }, revert: { type: 'boolean' }, 'in-project': { type: 'boolean' }, all: { type: 'boolean' }, board: { type: 'string' },
   title: { type: 'string' }, description: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
@@ -425,6 +426,17 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
 
     // schema/ y AGENTS.md al día con esta versión de Scope Compass (ver update.js).
     async update() {
+      // --all (§38): todos los proyectos que conoce el Inicio, como "Actualizar todos".
+      if (o.all) {
+        const r = updateAllCompasses(projectsStatus(), { check: o.check });
+        const lines = r.map((x) => `  ${x.name} (${x.path}): ${x.files.join(', ')}`).join('\n');
+        if (o.check) {
+          o.json ? print(JSON.stringify({ outdated: r })) : print(r.length ? `Desactualizados (corré \`scompass update --all\`):\n${lines}` : 'Todos los tableros están al día.');
+          return r.length ? 1 : 0;
+        }
+        const hint = r.some((x) => x.files.includes('compass/AGENTS.md')) ? `\n${AGENTS_HINT}` : '';
+        return done({ updated: r }, r.length ? `Actualizados:\n${lines}${hint}` : 'Todos los tableros ya estaban al día.');
+      }
       if (!existsSync(join(compass, 'config.json'))) throw new StoreError('not_found', `no hay ${compass}: corré \`scompass --dir ${project} init\` para crearla`);
       const names = outdatedFiles(compass).map((rel) => `compass/${rel}`);
       if (o.check) {

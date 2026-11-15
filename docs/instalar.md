@@ -71,7 +71,7 @@ El dock busca scompass en la ruta de Editor Settings › `scope_compass/scompass
 - Cuentas en el chat: el panel dice con qué cuenta habla (email, organización, plan), el uso de las ventanas de 5 horas y de la semana (con cuándo se renuevan; se actualiza con cada respuesta) y los tokens y el costo estimado de cada respuesta. Si tenés varios perfiles de Claude Code (carpetas con su propio login que se usan con `CLAUDE_CONFIG_DIR`), ponelos en `~/.claude-profiles/<nombre>/` y el panel deja elegir uno al empezar una conversación; sin elegir, usa `~/.claude`. `SCOMPASS_CLAUDE_PROFILES=<carpeta>` busca los perfiles en otro lado. Para entrar o cambiar de cuenta: `claude auth login` (con el `CLAUDE_CONFIG_DIR` del perfil) en la terminal.
 - Varios proyectos a la vez: cada hub usa el puerto de su `compass/config.json` (4711 por defecto); si está ocupado, toma el siguiente libre solo.
 - Tras actualizar Scope Compass: reiniciá los hubs que estuvieran corriendo (`scompass restart`, o "Reiniciar hub" en el dock); el dock y la CLI avisan si el hub es de otra versión.
-- Tras actualizar Scope Compass: si el dock avisa que `compass/` tiene archivos de una versión anterior, **Actualizar** (o `scompass update`, o "Actualizar compass/" en la bandeja).
+- Tras actualizar Scope Compass: si el dock avisa que `compass/` tiene archivos de una versión anterior, **Actualizar** (o `scompass update`, o "Actualizar compass/" en la bandeja). Para todos los proyectos a la vez: **Actualizar todos** en el Inicio, o `scompass update --all`.
 
 ## Windows
 

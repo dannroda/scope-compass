@@ -349,7 +349,21 @@
     await load();
   }
 
+  // Actualizar todos (§38): aparece con dos o más proyectos con compass/ de una versión anterior de Scope Compass.
+  function renderUpdateAll() {
+    const btn = document.getElementById('update-all');
+    if (!btn) return;
+    const stale = S.projects.filter((p) => p.outdated?.length);
+    btn.hidden = !S.loaded || stale.length < 2;
+    btn.disabled = S.busy.has('upd:all');
+    btn.textContent = `Actualizar todos (${stale.length})`;
+    btn.title = 'Pone al día schema/ y AGENTS.md de:\n' + stale.map((p) => p.name).join('\n');
+    btn.onclick = () => act('upd:all', () => call('POST', '/api/projects/update-all'),
+      (r) => r.updated.length ? `Actualizados ${r.updated.length} tablero${r.updated.length > 1 ? 's' : ''}` : 'Ya estaban todos al día');
+  }
+
   function renderProjects() {
+    renderUpdateAll();
     const box = document.getElementById('projects');
     if (!S.loaded) { box.replaceChildren(); return; }
     // Una tarjeta por repo: la del worktree principal (o la primera), con los otros adentro.
