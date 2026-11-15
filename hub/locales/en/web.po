@@ -1,0 +1,1649 @@
+# hub/locales/en/web.po: los textos de web en inglés (spec §45). msgid: el castellano del código.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid "Pendiente"
+msgstr "To do"
+
+msgid "Pend."
+msgstr "To do"
+
+msgid "Pausado"
+msgstr "Paused"
+
+msgid "Paus."
+msgstr "Paused"
+
+msgid "En curso"
+msgstr "In progress"
+
+msgid "Curso"
+msgstr "Doing"
+
+msgid "Revisión"
+msgstr "Review"
+
+msgid "Rev."
+msgstr "Rev."
+
+msgid "Hecho"
+msgstr "Done"
+
+msgid "sin conexión con el hub"
+msgstr "no connection to the hub"
+
+msgid "Referencia rota: "
+msgstr "Broken reference: "
+
+msgid "la sección ya no existe"
+msgstr "the section no longer exists"
+
+msgid "el documento no está"
+msgstr "the document is missing"
+
+msgid "Enlaces:"
+msgstr "Links:"
+
+msgid "Sin conexión con el hub: el cambio no se guardó."
+msgstr "No connection to the hub: the change was not saved."
+
+msgid "El archivo de la tarea está roto o tiene un conflicto de git: corregilo a mano."
+msgstr "The task file is broken or has a git conflict: fix it by hand."
+
+msgid "La tarea ya no existe."
+msgstr "The task no longer exists."
+
+msgid "Otra pestaña o la CLI cambió esta tarea; se actualizó. Revisá y volvé a aplicar tu cambio."
+msgstr "Another tab or the CLI changed this task; it was refreshed. Check it and apply your change again."
+
+msgid "No se pudo guardar ("
+msgstr "Could not save ("
+
+msgid "Alta"
+msgstr "High"
+
+msgid "Media"
+msgstr "Medium"
+
+msgid "Baja"
+msgstr "Low"
+
+msgid "chica"
+msgstr "small"
+
+msgid "mediana"
+msgstr "medium"
+
+msgid "grande"
+msgstr "large"
+
+msgid "Cualquier fecha"
+msgstr "Any date"
+
+msgid "Vencidas"
+msgstr "Overdue"
+
+msgid "Vencen hoy"
+msgstr "Due today"
+
+msgid "Esta semana"
+msgstr "This week"
+
+msgid "Sin fecha"
+msgstr "No date"
+
+msgid "Con y sin bloqueo"
+msgstr "Blocked or not"
+
+msgid "Bloqueadas"
+msgstr "Blocked"
+
+msgid "No bloqueadas"
+msgstr "Not blocked"
+
+msgid "Buscar por título o código"
+msgstr "Search by title or code"
+
+msgid "Vista del tablero"
+msgstr "Board view"
+
+msgid "Tablero"
+msgstr "Board"
+
+msgid "Lista"
+msgstr "List"
+
+msgid "Buscar tareas"
+msgstr "Search tasks"
+
+msgid "Filtros"
+msgstr "Filters"
+
+msgid "Ninguna tarea tiene "
+msgstr "No task has "
+
+msgid "Orden: "
+msgstr "Sort: "
+
+msgid "Manual"
+msgstr "Manual"
+
+msgid "Orden"
+msgstr "Sort"
+
+msgid "Ascendente"
+msgstr "Ascending"
+
+msgid "Descendente"
+msgstr "Descending"
+
+msgid "Invertir el orden"
+msgstr "Reverse the order"
+
+msgid " de "
+msgstr " of "
+
+msgid " ocultas"
+msgstr " hidden"
+
+msgid "Limpiar filtros"
+msgstr "Clear filters"
+
+msgid "Estado"
+msgstr "Status"
+
+msgid "Fecha límite"
+msgstr "Due date"
+
+msgid "Bloqueo"
+msgstr "Blocking"
+
+msgid "Con pasos pendientes"
+msgstr "With pending steps"
+
+msgid "Con referencias"
+msgstr "With references"
+
+msgid "Etiquetas"
+msgstr "Tags"
+
+msgid "Prioridad"
+msgstr "Priority"
+
+msgid "Sin prioridad"
+msgstr "No priority"
+
+msgid "Tamaño"
+msgstr "Size"
+
+msgid "Sin estimar"
+msgstr "Not estimated"
+
+msgid "Responsable"
+msgstr "Assignee"
+
+msgid "Sin responsable"
+msgstr "Unassigned"
+
+msgid "Código"
+msgstr "Code"
+
+msgid "Título"
+msgstr "Title"
+
+msgid "Hito"
+msgstr "Milestone"
+
+msgid "Pasos"
+msgstr "Steps"
+
+msgid "Actualizada"
+msgstr "Updated"
+
+msgid "Creada"
+msgstr "Created"
+
+msgid "Terminada"
+msgstr "Finished"
+
+msgid "hace un momento"
+msgstr "just now"
+
+msgid "Ninguna tarea con estos filtros."
+msgstr "No tasks match these filters."
+
+msgid "Sin tareas."
+msgstr "No tasks."
+
+msgid "Cargando tareas…"
+msgstr "Loading tasks…"
+
+msgid "Ordenar por "
+msgstr "Sort by "
+
+msgid "Bloqueada por: "
+msgstr "Blocked by: "
+
+msgid "Bloqueada"
+msgstr "Blocked"
+
+msgid "Tamaño: "
+msgstr "Size: "
+
+msgid " hechas"
+msgstr " done"
+
+msgid " en revisión"
+msgstr " in review"
+
+msgid "Todos"
+msgstr "All"
+
+msgid " · atrasado: la fecha objetivo era "
+msgstr " · late: the target date was "
+
+msgid "Terminados"
+msgstr "Finished"
+
+msgid "No se pudo conectar con el hub. ¿Está corriendo "
+msgstr "Could not connect to the hub. Is "
+
+msgid "? Sin el hub, las tareas están en "
+msgstr " running? Without the hub, the tasks are in "
+
+msgid " dentro del repo."
+msgstr " inside the repo."
+
+msgid "Tablero vacío"
+msgstr "Empty board"
+
+msgid "Agregá los hitos con "
+msgstr "Add milestones with "
+
+msgid " y las tareas con “Nueva tarea”."
+msgstr " and tasks with “New task”."
+
+msgid "Todos los hitos"
+msgstr "All milestones"
+
+msgid " tareas"
+msgstr " tasks"
+
+msgid "1 oculta"
+msgstr "1 hidden"
+
+msgid " por los filtros"
+msgstr " by the filters"
+
+msgid "Hecho cuando"
+msgstr "Done when"
+
+msgid "Objetivo"
+msgstr "Goal"
+
+msgid "Ninguna con estos filtros"
+msgstr "None match these filters"
+
+msgid "Sin tareas"
+msgstr "No tasks"
+
+msgid "Cargando…"
+msgstr "Loading…"
+
+msgid "No se pudo leer el historial ("
+msgstr "Could not read the history ("
+
+msgid "Sin historial: el proyecto no está en un repo de git."
+msgstr "No history: the project is not in a git repo."
+
+msgid "Todavía no hay commits de esta tarea."
+msgstr "No commits of this task yet."
+
+msgid "Sin commitear"
+msgstr "Uncommitted"
+
+msgid "Borrada"
+msgstr "Deleted"
+
+msgid "Historial"
+msgstr "History"
+
+msgid "Ocultar"
+msgstr "Hide"
+
+msgid "Ver"
+msgstr "Show"
+
+msgid "Capturas"
+msgstr "Screenshots"
+
+msgid "Ver captura "
+msgstr "View screenshot "
+
+msgid "Agregar una captura (también se puede pegar o soltar sobre el detalle)"
+msgstr "Add a screenshot (you can also paste or drop it on the detail)"
+
+msgid "+ Captura"
+msgstr "+ Screenshot"
+
+msgid "Solo imágenes PNG, JPEG, GIF o WebP."
+msgstr "Only PNG, JPEG, GIF or WebP images."
+
+msgid " pesa más de 10 MB."
+msgstr " is larger than 10 MB."
+
+msgid "Captura "
+msgstr "Screenshot "
+
+msgid "Anterior"
+msgstr "Previous"
+
+msgid "Siguiente"
+msgstr "Next"
+
+msgid "¿Quitar la captura?"
+msgstr "Remove the screenshot?"
+
+msgid "Sí, quitar"
+msgstr "Yes, remove"
+
+msgid "No"
+msgstr "No"
+
+msgid "La saca de la tarea; si la había guardado la app (compass/images/) y nadie más la usa, borra el archivo"
+msgstr "Removes it from the task; if the app saved it (compass/images/) and nothing else uses it, the file is deleted"
+
+msgid "Quitar"
+msgstr "Remove"
+
+msgid "Cerrar"
+msgstr "Close"
+
+msgid "Tareas sin terminar, por tamaño"
+msgstr "Unfinished tasks, by size"
+
+msgid "Falta "
+msgstr "Left: "
+
+msgid " sin estimar"
+msgstr " not estimated"
+
+msgid "Fecha objetivo del hito (scompass milestone set "
+msgstr "Milestone target date (scompass milestone set "
+
+msgid " --due …)"
+msgstr " --due …)"
+
+msgid "Atrasado · "
+msgstr "Late · "
+
+msgid "Hoy · "
+msgstr "Today · "
+
+msgid "Objetivo "
+msgstr "Target "
+
+msgid "Vencida"
+msgstr "Overdue"
+
+msgid "Vence hoy"
+msgstr "Due today"
+
+msgid "Vencida · "
+msgstr "Overdue · "
+
+msgid "Vence"
+msgstr "Due"
+
+msgid "Hora"
+msgstr "Time"
+
+msgid "Quitar fecha"
+msgstr "Remove date"
+
+msgid "Estimación: chica, mediana o grande"
+msgstr "Estimate: small, medium or large"
+
+msgid "Nadie"
+msgstr "Nobody"
+
+msgid "Quitar etiqueta "
+msgstr "Remove tag "
+
+msgid "+ etiqueta"
+msgstr "+ tag"
+
+msgid "Ordenadas por "
+msgstr "Sorted by "
+
+msgid ": arrastrar solo cambia el estado (con orden manual, también reordena)"
+msgstr ": dragging only changes the status (with manual sort, it also reorders)"
+
+msgid "Prioridad alta"
+msgstr "High priority"
+
+msgid "Tiene referencias rotas"
+msgstr "Has broken references"
+
+msgid " referencias a documentos"
+msgstr " references to documents"
+
+msgid "Desbloqueada, en Revisión: "
+msgstr "Unblocked, in Review: "
+
+msgid "Desbloqueada en revisión"
+msgstr "Unblocked in review"
+
+msgid " pasos"
+msgstr " steps"
+
+msgid "Ancho del panel"
+msgstr "Panel width"
+
+msgid "Arrastrá para cambiar el ancho · doble clic: ancho original"
+msgstr "Drag to change the width · double-click: original width"
+
+msgid "Hecho: "
+msgstr "Done: "
+
+msgid "Texto del paso"
+msgstr "Step text"
+
+msgid "Texto corto del paso"
+msgstr "Short step text"
+
+msgid "Detalle del paso"
+msgstr "Step detail"
+
+msgid "Detalle (opcional): cómo, por qué, archivos, código…"
+msgstr "Detail (optional): how, why, files, code…"
+
+msgid "Guardar"
+msgstr "Save"
+
+msgid "Cancelar"
+msgstr "Cancel"
+
+msgid "Ocultar detalle"
+msgstr "Hide detail"
+
+msgid "Ver detalle"
+msgstr "Show detail"
+
+msgid "Editar paso"
+msgstr "Edit step"
+
+msgid "Editar texto y detalle"
+msgstr "Edit text and detail"
+
+msgid "Quitar paso"
+msgstr "Remove step"
+
+msgid "Respondida"
+msgstr "Answered"
+
+msgid "Pregunta abierta"
+msgstr "Open question"
+
+msgid "A revertir"
+msgstr "To revert"
+
+msgid "Revertida"
+msgstr "Reverted"
+
+msgid "Sin revisar"
+msgstr "Not reviewed"
+
+msgid "1 pregunta abierta"
+msgstr "1 open question"
+
+msgid " preguntas abiertas"
+msgstr " open questions"
+
+msgid " sin revisar"
+msgstr " not reviewed"
+
+msgid " a revertir"
+msgstr " to revert"
+
+msgid "Decisiones: "
+msgstr "Decisions: "
+
+msgid "Agregada al documento de decisiones"
+msgstr "Added to the decisions document"
+
+msgid "Respuesta"
+msgstr "Answer"
+
+msgid "Qué hacer en su lugar"
+msgstr "What to do instead"
+
+msgid "Tu respuesta"
+msgstr "Your answer"
+
+msgid "Qué hacer en su lugar (opcional)"
+msgstr "What to do instead (optional)"
+
+msgid "Responder"
+msgstr "Answer"
+
+msgid "Revertir"
+msgstr "Revert"
+
+msgid "Volver a sin revisar"
+msgstr "Back to not reviewed"
+
+msgid "Deshacer"
+msgstr "Undo"
+
+msgid "Agregarla como D-n al documento de decisiones"
+msgstr "Add it as D-n to the decisions document"
+
+msgid "Promover"
+msgstr "Promote"
+
+msgid "Retoma la sesión de Claude Code que hizo la pregunta y le manda la respuesta"
+msgstr "Resumes the Claude Code session that asked the question and sends it the answer"
+
+msgid "Seguir en el chat"
+msgstr "Continue in the chat"
+
+msgid "Por qué"
+msgstr "Why"
+
+msgid "Descartado"
+msgstr "Discarded"
+
+msgid "Qué hacer"
+msgstr "What to do"
+
+msgid "consultada"
+msgstr "asked"
+
+msgid "sin consultar"
+msgstr "not asked"
+
+msgid " abiertas"
+msgstr " open"
+
+msgid "Decisiones"
+msgstr "Decisions"
+
+msgid "Esperan"
+msgstr "Waiting"
+
+msgid "Preguntas abiertas"
+msgstr "Open questions"
+
+msgid "Todas"
+msgstr "All"
+
+msgid "Qué decisiones"
+msgstr "Which decisions"
+
+msgid "Ninguna decisión en este filtro."
+msgstr "No decisions in this filter."
+
+msgid "Todavía no hay decisiones. Los agentes las registran al trabajar (scompass decide, o add_decision en el MCP): lo que deciden sin preguntarte aparece acá para revisar."
+msgstr "No decisions yet. Agents record them as they work (scompass decide, or add_decision in the MCP): what they decide without asking you shows up here for review."
+
+msgid "Cerrar detalle"
+msgstr "Close detail"
+
+msgid "Propiedades"
+msgstr "Properties"
+
+msgid "Descripción"
+msgstr "Description"
+
+msgid "Qué hay que hacer y por qué"
+msgstr "What needs doing and why"
+
+msgid "Pasos "
+msgstr "Steps "
+
+msgid "Sin pasos todavía."
+msgstr "No steps yet."
+
+msgid "Nuevo paso"
+msgstr "New step"
+
+msgid "Agregar paso"
+msgstr "Add step"
+
+msgid "Agregar"
+msgstr "Add"
+
+msgid "Notas"
+msgstr "Notes"
+
+msgid "Cómo probarlo"
+msgstr "How to test it"
+
+msgid "Terminada "
+msgstr "Finished "
+
+msgid "Actualizada "
+msgstr "Updated "
+
+msgid "¿Borrar la tarea?"
+msgstr "Delete the task?"
+
+msgid "Tarea borrada"
+msgstr "Task deleted"
+
+msgid "Sí, borrar"
+msgstr "Yes, delete"
+
+msgid "Borrar tarea"
+msgstr "Delete task"
+
+msgid "JSON inválido"
+msgstr "Invalid JSON"
+
+msgid "no cumple el formato"
+msgstr "does not match the format"
+
+msgid "conflicto de git sin resolver"
+msgstr "unresolved git conflict"
+
+msgid "apunta a un hito que no existe"
+msgstr "points to a milestone that does not exist"
+
+msgid "falta"
+msgstr "missing"
+
+msgid "error de lectura"
+msgstr "read error"
+
+msgid "Un archivo no se pudo leer"
+msgstr "One file could not be read"
+
+msgid " archivos no se pudieron leer"
+msgstr " files could not be read"
+
+msgid "No se muestran ni se sobrescriben hasta que se corrijan a mano. Al arreglarlos, el aviso se va solo."
+msgstr "They are not shown or overwritten until they are fixed by hand. Once fixed, the warning goes away on its own."
+
+msgid "Referencias"
+msgstr "References"
+
+msgid "+ Agregar"
+msgstr "+ Add"
+
+msgid "Sin referencias."
+msgstr "No references."
+
+msgid "El proyecto no tiene documentos configurados (compass/config.json › docs)."
+msgstr "The project has no documents configured (compass/config.json › docs)."
+
+msgid "Quitar referencia"
+msgstr "Remove reference"
+
+msgid " · documento entero"
+msgstr " · whole document"
+
+msgid "⚠ Referencia rota: "
+msgstr "⚠ Broken reference: "
+
+msgid " no está"
+msgstr " is missing"
+
+msgid "Buscar la sección nueva"
+msgstr "Find the new section"
+
+msgid " · frágil"
+msgstr " · fragile"
+
+msgid "Abrir en el documento"
+msgstr "Open in the document"
+
+msgid "Archivos"
+msgstr "Files"
+
+msgid "Sin archivos del repo."
+msgstr "No repo files."
+
+msgid " ya no está en el repo"
+msgstr " is no longer in the repo"
+
+msgid "Ver en Archivos"
+msgstr "View in Files"
+
+msgid "Quitar archivo"
+msgstr "Remove file"
+
+msgid "Buscar archivo"
+msgstr "Find file"
+
+msgid "Buscar archivo del repo por nombre"
+msgstr "Find a repo file by name"
+
+msgid "Leyendo los archivos…"
+msgstr "Reading the files…"
+
+msgid "Este proyecto no está en un repo de git: no hay archivos que citar."
+msgstr "This project is not in a git repo: there are no files to cite."
+
+msgid "Ningún archivo coincide."
+msgstr "No file matches."
+
+msgid " (no existe)"
+msgstr " (does not exist)"
+
+msgid "No se puede: "
+msgstr "Not possible: "
+
+msgid " ya bloquea a "
+msgstr " already blocks "
+
+msgid "Bloqueada por"
+msgstr "Blocked by"
+
+msgid "Bloquea a"
+msgstr "Blocks"
+
+msgid "Relacionada con"
+msgstr "Related to"
+
+msgid "Vínculos"
+msgstr "Links"
+
+msgid "Sin vínculos con otras tareas."
+msgstr "No links to other tasks."
+
+msgid "Abrir la tarea"
+msgstr "Open the task"
+
+msgid "Quitar vínculo"
+msgstr "Remove link"
+
+msgid "Tipo de vínculo"
+msgstr "Link type"
+
+msgid "Buscar tarea"
+msgstr "Find task"
+
+msgid "Buscar tarea por título o código"
+msgstr "Find a task by title or code"
+
+msgid "Ninguna tarea coincide."
+msgstr "No task matches."
+
+msgid "Buscar sección"
+msgstr "Find section"
+
+msgid "Buscar documento o sección"
+msgstr "Find a document or section"
+
+msgid "Ningún documento ni sección coincide."
+msgstr "No document or section matches."
+
+msgid "Documentos del proyecto"
+msgstr "Project documents"
+
+msgid "Raíz del proyecto"
+msgstr "Project root"
+
+msgid "No está: "
+msgstr "Missing: "
+
+msgid " tarea"
+msgstr " task"
+
+msgid "sin tareas: todavía no planificado"
+msgstr "no tasks: not planned yet"
+
+msgid "Buscando…"
+msgstr "Searching…"
+
+msgid "Resultados de la búsqueda"
+msgstr "Search results"
+
+msgid " coincidencia"
+msgstr " match"
+
+msgid " coincidencias"
+msgstr " matches"
+
+msgid " en "
+msgstr " in "
+
+msgid " documento"
+msgstr " document"
+
+msgid " documentos"
+msgstr " documents"
+
+msgid "Ninguna línea de los documentos tiene esas palabras."
+msgstr "No line in the documents has those words."
+
+msgid "Antes del primer título"
+msgstr "Before the first heading"
+
+msgid "línea "
+msgstr "line "
+
+msgid "Agregado: "
+msgstr "Added: "
+
+msgid "No se pudo agregar."
+msgstr "Could not add it."
+
+msgid "Quitado de compass/config.json: "
+msgstr "Removed from compass/config.json: "
+
+msgid " (el archivo sigue ahí)"
+msgstr " (the file is still there)"
+
+msgid "No se pudo quitar."
+msgstr "Could not remove it."
+
+msgid "Buscar en los documentos"
+msgstr "Search the documents"
+
+msgid "+ Documento"
+msgstr "+ Document"
+
+msgid "Alias"
+msgstr "Alias"
+
+msgid "enemigos"
+msgstr "enemies"
+
+msgid "Minúsculas, números, - y _"
+msgstr "Lowercase, digits, - and _"
+
+msgid "Falta el alias."
+msgstr "The alias is missing."
+
+msgid "Minúsculas, números, - y _; empieza con letra o número."
+msgstr "Lowercase, digits, - and _; starts with a letter or digit."
+
+msgid "Archivo o patrón"
+msgstr "File or pattern"
+
+msgid "docs/enemigos.md o docs/**/*.md"
+msgstr "docs/enemies.md or docs/**/*.md"
+
+msgid "Ruta desde la raíz del proyecto. Se anota en compass/config.json › docs; el archivo no se toca."
+msgstr "Path from the project root. It is recorded in compass/config.json › docs; the file is not touched."
+
+msgid "Sin cambios"
+msgstr "No changes"
+
+msgid "Modificado sin commitear"
+msgstr "Modified, uncommitted"
+
+msgid "Nuevo (agregado a git)"
+msgstr "New (added to git)"
+
+msgid "Nuevo, sin seguir en git"
+msgstr "New, untracked in git"
+
+msgid "Borrado"
+msgstr "Deleted"
+
+msgid "Renombrado"
+msgstr "Renamed"
+
+msgid "El archivo no está."
+msgstr "The file is missing."
+
+msgid "¿Dejar de mostrarlo? El archivo no se borra."
+msgstr "Stop showing it? The file is not deleted."
+
+msgid "Quitar del proyecto"
+msgstr "Remove from the project"
+
+msgid "Incluido por el patrón "
+msgstr "Included by the pattern "
+
+msgid "Nuevo, agregado a git"
+msgstr "New, added to git"
+
+msgid "Cargando los cambios…"
+msgstr "Loading the changes…"
+
+msgid "Línea "
+msgstr "Line "
+
+msgid "agregada"
+msgstr "added"
+
+msgid "quitada"
+msgstr "removed"
+
+msgid "Cambios sin commitear"
+msgstr "Uncommitted changes"
+
+msgid " contra HEAD"
+msgstr " against HEAD"
+
+msgid "Sin cambios contra HEAD."
+msgstr "No changes against HEAD."
+
+msgid "Cargando el historial…"
+msgstr "Loading the history…"
+
+msgid "Último commit: "
+msgstr "Last commit: "
+
+msgid "Todavía sin commits."
+msgstr "No commits yet."
+
+msgid "Ver el documento"
+msgstr "View the document"
+
+msgid "Ver los cambios"
+msgstr "View the changes"
+
+msgid "Pueden quedar afectadas · "
+msgstr "May be affected · "
+
+msgid "1 tarea"
+msgstr "1 task"
+
+msgid "Ninguna tarea cita las secciones que cambiaron."
+msgstr "No task cites the sections that changed."
+
+msgid "Historial · "
+msgstr "History · "
+
+msgid " commits"
+msgstr " commits"
+
+msgid "Este proyecto no tiene documentos todavía. Agregá uno arriba (o con "
+msgstr "This project has no documents yet. Add one above (or with "
+
+msgid "scompass doc add <alias> <ruta>"
+msgstr "scompass doc add <alias> <path>"
+
+msgid "1 referencia rota"
+msgstr "1 broken reference"
+
+msgid " referencias rotas"
+msgstr " broken references"
+
+msgid "Agregá <!-- id: … --> debajo del título en "
+msgstr "Add <!-- id: … --> below the heading in "
+
+msgid " (o scompass doc stamp-ids "
+msgstr " (or scompass doc stamp-ids "
+
+msgid "Sin id: el enlace se rompe si cambiás el título"
+msgstr "No id: the link breaks if you change the heading"
+
+msgid "Copia [["
+msgstr "Copies [["
+
+msgid "]] para pegar en notas o pasos"
+msgstr "]] to paste in notes or steps"
+
+msgid "Copiar enlace"
+msgstr "Copy link"
+
+msgid "Copiar enlace al documento"
+msgstr "Copy link to the document"
+
+msgid "Índice de "
+msgstr "Contents of "
+
+msgid "Sin tareas: todavía no planificada"
+msgstr "No tasks: not planned yet"
+
+msgid "Cambió sin commitear"
+msgstr "Changed, uncommitted"
+
+msgid "Ficha del documento"
+msgstr "Document info"
+
+msgid "Referenciada por · "
+msgstr "Referenced by · "
+
+msgid "Ninguna tarea referencia esta sección: parte del diseño todavía sin planificar."
+msgstr "No task references this section: part of the design not planned yet."
+
+msgid "Referencian el documento · "
+msgstr "Reference the document · "
+
+msgid "Elegí una sección del índice para ver qué tareas la referencian."
+msgstr "Pick a section from the contents to see which tasks reference it."
+
+msgid "Secciones sin tareas · "
+msgstr "Sections without tasks · "
+
+msgid "Índice y tareas de la sección"
+msgstr "Contents and tasks of the section"
+
+msgid "Ir a una sección"
+msgstr "Go to a section"
+
+msgid "Índice"
+msgstr "Contents"
+
+msgid "Filtrar archivos por nombre"
+msgstr "Filter files by name"
+
+msgid "Volver a leer los archivos y el estado de git"
+msgstr "Read the files and the git status again"
+
+msgid "Actualizar"
+msgstr "Refresh"
+
+msgid "Archivos encontrados"
+msgstr "Files found"
+
+msgid "Sin cambios: todo está commiteado."
+msgstr "No changes: everything is committed."
+
+msgid "Y "
+msgstr "And "
+
+msgid " más: afiná el filtro."
+msgstr " more: narrow the filter."
+
+msgid "1 archivo con cambios"
+msgstr "1 file with changes"
+
+msgid " archivos con cambios"
+msgstr " files with changes"
+
+msgid "Archivos del repo"
+msgstr "Repo files"
+
+msgid "Sin rama remota que seguir."
+msgstr "No remote branch to track."
+
+msgid "Al día con la rama remota."
+msgstr "Up to date with the remote branch."
+
+msgid " commit sin subir"
+msgstr " commit not pushed"
+
+msgid " commits sin subir"
+msgstr " commits not pushed"
+
+msgid " por traer"
+msgstr " to pull"
+
+msgid "Rama "
+msgstr "Branch "
+
+msgid "HEAD suelto, sin rama"
+msgstr "Detached HEAD, no branch"
+
+msgid "Cambios sin commitear · "
+msgstr "Uncommitted changes · "
+
+msgid "Ninguno: todo está commiteado."
+msgstr "None: everything is committed."
+
+msgid "Últimos commits"
+msgstr "Latest commits"
+
+msgid "No hay un archivo "
+msgstr "There is no file "
+
+msgid " en el repo (o git lo ignora)."
+msgstr " in the repo (or git ignores it)."
+
+msgid "Ver el archivo"
+msgstr "View the file"
+
+msgid "Abrir en Documentos"
+msgstr "Open in Documents"
+
+msgid "Citado por · "
+msgstr "Cited by · "
+
+msgid "Archivo binario o muy grande: cambió, pero no hay un diff de texto para mostrar."
+msgstr "Binary or very large file: it changed, but there is no text diff to show."
+
+msgid "El diff es muy largo: se muestra el principio."
+msgstr "The diff is very long: showing the beginning."
+
+msgid "Archivo binario ("
+msgstr "Binary file ("
+
+msgid "): no se muestra."
+msgstr "): not shown."
+
+msgid "Archivo de "
+msgstr "File of "
+
+msgid ": es muy grande para mostrarlo acá."
+msgstr ": too large to show here."
+
+msgid "Enlace simbólico a "
+msgstr "Symbolic link to "
+
+msgid ": no se sigue."
+msgstr ": not followed."
+
+msgid "Borrado del disco sin commitear: Ver los cambios muestra lo que tenía."
+msgstr "Deleted from disk, uncommitted: View the changes shows what it had."
+
+msgid "No está en el disco."
+msgstr "Not on disk."
+
+msgid "No se puede mostrar."
+msgstr "Cannot be shown."
+
+msgid "Este proyecto no está en un repo de git: no hay archivos ni cambios que mostrar."
+msgstr "This project is not in a git repo: there are no files or changes to show."
+
+msgid "Solo con cambios"
+msgstr "Only with changes"
+
+msgid "HEAD suelto"
+msgstr "Detached HEAD"
+
+msgid " archivos"
+msgstr " files"
+
+msgid "cada día"
+msgstr "every day"
+
+msgid "cada semana"
+msgstr "every week"
+
+msgid "cada mes"
+msgstr "every month"
+
+msgid "cada año"
+msgstr "every year"
+
+msgid "días"
+msgstr "days"
+
+msgid "semanas"
+msgstr "weeks"
+
+msgid "meses"
+msgstr "months"
+
+msgid "años"
+msgstr "years"
+
+msgid "cada {0} {1}"
+msgstr "every {0} {1}"
+
+msgid "Cada cuántos"
+msgstr "How often"
+
+msgid "Cada cuántos (2: cada 2 días)"
+msgstr "How often (2: every 2 days)"
+
+msgid "La lista cambió en otro lado; se actualizó. Probá de nuevo."
+msgstr "The list changed elsewhere; it was refreshed. Try again."
+
+msgid "Vencidos"
+msgstr "Overdue"
+
+msgid "Hoy"
+msgstr "Today"
+
+msgid "Más adelante"
+msgstr "Later"
+
+msgid "Tildados"
+msgstr "Checked"
+
+msgid "Listas"
+msgstr "Lists"
+
+msgid "Lista creada"
+msgstr "List created"
+
+msgid "Nueva lista"
+msgstr "New list"
+
+msgid "+ Nueva lista"
+msgstr "+ New list"
+
+msgid "Este proyecto no tiene listas todavía. Creá una con «+ Nueva lista» (pendientes, compras, ideas…)."
+msgstr "This project has no lists yet. Create one with “+ New list” (to-dos, shopping, ideas…)."
+
+msgid "Vacía."
+msgstr "Empty."
+
+msgid "agrupada por fecha"
+msgstr "grouped by date"
+
+msgid "lista simple"
+msgstr "simple list"
+
+msgid "Quitado 1 tildado"
+msgstr "Removed 1 checked item"
+
+msgid "Quitados {0} tildados"
+msgstr "Removed {0} checked items"
+
+msgid "Quitar tildados"
+msgstr "Remove checked"
+
+msgid "Nuevo nombre de la lista"
+msgstr "New name for the list"
+
+msgid "Renombrar"
+msgstr "Rename"
+
+msgid "¿Borrar la lista \"{0}\" con sus {1} ítems? Se puede recuperar con git."
+msgstr "Delete the list \"{0}\" with its {1} items? It can be recovered with git."
+
+msgid "Lista borrada"
+msgstr "List deleted"
+
+msgid "Borrar"
+msgstr "Delete"
+
+msgid "Para repetirlo hace falta una fecha."
+msgstr "It needs a date to repeat."
+
+msgid "Agregar a "
+msgstr "Add to "
+
+msgid "Agregar…"
+msgstr "Add…"
+
+msgid "Repetir"
+msgstr "Repeat"
+
+msgid "No se repite"
+msgstr "Does not repeat"
+
+msgid "↻ {0}: la próxima vez es el {1}"
+msgstr "↻ {0}: next time is {1}"
+
+msgid "Al tildarlo, la fecha avanza "
+msgstr "When checked, the date moves "
+
+msgid "Crea una tarea con este texto y deja el ítem enlazado"
+msgstr "Creates a task with this text and links the item to it"
+
+msgid "Pasar a tarea"
+msgstr "Turn into task"
+
+msgid "Editar "
+msgstr "Edit "
+
+msgid "Quitar "
+msgstr "Remove "
+
+msgid "Texto"
+msgstr "Text"
+
+msgid "Tarea creada en {0}: {1}"
+msgstr "Task created in {0}: {1}"
+
+msgid "Pasar a tarea "
+msgstr "Turn into task "
+
+msgid "Crear tarea"
+msgstr "Create task"
+
+msgid "✓ Anda"
+msgstr "✓ Works"
+
+msgid "✗ Falla"
+msgstr "✗ Fails"
+
+msgid "La sesión cambió en otro lado; se actualizó. Probá de nuevo."
+msgstr "The session changed elsewhere; it was refreshed. Try again."
+
+msgid "Resultado"
+msgstr "Result"
+
+msgid "Pasar a Hecho"
+msgstr "Move to Done"
+
+msgid "Volver a En curso"
+msgstr "Back to In progress"
+
+msgid "Playtest"
+msgstr "Playtest"
+
+msgid "Playtest · "
+msgstr "Playtest · "
+
+msgid "Anterior de la sesión"
+msgstr "Previous in the session"
+
+msgid "Siguiente →"
+msgstr "Next →"
+
+msgid "Nota de la prueba"
+msgstr "Test note"
+
+msgid "Qué se vio al probarla…"
+msgstr "What you saw when testing it…"
+
+msgid "Elegí una tarea de la sesión para verla acá."
+msgstr "Pick a task from the session to see it here."
+
+msgid "Agregá tareas a la sesión y elegí una para verla acá."
+msgstr "Add tasks to the session and pick one to see it here."
+
+msgid "Abrir la primera sin probar"
+msgstr "Open the first untested one"
+
+msgid "Sesiones de playtest"
+msgstr "Playtest sessions"
+
+msgid "Sin probar"
+msgstr "Untested"
+
+msgid "Sesión creada"
+msgstr "Session created"
+
+msgid "Nueva sesión"
+msgstr "New session"
+
+msgid "+ Nueva sesión"
+msgstr "+ New session"
+
+msgid "Todavía no hay sesiones de playtest. Creá una con «+ Nueva sesión» y cargale las tareas en el orden en que las vas a probar."
+msgstr "No playtest sessions yet. Create one with “+ New session” and load the tasks in the order you will test them."
+
+msgid "Crear una con las {0} en Revisión"
+msgstr "Create one with the {0} in Review"
+
+msgid "{0} de {1} probadas"
+msgstr "{0} of {1} tested"
+
+msgid "1 falla"
+msgstr "1 fails"
+
+msgid "{0} fallan"
+msgstr "{0} fail"
+
+msgid "vacía"
+msgstr "empty"
+
+msgid "Vuelve todas a «sin probar», para otra pasada"
+msgstr "Sets them all back to “untested”, for another pass"
+
+msgid "¿Volver las {0} probadas a «sin probar»? Las notas quedan, y el cambio se ve en todas las sesiones que tienen esas tareas."
+msgstr "Set the {0} tested back to “untested”? The notes stay, and the change shows in every session that has those tasks."
+
+msgid "Sesión reiniciada"
+msgstr "Session reset"
+
+msgid "Reiniciar"
+msgstr "Reset"
+
+msgid "Nuevo nombre de la sesión"
+msgstr "New name for the session"
+
+msgid "¿Borrar la sesión \"{0}\"? Las tareas no se tocan. Se puede recuperar con git."
+msgstr "Delete the session \"{0}\"? The tasks are not touched. It can be recovered with git."
+
+msgid "Sesión borrada"
+msgstr "Session deleted"
+
+msgid "Sin tareas. Buscalas arriba, o cargá las que están en Revisión."
+msgstr "No tasks. Search for them above, or load the ones in Review."
+
+msgid "Agregar tarea a "
+msgstr "Add task to "
+
+msgid "Agregar tarea: buscar por título o código"
+msgstr "Add task: search by title or code"
+
+msgid "Agrega al final las tareas en Revisión que todavía no están, en el orden del tablero"
+msgstr "Adds at the end the tasks in Review that are not there yet, in board order"
+
+msgid "Agregada 1 tarea"
+msgstr "Added 1 task"
+
+msgid "Agregadas {0} tareas"
+msgstr "Added {0} tasks"
+
+msgid "+ Las de Revisión ({0})"
+msgstr "+ The ones in Review ({0})"
+
+msgid "Ninguna tarea coincide (o ya están en la sesión)."
+msgstr "No task matches (or they are already in the session)."
+
+msgid " (la tarea ya no existe)"
+msgstr " (the task no longer exists)"
+
+msgid "Subir"
+msgstr "Move up"
+
+msgid "Bajar"
+msgstr "Move down"
+
+msgid "Sacar de la sesión"
+msgstr "Remove from the session"
+
+msgid "Copiado: "
+msgstr "Copied: "
+
+msgid "1 cambio del tablero sin commitear"
+msgstr "1 uncommitted board change"
+
+msgid " cambios del tablero sin commitear"
+msgstr " uncommitted board changes"
+
+msgid "Sin commitear en git:\n"
+msgstr "Uncommitted in git:\n"
+
+msgid "Primero hace falta al menos un hito."
+msgstr "You need at least one milestone first."
+
+msgid "Tarea agregada"
+msgstr "Task added"
+
+msgid "Tarea agregada; los filtros la ocultan"
+msgstr "Task added; the filters hide it"
+
+msgid " · Scope Compass"
+msgstr " · Scope Compass"
+
+msgid "{0} · tocá para volver al tablero"
+msgstr "{0} · tap to go back to the board"
+
+msgid "Preguntá o pedí algo sobre el tablero"
+msgstr "Ask or request something about the board"
+
+msgid "Mensaje"
+msgstr "Message"
+
+msgid "No se encontró Claude Code en este equipo."
+msgstr "Claude Code was not found on this computer."
+
+msgid "1 herramienta"
+msgstr "1 tool"
+
+msgid " herramientas"
+msgstr " tools"
+
+msgid "en curso"
+msgstr "running"
+
+msgid "bien"
+msgstr "ok"
+
+msgid "falló"
+msgstr "failed"
+
+msgid " tokens"
+msgstr " tokens"
+
+msgid "Entrada "
+msgstr "Input "
+
+msgid " · salida "
+msgstr " · output "
+
+msgid " · caché leída "
+msgstr " · cache read "
+
+msgid " · caché escrita "
+msgstr " · cache written "
+
+msgid "Costo estimado por Claude Code; con una suscripción no se cobra aparte."
+msgstr "Cost estimated by Claude Code; with a subscription it is not billed separately."
+
+msgid "Cuenta: sin datos"
+msgstr "Account: no data"
+
+msgid "Sin login de Claude (usa su settings.json)"
+msgstr "No Claude login (uses its settings.json)"
+
+msgid "5 h"
+msgstr "5 h"
+
+msgid "Semana"
+msgstr "Week"
+
+msgid "El uso de los límites aparece después de la primera respuesta."
+msgstr "Limit usage shows up after the first answer."
+
+msgid "Uso "
+msgstr "Usage "
+
+msgid "se renueva "
+msgstr "resets "
+
+msgid "dato de "
+msgstr "as of "
+
+msgid "antes"
+msgstr "earlier"
+
+msgid " · usando el excedente"
+msgstr " · using overage"
+
+msgid "Perfil"
+msgstr "Profile"
+
+msgid "Esta conversación: "
+msgstr "This conversation: "
+
+msgid " tokens · "
+msgstr " tokens · "
+
+msgid "con la tarea "
+msgstr "with the task "
+
+msgid "Cortado"
+msgstr "Stopped"
+
+msgid "Chat"
+msgstr "Chat"
+
+msgid "Conversaciones"
+msgstr "Conversations"
+
+msgid "Nueva"
+msgstr "New"
+
+msgid "Cerrar el chat"
+msgstr "Close the chat"
+
+msgid "¿Borrar?"
+msgstr "Delete?"
+
+msgid "Borrar la conversación "
+msgstr "Delete the conversation "
+
+msgid "Todavía no hay conversaciones."
+msgstr "No conversations yet."
+
+msgid "El chat usa Claude Code, instalado en este equipo y con tu cuenta: instalalo ("
+msgstr "The chat uses Claude Code, installed on this computer with your account: install it ("
+
+msgid "), entrá una vez con "
+msgstr "), sign in once with "
+
+msgid " y volvé a abrir el panel."
+msgstr " and open the panel again."
+
+msgid "Una conversación con Claude Code sobre este proyecto: lee y escribe el tablero y lee los archivos, pero no edita ni corre comandos."
+msgstr "A conversation with Claude Code about this project: it reads and writes the board and reads the files, but does not edit them or run commands."
+
+msgid "Escribiendo…"
+msgstr "Typing…"
+
+msgid "Con la tarea "
+msgstr "With the task "
+
+msgid "No mandar la tarea"
+msgstr "Don't send the task"
+
+msgid "Cortar"
+msgstr "Stop"
+
+msgid "Enviar"
+msgstr "Send"
+
+msgid "Respuesta a tu pregunta en la tarea "
+msgstr "Answer to your question in the task "
+
+msgid "Automático (el del navegador)"
+msgstr "Automatic (the browser's)"
+
+msgid "Para la web, el Inicio y la terminal de este equipo."
+msgstr "For the web, Home and the terminal on this computer."
+
+msgid "Fijado por SCOMPASS_LANG={0}."
+msgstr "Set by SCOMPASS_LANG={0}."
+
+msgid "Idioma"
+msgstr "Language"
+
+msgid "Ajustes"
+msgstr "Settings"
+
+msgid "Bordes de fantasía"
+msgstr "Fantasy borders"
+
+msgid "Marcos de pixel art en botones, tarjetas y paneles. Usa siempre el tema oscuro. Se guarda en este navegador."
+msgstr "Pixel art frames on buttons, cards and panels. Always uses the dark theme. Saved in this browser."
+
+msgid "Scope Compass"
+msgstr "Scope Compass"
+
+msgid "← Inicio"
+msgstr "← Home"
+
+msgid "Proyecto"
+msgstr "Project"
+
+msgid "Documentos"
+msgstr "Documents"
+
+msgid "Sin conexión con el hub · reintentando"
+msgstr "No connection to the hub · retrying"
+
+msgid "Nueva tarea"
+msgstr "New task"
+
+msgid "Inicio"
+msgstr "Home"
+
+msgid "Vistas"
+msgstr "Views"
+
+msgid "Chat con Claude Code"
+msgstr "Chat with Claude Code"
+
+msgid "Hitos"
+msgstr "Milestones"
+
+msgid "Qué hay que hacer"
+msgstr "What needs doing"
+
+msgid "Lista de tareas"
+msgstr "Task list"
+
+msgid "Detalle de la tarea"
+msgstr "Task detail"
+
+msgid "Tarea de la sesión"
+msgstr "Session task"

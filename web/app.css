@@ -714,6 +714,8 @@ table.tasks { width: 100%; border-collapse: collapse; font-size: 15px; }
 .settings-btn svg { width: 18px; height: 18px; }
 dialog.settings label.opt { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; cursor: pointer; }
 dialog.settings label.opt input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+dialog.settings div.opt { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 8px 0; }
+dialog.settings div.opt .muted { flex-basis: 100%; }
 dialog.settings h2 { margin: 0 0 6px; font-family: var(--font-display); font-size: 18px; letter-spacing: .04em; }
 
 /* Chat (M25, §32): panel a la izquierda, así el detalle de la tarea sigue a la derecha. En pantallas anchas el tablero
