@@ -1,7 +1,7 @@
 // API de documentos (spec §10.4, §20): índice, documento y sección renderizados, backlinks, referencias rotas y el
 // estado de git de cada documento. Los documentos se releen en cada request: son archivos chicos y siempre están al día.
 // Lo único que escribe es config.json › docs (agregar o quitar un documento).
-import { changeDocs, checkRefs, diffSections, findDoc, findSection, LINK, loadDocs, refText, searchDocs, sectionMarkdown } from './docs.js';
+import { changeDocs, checkRefs, diffSections, docCoverage, findDoc, findSection, LINK, loadDocs, refText, searchDocs, sectionMarkdown } from './docs.js';
 import { docDiff, docLog, docsStatus } from './git.js';
 import { renderBBCode, renderBlocks, renderMarkdown } from './render.js';
 import { docChanges, docText, rememberVersion } from './doc-versions.js';
@@ -125,6 +125,16 @@ export function registerDocsApi(app, { store, projectDir, validators, onDocsChan
     const entry = await changeDocs(projectDir, validators, { remove: req.params.alias });
     await onDocsChanged(entry.alias);
     return reply.code(204).send();
+  });
+
+  // Cobertura (§43): por sección, qué tareas la cubren. ?doc=<alias> uno solo; ?uncovered=1 solo las que no tiene ninguna.
+  app.get('/api/refs/coverage', async (req) => {
+    const { docs, tasks } = await context(store, projectDir);
+    const alias = req.query.doc || null;
+    if (alias && !docs.some((d) => d.alias === alias)) throw new StoreError('not_found', `no hay un documento "${alias}"`);
+    const cov = docCoverage(docs, tasks, { alias });
+    if (req.query.uncovered === '1' || req.query.uncovered === 'true') for (const d of cov) d.sections = d.sections.filter((s) => s.state === 'none');
+    return { docs: cov };
   });
 
   app.get('/api/refs/broken', async () => {

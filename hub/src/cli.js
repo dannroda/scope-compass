@@ -8,7 +8,7 @@ import { compileForbidden, describeMatch, findForbidden, matchText } from './for
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import { exportMarkdown } from './export-md.js';
-import { changeDocs, checkRefs, diffSections, loadDocs, resolveRef, searchDocs, sectionMarkdown, stampIds, suggestRefs } from './docs.js';
+import { changeDocs, checkRefs, diffSections, docCoverage, loadDocs, resolveRef, searchDocs, sectionMarkdown, stampIds, suggestRefs } from './docs.js';
 import { blobEtag, docChanges, docText, rememberVersion } from './doc-versions.js';
 import { writeAtomic } from './store/atomic.js';
 import { openUrl as openInBrowser } from './desktop.js';
@@ -162,8 +162,9 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   doc diff <alias>                          cambios sin commitear del documento (contra HEAD) y las secciones que toca
   doc changed <alias>[#<id>] --since <etag> qué secciones cambiaron desde el etag que dio doc show (sale con 1 si cambió)
   refs check                                referencias rotas (sale con 1 si hay) y frágiles; también archivos que ya no están
-  lint                                      patrones prohibidos (config.json › forbidden) en compass/ y en los documentos (sale con 1 si hay)
   refs suggest                              propone refs a partir de citas "gdd.md §4.3" (no aplica nada)
+  refs coverage [<alias>] [--uncovered]     por sección de los documentos, qué tareas la cubren y si están hechas
+  lint                                      patrones prohibidos (config.json › forbidden) en compass/ y en los documentos (sale con 1 si hay)
   ref add|rm <tarea> <alias>[#<id>]         agrega o quita una referencia (sin #<id>, al documento entero)
   file add|rm <tarea> <ruta>                vincula un archivo del repo a la tarea (un script, una escena; acepta res://)
   image add|rm <tarea> <ruta>               captura de la tarea: una imagen del repo, o una de afuera, que se copia a
@@ -204,7 +205,7 @@ const OPTIONS = {
   tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, size: { type: 'string' }, assignee: { type: 'string' },
   at: { type: 'string' }, review: { type: 'boolean' }, note: { type: 'string' },
   why: { type: 'string' }, alternatives: { type: 'string' }, ask: { type: 'boolean' }, session: { type: 'string' }, reply: { type: 'string' }, decisions: { type: 'string' },
-  pending: { type: 'boolean' }, revert: { type: 'boolean' }, 'in-project': { type: 'boolean' }, all: { type: 'boolean' }, board: { type: 'string' },
+  pending: { type: 'boolean' }, revert: { type: 'boolean' }, 'in-project': { type: 'boolean' }, all: { type: 'boolean' }, uncovered: { type: 'boolean' }, board: { type: 'string' },
   title: { type: 'string' }, description: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
@@ -989,9 +990,29 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     },
 
     async refs() {
-      if (rest[0] !== 'check' && rest[0] !== 'suggest') throw new UsageError(`subcomando desconocido: refs ${rest[0] ?? ''} (check, suggest)`);
+      if (!['check', 'suggest', 'coverage'].includes(rest[0])) throw new UsageError(`subcomando desconocido: refs ${rest[0] ?? ''} (check, suggest, coverage)`);
       const all = await store.loadAll();
       const docs = await loadDocs(project, all.config);
+      if (rest[0] === 'coverage') {
+        const alias = rest[1] ?? null;
+        if (alias && !docs.some((d) => d.alias === alias)) throw new StoreError('not_found', `no hay un documento "${alias}"`);
+        const cov = docCoverage(docs, [...all.tasks].map(([id, doc]) => ({ id, ...doc })), { alias });
+        if (o.uncovered) for (const d of cov) d.sections = d.sections.filter((s) => s.state === 'none');
+        if (o.json) return done({ docs: cov });
+        const label = { done: 'hecha', open: 'abierta', inside: 'adentro', none: 'sin tareas' };
+        const who = (ts) => ts.map((t) => `${t.code || t.id}${t.status === 'done' ? ' ✓' : ''}${t.from ? ` (por ${t.from})` : ''}`).join(', ');
+        for (const d of cov) {
+          if (d.missing) { print(`${d.alias} (${d.path}): no está`); continue; }
+          const c = d.counts;
+          print(`${d.alias} (${d.path}): ${c.done} hechas · ${c.open} abiertas · ${c.inside} con tareas adentro · ${c.none} sin tareas`);
+          if (d.whole.length) print(`  documento entero: ${who(d.whole)}`);
+          for (const s of d.sections) {
+            print(`  ${label[s.state].padEnd(10)} ${'  '.repeat(Math.max(0, s.level - 1))}${s.id}${s.tasks.length ? `: ${who(s.tasks)}` : ''}`);
+          }
+          if (o.uncovered && !d.sections.length) print('  todas las secciones tienen tareas');
+        }
+        return 0;
+      }
       if (rest[0] === 'suggest') {
         const s = suggestRefs(docs, [...all.tasks].map(([id, doc]) => ({ id, ...doc })));
         if (o.json) return done({ suggestions: s });

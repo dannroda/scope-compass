@@ -293,3 +293,11 @@ test('patrones prohibidos (§42): una escritura con una coincidencia da isError 
   assert.match(r.content[0].text, /notes: «Game_Character\.c» coincide con el patrón prohibido .*archivo \.c/);
   assert.deepEqual(await task('m1-04'), before);
 });
+
+test('doc_coverage (§43): lo mismo que refs coverage --json', async () => {
+  const s = mcp();
+  const r = await s.tool('doc_coverage', { doc: 'spec', uncovered: true });
+  assert.equal(r.isError, undefined);
+  assert.deepEqual(data(r), await cli(['refs', 'coverage', 'spec', '--uncovered', '--json']));
+  assert.equal(data(r).docs[0].alias, 'spec');
+});

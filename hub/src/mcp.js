@@ -67,6 +67,9 @@ const TOOLS = [
   { name: 'show_doc', read: true, description: 'Un documento entero (alias) o una sección (alias#id), en markdown, con el etag del documento. Con since (el etag que ya leíste): si no cambió, contesta solo eso; si cambió, el texto y qué secciones cambiaron, se agregaron o se quitaron.',
     props: { ref: str('alias o alias#id-de-sección (list_docs los muestra)'), since: str('etag del documento que ya leíste (lo dio show_doc)') }, required: ['ref'], argv: (a) => [[], ['doc', 'show', a.ref]] },
 
+  { name: 'doc_coverage', read: true, description: 'Cobertura de los documentos: por sección, qué tareas la referencian (o a una sección que la contiene) y su estado (done: todas hechas; open: alguna sin terminar; inside: solo secciones de adentro; none: ninguna tarea). uncovered: solo las secciones sin tareas.',
+    props: { doc: str('alias del documento (todos si falta)'), uncovered: bool('solo las secciones que ninguna tarea toca') }, argv: (a) => [opts(a, named('uncovered')), ['refs', 'coverage', ...(a.doc ? [a.doc] : [])]] },
+
   { name: 'add_task', description: 'Crea una tarea en un hito (el id sale solo: siguiente número del hito). Con una etiqueta que tiene plantilla y sin description, la descripción arranca con la plantilla.',
     props: { title: str('título'), milestone: str('id del hito (m05)'), code: str('número visible (5.9)'), status: str('estado inicial (todo por defecto)', { enum: STATUSES }),
       description: str('qué hay que hacer y por qué'), due: str(DUE), tags: strs('etiquetas (usá las que ya existen)'), priority: str('prioridad', { enum: ['high', 'medium', 'low'] }),

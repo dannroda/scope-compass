@@ -554,3 +554,13 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Revisar solo en el MCP: la web y la CLI también escriben.
   - Revisar el código del proyecto y los commits: eso es de los ganchos de git del proyecto, que pueden llamar a `scompass lint`.
   - Patrones en una lista global del usuario: no viajan con el proyecto, y lo prohibido depende del proyecto.
+
+## D53 · Cobertura: una sección de afuera cubre las de adentro, y "hecha" es todas hechas
+
+- **Qué:** en la cobertura de un documento (spec §43), las tareas que referencian una sección cuentan también para las de adentro. Una sección está hecha cuando todas las tareas que la cubren están en `done`. Una referencia al documento entero no cubre secciones.
+- **Por qué:** quien referencia "Combate" está pidiendo todo el combate. Si las subsecciones quedaran sin tareas, la lista de diseño sin planificar se llenaría de falsos positivos. Al revés no vale: una tarea sobre "Ventanas de ataque" no cubre todo Combate, por eso esa sección queda `inside` y no `done`. El documento entero es demasiado amplio para decir que una sección está planificada.
+- **Descartado:**
+  - Solo referencias directas, como mostraba la web: marcaba sin planificar secciones que una tarea más amplia ya cubre.
+  - Contar `review` como hecha: todavía puede volver a En curso.
+  - Hecha si al menos una tarea está hecha: con otra abierta, la sección sigue en trabajo.
+  - Un porcentaje por sección: con pocas tareas por sección, un número así dice menos que los cuatro estados.

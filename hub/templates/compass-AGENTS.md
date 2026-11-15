@@ -14,7 +14,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
 
 ## MCP
 
-Si en tus herramientas aparece el servidor `scompass` (`list_tasks`, `show_task`, `add_task`, `move_task`, `check_step`…), usalo en lugar de correr `scompass` por Bash: son los mismos comandos con `--json`, con los parámetros tipados, y no piden permiso por cada llamada. Lo que sigue vale igual (modelo, etags, pasos desde 1); los nombres de las herramientas siguen a los comandos (`set` es `update_task`, `step add` es `add_step`, `decide` es `add_decision`, `decision ok` es `review_decision`, `playtest pass` es `set_playtest_result`). Listas, sesiones de playtest (crear, ordenar), capturas e `init`/`serve` siguen por la CLI.
+Si en tus herramientas aparece el servidor `scompass` (`list_tasks`, `show_task`, `add_task`, `move_task`, `check_step`…), usalo en lugar de correr `scompass` por Bash: son los mismos comandos con `--json`, con los parámetros tipados, y no piden permiso por cada llamada. Lo que sigue vale igual (modelo, etags, pasos desde 1); los nombres de las herramientas siguen a los comandos (`set` es `update_task`, `step add` es `add_step`, `decide` es `add_decision`, `decision ok` es `review_decision`, `playtest pass` es `set_playtest_result`, `refs coverage` es `doc_coverage`). Listas, sesiones de playtest (crear, ordenar), capturas e `init`/`serve` siguen por la CLI.
 
 Para tenerlo en Claude Code en todos los proyectos (toma el de la carpeta de la sesión; `dir` en cada herramienta apunta a otro):
 
@@ -197,6 +197,7 @@ scompass ref add m5-02 spec#godot  # la tarea cita esa sección
 scompass ref add m5-02 spec        # la tarea cita el documento entero
 scompass ref rm m5-02 spec#godot
 scompass refs check                # referencias rotas (sale con 1 si hay), también archivos que ya no están
+scompass refs coverage gdd         # por sección: qué tareas la cubren (también desde una sección de afuera) y si están hechas; --uncovered, las que ninguna toca
 scompass file add m5-02 player/player.gd   # la tarea toca ese archivo (acepta res://); file rm lo quita
 scompass image add m5-02 /tmp/captura.png  # captura: una de afuera se copia a compass/images/; una del repo se cita
 scompass image rm m5-02 compass/images/m5-02-20261011-101500.png   # la saca (y borra el archivo si lo guardó la app)

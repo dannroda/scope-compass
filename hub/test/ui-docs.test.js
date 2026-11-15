@@ -469,7 +469,8 @@ test('12.5: la biblioteca agrupa los documentos por carpeta con sus tareas; nave
   assert.equal(await page.locator('.doc-card #doc-rm').count(), 0, 'un documento de un patrón no se quita solo');
   await page.waitForSelector('.backlinks .bl-task');
   assert.match(await page.textContent('.backlinks .label'), /Referencian el documento · 1 tarea/);
-  assert.equal(await page.textContent('.unplanned summary'), 'Secciones sin tareas · 2 de 3');
+  // El título que contiene a slime tiene una tarea adentro (§43): no cuenta como sin tareas.
+  assert.equal(await page.textContent('.unplanned summary'), 'Secciones sin tareas · 1 de 3');
   // Navegar por el árbol; las carpetas se pliegan.
   await page.click('.tree-doc:has-text("paleta.md")');
   await page.waitForSelector('article.doc-body[data-ready="1"][data-alias="docs/arte/paleta"]');
@@ -553,3 +554,25 @@ async function milestone(page, code) {
   if (!(await page.isVisible(`#miles > .chip:has-text("${code}")`))) await page.click('#ms-done');
   await page.click(`#miles .chip:has-text("${code}")`);
 }
+
+test('§43: cobertura en el índice (hecha, abierta, adentro, sin tareas) y las tareas de la sección de afuera', async () => {
+  await setTask('m1-02', { refs: [{ doc: 'gdd.md', section: 'combate' }], status: 'done' });
+  await setTask('m1-03', { status: 'doing' });
+  const page = await open('#docs/gdd/ventanas-ataque');
+  await page.waitForSelector('.toc a .toc-dot');
+  const states = await page.$$eval('.toc a', (as) => as.map((a) => [a.getAttribute('href').split('/').pop(), a.querySelector('.toc-dot').className.replace('toc-dot ', '')]));
+  assert.deepEqual(states, [['juego', 'inside'], ['combate', 'done'], ['ventanas-ataque', 'open'], ['camara', 'none']]);
+  // Ventanas de ataque: sus dos tareas y, por Combate, la 1.2.
+  await page.waitForSelector('.backlinks .bl-task');
+  assert.deepEqual(await page.$$eval('.backlinks .label', (ls) => ls.map((l) => l.textContent)).then((ls) => ls.filter((l) => /^(Referenciada|Por)/.test(l))), ['Referenciada por · 2 tareas', 'Por Combate']);
+  assert.equal(await page.locator('.backlinks .bl-task').count(), 3);
+  assert.match(await page.textContent('.backlinks .cover'), /Con tareas sin terminar/);
+  // El documento entero: el resumen, y Cámara es la única sin tareas.
+  await page.click('.toc a[href="#docs/gdd/camara"]');
+  await page.waitForFunction(() => document.querySelector('.backlinks .cover.none'));
+  await page.goto(url + '#docs/gdd');
+  await page.waitForSelector('.cover-tally');
+  assert.equal(await page.textContent('.cover-tally'), 'Cobertura1 hechas1 abiertas1 con tareas adentro1 sin tareas');
+  assert.equal(await page.textContent('.unplanned summary'), 'Secciones sin tareas · 1 de 4');
+  await page.close();
+});

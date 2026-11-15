@@ -1565,3 +1565,38 @@ scompass lint [--json]   # sale con 1 si hay coincidencias
 - [x] Una escritura por la CLI, la API o el MCP con una coincidencia se rechaza entera con el campo, el texto, el patrón y la nota; la API responde 422 con `matches`.
 - [x] Un patrón inválido frena las escrituras con un mensaje claro.
 - [x] `scompass lint` encuentra coincidencias en los JSON editados a mano y en los documentos (con la línea), y sale con 1.
+
+## 43. Cobertura de los documentos (M30)
+<!-- id: cobertura -->
+
+`refs check` va de las tareas a los documentos: qué referencias se rompieron. La cobertura va al revés, de los documentos a las tareas. Dice qué partes del diseño no tienen ninguna tarea y cuáles ya están hechas.
+
+- **Por sección:** las tareas que la referencian, con una ref estructurada o un enlace `[[alias#id]]` en la descripción, las notas, la prueba o los pasos. Lo que está entre `` `…` `` no cuenta, igual que en `refs check`.
+  - Una tarea que referencia una sección **cubre también las de adentro**: la sección de afuera es el pedido más amplio. Esas tareas llevan `from` con el id de la sección que referencian.
+  - Una referencia al documento entero no cubre ninguna sección: va aparte, en `whole`.
+- **Estado de una sección:**
+  - `done`: la cubren tareas y todas están hechas (`done`; una en revisión todavía no).
+  - `open`: alguna de las que la cubren no está hecha.
+  - `inside`: ninguna la cubre, pero sí a una sección de adentro.
+  - `none`: ninguna tarea la toca. Es diseño sin planificar.
+- **CLI:** `scompass refs coverage [<alias>] [--uncovered] [--json]` imprime por documento el resumen y, por sección (con sangría por nivel), el estado y las tareas: el código, ✓ si está hecha y «por <sección>» si viene de afuera. `--uncovered` deja solo las secciones `none`. Sale con 0: la cobertura informa, no es un error.
+- **API:** `GET /api/refs/coverage[?doc=<alias>][&uncovered=1]` devuelve `{ docs: [{ alias, path, whole, sections: [{ id, title, level, line, state, tasks: [{ id, code, title, status, from? }] }], counts: { done, open, inside, none } }] }`. Un alias que no existe da 404.
+- **MCP:** `doc_coverage` con `doc` y `uncovered`.
+- **Web (Documentos):**
+  - El punto de cada sección del índice muestra el estado: verde si está hecha, el color de "En curso" si está abierta, un aro si tiene tareas adentro y gris si no tiene ninguna.
+  - La ficha de una sección agrega, debajo de las tareas que la referencian, las de cada sección de afuera («Por <título>») y una línea con el estado.
+  - La ficha del documento muestra el resumen de cobertura. «Secciones sin tareas» cuenta solo las `none`: una sección cubierta desde afuera, o con tareas adentro, ya no aparece ahí.
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/refs/coverage[?doc=<alias>][&uncovered=1]` | Por sección: estado y tareas que la cubren |
+
+```
+scompass refs coverage [<alias>] [--uncovered] [--json]
+```
+
+### Criterios de aceptación
+
+- [x] `refs coverage` da por sección las tareas que la cubren (refs y enlaces, también desde una sección de afuera) y su estado; `--uncovered` deja las que no toca ninguna.
+- [x] La API y `doc_coverage` del MCP dan lo mismo que `refs coverage --json`.
+- [x] En la web, el índice marca el estado de cada sección, la ficha muestra las tareas heredadas y el documento tiene su resumen.

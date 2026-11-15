@@ -178,6 +178,9 @@ export const refText = (doc, section) => (section ? `${doc}#${section}` : doc);
 // sección, undefined en los de documento entero.
 export const LINK = /\[\[([^\]#\s]+)(?:#([a-z0-9][a-z0-9_-]*))?\]\]/g;
 
+// Los textos de una tarea donde puede haber enlaces o citas, con dónde está cada uno.
+const taskTexts = (t) => [['description', t.description], ['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).flatMap((c, i) => [[`paso ${i + 1}`, c.text], [`paso ${i + 1} (detalle)`, c.detail]])];
+
 /**
  * Referencias de las tareas que no resuelven: refs estructuradas y enlaces [[alias#id]] o [[alias]] en la descripción,
  * notas, prueba y pasos. Una referencia al documento entero solo se rompe si el documento no está.
@@ -193,9 +196,53 @@ export function checkRefs(docs, tasks) {
   };
   for (const t of tasks) {
     for (const r of t.refs ?? []) check(t, r.doc, r.section, 'refs');
-    const texts = [['description', t.description], ['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).flatMap((c, i) => [[`paso ${i + 1}`, c.text], [`paso ${i + 1} (detalle)`, c.detail]])];
+    const texts = taskTexts(t);
     // Lo que está entre `…` es código (un ejemplo), no un enlace.
     for (const [where, text] of texts) for (const m of String(text ?? '').replace(/`[^`]*`/g, '').matchAll(LINK)) check(t, m[1], m[2], where);
+  }
+  return out;
+}
+
+/**
+ * Cobertura de los documentos (spec §43), la vista al revés de checkRefs: por sección, qué tareas la referencian (refs
+ * estructuradas o enlaces [[alias#id]] en los textos). Una tarea que referencia una sección cubre también las de
+ * adentro (`from` dice cuál referenció). state: 'done' si la cubren tareas y todas están hechas, 'open' si alguna no,
+ * 'inside' si no la cubre ninguna pero sí a una sección de adentro, y 'none' si ninguna tarea la toca. Una referencia
+ * al documento entero no cubre secciones: va en `whole`. tasks: [{ id, ...doc }]. Con `alias`, solo ese documento.
+ */
+export function docCoverage(docs, tasks, { alias = null } = {}) {
+  const bySection = new Map(); // "path#id" → Map(tarea → tarea)
+  const whole = new Map(); // path → Map(tarea → tarea)
+  const put = (map, key, t) => { if (!map.has(key)) map.set(key, new Map()); map.get(key).set(t.id, t); };
+  const note = (t, key, id) => {
+    const r = resolveRef(docs, { doc: key, section: id });
+    if (!r.doc || r.doc.missing) return;
+    if (r.whole) put(whole, r.doc.path, t);
+    else if (r.section) put(bySection, `${r.doc.path}#${r.section.id}`, t);
+  };
+  for (const t of tasks) {
+    for (const r of t.refs ?? []) note(t, r.doc, r.section);
+    for (const [, text] of taskTexts(t)) for (const m of String(text ?? '').replace(/`[^`]*`/g, '').matchAll(LINK)) note(t, m[1], m[2]);
+  }
+  const brief = (t, from) => ({ id: t.id, code: t.code ?? '', title: t.title, status: t.status, ...(from && { from }) });
+  const out = [];
+  for (const d of docs) {
+    if (alias && d.alias !== alias) continue;
+    if (d.missing) { out.push({ alias: d.alias, path: d.path, missing: true, whole: [], sections: [], counts: {} }); continue; }
+    const at = (s) => bySection.get(`${d.path}#${s.id}`) ?? new Map();
+    const sections = d.sections.map((s) => {
+      const covering = new Map([...at(s).values()].map((t) => [t.id, brief(t)]));
+      // Las que la contienen, de la más cercana a la más lejana.
+      const outer = d.sections.filter((a) => a !== s && a.start < s.start && s.start < a.end).reverse();
+      for (const a of outer) for (const t of at(a).values()) if (!covering.has(t.id)) covering.set(t.id, brief(t, a.id));
+      const list = [...covering.values()];
+      const inside = d.sections.some((x) => x !== s && x.start > s.start && x.start < s.end && at(x).size);
+      const state = list.length ? (list.every((t) => t.status === 'done') ? 'done' : 'open') : inside ? 'inside' : 'none';
+      return { id: s.id, title: s.title, level: s.level, line: s.start + 1, state, tasks: list };
+    });
+    const counts = { done: 0, open: 0, inside: 0, none: 0 };
+    for (const s of sections) counts[s.state]++;
+    out.push({ alias: d.alias, path: d.path, whole: [...(whole.get(d.path) ?? new Map()).values()].map((t) => brief(t)), sections, counts });
   }
   return out;
 }
@@ -276,7 +323,7 @@ const findDocLoose = (docs, key) => findDoc(docs, key) ?? findDoc(docs, key.repl
 export function suggestRefs(docs, tasks) {
   const out = [];
   for (const t of tasks) {
-    const texts = [['description', t.description], ['notes', t.notes], ['test', t.test], ...(t.checklist ?? []).flatMap((c, i) => [[`paso ${i + 1}`, c.text], [`paso ${i + 1} (detalle)`, c.detail]])];
+    const texts = taskTexts(t);
     for (const [where, text] of texts) {
       for (const m of String(text ?? '').matchAll(CITE)) {
         const d = findDocLoose(docs, m[1]);

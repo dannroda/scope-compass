@@ -1135,6 +1135,22 @@
         [...String(txt || '').replace(/`[^`]*`/g, '').matchAll(LINK)].some((m) => hits(m[1], m[2]))))
       .sort(sortTasks);
   }
+  // Cobertura (spec §43), como docCoverage del hub: una tarea que referencia una sección cubre también las de adentro.
+  // state: done (la cubren tareas y todas están hechas), open (alguna no), inside (solo secciones de adentro), none.
+  function coverage(d) {
+    const direct = new Map(d.sections.map((s) => [s.id, tasksFor(d, s.id)]));
+    const contains = (a, s) => a !== s && a.lines[0] < s.lines[0] && s.lines[0] <= a.lines[1];
+    return new Map(d.sections.map((s) => {
+      const seen = new Set(direct.get(s.id).map((t) => t.id));
+      const inherited = [];
+      // De la sección de afuera más cercana a la más lejana.
+      for (const a of d.sections.filter((a) => contains(a, s)).reverse()) for (const t of direct.get(a.id)) if (!seen.has(t.id)) { seen.add(t.id); inherited.push({ t, from: a }); }
+      const all = [...direct.get(s.id), ...inherited.map((x) => x.t)];
+      const sub = d.sections.some((x) => contains(s, x) && direct.get(x.id).length);
+      return [s.id, { direct: direct.get(s.id), inherited, state: all.length ? (all.every((t) => t.status === 'done') ? 'done' : 'open') : sub ? 'inside' : 'none' }];
+    }));
+  }
+  const COVER_TEXT = { done: 'Hecha: todas sus tareas están terminadas', open: 'Con tareas sin terminar', inside: 'Sin tareas propias; las tienen secciones de adentro', none: 'Sin tareas: todavía no planificada' };
   const brokenRefs = (t) => refsOf(t).filter((r) => linkTitle(r.doc, r.section) === null);
   const sameRef = (a, b) => (docByKey(a.doc)?.path || a.doc) === (docByKey(b.doc)?.path || b.doc) && (a.section || null) === (b.section || null);
   const allBroken = () => S.tasks.flatMap((t) => brokenRefs(t).map((r) => ({ t, r })));
@@ -1633,8 +1649,11 @@
     article.dataset.alias = d.alias;
     article.dataset.ready = docCache.get(d.alias) ? '1' : '0';
     article.classList.add('doc-article');
-    const counts = new Map(d.sections.map((s) => [s.id, tasksFor(d, s.id).length]));
-    const unplanned = d.sections.filter((s) => !counts.get(s.id));
+    const cov = coverage(d);
+    const counts = new Map(d.sections.map((s) => [s.id, cov.get(s.id).direct.length]));
+    const unplanned = d.sections.filter((s) => cov.get(s.id).state === 'none');
+    const tally = { done: 0, open: 0, inside: 0, none: 0 };
+    for (const c of cov.values()) tally[c.state]++;
     // Con cambios sin commitear se pide el diff: marca las secciones tocadas aunque no se esté mirando.
     const diff = changed(d) ? docGit(d, 'diff') : null;
     const touched = new Set(diff?.sections ?? []);
@@ -1653,8 +1672,8 @@
         docTree(d),
         d.sections.length ? h('nav', { class: 'toc', 'aria-label': 'Índice de ' + d.path }, d.sections.map((s) => h('a', {
           href: '#docs/' + encodeURIComponent(d.alias) + '/' + encodeURIComponent(s.id), 'aria-current': s.id === S.sec ? 'true' : null,
-          style: 'padding-left:' + (6 + (s.level - 1) * 12) + 'px', title: counts.get(s.id) ? counts.get(s.id) + ' tareas' : 'Sin tareas: todavía no planificada'
-        }, h('span', { class: 'toc-dot' + (counts.get(s.id) ? ' has' : '') }), h('span', { class: 't' }, rich(s.title)),
+          style: 'padding-left:' + (6 + (s.level - 1) * 12) + 'px', title: COVER_TEXT[cov.get(s.id).state] + (counts.get(s.id) ? ' · ' + counts.get(s.id) + ' tareas' : '')
+        }, h('span', { class: 'toc-dot ' + cov.get(s.id).state }), h('span', { class: 't' }, rich(s.title)),
           touched.has(s.id) ? h('span', { class: 'chg', title: 'Cambió sin commitear' }, '±') : null,
           counts.get(s.id) ? h('span', { class: 'n' }, counts.get(s.id)) : null))) : null),
       searching ? docResults() : showDiff ? diffView(d, diff) : article,
@@ -1662,10 +1681,16 @@
         docCard(d),
         docGitCard(d, diff),
         sec ? [h('div', { class: 'label' }, 'Referenciada por · ' + (counts.get(sec.id) === 1 ? '1 tarea' : counts.get(sec.id) + ' tareas')),
-          ...tasksFor(d, sec.id).map(backlinkTask),
-          counts.get(sec.id) ? null : h('p', { class: 'muted small' }, 'Ninguna tarea referencia esta sección: parte del diseño todavía sin planificar.')]
+          ...cov.get(sec.id).direct.map(backlinkTask),
+          // Las tareas de una sección de afuera también la cubren.
+          ...[...new Set(cov.get(sec.id).inherited.map((x) => x.from))].flatMap((a) => [h('div', { class: 'label' }, 'Por ', rich(a.title, true).textContent),
+            ...cov.get(sec.id).inherited.filter((x) => x.from === a).map((x) => backlinkTask(x.t))]),
+          h('p', { class: 'muted small cover ' + cov.get(sec.id).state }, cov.get(sec.id).state === 'none' ? 'Ninguna tarea referencia esta sección: parte del diseño todavía sin planificar.' : COVER_TEXT[cov.get(sec.id).state] + '.')]
           : [h('div', { class: 'label' }, 'Referencian el documento · ' + (whole.length === 1 ? '1 tarea' : whole.length + ' tareas')),
             ...whole.map(backlinkTask),
+            d.sections.length ? h('p', { class: 'small cover-tally' }, h('span', { class: 'label' }, 'Cobertura'),
+              [['done', 'hechas'], ['open', 'abiertas'], ['inside', 'con tareas adentro'], ['none', 'sin tareas']].filter(([k]) => tally[k])
+                .map(([k, w]) => h('span', { class: 'cover-n', title: COVER_TEXT[k] }, h('span', { class: 'toc-dot ' + k }), tally[k] + ' ' + w))) : null,
             h('p', { class: 'muted small' }, 'Elegí una sección del índice para ver qué tareas la referencian.')],
         // Diseño sin planificar: las secciones que ninguna tarea cita.
         !sec && unplanned.length ? h('details', { class: 'unplanned' }, h('summary', { class: 'label' }, 'Secciones sin tareas · ' + unplanned.length + ' de ' + d.sections.length),
