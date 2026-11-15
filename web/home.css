@@ -124,3 +124,24 @@ section > .add { margin-bottom: 16px; }
   .hoy-group .hoy-row { padding-left: 24px; }
   .hoy-group.questions > summary .tag { display: none; }
 }
+
+/* Vincular teléfono (§49): el QR va siempre negro sobre blanco, también con el tema oscuro, para que la cámara lo lea. */
+dialog.phone { width: min(460px, calc(100vw - 32px)); }
+dialog.phone h3 { margin: 12px 0 4px; font-size: 16px; }
+.phone-qr { width: min(240px, 70vw); margin: 4px auto; }
+.phone-qr svg { display: block; width: 100%; height: auto; border-radius: 6px; }
+.phone-url { display: flex; gap: 8px; }
+.phone-url input { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 13px; }
+.phone-ok { color: var(--s-done); font-weight: 600; }
+.phone-err { color: var(--danger); margin: 0; }
+ul.devices { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+ul.devices li { display: flex; align-items: center; gap: 12px; justify-content: space-between; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+ul.devices li > div { min-width: 0; overflow-wrap: anywhere; }
+
+/* La página del teléfono que canjea el código (vincular.html). */
+.pair { max-width: 480px; }
+.pair-form { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.pair-form p { margin: 0; }
+.pair-form input { font-size: 16px; min-height: 44px; padding: 0 12px; border-radius: 8px; }
+.pair-msg.ok { color: var(--s-done); font-weight: 600; }
+.pair-msg.bad { color: var(--danger); }

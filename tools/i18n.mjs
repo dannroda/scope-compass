@@ -24,7 +24,7 @@ export const AREAS = [
   { area: 'mcp', po: join(HUB_PO, 'mcp.po'), files: ['hub/src/mcp.js'] },
   { area: 'hub', po: join(HUB_PO, 'hub.po'), files: [...js('hub/src', (f) => !['cli.js', 'mcp.js', 'i18n.js'].includes(f)), ...js('hub/src/store')] },
   { area: 'web', po: join(HUB_PO, 'web.po'), files: ['web/app.js', 'web/settings.js', 'web/index.html'] },
-  { area: 'home', po: join(HUB_PO, 'home.po'), files: ['web/home.js', 'web/home.html'] },
+  { area: 'home', po: join(HUB_PO, 'home.po'), files: ['web/home.js', 'web/home.html', 'web/vincular.js', 'web/vincular.html'] },
   { area: 'addon', po: join(ADDON_PO, 'en.po'), files: readdirSync(join(REPO, 'addons', 'scope_compass')).filter((f) => f.endsWith('.gd') && f !== 'i18n.gd').map((f) => `addons/scope_compass/${f}`) }
 ];
 

@@ -18,7 +18,8 @@
 //   POST   /api/devices/pair    { code, name }   canjea el código por el token del dispositivo, en una cookie
 //   GET    /api/devices                      solo local: los dispositivos vinculados
 //   DELETE /api/devices/:id                  solo local: desvincular (cierra sus WebSocket)
-//   GET    /ws                               { type: 'changed', path, collection?, id? } | { type: 'hubs' } | { type: 'projects' }
+//   GET    /vincular                         la página del teléfono que canjea el código (#código en la dirección)
+//   GET    /ws                               { type: 'changed', path, collection?, id? } | { type: 'hubs' } | { type: 'projects' } | { type: 'devices' }
 // Las escrituras pasan por el hub del proyecto si está vivo (lo publica a sus pestañas y al dock); si no, van
 // directo a compass/ con etag, como la CLI, y regeneran el export markdown.
 import { execFile, spawn } from 'node:child_process';
@@ -71,6 +72,8 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   // Teléfonos vinculados para el chat (§49).
   const devices = createDevices(deviceOptions);
   app.addHook('onClose', async () => devices.close());
+  // La lista del Inicio se pone al día también si se desvinculó con la CLI.
+  devices.events.on('removed', () => emit({ type: 'devices' }));
   // Multi-hub (D29): cada proyecto en /p/<clave>/, servido acá o reenviado a su hub suelto.
   const serving = registerProjectRoutes(app, {
     validators,
@@ -154,6 +157,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   });
   app.post('/api/devices/pair', async (req, reply) => {
     const { device, token } = await devices.pair(req.body?.code, req.body?.name);
+    emit({ type: 'devices' });
     const secure = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https';
     reply.header('set-cookie', deviceCookie(token, { secure }));
     return reply.code(201).send({ device });
@@ -438,7 +442,9 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     return reply.type(TYPES[ext]).header('cache-control', 'no-cache').send(body);
   };
   app.get('/', (req, reply) => serveWeb(reply, 'home.html'));
-  for (const f of ['home.js', 'home.css', 'app.css', 'favicon.svg', 'settings.js']) app.get('/' + f, (req, reply) => serveWeb(reply, f));
+  // La página del teléfono para canjear el código (§49); el código va en el fragmento y no llega acá.
+  app.get('/vincular', (req, reply) => serveWeb(reply, 'vincular.html'));
+  for (const f of ['home.js', 'home.css', 'app.css', 'favicon.svg', 'settings.js', 'qr.js', 'vincular.js']) app.get('/' + f, (req, reply) => serveWeb(reply, f));
   app.get('/fonts/:file', (req, reply) => serveWeb(reply, 'fonts/' + req.params.file));
   app.get('/frames/:file', (req, reply) => serveWeb(reply, 'frames/' + req.params.file));
 

@@ -514,9 +514,94 @@
       try { m = JSON.parse(e.data); } catch { return; }
       if (m.type === 'hello') load();
       else if (m.type === 'changed' || m.type === 'hubs' || m.type === 'projects') reload();
+      else if (m.type === 'devices' && P.dlg) phoneDevices();
     };
     ws.onopen = () => { retry = 500; S.connected = true; renderConn(); };
     ws.onclose = () => { S.connected = false; renderConn(); setTimeout(connect, retry); retry = Math.min(retry * 2, 10000); };
+  }
+
+  // Vincular teléfono (§49): solo en este equipo. El diálogo muestra el QR con la dirección de la red y el código, el
+  // enlace para copiar y los dispositivos vinculados, con Quitar. Se pone al día con el evento devices del WebSocket.
+  const LOCAL = ['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname);
+  const P = { dlg: null, code: null, expired: false, err: '', devices: [], before: null, paired: null, timer: null };
+  const when = (iso) => new Date(iso).toLocaleString(LOCALE, { dateStyle: 'short', timeStyle: 'short' });
+  async function phoneCode() {
+    clearTimeout(P.timer);
+    P.paired = null;
+    P.expired = false;
+    try {
+      P.code = await call('POST', '/api/devices/code');
+      P.err = '';
+      P.before = new Set(P.devices.map((d) => d.id));
+      P.timer = setTimeout(() => { P.expired = true; renderPhone(); }, Math.max(0, Date.parse(P.code.expires_at) - Date.now()));
+    } catch (e) {
+      P.code = null;
+      P.err = e.message;
+    }
+    renderPhone();
+  }
+  async function phoneDevices() {
+    try { P.devices = (await call('GET', '/api/devices')).devices; } catch (e) { P.err = e.message; }
+    // Un dispositivo nuevo desde que se mostró el código: se usó.
+    const fresh = P.code && P.before && P.devices.find((d) => !P.before.has(d.id));
+    if (fresh) { P.paired = fresh; P.code = null; clearTimeout(P.timer); }
+    renderPhone();
+  }
+  function renderPhone() {
+    if (!P.dlg) return;
+    const kids = [];
+    if (P.err) kids.push(h('p', { class: 'phone-err', role: 'alert' }, P.err));
+    if (P.paired) {
+      kids.push(h('p', { class: 'phone-ok', role: 'status' }, T`Listo: ${P.paired.name} quedó vinculado. Ya puede usar el chat de los proyectos.`),
+        h('div', { class: 'row' }, h('button', { class: 'btn', type: 'button', onclick: phoneCode }, T('Vincular otro'))));
+    } else if (P.code && P.expired) {
+      kids.push(h('p', { class: 'muted' }, T('El código venció.')),
+        h('div', { class: 'row' }, h('button', { class: 'btn', type: 'button', onclick: phoneCode }, T('Otro código'))));
+    } else if (P.code) {
+      const qr = h('div', { class: 'phone-qr' });
+      qr.innerHTML = QR.svg(P.code.url, { label: T('Código QR con la dirección para vincular el teléfono') });
+      const url = h('input', { type: 'text', readonly: true, value: P.code.url, 'aria-label': T('Dirección para abrir en el teléfono'), onfocus: (e) => e.target.select() });
+      const time = new Date(P.code.expires_at).toLocaleTimeString(LOCALE, { timeStyle: 'short' });
+      kids.push(qr,
+        h('p', { class: 'muted small' }, T`Escaneá el código con la cámara del teléfono, conectado a la misma red que este equipo. Vence a las ${time} y sirve una sola vez.`),
+        h('div', { class: 'phone-url' }, url, h('button', { class: 'btn small', type: 'button', onclick: (e) => {
+          navigator.clipboard?.writeText(P.code.url).then(() => { e.target.textContent = T('Copiado'); }, () => url.select());
+        } }, T('Copiar'))));
+      if (P.code.urls.length > 1) {
+        kids.push(h('details', { class: 'small' }, h('summary', null, T('Otras direcciones de este equipo')),
+          h('ul', null, P.code.urls.slice(1).map((u) => h('li', null, h('code', null, u))))));
+      }
+    }
+    kids.push(h('h3', null, T('Dispositivos vinculados')));
+    if (!P.devices.length) kids.push(h('p', { class: 'muted' }, T('Ninguno todavía.')));
+    else {
+      kids.push(h('ul', { class: 'devices' }, P.devices.map((d) => h('li', null,
+        h('div', null, h('strong', null, d.name), h('br'), h('span', { class: 'muted small' }, T`Vinculado ${when(d.created_at)} · último uso ${when(d.last_seen)}`)),
+        h('button', { class: 'btn small', type: 'button', 'aria-label': T`Quitar ${d.name}`, onclick: async () => {
+          try { await call('DELETE', '/api/devices/' + encodeURIComponent(d.id)); } catch (e) { P.err = e.message; }
+          phoneDevices();
+        } }, T('Quitar'))))));
+    }
+    P.dlg.querySelector('.phone-body').replaceChildren(...kids);
+  }
+  function openPhone() {
+    P.dlg?.remove();
+    P.err = '';
+    P.dlg = h('dialog', { class: 'pick phone', 'aria-labelledby': 'phone-t' },
+      h('form', { method: 'dialog' },
+        h('h2', { id: 'phone-t' }, T('Vincular teléfono')),
+        h('p', { class: 'muted small' }, T('El teléfono vinculado puede usar el chat de los proyectos de este equipo, con tu cuenta de Claude. El tablero ya se ve desde la red con --lan.')),
+        h('div', { class: 'phone-body' }),
+        h('div', { class: 'row' }, h('button', { class: 'btn', type: 'submit' }, T('Cerrar')))));
+    P.dlg.addEventListener('close', () => { clearTimeout(P.timer); P.dlg.remove(); P.dlg = null; P.code = null; P.paired = null; document.getElementById('phone-btn').focus(); });
+    document.body.append(P.dlg);
+    P.dlg.showModal();
+    phoneDevices().then(phoneCode);
+  }
+  if (LOCAL) {
+    const btn = document.getElementById('phone-btn');
+    btn.hidden = false;
+    btn.addEventListener('click', openPhone);
   }
 
   // Los textos fijos de home.html (§45), antes del primer render.

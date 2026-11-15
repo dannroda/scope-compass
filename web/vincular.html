@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Vincular teléfono · Scope Compass</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="home.css">
+<script src="i18n.js"></script>
+<script src="settings.js"></script>
+<script src="vincular.js" defer></script>
+</head>
+<body>
+<div class="wrap pair">
+  <header class="top"><h1>Scope Compass <small>Vincular teléfono</small></h1></header>
+  <form class="pair-form" id="pair" hidden>
+    <p>Este teléfono va a poder usar el chat de los proyectos de la computadora que muestra el código, con su cuenta de Claude.</p>
+    <label for="pair-name"><strong>Nombre de este dispositivo</strong></label>
+    <input type="text" id="pair-name" maxlength="60" autocomplete="off" required>
+    <button class="btn primary" type="submit">Vincular</button>
+  </form>
+  <p class="pair-msg" id="pair-msg" role="status"></p>
+  <p id="pair-next" hidden><a class="btn" href="/">Abrir el Inicio</a></p>
+</div>
+</body>
+</html>

@@ -337,6 +337,57 @@ msgstr "Create project"
 msgid "Importar carpeta"
 msgstr "Import folder"
 
+msgid "Listo: {0} quedó vinculado. Ya puede usar el chat de los proyectos."
+msgstr "Done: {0} is linked. It can now use the projects' chat."
+
+msgid "Vincular otro"
+msgstr "Link another"
+
+msgid "El código venció."
+msgstr "The code expired."
+
+msgid "Otro código"
+msgstr "New code"
+
+msgid "Código QR con la dirección para vincular el teléfono"
+msgstr "QR code with the address to link the phone"
+
+msgid "Dirección para abrir en el teléfono"
+msgstr "Address to open on the phone"
+
+msgid "Escaneá el código con la cámara del teléfono, conectado a la misma red que este equipo. Vence a las {0} y sirve una sola vez."
+msgstr "Scan the code with the phone's camera, on the same network as this computer. It expires at {0} and works only once."
+
+msgid "Copiado"
+msgstr "Copied"
+
+msgid "Copiar"
+msgstr "Copy"
+
+msgid "Otras direcciones de este equipo"
+msgstr "Other addresses of this computer"
+
+msgid "Dispositivos vinculados"
+msgstr "Linked devices"
+
+msgid "Ninguno todavía."
+msgstr "None yet."
+
+msgid "Vinculado {0} · último uso {1}"
+msgstr "Linked {0} · last used {1}"
+
+msgid "Quitar {0}"
+msgstr "Remove {0}"
+
+msgid "Vincular teléfono"
+msgstr "Link phone"
+
+msgid "El teléfono vinculado puede usar el chat de los proyectos de este equipo, con tu cuenta de Claude. El tablero ya se ve desde la red con --lan."
+msgstr "A linked phone can use the chat of this computer's projects, with your Claude account. The board is already visible from the network with --lan."
+
+msgid "Cerrar"
+msgstr "Close"
+
 msgid "Inicio · Scope Compass"
 msgstr "Home · Scope Compass"
 
@@ -387,3 +438,30 @@ msgstr "Jot down…"
 
 msgid "Área"
 msgstr "Area"
+
+msgid "Falta el código. Abrí la dirección entera que muestra Vincular teléfono en el Inicio de la computadora, o escaneá su QR."
+msgstr "The code is missing. Open the full address that Link phone shows in Home on the computer, or scan its QR code."
+
+msgid "Teléfono"
+msgstr "Phone"
+
+msgid "Vinculando…"
+msgstr "Linking…"
+
+msgid "Listo: {0} quedó vinculado. En cada proyecto vas a ver el botón Chat."
+msgstr "Done: {0} is linked. You'll see the Chat button in every project."
+
+msgid "Vincular teléfono · Scope Compass"
+msgstr "Link phone · Scope Compass"
+
+msgid "Este teléfono va a poder usar el chat de los proyectos de la computadora que muestra el código, con su cuenta de Claude."
+msgstr "This phone will be able to use the chat of the projects on the computer showing the code, with its Claude account."
+
+msgid "Nombre de este dispositivo"
+msgstr "Name of this device"
+
+msgid "Vincular"
+msgstr "Link"
+
+msgid "Abrir el Inicio"
+msgstr "Open Home"
