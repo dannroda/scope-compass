@@ -132,7 +132,7 @@ export function registerDocsApi(app, { store, projectDir, validators, onDocsChan
   app.get('/api/refs/coverage', async (req) => {
     const { docs, tasks } = await context(store, projectDir);
     const alias = req.query.doc || null;
-    if (alias && !docs.some((d) => d.alias === alias)) throw new StoreError('not_found', `no hay un documento "${alias}"`);
+    if (alias && !docs.some((d) => d.alias === alias)) throw new StoreError('not_found', T`no hay un documento "${alias}"`);
     const cov = docCoverage(docs, tasks, { alias });
     if (req.query.uncovered === '1' || req.query.uncovered === 'true') for (const d of cov) d.sections = d.sections.filter((s) => s.state === 'none');
     return { docs: cov };

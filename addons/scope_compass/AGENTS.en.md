@@ -14,7 +14,7 @@ This project's tasks and milestones live in `compass/`, in the Scope Compass for
 
 ## MCP
 
-If the `scompass` server shows up in your tools (`list_tasks`, `show_task`, `add_task`, `move_task`, `check_step`…), use it instead of running `scompass` through Bash: they are the same commands with `--json`, with typed parameters, and they don't ask for permission on every call. Everything below still applies (model, etags, steps from 1); tool names follow the commands (`set` is `update_task`, `step add` is `add_step`, `decide` is `add_decision`, `decision ok` is `review_decision`, `playtest pass` is `set_playtest_result`). Lists, playtest sessions (creating, ordering), screenshots and `init`/`serve` still go through the CLI.
+If the `scompass` server shows up in your tools (`list_tasks`, `show_task`, `add_task`, `move_task`, `check_step`…), use it instead of running `scompass` through Bash: they are the same commands with `--json`, with typed parameters, and they don't ask for permission on every call. Everything below still applies (model, etags, steps from 1); tool names follow the commands (`set` is `update_task`, `step add` is `add_step`, `decide` is `add_decision`, `decision ok` is `review_decision`, `playtest pass` is `set_playtest_result`, `refs coverage` is `doc_coverage`). Lists, playtest sessions (creating, ordering), screenshots and `init`/`serve` still go through the CLI.
 
 To have it in Claude Code in every project (it takes the one of the session's folder; `dir` in each tool points to another):
 
@@ -197,6 +197,7 @@ scompass ref add m5-02 spec#godot  # the task cites that section
 scompass ref add m5-02 spec        # the task cites the whole document
 scompass ref rm m5-02 spec#godot
 scompass refs check                # broken references (exits with 1 if any), also files that are gone
+scompass refs coverage gdd         # per section: which tasks cover it (also from an outer section) and whether they're done; --uncovered, the ones no task touches
 scompass file add m5-02 player/player.gd   # the task touches that file (accepts res://); file rm removes it
 scompass image add m5-02 /tmp/screenshot.png  # screenshot: one from outside is copied to compass/images/; one from the repo is cited
 scompass image rm m5-02 compass/images/m5-02-20261011-101500.png   # takes it out (and deletes the file if the app saved it)

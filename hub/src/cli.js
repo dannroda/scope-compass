@@ -1034,21 +1034,21 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const docs = await loadDocs(project, all.config);
       if (rest[0] === 'coverage') {
         const alias = rest[1] ?? null;
-        if (alias && !docs.some((d) => d.alias === alias)) throw new StoreError('not_found', `no hay un documento "${alias}"`);
+        if (alias && !docs.some((d) => d.alias === alias)) throw new StoreError('not_found', T`no hay un documento "${alias}"`);
         const cov = docCoverage(docs, [...all.tasks].map(([id, doc]) => ({ id, ...doc })), { alias });
         if (o.uncovered) for (const d of cov) d.sections = d.sections.filter((s) => s.state === 'none');
         if (o.json) return done({ docs: cov });
-        const label = { done: 'hecha', open: 'abierta', inside: 'adentro', none: 'sin tareas' };
-        const who = (ts) => ts.map((t) => `${t.code || t.id}${t.status === 'done' ? ' ✓' : ''}${t.from ? ` (por ${t.from})` : ''}`).join(', ');
+        const label = { done: T('hecha'), open: T('abierta'), inside: T('adentro'), none: T('sin tareas') };
+        const who = (ts) => ts.map((t) => `${t.code || t.id}${t.status === 'done' ? ' ✓' : ''}${t.from ? T` (por ${t.from})` : ''}`).join(', ');
         for (const d of cov) {
-          if (d.missing) { print(`${d.alias} (${d.path}): no está`); continue; }
+          if (d.missing) { print(T`${d.alias} (${d.path}): no está`); continue; }
           const c = d.counts;
-          print(`${d.alias} (${d.path}): ${c.done} hechas · ${c.open} abiertas · ${c.inside} con tareas adentro · ${c.none} sin tareas`);
-          if (d.whole.length) print(`  documento entero: ${who(d.whole)}`);
+          print(T`${d.alias} (${d.path}): ${c.done} hechas · ${c.open} abiertas · ${c.inside} con tareas adentro · ${c.none} sin tareas`);
+          if (d.whole.length) print(T`  documento entero: ${who(d.whole)}`);
           for (const s of d.sections) {
             print(`  ${label[s.state].padEnd(10)} ${'  '.repeat(Math.max(0, s.level - 1))}${s.id}${s.tasks.length ? `: ${who(s.tasks)}` : ''}`);
           }
-          if (o.uncovered && !d.sections.length) print('  todas las secciones tienen tareas');
+          if (o.uncovered && !d.sections.length) print(T('  todas las secciones tienen tareas'));
         }
         return 0;
       }

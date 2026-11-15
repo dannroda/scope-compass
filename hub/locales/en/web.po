@@ -667,6 +667,18 @@ msgstr " files could not be read"
 msgid "No se muestran ni se sobrescriben hasta que se corrijan a mano. Al arreglarlos, el aviso se va solo."
 msgstr "They are not shown or overwritten until they are fixed by hand. Once fixed, the warning goes away on its own."
 
+msgid "Hecha: todas sus tareas están terminadas"
+msgstr "Done: all its tasks are finished"
+
+msgid "Con tareas sin terminar"
+msgstr "Has unfinished tasks"
+
+msgid "Sin tareas propias; las tienen secciones de adentro"
+msgstr "No tasks of its own; sections inside it have them"
+
+msgid "Sin tareas: todavía no planificada"
+msgstr "No tasks: not planned yet"
+
 msgid "Referencias"
 msgstr "References"
 
@@ -991,9 +1003,6 @@ msgstr "Copy link to the document"
 msgid "Índice de "
 msgstr "Contents of "
 
-msgid "Sin tareas: todavía no planificada"
-msgstr "No tasks: not planned yet"
-
 msgid "Cambió sin commitear"
 msgstr "Changed, uncommitted"
 
@@ -1003,11 +1012,29 @@ msgstr "Document info"
 msgid "Referenciada por · "
 msgstr "Referenced by · "
 
+msgid "Por {0}"
+msgstr "Via {0}"
+
 msgid "Ninguna tarea referencia esta sección: parte del diseño todavía sin planificar."
 msgstr "No task references this section: part of the design not planned yet."
 
 msgid "Referencian el documento · "
 msgstr "Reference the document · "
+
+msgid "Cobertura"
+msgstr "Coverage"
+
+msgid "hechas"
+msgstr "done"
+
+msgid "abiertas"
+msgstr "open"
+
+msgid "con tareas adentro"
+msgstr "with tasks inside"
+
+msgid "sin tareas"
+msgstr "without tasks"
 
 msgid "Elegí una sección del índice para ver qué tareas la referencian."
 msgstr "Pick a section from the contents to see which tasks reference it."

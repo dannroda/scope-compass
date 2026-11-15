@@ -109,6 +109,15 @@ msgstr "alias or alias#section-id (list_docs shows them)"
 msgid "etag del documento que ya leíste (lo dio show_doc)"
 msgstr "etag of the document you already read (show_doc gave it)"
 
+msgid "Cobertura de los documentos: por sección, qué tareas la referencian (o a una sección que la contiene) y su estado (done: todas hechas; open: alguna sin terminar; inside: solo secciones de adentro; none: ninguna tarea). uncovered: solo las secciones sin tareas."
+msgstr "Document coverage: per section, which tasks reference it (or a section that contains it) and its state (done: all done; open: some unfinished; inside: only sections inside it; none: no task). uncovered: only the sections without tasks."
+
+msgid "alias del documento (todos si falta)"
+msgstr "document alias (all of them if missing)"
+
+msgid "solo las secciones que ninguna tarea toca"
+msgstr "only the sections no task touches"
+
 msgid "Crea una tarea en un hito (el id sale solo: siguiente número del hito). Con una etiqueta que tiene plantilla y sin description, la descripción arranca con la plantilla."
 msgstr "Creates a task in a milestone (the id is automatic: the milestone's next number). With a tag that has a template and no description, the description starts from the template."
 
