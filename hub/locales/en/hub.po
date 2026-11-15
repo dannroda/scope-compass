@@ -172,9 +172,6 @@ msgstr "the code doesn't work: it was used, expired or doesn't exist; ask for an
 msgid "Teléfono"
 msgstr "Phone"
 
-msgid "no hay un documento \"{0}\""
-msgstr "there's no document \"{0}\""
-
 msgid "no existe {0}"
 msgstr "{0} doesn't exist"
 
