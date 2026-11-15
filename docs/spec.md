@@ -1681,6 +1681,50 @@ La CLI, el MCP, el hub (sus mensajes de error), la web del tablero, el Inicio, l
 - [x] `init --lang en` crea el tablero con la guía, el README, el export y la plantilla en inglés, y `update` la mantiene.
 - [x] Los tests de siempre pasan con el idioma fijo en castellano, y cada texto que se usa está en el catálogo.
 
+## 47. Chat con Antigravity CLI (M27) — borrador
+<!-- id: chat-agy -->
+
+**Borrador de m27-01: nada de esto está implementado.** m27-02 lo implementa cuando Dann decida lo que queda abierto. Gemini CLI se retiró para cuentas personales el 18/6/2026. Su reemplazo es Antigravity CLI (`agy`), cerrado y en Go. Lo que sigue sale de agy 1.4.12 (`agy --help`, `agy acp --help`, `agy changelog` y la documentación que trae en `~/.gemini/antigravity-cli/builtin/skills/agy-customizations/docs`), sin correr ningún turno, para no gastar la cuota de Dann.
+
+- **Dos formas de hablarle:**
+  - **Print con stream-json:** `agy -p --input-format stream-json --output-format stream-json`. Es lo mismo que hace hoy el chat con `claude` (§32): un mensaje NDJSON por línea en stdin, un turno por mensaje, eventos por stdout.
+    - El resultado trae `finished_reason` (`print_timeout`, `interrupted`, `error`) cuando el turno no terminó bien.
+    - Si un turno falla, sale con código 3 y una línea `AGY_ERROR`.
+    - El formato de cada evento no está documentado: hay que verlo con un turno de verdad.
+  - **ACP (Agent Client Protocol):** `agy acp` es un servidor JSON-RPC por stdio, el que usan los editores. Ofrece:
+    - `session/new`, `session/prompt` y `session/cancel`, y `session/resume` para retomar sin repetir la historia.
+    - Notificaciones `session/update` con el texto en partes y las herramientas.
+    - `session/request_permission`: el permiso lo pide al cliente, o sea, al hub.
+    - Modos `default`, `accept-edits`, `plan` y `auto`.
+    - Uso del contexto.
+    - Servidores MCP que pasa el cliente en cada sesión.
+    - El protocolo es público y estable, y además lo usan otros agentes. **Se propone ACP (D58).**
+- **scompass solo para el chat:** agy no tiene un `--mcp-config`/`--strict-mcp-config` por corrida.
+  - Con ACP, el hub pasa `scompass` en `session/new` (`mcpServers`, `command`/`args`/`env`). Así no toca `~/.gemini/config/mcp_config.json` ni el repo del proyecto.
+  - Con print, las alternativas son peores:
+    - `~/.gemini/config/mcp_config.json`, global: lo verían todas las sesiones de agy del usuario.
+    - Un plugin en `.agents/plugins/scope-compass/` (`mcp_config.json`): escribe en el repo del proyecto.
+    - `--gemini-dir`/`--app-data-dir` apuntando a otra carpeta: no se sabe si conserva el login.
+- **Limitar a lectura:** varias capas, porque ninguna sola está verificada.
+  1. **Permisos desde el hub (ACP):** el hub contesta `session/request_permission`. Aprueba `scompass` y las lecturas, y rechaza escribir archivos, correr comandos y salir del proyecto, sin preguntarle a nadie (como `dontAsk` hoy).
+  2. **Modo:** se arranca la sesión en `default` o `plan`, nunca en `auto` ni `accept-edits`. Desde 1.4.x el modo por defecto de agy es `auto`, que aprueba solo las ediciones dentro del proyecto y los comandos en el sandbox.
+  3. **Sandbox:** `agy acp --sandbox` restringe la terminal.
+  4. **Reglas allow del usuario:** sus reglas de `settings.json` (`permissions.allow`, p. ej. `command(godot)`) se aprueban sin pedir permiso al cliente. Falta ver si saltean el pedido al hub. Si lo hacen, el chat podría correr esos comandos. Con print, `--settings '{"permissions":{"deny":[…]}}'` las tapa solo para esa corrida y nunca se guarda. Con ACP no hay `--settings`, y lo que queda es un hook `PreToolUse` que devuelva `deny`, pero los hooks se cargan desde `.agents/` o un plugin.
+  - Hay que probarlo con un turno real antes de abrir el chat con agy (m27-02).
+- **Conversaciones:** agy guarda la de verdad en `~/.gemini/antigravity-cli/conversations` (más `conversation_summaries.db` e `history.jsonl`).
+  - El hub guarda su copia liviana igual que en §32, con el id de la conversación de agy.
+  - Retomar: `session/resume` en ACP, o `--conversation <id>` en print.
+  - El hub no lee los archivos internos de agy.
+- **Lo que queda igual que en §32:**
+  - Un proceso por conversación mientras se usa, cerrado tras 10 minutos sin uso.
+  - La API `/api/chats` y los eventos `chat` (`turn`, `text`, `tool`, `tool_result`, `end`, `error`).
+  - Solo en el equipo (o vinculado, §49).
+  - La cuenta y el modelo del usuario.
+- **Ejecutable:** `agy` del PATH, o el de `SCOMPASS_AGY` (para el test). Si no está, `agy_missing`.
+- **Elegir el motor:** falta decidir si se elige por proyecto, por equipo o por conversación (D58).
+- **Preguntas abiertas (25.8):** las decisiones guardan la sesión que las hizo leyendo `CLAUDE_CODE_SESSION_ID`. No se sabe si agy pone algo así en el entorno de los servidores MCP que lanza. Los hooks reciben `conversationId`. Sin eso, *Seguir en el chat* no sabe qué conversación retomar.
+- **Test:** un `agy` falso en Node que hable ACP (`initialize`, `session/new`, `session/prompt` con `session/update`, un `session/request_permission` que el hub tiene que rechazar, `session/cancel`). Igual que hoy con `claude`, sin red ni cuota.
+
 ## 49. Vincular el teléfono al chat (M29)
 <!-- id: vincular-dispositivos -->
 

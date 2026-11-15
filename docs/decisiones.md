@@ -612,6 +612,26 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
 - **Respondido:** systemd con `scompass home`, y la rama `compass-sync`.
 - **Pendiente:** dónde corre, un equipo de casa siempre prendido o un VPS chico, siempre en Tailscale. m7-05 y m7-06 quedan para después.
 
+## D58 · Chat con agy: por ACP, con scompass pasado por sesión y los permisos contestados por el hub (borrador)
+**2026-11-15 · borrador (preguntado)** · spec §47
+
+- **Qué:** propuesta de m27-01 para m27-02, todavía sin implementar (spec §47). El hub lanza `agy acp` y le habla JSON-RPC por stdio.
+  - Pasa `scompass` en `session/new`.
+  - Arranca la sesión en modo `default` o `plan`.
+  - Contesta cada `session/request_permission`: sí a `scompass` y a las lecturas, no a todo lo demás.
+- **Por qué:**
+  - ACP es el único camino que registra el MCP solo para el chat sin tocar la config global de agy ni el repo del proyecto.
+  - Deja el permiso en manos del hub, como `--allowedTools` y `dontAsk` con `claude`.
+  - Trae el texto en partes, las herramientas, el corte y la reanudación (`session/resume`) en un protocolo público que también hablan otros agentes.
+- **Descartado:**
+  - `agy -p --input-format stream-json --output-format stream-json`: es lo más parecido al chat de hoy, pero no tiene un MCP por corrida. Habría que escribir en `~/.gemini/config/mcp_config.json` (lo verían todas las sesiones del usuario) o en `.agents/` del proyecto. Además, su formato de eventos no está documentado.
+  - `--dangerously-skip-permissions`: aprueba todo.
+  - Confiar solo en `--sandbox` o en el modo: no impiden editar dentro del proyecto.
+- **Para decidir (preguntado):**
+  - **ACP o print:** propuesta, ACP.
+  - **Cómo se elige el motor** (`claude` o `agy`): por proyecto, por equipo o por conversación. Propuesta: por equipo, en Ajustes, con `claude` si están los dos.
+  - **Gastar unos turnos mínimos de la cuenta de Dann** para ver los eventos reales y comprobar si sus reglas `permissions.allow` (p. ej. `command(godot)`) saltean el pedido de permiso al hub.
+
 ## D60 · Vincular el teléfono al chat: código de un solo uso, token por dispositivo en una cookie, solo para el chat
 
 - **Qué:** desde este equipo, el Inicio crea un código de un solo uso que el teléfono canjea por un token propio, guardado en una cookie `HttpOnly` y `SameSite=Strict`. Del token se guarda solo el hash, en la carpeta de config. El chat pasa a aceptar «local o vinculado»; nada más cambia de permisos. Se desvincula desde el Inicio o la CLI (spec §49).
