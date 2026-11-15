@@ -12,7 +12,7 @@ import { T } from './i18n.js';
 /** Si una dirección es del mismo equipo (127.0.0.1, ::1 o 127.0.0.1 escrita como IPv6). */
 export const isLoopback = (addr) => addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
 
-const STATUS = { busy: 409, not_found: 404, claude_missing: 503, forbidden: 403, invalid_argument: 400 };
+const STATUS = { busy: 409, not_found: 404, claude_missing: 503, agy_missing: 503, agy_unsafe: 503, agy_exit: 502, forbidden: 403, invalid_argument: 400 };
 
 // allow(req): si el pedido puede usar el chat. Por defecto, solo desde este equipo; el Inicio suma los dispositivos
 // vinculados (§49) para los proyectos que sirve él.

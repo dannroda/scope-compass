@@ -61,6 +61,36 @@ msgstr "linked to {0}"
 msgid "el tablero ya está en su propio repo ({0})"
 msgstr "the board is already in its own repo ({0})"
 
+msgid "{0} tiene que decir {1}: sin eso agy edita archivos sin pedir permiso y el chat no arranca. Corregilo o borralo (el hub lo vuelve a crear)."
+msgstr "{0} has to say {1}: without that, agy edits files without asking for permission, so the chat doesn't start. Fix it or delete it (the hub creates it again)."
+
+msgid "hay un turno en curso"
+msgstr "a turn is already in progress"
+
+msgid "agy se cerró"
+msgstr "agy closed"
+
+msgid "no se encontró agy (Antigravity CLI); instalalo y entrá con `agy` una vez"
+msgstr "agy (Antigravity CLI) wasn't found; install it and sign in by running `agy` once"
+
+msgid "no se pudo lanzar {0}"
+msgstr "couldn't launch {0}"
+
+msgid "agy terminó (código {0})"
+msgstr "agy exited (code {0})"
+
+msgid "agy no pudo retomar la conversación: sigue en una sesión nueva, sin lo anterior"
+msgstr "agy couldn't resume the conversation: it continues in a new session, without what came before"
+
+msgid "agy no devolvió el id de la sesión"
+msgstr "agy didn't return the session id"
+
+msgid "agy usó {0} sin pedir permiso: el chat se cortó. Revisá {1} (agentMode \"\", toolPermission \"strict\")."
+msgstr "agy used {0} without asking for permission: the chat was stopped. Check {1} (agentMode \"\", toolPermission \"strict\")."
+
+msgid "No se hizo: {0}. El chat solo lee el proyecto y opera el tablero; para editar o correr comandos, usá la terminal."
+msgstr "Not done: {0}. The chat only reads the project and works on the board; to edit or run commands, use the terminal."
+
 msgid "task tiene que ser el id de una tarea"
 msgstr "task must be a task id"
 
@@ -88,14 +118,8 @@ msgstr "profile must be a string"
 msgid "Sos el chat de Scope Compass del proyecto «{0}», en la web del tablero. El tablero se opera con las herramientas del MCP scompass y valen las reglas de compass/AGENTS.md: registrá las decisiones que tomes sin consultar (add_decision) y las preguntas que hagas, y pasá a review las tareas que termines. Podés leer los archivos del proyecto; no podés editarlos ni correr comandos: si hace falta, decí qué hacer en la terminal. Contestá en el idioma del usuario, corto."
 msgstr "You are the Scope Compass chat for the project “{0}”, in the board's web page. The board is operated with the tools of the scompass MCP, and the rules in compass/AGENTS.md apply: record the decisions you make without asking (add_decision) and the questions you ask, and move the tasks you finish to review. You can read the project's files; you can't edit them or run commands: if needed, say what to do in the terminal. Answer in the user's language, briefly."
 
-msgid "hay un turno en curso"
-msgstr "a turn is already in progress"
-
 msgid "no se encontró claude (Claude Code); instalalo y entrá con `claude` una vez"
 msgstr "claude (Claude Code) wasn't found; install it and log in with `claude` once"
-
-msgid "no se pudo lanzar {0}"
-msgstr "couldn't launch {0}"
 
 msgid "claude terminó (código {0})"
 msgstr "claude exited (code {0})"
@@ -108,6 +132,9 @@ msgstr "there's no conversation {0}"
 
 msgid "session tiene que ser el id de una sesión de Claude Code"
 msgstr "session must be a Claude Code session id"
+
+msgid "motor desconocido: {0} (claude o agy)"
+msgstr "unknown engine: {0} (claude or agy)"
 
 msgid "no hay un perfil {0} de Claude Code en este equipo"
 msgstr "there's no Claude Code profile {0} on this computer"
@@ -154,6 +181,12 @@ msgstr "reverted"
 msgid "sin revisar"
 msgstr "not reviewed"
 
+msgid "el código no sirve: ya se usó, venció o no existe; pedí otro en este equipo"
+msgstr "the code doesn't work: it was used, expired or doesn't exist; ask for another one on this computer"
+
+msgid "Teléfono"
+msgstr "Phone"
+
 msgid "el texto tiene que empezar con un título de nivel {0} ({1} …)"
 msgstr "the text has to start with a level {0} heading ({1} …)"
 
@@ -165,12 +198,6 @@ msgstr "missing markdown: the section's text"
 
 msgid "falta etag: el del documento que se leyó"
 msgstr "missing etag: the one of the document you read"
-
-msgid "el código no sirve: ya se usó, venció o no existe; pedí otro en este equipo"
-msgstr "the code doesn't work: it was used, expired or doesn't exist; ask for another one on this computer"
-
-msgid "Teléfono"
-msgstr "Phone"
 
 msgid "no existe {0}"
 msgstr "{0} doesn't exist"

@@ -1332,7 +1332,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const list = cur.doc.decisions ?? [];
       // Una pregunta guarda la sesión de Claude Code que la hace (Claude Code la pone en el entorno de Bash y del MCP),
       // para retomarla desde el chat con la respuesta (§32). --session "" no la guarda.
-      const session = o.session ?? (o.ask ? env.CLAUDE_CODE_SESSION_ID : undefined);
+      const session = o.session ?? (o.ask ? env.CLAUDE_CODE_SESSION_ID ?? env.SCOMPASS_CHAT_SESSION : undefined);
       if (o.session && !SESSION_ID.test(o.session)) throw new UsageError(T`--session tiene que ser el id de una sesión de Claude Code (un uuid): ${o.session}`);
       const d = { text, ...(o.why?.trim() && { why: o.why }), ...(o.alternatives?.trim() && { alternatives: o.alternatives }), ...(o.ask && { asked: true }),
         ...(session && SESSION_ID.test(session) && { session }) };

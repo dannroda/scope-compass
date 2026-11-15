@@ -30,7 +30,7 @@ Milestones (`compass://milestone/<id>`), tasks (`compass://task/<id>`) and docum
 
 ## Chat
 
-The board's web page has a chat (*Chat* button, on the same computer or on a phone linked from Home) with the installed Claude Code. It launches `claude` in the project folder with the `scompass` MCP and the read tools (`Read`, `Grep`, `Glob`) allowed in advance: it doesn't edit files or run commands, and everything else is denied without asking. If you are that agent:
+The board's web page has a chat (*Chat* button, on the same computer or on a phone linked from Home) with the installed Claude Code or with Antigravity CLI (`agy`), whichever is chosen in Settings. It launches the agent in the project folder with the `scompass` MCP and file reading allowed: it doesn't edit files or run commands, and everything else is denied without asking (with `agy`, the hub answers each permission request and the denied attempt doesn't happen). If you are that agent:
 
 - A message may start with `Open task: <code> <title> (compass://task/<id>)` (`Tarea abierta: …` with the interface in Spanish): it's the task the user has open; read it with `show_task` if needed.
 - Whatever needs editing or running, say so, to do it in the terminal.
@@ -135,7 +135,7 @@ scompass decisions --revert                          # the whole project's (--op
 ```
 
 - Decisions are numbered from 1, like steps, and `show` lists them with their state: `?` open question, `!` unreviewed, `↺` to revert, `✓` settled.
-- Questions are recorded too (`--ask`), with the answer when it arrives: that way it's clear why the task ended up as it did. From Claude Code, `--ask` saves the asking session on its own (`CLAUDE_CODE_SESSION_ID`): if the user answers in the web, they can send you the answer to that same session through the chat.
+- Questions are recorded too (`--ask`), with the answer when it arrives: that way it's clear why the task ended up as it did. From Claude Code, `--ask` saves the asking session on its own (`CLAUDE_CODE_SESSION_ID`; in the chat with `agy`, the chat conversation, `SCOMPASS_CHAT_SESSION`): if the user answers in the web, they can send you the answer to that same session through the chat.
 - Reviewing (`decision ok`, `revert`) is the user's job. Before continuing a task, check whether it has any to revert: undo it following `reply`, mark it `reverted` and, if you decided something else instead, record it as a new decision.
 - The project's big design decisions (the ones that change the spec) also go to the decisions document: `scompass decision promote m5-02 1` adds a settled one as entry `D<n>` at the end of the `decisiones` document (or the one in `config.json › decisions_doc`) and marks it in the task. Do it when asked or when the decision changes the spec; it doesn't commit.
 

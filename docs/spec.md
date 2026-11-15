@@ -1706,7 +1706,7 @@ El chat de §32 también anda con Antigravity CLI (`agy`), el reemplazo de Gemin
     - Permite las lecturas (`kind` `read` o `search`) y las herramientas de `scompass`.
     - Niega todo lo demás con la opción `reject_once`: editar, borrar, mover, correr comandos, buscar en la web.
     - Las reglas `permissions.allow` del usuario no saltean este pedido: `command(echo)` y `command(godot)` le preguntaron igual al hub.
-  - **Vigilancia:** si una herramienta que edita o corre comandos (`kind` `edit`, `delete`, `move` o `execute`) termina `completed` sin haber pasado por el permiso, el hub mata el proceso. El turno termina con el error `agy_unsafe` y la conversación no sigue hasta que se revisen los ajustes.
+  - **Vigilancia:** si una herramienta que edita o corre comandos (`kind` `edit`, `delete`, `move` o `execute`) termina `completed` sin haber pasado por el permiso, el hub mata el proceso. El turno termina con el error `agy_unsafe`, que dice qué revisar. El próximo mensaje vuelve a lanzar agy y vuelve a revisar los ajustes.
   - **Lo negado se dice:** después de un rechazo, agy suele terminar el turno sin texto. Si un turno termina sin texto y hubo algo negado, el chat lo dice («No se hizo: …; el chat solo lee el proyecto y opera el tablero»).
 - **Eventos:** de `session/update` se usan:
   - `agent_message_chunk` → `text`.

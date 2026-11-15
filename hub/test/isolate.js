@@ -7,6 +7,10 @@ import { join } from 'node:path';
 
 // Corridos desde Claude Code, los tests no son parte de su sesión: decide --ask la guardaría (§32).
 delete process.env.CLAUDE_CODE_SESSION_ID;
+delete process.env.SCOMPASS_CHAT_SESSION;
+// Ningún test lanza el agy de verdad (gastaría la cuenta del usuario): sin SCOMPASS_AGY, uno que no existe. Los tests
+// del chat con agy ponen el falso (fake-agy.js).
+process.env.SCOMPASS_AGY ??= join(tmpdir(), 'scompass-no-agy', 'agy.js');
 
 if (!process.env.SCOMPASS_CONFIG) {
   const dir = mkdtempSync(join(tmpdir(), 'scompass-test-'));

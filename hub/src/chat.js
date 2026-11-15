@@ -41,7 +41,8 @@ export function findClaude(env = process.env) {
   return null;
 }
 
-const PROMPT = (name) => T`Sos el chat de Scope Compass del proyecto «${name}», en la web del tablero. El tablero se opera con las herramientas del MCP scompass y valen las reglas de compass/AGENTS.md: registrá las decisiones que tomes sin consultar (add_decision) y las preguntas que hagas, y pasá a review las tareas que termines. Podés leer los archivos del proyecto; no podés editarlos ni correr comandos: si hace falta, decí qué hacer en la terminal. Contestá en el idioma del usuario, corto.`;
+/** Las instrucciones del chat (prompt.md con claude; delante del primer mensaje con agy, §47). */
+export const chatPrompt = (name) => T`Sos el chat de Scope Compass del proyecto «${name}», en la web del tablero. El tablero se opera con las herramientas del MCP scompass y valen las reglas de compass/AGENTS.md: registrá las decisiones que tomes sin consultar (add_decision) y las preguntas que hagas, y pasá a review las tareas que termines. Podés leer los archivos del proyecto; no podés editarlos ni correr comandos: si hace falta, decí qué hacer en la terminal. Contestá en el idioma del usuario, corto.`;
 
 /** Los argumentos de claude (§32): la primera vez fija el id de la sesión, después la retoma. */
 export function claudeArgs({ session, resume, mcpConfig, promptFile }) {
@@ -54,9 +55,9 @@ export function claudeArgs({ session, resume, mcpConfig, promptFile }) {
 }
 
 // Lo que no entra en un renglón de la web: el resumen de los argumentos de una herramienta.
-const brief = (input) => {
+export const brief = (input) => {
   if (!input || typeof input !== 'object') return '';
-  const v = input.file_path ?? input.pattern ?? input.path ?? input.id ?? input.title ?? input.q ?? input.text ?? input.ref ?? Object.values(input).find((x) => typeof x === 'string');
+  const v = input.file_path ?? input.Path ?? input.CommandLine ?? input.pattern ?? input.path ?? input.id ?? input.title ?? input.q ?? input.text ?? input.ref ?? Object.values(input).find((x) => typeof x === 'string');
   return typeof v === 'string' ? (v.length > 80 ? `${v.slice(0, 79)}…` : v) : '';
 };
 
@@ -191,7 +192,7 @@ export class ChatProcess extends EventEmitter {
     const mcpConfig = join(dir, 'mcp.json');
     const promptFile = join(dir, 'prompt.md');
     await writeFile(mcpConfig, JSON.stringify({ mcpServers: { scompass: (([command, args]) => ({ command, args }))(selfCommand(['mcp', '--dir', this.projectDir])) } }, null, 2));
-    await writeFile(promptFile, PROMPT(this.name));
+    await writeFile(promptFile, chatPrompt(this.name));
     const args = claudeArgs({ session: this.session, resume: this.resume, mcpConfig, promptFile });
     // Si el hub corre adentro de una sesión de Claude Code, el hijo no tiene que creerse anidado; y va con el
     // CLAUDE_CONFIG_DIR de su perfil (§33), o sin él en el predeterminado.

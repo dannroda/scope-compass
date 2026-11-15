@@ -1,13 +1,16 @@
 // Conversaciones del chat (M25, spec §32, 25.3): qué conversaciones hay en un proyecto y una copia liviana de lo
 // que se mostró. Viven en la carpeta del chat del proyecto (chatDir), fuera de compass/: index.json
-// ({ chats: [{ id, title, created_at, last_at, started? }] }) y un <id>.jsonl por conversación. El id es el de la
-// sesión de Claude Code, que guarda la conversación de verdad y la retoma con --resume; started dice que ya existe.
+// ({ chats: [{ id, title, created_at, last_at, started?, engine?, agy_session? }] }) y un <id>.jsonl por conversación.
+// Con claude, el id es el de la sesión de Claude Code, que guarda la conversación de verdad y la retoma con --resume;
+// started dice que ya existe. Con agy (engine: 'agy', §47) el id lo elige el hub y agy_session es el sessionId de agy.
 // ChatManager junta eso con un ChatProcess por conversación en uso.
 import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
 import { appendFile, mkdir, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ChatError, ChatProcess, chatDir } from './chat.js';
+import { AgyProcess } from './chat-agy.js';
+import { ENGINES, engineFor } from './chat-engine.js';
 import { DEFAULT_PROFILE, listProfiles, saveLimits, sessionProfile } from './profiles.js';
 import { writeAtomic } from './store/atomic.js';
 import { T } from './i18n.js';
@@ -66,19 +69,20 @@ export function chatStore(projectDir, { now = () => new Date().toISOString() } =
      * Una conversación nueva; con session, una sesión de Claude Code que ya existe (started) y se creó afuera.
      * profile: su perfil (§33); el predeterminado no se anota.
      */
-    create(text, { session, profile } = {}) {
+    create(text, { session, profile, engine = 'claude' } = {}) {
       const at = now();
       const chat = { id: session ?? randomUUID(), title: chatTitle(text), created_at: at, last_at: at, ...(session && { started: true, external: true }),
-        ...(profile && profile !== DEFAULT_PROFILE && { profile }) };
+        ...(engine === 'agy' ? { engine } : profile && profile !== DEFAULT_PROFILE && { profile }) };
       return change((chats) => { chats.push(chat); return chat; });
     },
     /** Anota que se usó (y que la sesión de Claude Code ya existe, con started). */
-    touch(id, { started = false } = {}) {
+    touch(id, { started = false, agySession } = {}) {
       return change((chats) => {
         const c = chats.find((x) => x.id === id);
         if (!c) return null;
         c.last_at = now();
         if (started) c.started = true;
+        if (agySession) c.agy_session = agySession;
         return c;
       });
     },
@@ -137,20 +141,24 @@ export class ChatManager extends EventEmitter {
    * session: retomar una sesión de Claude Code de afuera (la que hizo una pregunta, §32); si ya está en la lista,
    * solo se le manda el mensaje.
    */
-  async create(text, { task, session, profile } = {}) {
+  async create(text, { task, session, profile, engine } = {}) {
     if (session && !UUID.test(session)) throw new ChatError('invalid_argument', T('session tiene que ser el id de una sesión de Claude Code'));
     const known = session ? await this.store.get(session) : null;
     if (known) {
       await this.send(known.id, text, { task });
       return known;
     }
+    // El motor: una sesión de afuera es de Claude Code; una nueva, el pedido o el elegido en Ajustes (§47).
+    if (engine !== undefined && !ENGINES.includes(engine)) throw new ChatError('invalid_argument', T`motor desconocido: ${engine} (claude o agy)`);
+    engine = session ? 'claude' : (engine ?? engineFor(this.env));
     // Una sesión de afuera, en el perfil donde está (§33); una nueva, en el elegido, que queda para las siguientes.
-    if (session) profile = sessionProfile(session, this.profiles())?.id ?? DEFAULT_PROFILE;
+    if (engine === 'agy') profile = undefined;
+    else if (session) profile = sessionProfile(session, this.profiles())?.id ?? DEFAULT_PROFILE;
     else if (profile !== undefined) {
       this.profileOf(profile);
       await this.store.setProfile(profile);
     } else profile = await this.store.profile();
-    const chat = await this.store.create(text, { session, profile });
+    const chat = await this.store.create(text, { session, profile, engine });
     try {
       await this.send(chat.id, text, { task });
     } catch (e) {
@@ -202,10 +210,12 @@ export class ChatManager extends EventEmitter {
   #proc(chat) {
     let proc = this.procs.get(chat.id);
     if (proc) return proc;
-    const opts = { projectDir: this.projectDir, name: this.name, session: chat.id, resume: !!chat.started, retry: !chat.external, profile: this.profileOf(chat.profile), env: this.env };
+    const opts = chat.engine === 'agy'
+      ? { projectDir: this.projectDir, name: this.name, session: chat.id, agySession: chat.agy_session ?? null, env: this.env }
+      : { projectDir: this.projectDir, name: this.name, session: chat.id, resume: !!chat.started, retry: !chat.external, profile: this.profileOf(chat.profile), env: this.env };
     if (this.idleMs !== undefined) opts.idleMs = this.idleMs;
     if (this.interruptMs !== undefined) opts.interruptMs = this.interruptMs;
-    proc = new ChatProcess(opts);
+    proc = chat.engine === 'agy' ? new AgyProcess(opts) : new ChatProcess(opts);
     proc.on('event', (e) => this.#event(chat.id, proc, e));
     this.procs.set(chat.id, proc);
     return proc;
@@ -213,6 +223,13 @@ export class ChatManager extends EventEmitter {
 
   // Arma la respuesta del turno con lo que va llegando y la guarda en la copia al terminar.
   #event(id, proc, e) {
+    // El sessionId de agy se anota enseguida: si el hub se cierra en medio del turno, la conversación se retoma igual.
+    if (e.event === 'session') {
+      const saved = this.store.touch(id, { agySession: e.agySession }).catch(() => {});
+      this.pending.add(saved);
+      saved.finally(() => this.pending.delete(saved));
+      return;
+    }
     // Los límites son de la cuenta del perfil: se guardan y salen con el perfil, no con la respuesta.
     if (e.event === 'limits') {
       const profile = proc.profile?.id ?? DEFAULT_PROFILE;

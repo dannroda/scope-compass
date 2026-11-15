@@ -502,8 +502,10 @@ test('decide --ask guarda la sesión de Claude Code que pregunta (§32): de CLAU
   await cli(['decide', 'm1-07', '¿C?', '--ask', '--session', ''], { env });
   await cli(['decide', 'm1-07', '¿D?', '--ask', '--session', '0f0f0f0f-0000-4000-8000-000000000000']);
   await cli(['decide', 'm1-07', '¿E?', '--ask'], { env: { ...process.env, CLAUDE_CODE_SESSION_ID: 'otra-cosa' } });
+  // El chat con agy (§47): el hub le pasa el id de la conversación al MCP en SCOMPASS_CHAT_SESSION.
+  await cli(['decide', 'm1-07', '¿G?', '--ask'], { env: { ...process.env, SCOMPASS_CHAT_SESSION: '7a7a7a7a-0000-4000-8000-000000000000' } });
   const t = JSON.parse(await readFile(join(dir, 'compass', 'tasks', 'm1-07.json'), 'utf8'));
-  assert.deepEqual(t.decisions.map((d) => d.session), ['6f0c4c1e-1111-4222-8333-444455556666', undefined, undefined, '0f0f0f0f-0000-4000-8000-000000000000', undefined]);
+  assert.deepEqual(t.decisions.map((d) => d.session), ['6f0c4c1e-1111-4222-8333-444455556666', undefined, undefined, '0f0f0f0f-0000-4000-8000-000000000000', undefined, '7a7a7a7a-0000-4000-8000-000000000000']);
   const bad = await cli(['decide', 'm1-07', '¿F?', '--ask', '--session', 'x']);
   assert.equal(bad.code, 2);
   assert.match(bad.err, /--session tiene que ser/);
