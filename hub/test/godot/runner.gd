@@ -150,15 +150,100 @@ func test_online_move(a: Array) -> void:
 
 # Un cambio hecho afuera (la UI web, la CLI) llega al dock por el WebSocket.
 # Hub de otra versión que el addon: aviso en el dock; con la misma, nada.
-func test_version_mismatch(a: Array) -> void:
-	var c := "version_mismatch"
+# §39: con el hub del mismo protocolo no hay aviso, aunque las versiones difieran.
+func test_protocol_ok(a: Array) -> void:
+	var c := "protocol_ok"
 	var v = await _online_view(a[0], c)
 	if v == null: return
-	if not _check(c, v.addon_version() != "" and v.client.hub_version == v.addon_version(), "versiones: hub %s, addon %s" % [v.client.hub_version, v.addon_version()]): return
-	if not _check(c, not v.version_label.visible, "avisa con la misma versión"): return
+	if not _check(c, v.client.mismatch_version == "" and not v.compat_row.visible, "avisa con el mismo protocolo"): return
 	v.client.hub_version = "9.9.9"
 	v._render()
-	if not _check(c, v.version_label.visible and v.version_label.text.contains("9.9.9"), "no avisa la versión distinta"): return
+	if not _check(c, not v.compat_row.visible, "avisa por la versión con el mismo protocolo"): return
+
+
+# §39: un hub de otro protocolo (o anterior, sin protocol) no se usa: solo lectura, y el aviso ofrece el binario.
+func test_protocol_mismatch(a: Array) -> void:
+	var c := "protocol_mismatch"
+	var v := await _view(a[0])
+	await _until(func(): return v.client.mismatch_version != "", 3.0)
+	if not _check(c, not v.online and v.banner.visible, "se conectó a un hub de otro protocolo"): return
+	if not _check(c, v.client.mismatch_version == "0.0.1" and v.client.mismatch_protocol == -1, "no anotó la versión: %s %d" % [v.client.mismatch_version, v.client.mismatch_protocol]): return
+	if not _check(c, v.compat_row.visible and v.compat_label.text.contains("0.0.1") and v.compat_label.text.contains(v.addon_version()), "sin aviso: " + v.compat_label.text): return
+	var url: String = v.compat_button.tooltip_text
+	if not _check(c, url.begins_with("https://github.com/dannroda/scope-compass/releases/download/v%s/scompass-v%s-" % [v.addon_version(), v.addon_version()]), "URL del binario: " + url): return
+	if not _check(c, v.banner_title.text.contains("otro protocolo"), "el banner no dice por qué: " + v.banner_title.text): return
+	if not _check(c, v.board.tasks.size() > 0, "no leyó compass/ de disco"): return
+
+
+# §39: el updater (copia del de godot-agent) sin red: versiones, elegir el zip del addon, URL del binario, extraer e
+# instalar.
+func test_updater(a: Array) -> void:
+	var c := "updater"
+	var U := preload("res://addons/scope_compass/addon_updater.gd")
+	if not _check(c, U.compare_versions("v1.2.10", "1.2.9") == 1 and U.compare_versions("1.3.0-beta.1", "1.3.0") == -1 and U.compare_versions("1.0.0", "v1.0.0") == 0, "compare_versions"): return
+	var asset := func(n: String): return { "name": n, "browser_download_url": "https://x/" + n }
+	var list := [
+		{ "tag_name": "v0.3.0", "prerelease": true, "assets": [asset.call("scope-compass-addon-v0.3.0.zip")] },
+		{ "tag_name": "v0.2.5", "draft": true, "assets": [asset.call("scope-compass-addon-v0.2.5.zip")] },
+		{ "tag_name": "v0.2.1", "html_url": "https://h/0.2.1", "body": "notas", "assets": [asset.call("scompass-v0.2.1-windows-x64.zip"), asset.call("scope-compass-addon-v0.2.1.zip")] },
+		{ "tag_name": "v0.2.4", "assets": [asset.call("scompass-v0.2.4-linux-x64"), asset.call("scompass-v0.2.4-windows-x64.zip")] },
+		{ "tag_name": "v0.1.0", "assets": [asset.call("scope-compass-addon-v0.1.0.zip")] },
+	]
+	var r: Dictionary = U.pick_release(list, false)
+	if not _check(c, r.get("version") == "0.2.1" and r.zip_url == "https://x/scope-compass-addon-v0.2.1.zip" and r.notes == "notas", "pick_release: %s" % r): return
+	if not _check(c, U.pick_release(list, true).get("version") == "0.3.0", "con prereleases"): return
+	if not _check(c, U.binary_url("0.2.1", "Windows", "x86_64") == "https://github.com/dannroda/scope-compass/releases/download/v0.2.1/scompass-v0.2.1-windows-x64.exe", "binary_url Windows"): return
+	if not _check(c, U.binary_url("0.2.1", "Linux", "arm64").ends_with("/v0.2.1/scompass-v0.2.1-linux-arm64"), "binary_url Linux"): return
+	if not _check(c, U.is_dev_copy(), "el repo de Scope Compass no cuenta como copia de desarrollo"): return
+	# Un zip como el del release: addons/scope_compass/ con plugin.cfg en 9.9.9.
+	var tmp := OS.get_temp_dir().path_join("scompass-updater-%d" % Time.get_ticks_usec())
+	DirAccess.make_dir_recursive_absolute(tmp)
+	var zip_path := tmp.path_join("addon.zip")
+	var zp := ZIPPacker.new()
+	zp.open(zip_path)
+	for f in [["addons/scope_compass/plugin.cfg", "[plugin]\nversion=\"9.9.9\"\n"], ["addons/scope_compass/nuevo.gd", "extends Node\n"], ["otro/fuera.txt", "x"]]:
+		zp.start_file(f[0])
+		zp.write_file(f[1].to_utf8_buffer())
+		zp.close_file()
+	zp.close()
+	var bad: Dictionary = U.extract(zip_path, tmp.path_join("x1"), "9.9.8")
+	if not _check(c, not bad.ok and bad.error.contains("9.9.9"), "aceptó un zip de otra versión: %s" % bad): return
+	var staged: Dictionary = U.extract(zip_path, tmp.path_join("x2"), "9.9.9")
+	if not _check(c, staged.ok and FileAccess.file_exists(staged.dir.path_join("nuevo.gd")) and not FileAccess.file_exists(staged.dir.path_join("fuera.txt")), "extract: %s" % staged): return
+	# Instalar sobre una copia vieja: lo que ya no viene se borra (si es del addon); lo que agregó el usuario queda.
+	var target := tmp.path_join("addon")
+	DirAccess.make_dir_recursive_absolute(target)
+	for f in ["plugin.cfg", "viejo.gd", "mio.json"]:
+		FileAccess.open(target.path_join(f), FileAccess.WRITE).store_string("viejo")
+	var inst: Dictionary = U.install(staged.dir, target, tmp.path_join("backup"))
+	if not _check(c, inst.ok and FileAccess.file_exists(target.path_join("nuevo.gd")) and not FileAccess.file_exists(target.path_join("viejo.gd")) and FileAccess.file_exists(target.path_join("mio.json")), "install: %s" % inst): return
+	if not _check(c, FileAccess.get_file_as_string(target.path_join("plugin.cfg")).contains("9.9.9"), "no pisó plugin.cfg"): return
+	_rm(tmp)
+
+
+func _rm(path: String) -> void:
+	for f in DirAccess.get_files_at(path):
+		DirAccess.remove_absolute(path.path_join(f))
+	for d in DirAccess.get_directories_at(path):
+		_rm(path.path_join(d))
+	DirAccess.remove_absolute(path)
+
+
+# §39: el aviso de una versión nueva del addon: Después la recuerda; en el repo (copia de desarrollo) no busca.
+func test_addon_update(a: Array) -> void:
+	var c := "addon_update"
+	var prefs := {}
+	var v := DockView.new()
+	v.get_pref = func(k: String, d): return prefs.get(k, d)
+	v.set_pref = func(k: String, val): prefs[k] = val
+	get_root().add_child(v)
+	await v.setup(a[0])
+	if not _check(c, not v.addon_update_row.visible, "avisa sin release"): return
+	if not _check(c, (await v.check_addon_update(true)).contains("desarrollo"), "buscó en una copia de desarrollo"): return
+	v.show_addon_release({ "version": "9.9.9", "html_url": "https://h" })
+	if not _check(c, v.addon_update_row.visible and v.addon_update_label.text.contains("9.9.9") and v.addon_update_label.text.contains(v.addon_version()), "sin aviso: " + v.addon_update_label.text): return
+	v.dismiss_addon_update()
+	if not _check(c, not v.addon_update_row.visible and prefs.get("update_dismissed") == "9.9.9", "Después no se recordó: %s" % prefs): return
 
 
 func test_online_receive(a: Array) -> void:
@@ -313,12 +398,14 @@ func test_recorded_command(a: Array) -> void:
 	var c := "recorded_command"
 	var data: String = a[1]
 	var exe := OS.get_executable_path()
+	# La instalación anotada se escribe después de abrir el dock: setup() corre `scompass update --check`, y con el
+	# ejecutable de Godot anotado como scompass eso abría otro Godot y el test se colgaba.
+	var v := await _view(a[0])
+	v.scompass_setting = func(): return ""
 	var f := FileAccess.open(data.path_join("scompass.json"), FileAccess.WRITE)
 	f.store_string(JSON.stringify({"command": exe, "args": []}))
 	f.close()
 	OS.set_environment("SCOMPASS_DATA", data)
-	var v := await _view(a[0])
-	v.scompass_setting = func(): return ""
 	v.project_root = "/no/existe"
 	var cmd := v.scompass_command()
 	if not _check(c, cmd == [exe, []], "no usó la anotada: " + str(cmd)): return

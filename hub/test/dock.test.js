@@ -55,6 +55,11 @@ beforeEach(async () => {
 });
 afterEach(() => rm(dir, { recursive: true, force: true, maxRetries: 10 }));
 
+async function setConfig(changes) {
+  const p = join(dir, 'compass', 'config.json');
+  await writeFile(p, canonical({ ...JSON.parse(await readFile(p, 'utf8')), ...changes }));
+}
+
 async function setTask(id, changes) {
   const p = join(dir, 'compass', 'tasks', `${id}.json`);
   await writeFile(p, canonical({ ...JSON.parse(await readFile(p, 'utf8')), ...changes }));
@@ -141,11 +146,33 @@ test('con hub: mover desde el dock escribe por la API y la UI web lo ve al insta
   assert.ok(events.some((e) => e.type === 'upsert' && e.id === 'm1-04' && e.doc.status === 'review'), 'se publicó a los clientes (la UI web)');
 });
 
-test('con hub: el dock avisa si el hub es de otra versión que el addon', { skip }, async () => {
+test('§39: con un hub del mismo protocolo no hay aviso, aunque la versión sea otra', { skip }, async () => {
   const hub = await startHub();
-  const r = await godotLive(['version_mismatch', dir]);
+  const r = await godotLive(['protocol_ok', dir]);
   await hub.app.close();
-  expectOk(r, 'version_mismatch');
+  expectOk(r, 'protocol_ok');
+});
+
+test('§39: un hub de otro protocolo no se usa: solo lectura y el aviso ofrece el scompass del addon', { skip }, async () => {
+  // Un scompass anterior a §39: /api/health sin protocol.
+  const { createServer: httpServer } = await import('node:http');
+  const old = httpServer((req, res) => {
+    res.setHeader('content-type', 'application/json');
+    res.end(req.url === '/api/health' ? JSON.stringify({ ok: true, name: 'scope-compass', version: '0.0.1', project: dir, pid: 1 }) : '{}');
+  });
+  await new Promise((r) => old.listen(0, '127.0.0.1', r));
+  await setConfig({ port: old.address().port });
+  const r = await godot('protocol_mismatch', dir);
+  await new Promise((res) => old.close(res));
+  expectOk(r, 'protocol_mismatch');
+});
+
+test('§39: el updater del addon elige el zip del release, valida la versión e instala', { skip }, async () => {
+  expectOk(await godot('updater'), 'updater');
+});
+
+test('§39: el aviso de versión nueva del addon y Después; en el repo no busca', { skip }, async () => {
+  expectOk(await godot('addon_update', dir), 'addon_update');
 });
 
 test('con hub: un cambio desde la UI web llega al dock en menos de 1 s', { skip }, async () => {

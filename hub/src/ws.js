@@ -4,6 +4,7 @@ import websocket from '@fastify/websocket';
 import { StoreError } from './store/json-files.js';
 import { flat } from './views.js';
 import { isLoopback } from './chat-api.js';
+import { PROTOCOL } from './protocol.js';
 
 // Plugin de Fastify: app.register(registerWs, { store, publish, version, boards }).
 // boards: Set con el `send` de cada pestaña del tablero que puede notificar (ver app.focusBoard).
@@ -30,7 +31,7 @@ export function attachSocket(socket, { app, store, publish, version, boards, loc
   const forward = (evt) => { if (evt.type !== 'chat' || local) send(evt); };
   app.events.on('event', forward);
   socket.on('close', () => { app.events.off('event', forward); boards.delete(send); });
-  send({ type: 'hello', server_version: version });
+  send({ type: 'hello', server_version: version, protocol: PROTOCOL });
 
   socket.on('message', async (data) => {
     let msg;

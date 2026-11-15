@@ -5,13 +5,20 @@ import { join } from 'node:path';
 import { parseDoc } from '../schema.js';
 import { StoreError } from './json-files.js';
 import { hubsOf } from '../registry.js';
+import { PROTOCOL } from '../protocol.js';
 
 const unflat = ({ id, etag, ...doc }) => ({ id, etag, doc });
 
 // El hub de este proyecto: primero en el puerto de la config y, si no, donde diga el registro de hubs
 // (por si se lanzó con otro --port). Devuelve la URL base o null.
-/** Versión que informó cada hub encontrado (URL base → versión), para avisar si no es la de esta CLI. */
+/** Versión y protocolo que informó cada hub encontrado (URL base → { version, protocol }), para avisar si no es la de esta CLI. */
 export const hubVersions = new Map();
+
+// ¿El hub en `base` habla el mismo protocolo que este proceso (§39)? Uno anterior a §39 no lo informa: es otro.
+export function hubCompatible(base) {
+  const h = hubVersions.get(base);
+  return !h || h.protocol === PROTOCOL;
+}
 
 // Las entradas del registro pueden traer una base (el Inicio sirve el proyecto en /p/<clave>, D29): la URL
 // devuelta ya la incluye, así el store HTTP no cambia.
@@ -34,7 +41,7 @@ async function probeHub(projectDir, port, { timeoutMs = 300, prefix = '' } = {})
     const h = await r.json();
     if (h?.name !== 'scope-compass' || !h.project) return null;
     const [a, b] = await Promise.all([realpath(h.project), realpath(projectDir)]).catch(() => [h.project, projectDir]);
-    if (a === b) hubVersions.set(base, String(h.version ?? ''));
+    if (a === b) hubVersions.set(base, { version: String(h.version ?? ''), protocol: h.protocol ?? null });
     return a === b ? base : null;
   } catch {
     return null;

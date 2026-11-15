@@ -14,6 +14,7 @@ const Board := preload("board.gd")
 const HubClient := preload("hub_client.gd")
 const HubProcess := preload("hub_process.gd")
 const TaskDetail := preload("task_detail.gd")
+const Updater := preload("addon_updater.gd")
 
 const WRAP_MIN_WIDTH := TaskDetail.WRAP_MIN_WIDTH
 const BLOCKED_COLOR := TaskDetail.BLOCKED_COLOR
@@ -58,8 +59,23 @@ var warnings_label: Label
 ## Aviso de que compass/ tiene archivos generados viejos (schema/, AGENTS.md), con el botón para actualizarlos.
 var update_row: HFlowContainer
 var update_label: Label
-## Aviso de que el hub conectado es de otra versión que el addon.
-var version_label: Label
+## Aviso de que el scompass de este equipo habla otro protocolo que el addon, o no está (§39), con el botón que baja
+## el binario del mismo release que el addon.
+var compat_row: HFlowContainer
+var compat_label: Label
+var compat_button: Button
+var _scompass_missing := false
+## Aviso de una versión nueva del addon (§39): Novedades, Actualizar y Después.
+var addon_update_row: HFlowContainer
+var addon_update_label: Label
+var addon_update_buttons: Array[Button] = []
+var addon_release: Dictionary = {}
+var updater := Updater.new()
+## Reinicia el editor después de instalar una versión nueva (lo pone el plugin; guarda las escenas antes).
+var restart_editor: Callable = func(): pass
+## Si se buscan versiones nuevas al abrir el editor (Editor Settings › scope_compass/check_updates).
+var check_updates_setting: Callable = func(): return true
+const UPDATE_CHECK_INTERVAL_S := 86400
 ## Archivos desactualizados según `scompass update --check`.
 var outdated: Array = []
 var milestone_select: OptionButton
@@ -111,6 +127,7 @@ func _init() -> void:
 	add_theme_constant_override("separation", 6)
 	add_child(client)
 	add_child(hub)
+	add_child(updater)
 	client.went_online.connect(_on_online)
 	client.went_offline.connect(_on_offline)
 	client.event_received.connect(_on_event)
@@ -125,6 +142,8 @@ func setup(root: String) -> void:
 	await reload()
 	await check_compass()
 	await _try_hub()
+	if bool(check_updates_setting.call()):
+		check_addon_update.call_deferred()
 
 
 ## Recarga completa: por HTTP si hay hub, de disco si no. Si llega otra mientras carga, se repite.
@@ -172,8 +191,16 @@ func _on_retry() -> void:
 
 
 ## Busca el hub y, si no lo hay pero el Inicio corre, le pide que sirva el proyecto (21.1): el Inicio lo hace al
-## primer pedido (D29) y, sin esto, el dock decía "No hay hub" hasta apretar Iniciar hub.
+## primer pedido (D29) y, sin esto, el dock decía "No hay hub" hasta apretar Iniciar hub. Si cambió lo que se sabe de
+## un hub de otro protocolo (§39), se vuelve a dibujar el aviso.
 func _try_hub() -> void:
+	var before := client.mismatch_version
+	await _find_hub()
+	if client.mismatch_version != before and not online:
+		_render()
+
+
+func _find_hub() -> void:
 	if online or await client.detect():
 		return
 	var home := client.home_port()
@@ -363,6 +390,97 @@ func addon_version() -> String:
 	return str(cfg.get_value("plugin", "version", ""))
 
 
+# --- Compatibilidad y actualizaciones (§39) -------------------------------------------------------
+
+## El aviso de scompass incompatible o ausente. Un hub de otro protocolo no se usa (hub_client.gd): el tablero sigue
+## en solo lectura desde compass/ hasta que se baja el scompass del mismo release que el addon.
+func _render_compat() -> void:
+	var mine := addon_version()
+	var mismatch := not online and client.mismatch_version != ""
+	compat_row.visible = mine != "" and not online and (mismatch or _scompass_missing)
+	compat_button.text = "Bajar scompass %s" % mine
+	compat_button.tooltip_text = Updater.binary_url(mine)
+	if mismatch:
+		compat_label.text = "El scompass de este equipo (%s) no es compatible con este addon (%s): hablan otro protocolo. Bajá scompass %s y volvé a iniciar el hub; mientras tanto, las tareas se leen de compass/ en solo lectura." % [client.mismatch_version, mine, mine]
+	else:
+		compat_label.text = "No encontré scompass en este equipo. Bajá scompass %s, abrilo una vez y apretá Iniciar hub, o configurá su ruta en Editor Settings › scope_compass/scompass_path." % mine
+
+
+## Busca un release nuevo del addon y, si lo hay, lo avisa. Al abrir el editor (`manual` false) busca a lo sumo una
+## vez por día y no vuelve a mostrar la versión a la que se le dijo Después. Devuelve "" o por qué no avisó.
+func check_addon_update(manual := false) -> String:
+	if Updater.is_dev_copy():
+		return "es una copia de desarrollo del addon: se actualiza con git"
+	var now := int(Time.get_unix_time_from_system())
+	if not manual and now - int(get_pref.call("update_last_check", 0)) < UPDATE_CHECK_INTERVAL_S:
+		return "ya se buscó hoy"
+	var result: Dictionary = await updater.check()
+	if not result.error.is_empty():
+		return result.error
+	set_pref.call("update_last_check", now)
+	var release: Dictionary = result.release
+	if release.is_empty():
+		return "es la última versión (%s)" % addon_version()
+	if manual or str(release.version) != str(get_pref.call("update_dismissed", "")):
+		show_addon_release(release)
+	return ""
+
+
+## Muestra el aviso de `release` (como lo da Updater.pick_release()).
+func show_addon_release(release: Dictionary) -> void:
+	addon_release = release
+	addon_update_label.text = "Scope Compass %s está disponible (tenés la %s). Actualizar cambia el addon; si cambia el protocolo, el dock ofrece después el scompass nuevo." % [release.version, addon_version()]
+	_set_update_buttons(true)
+	addon_update_row.visible = true
+
+
+func dismiss_addon_update() -> void:
+	set_pref.call("update_dismissed", str(addon_release.get("version", "")))
+	addon_update_row.visible = false
+
+
+func _set_update_buttons(enabled: bool) -> void:
+	for b in addon_update_buttons:
+		b.disabled = not enabled
+
+
+func _confirm_addon_update() -> void:
+	var confirm := ConfirmationDialog.new()
+	confirm.title = "Actualizar Scope Compass"
+	confirm.dialog_text = "Se baja Scope Compass %s, se instala sobre addons/scope_compass y se reinicia el editor (antes se guardan las escenas abiertas). Las tareas de compass/ no se tocan." % addon_release.get("version", "")
+	confirm.ok_button_text = "Actualizar y reiniciar"
+	confirm.cancel_button_text = "Cancelar"
+	confirm.confirmed.connect(install_addon_update)
+	confirm.visibility_changed.connect(func():
+		if not confirm.visible:
+			confirm.queue_free())
+	add_child(confirm)
+	confirm.popup_centered()
+
+
+## Baja, valida e instala el release y reinicia el editor. Entre escribir los archivos y reiniciar no hay awaits: el
+## editor no llega a recargar los scripts nuevos con el plugin viejo cargado.
+func install_addon_update() -> void:
+	if Updater.is_dev_copy():
+		addon_update_label.text = "Es una copia de desarrollo del addon: actualizala con git."
+		return
+	var v := str(addon_release.get("version", ""))
+	_set_update_buttons(false)
+	addon_update_label.text = "Bajando Scope Compass %s…" % v
+	var staged: Dictionary = await updater.download(addon_release)
+	if not staged.ok:
+		addon_update_label.text = "No se pudo actualizar: %s" % staged.error
+		_set_update_buttons(true)
+		return
+	var backup := ProjectSettings.globalize_path("user://scope_compass/update/backup-%s" % addon_version())
+	var installed := Updater.install(staged.dir, ProjectSettings.globalize_path(Updater.ADDON_DIR), backup)
+	if not installed.ok:
+		addon_update_label.text = "No se pudo actualizar: %s" % installed.error
+		_set_update_buttons(true)
+		return
+	restart_editor.call()
+
+
 # --- Crear compass/ ------------------------------------------------------------------------------
 
 ## ¿El proyecto ya tiene compass/config.json? (lo mismo que mira `scompass init` para negarse a pisarla).
@@ -458,8 +576,10 @@ func _start_hub() -> bool:
 			return true
 		show_notice("El Inicio no pudo servir el proyecto (%s); se levanta un hub propio." % _error_of(r))
 	var cmd := scompass_command()
+	_scompass_missing = cmd.is_empty()
 	if cmd.is_empty():
 		show_notice("No encontré scompass. Configurá su ruta en Editor Settings › scope_compass/scompass_path.")
+		_render_compat()
 		return false
 	if not hub.launch(cmd, bool(keep_hub_setting.call())):
 		show_notice("No se pudo iniciar el hub con %s." % cmd[0])
@@ -468,8 +588,14 @@ func _start_hub() -> bool:
 		await get_tree().create_timer(0.25).timeout
 		if await client.detect() or online:
 			break
-		if not OS.is_process_running(hub.pid):
+		if not OS.is_process_running(hub.pid) or client.mismatch_version != "":
 			break
+	# El scompass encontrado es de otro protocolo (§39): su hub no sirve; se cierra y se ofrece el del addon.
+	if not online and client.mismatch_version != "":
+		hub.stop(true)
+		show_notice("El scompass encontrado (%s) habla otro protocolo que el addon: bajá el de la versión %s." % [client.mismatch_version, addon_version()])
+		_render_compat()
+		return false
 	if not online and not await _wait_online(2.0):
 		show_notice("El hub no arrancó. Mirá .godot/scope_compass_hub.log o probá `scompass serve` en una terminal.")
 		return false
@@ -625,12 +751,36 @@ func _build() -> void:
 	update_row.add_child(update_button)
 	add_child(update_row)
 
-	version_label = Label.new()
-	version_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	version_label.custom_minimum_size.x = WRAP_MIN_WIDTH
-	version_label.add_theme_color_override("font_color", Color("#e0a95a"))
-	version_label.visible = false
-	add_child(version_label)
+	compat_row = HFlowContainer.new()
+	compat_row.visible = false
+	compat_label = Label.new()
+	compat_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	compat_label.custom_minimum_size.x = WRAP_MIN_WIDTH
+	compat_label.size_flags_horizontal = SIZE_EXPAND_FILL
+	compat_label.add_theme_color_override("font_color", Color("#e0a95a"))
+	compat_row.add_child(compat_label)
+	compat_button = Button.new()
+	compat_button.pressed.connect(func(): OS.shell_open(Updater.binary_url(addon_version())))
+	compat_row.add_child(compat_button)
+	add_child(compat_row)
+
+	addon_update_row = HFlowContainer.new()
+	addon_update_row.visible = false
+	addon_update_label = Label.new()
+	addon_update_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	addon_update_label.custom_minimum_size.x = WRAP_MIN_WIDTH
+	addon_update_label.size_flags_horizontal = SIZE_EXPAND_FILL
+	addon_update_row.add_child(addon_update_label)
+	for b in [["Novedades", "Las notas del release en GitHub", func(): OS.shell_open(str(addon_release.get("html_url", "")))],
+			["Después", "No volver a avisar de esta versión", dismiss_addon_update],
+			["Actualizar", "Baja el addon nuevo, lo instala sobre addons/scope_compass y reinicia el editor", _confirm_addon_update]]:
+		var button := Button.new()
+		button.text = b[0]
+		button.tooltip_text = b[1]
+		button.pressed.connect(b[2])
+		addon_update_row.add_child(button)
+		addon_update_buttons.append(button)
+	add_child(addon_update_row)
 
 	var head := HBoxContainer.new()
 	add_child(head)
@@ -840,10 +990,7 @@ func _render() -> void:
 	footer_label.tooltip_text = footer_label.text
 	# Un proyecto que sirve el Inicio no se reinicia solo (su hub no tiene /api/restart): se reinicia el Inicio (19.10).
 	restart_button.visible = online and client.base == ""
-	# Hub y addon de versiones distintas: uno de los dos quedó viejo (o el hub no se reinició tras actualizar).
-	var mine := addon_version()
-	version_label.visible = online and client.hub_version != "" and mine != "" and client.hub_version != mine
-	version_label.text = "El hub es la versión %s y el addon la %s. Reiniciá el hub; si sigue, actualizá el que quedó viejo." % [client.hub_version, mine]
+	_render_compat()
 	footer_right.text = ("compass: %d sin commitear" % _uncommitted) if _uncommitted >= 0 else ""
 	footer_right.tooltip_text = "Cambios del tablero que todavía no están en git: commitealos cuando quieras." if _uncommitted > 0 else ""
 	if _uncommitted > 0:

@@ -23,6 +23,8 @@ import { docFiles } from './docs.js';
 import { liveHome } from './registry.js';
 
 export const VERSION = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8')).version;
+import { PROTOCOL } from './protocol.js';
+export { PROTOCOL };
 export const HOST = '127.0.0.1';
 export const WEB_DIR = resourceDir('web');
 
@@ -132,7 +134,7 @@ export function createServer({ projectDir, store, validators, watch = false, exp
   app.setNotFoundHandler((req, reply) =>
     reply.code(404).send({ error: { code: 'not_found', message: `no existe ${req.method} ${req.url}` } }));
 
-  app.get('/api/health', async () => ({ ok: true, name: 'scope-compass', version: VERSION, project: projectDir, pid: process.pid }));
+  app.get('/api/health', async () => ({ ok: true, name: 'scope-compass', version: VERSION, protocol: PROTOCOL, project: projectDir, pid: process.pid }));
   // Reiniciar el hub (carga código nuevo). Responde antes de cerrar; el hub nuevo toma el mismo puerto.
   app.post('/api/restart', async (req, reply) => {
     if (!onRestart) throw new StoreError('invalid_argument', 'este hub no se puede reiniciar desde la API');

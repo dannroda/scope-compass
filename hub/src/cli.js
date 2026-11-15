@@ -14,8 +14,8 @@ import { importArtifact } from './import-artifact.js';
 import { KINDS, loadValidators, parseDoc, SCHEMA_DIR } from './schema.js';
 import { canonical } from './store/canonical.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
-import { createHttpStore, detectHub, hubVersions } from './store/http.js';
-import { createServer, freePortFrom, listen, VERSION } from './server.js';
+import { createHttpStore, detectHub, hubCompatible, hubVersions } from './store/http.js';
+import { createServer, freePortFrom, listen, PROTOCOL, VERSION } from './server.js';
 import { serveMcp } from './mcp.js';
 import { startTray } from './tray.js';
 import { outdatedFiles, TEMPLATES, updateAllCompasses, updateCompass } from './update.js';
@@ -242,10 +242,14 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'home', 'help', 'mcp', 'board'].includes(cmd)) {
     const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
     const hub = await detectHub(project, cfg?.port);
-    if (hub) {
+    // Un hub de otro protocolo (§39) no se usa: la API pudo cambiar. Se escribe directo en compass/ y su watcher lo ve.
+    if (hub && !hubCompatible(hub)) {
+      const h = hubVersions.get(hub);
+      warn(`aviso: el hub en ${hub} es la versión ${h.version || '?'} (protocolo ${h.protocol ?? 'anterior a §39'}) y esta CLI la ${VERSION} (protocolo ${PROTOCOL}): no se usa y se escribe directo en compass/. Reinicialo con la versión nueva`);
+    } else if (hub) {
       store = createHttpStore(hub, compass, { validators });
       // Hub de otra versión (por ejemplo, quedó corriendo de antes de actualizar): puede no conocer campos nuevos.
-      const v = hubVersions.get(hub);
+      const v = hubVersions.get(hub)?.version;
       if (v && v !== VERSION) warn(`aviso: el hub en ${hub} es la versión ${v} y esta CLI la ${VERSION}; reinicialo con \`scompass restart\``);
     }
   }

@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadValidators } from '../src/schema.js';
 import { createJsonFilesStore } from '../src/store/json-files.js';
-import { createServer, listen, VERSION } from '../src/server.js';
+import { createServer, listen, PROTOCOL, VERSION } from '../src/server.js';
 import { run } from '../src/cli.js';
 
 const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'compass');
@@ -57,10 +57,10 @@ async function connect() {
 }
 const type = (t) => (m) => m.type === t;
 
-test('hello al conectar con la versión del servidor', async () => {
+test('hello al conectar con la versión y el protocolo del servidor (§39)', async () => {
   const ws = new WebSocket(`ws://${base}/ws`);
   const first = await new Promise((res) => ws.addEventListener('message', (e) => res(JSON.parse(e.data))));
-  assert.deepEqual(first, { type: 'hello', server_version: VERSION });
+  assert.deepEqual(first, { type: 'hello', server_version: VERSION, protocol: PROTOCOL });
   ws.close();
 });
 

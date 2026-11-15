@@ -511,3 +511,14 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Una carpeta fija de instalación que el addon conozca: obliga a instalar en un lugar, y el binario suelto (descargado y abierto) no funcionaría.
   - Que el addon traiga el binario adentro: 150 MB por proyecto y una versión por proyecto.
   - Agregar scompass al PATH desde un instalador: toca la configuración del sistema y en Linux depende de la sesión.
+
+## D49 · Versiones: el addon se actualiza solo y la compatibilidad va por un protocolo entero
+
+- **Qué:** el addon de Godot se actualiza solo desde los releases de GitHub, con una copia del updater de godot-agent. Hub, Inicio y addon declaran un número de protocolo entero; el dock, la CLI y el Inicio no usan un hub de otro protocolo y el dock ofrece el binario del mismo release que el addon (spec §39). El aviso anterior del dock por versión distinta se quitó: con el mismo protocolo, versiones distintas funcionan.
+- **Por qué:** funciona sin el harness y no queda acoplado a él. Un binario viejo deja de servir solo cuando cambia el protocolo, no en cada release; y el aviso por versión saltaba con cada actualización de una sola de las partes. Diseño acordado con la sesión agent-harness-81 y aprobado por Dann el 2026-11-12 (m32-04). El MCP ya no depende del PATH (D48).
+- **Descartado:**
+  - Que el harness de godot-agent actualice el addon: lo acopla al harness.
+  - Compatibilidad por semver o por versión mínima en `plugin.cfg`: rompe en cada release, y obliga a actualizar todo junto.
+  - Que el plugin o el addon traigan el binario: pesado y depende de la plataforma.
+  - Un `scompass update` que se actualice a sí mismo: reemplazar el ejecutable que corre (y en Windows, bloqueado) a cambio de poco, si el dock ya ofrece la descarga directa.
+

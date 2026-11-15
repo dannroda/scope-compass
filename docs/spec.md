@@ -278,7 +278,7 @@ Mensajes JSON, un objeto por mensaje. Lo usan la UI web y el plugin de Godot.
 
 Servidor → cliente:
 ```json
-{"type": "hello", "server_version": "1.0.0"}
+{"type": "hello", "server_version": "1.0.0", "protocol": 1}
 {"type": "upsert", "collection": "tasks", "id": "m0-03", "doc": { "...": "..." }}
 {"type": "delete", "collection": "tasks", "id": "m0-03"}
 {"type": "doc_changed", "alias": "gdd"}
@@ -1465,3 +1465,24 @@ Cuando sale una versión de Scope Compass con un schema o una guía para agentes
 
 - [x] Con dos tableros desactualizados, el botón aparece con el número, los pone al día a los dos y desaparece.
 - [x] `update --all --check` lista los desactualizados y sale con 1; `update --all` los actualiza y después `--check` sale con 0.
+
+## 39. Versiones y compatibilidad (M32)
+
+Scope Compass tiene tres partes que se actualizan por separado: el binario `scompass` (uno por equipo), el addon de Godot (uno por proyecto) y el MCP registrado en Claude Code, que es el mismo binario. No hace falta que tengan la misma versión: alcanza con que hablen el mismo **protocolo** (D49).
+
+- **Protocolo:** un entero (`hub/src/protocol.js`) que sube solo cuando se rompe la API HTTP/WebSocket o el formato de `compass/`, no en cada release. `GET /api/health` lo informa en el hub y en el Inicio (`protocol`), y también el `hello` del WebSocket. Un scompass anterior a §39 no lo dice y cuenta como otro protocolo.
+- **El addon** tiene su `PROTOCOL` en `hub_client.gd`. Un hub de este proyecto con otro protocolo no se usa: el dock sigue en solo lectura desde `compass/`, el banner dice por qué y un aviso ofrece **Bajar scompass <versión del addon>**, que abre la URL directa del binario del mismo release para este sistema (`scompass-v<v>-<linux|windows|macos>-<x64|arm64>[.exe]`). Si el dock levantó ese hub, lo cierra. Si no encuentra scompass al apretar *Iniciar hub*, ofrece el mismo binario.
+- **La CLI y el Inicio** tampoco usan un hub de otro protocolo: la CLI escribe directo en `compass/` y lo avisa por stderr (el watcher del hub lo ve igual); el Inicio lee y escribe ese proyecto de disco. Con el mismo protocolo y otra versión, la CLI sigue avisando que conviene reiniciar el hub.
+- **Actualizar el addon:** el addon se actualiza solo, con `addon_updater.gd` (copia del de godot-agent con el repo, la carpeta y el zip de Scope Compass). Al abrir el editor, a lo sumo una vez por día, busca en `api.github.com/repos/dannroda/scope-compass/releases` la versión más alta sin borradores ni prereleases que traiga `scope-compass-addon-v<v>.zip`. Si es más nueva, el dock muestra *Novedades* (las notas en GitHub), *Después* (no vuelve a avisar de esa versión) y *Actualizar*: baja el zip, lo rechaza si su `plugin.cfg` no dice la versión del tag, reemplaza `addons/scope_compass/` (borra lo que la versión nueva ya no trae, salvo archivos que agregó el usuario de otro tipo), guarda las escenas y reinicia el editor. Editor Settings › `scope_compass/check_updates` lo apaga. En una copia de desarrollo (el addon es un enlace, o el proyecto es el repo de Scope Compass) no busca.
+- **El binario** no se actualiza solo: se baja del release (el dock lo ofrece cuando el protocolo cambia). `scompass update` sigue siendo para poner al día `compass/` (§38), no el programa.
+- **El MCP** es el binario: `serverInfo.version` dice su versión, y como pasa por la CLI, con un hub de otro protocolo escribe directo igual que ella.
+- Si algún día el addon está en el Asset Store, el harness de godot-agent lo actualiza como cualquier asset.
+
+### Criterios de aceptación
+
+- [x] `/api/health` del hub y del Inicio, y el `hello`, dicen `protocol`; el proyecto que sirve el Inicio dice el mismo.
+- [x] Con un hub de otro protocolo (o sin `protocol`), la CLI escribe directo y avisa; el dock queda en solo lectura con el aviso y la URL del binario de la versión del addon.
+- [x] Con el mismo protocolo y otra versión, el dock no avisa.
+- [x] El updater elige el zip del addon entre los assets (no un binario), descarta borradores y prereleases, rechaza un zip de otra versión e instala sin borrar lo que agregó el usuario.
+- [x] El aviso de versión nueva: *Después* la recuerda; en el repo de Scope Compass no busca.
+- [ ] Probado con un release real: actualizar el addon desde el dock y bajar el binario desde el aviso.

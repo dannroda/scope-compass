@@ -48,5 +48,6 @@ First public release. The interface and the documentation in `docs/` are in Span
 - Standalone binaries for Linux x64 and Windows x64 that do not need Node, and the Godot addon as a zip. `node tools/build.mjs` also builds the hub as an npm package (`.tgz`) for systems with Node 22 or newer.
 - `tools/install.sh` installs `scompass` on Linux and adds a launcher for Home to the applications menu.
 - **Update all** in Home (and `scompass update --all`) brings every known board's generated files (schemas and the agent guide) up to date after a new version of Scope Compass.
+- The Godot addon updates itself from GitHub releases (once a day when the editor opens; it can be turned off). The addon, the hub and the CLI check compatibility by a protocol number instead of the version: a hub that speaks another protocol is not used, and the dock offers the matching `scompass` binary.
 - `scompass` does not need to be on the `PATH`: every run records its own path in the data folder, the Godot addon looks there, and `scompass mcp install` registers the MCP server in Claude Code with the full path.
 - Releases built and published by GitHub Actions: tests on Linux and Windows, each binary built on its own platform, and `SHA256SUMS` with the downloads.

@@ -8,6 +8,9 @@ signal went_offline
 signal event_received(msg: Dictionary)
 
 const HOST := "127.0.0.1"
+## Protocolo que habla este addon (spec §39, D49): tiene que ser el PROTOCOL del hub (hub/src/protocol.js). Sube solo
+## cuando se rompe la API HTTP/WebSocket o el formato de compass/. Con otro, el dock no usa ese hub.
+const PROTOCOL := 1
 
 var project_root := ""
 ## Puerto de config.json; `port` es el que se usa (puede ser otro, si el registro dice que el hub está ahí).
@@ -25,6 +28,10 @@ var _connecting := false
 var last_error := ""
 ## Versión que informó el hub conectado (/api/health).
 var hub_version := ""
+## Si el último hub de este proyecto que se encontró habla otro protocolo: su versión y su protocolo (-1 si es
+## anterior a §39 y no lo dice). "" si no hubo ninguno incompatible.
+var mismatch_version := ""
+var mismatch_protocol := -1
 
 
 ## JSON de algo que no controla el dock (otro programa en el puerto, un registro a medio escribir): null si no es
@@ -44,6 +51,8 @@ func detect() -> bool:
 	if _connecting or online:
 		return online
 	_connecting = true
+	mismatch_version = ""
+	mismatch_protocol = -1
 	# Primero lo que dice el registro (un hub suelto o el Inicio con su base), después el puerto de la config.
 	var targets := registry_targets()
 	if not targets.any(func(t): return t[0] == config_port and t[1] == ""):
@@ -72,6 +81,10 @@ func _probe() -> bool:
 		last_error = "responde otro programa, HTTP %d" % r.code
 	elif not _same_path(str(r.json.get("project", "")), project_root):
 		last_error = "es el hub de otro proyecto: %s" % r.json.get("project", "")
+	elif int(r.json.get("protocol", -1)) != PROTOCOL:
+		mismatch_version = str(r.json.get("version", ""))
+		mismatch_protocol = int(r.json.get("protocol", -1))
+		last_error = "es scompass %s, de otro protocolo que el addon" % mismatch_version
 	else:
 		ok = true
 		last_error = ""

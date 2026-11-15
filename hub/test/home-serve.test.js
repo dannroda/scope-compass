@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { loadValidators } from '../src/schema.js';
 import { canonical } from '../src/store/canonical.js';
 import { createJsonFilesStore } from '../src/store/json-files.js';
-import { createServer, listen } from '../src/server.js';
+import { createServer, listen, PROTOCOL } from '../src/server.js';
 import { createHomeServer } from '../src/home.js';
 import { projectKeys } from '../src/home-serve.js';
 import { recordProject } from '../src/projects.js';
@@ -88,6 +88,11 @@ test('sin hub suelto: el Inicio sirve el tablero, la API y el WebSocket del proy
   assert.equal((await fetch(base + '/p/vida/api/shutdown', { method: 'POST' })).status, 400);
   assert.equal((await fetch(base + '/p/vida/api/restart', { method: 'POST' })).status, 400);
   assert.equal((await fetch(base + '/api/health')).status, 200);
+  // El addon de Godot decide por el protocolo (§39): lo dicen el Inicio y el proyecto que sirve, y es el mismo.
+  const [homeHealth, projectHealth] = await Promise.all([base + '/api/health', base + '/p/vida/api/health'].map(async (u) => (await fetch(u)).json()));
+  assert.equal(homeHealth.protocol, PROTOCOL);
+  assert.equal(projectHealth.protocol, PROTOCOL);
+  assert.ok(Number.isInteger(PROTOCOL) && PROTOCOL >= 1);
   // El WebSocket: hello y el upsert de la escritura.
   assert.ok(await until(() => ws.got.some((e) => e.type === 'upsert' && e.id === 'm1-04')), JSON.stringify(ws.got));
   assert.equal(ws.got[0].type, 'hello');

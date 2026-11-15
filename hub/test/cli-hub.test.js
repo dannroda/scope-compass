@@ -205,3 +205,25 @@ test('decision promote con hub: lo hace el hub, que publica la tarea', async () 
   assert.deepEqual(events.filter((e) => e.type === 'upsert').map((e) => [e.id, e.doc.decisions[0].promoted]), [['m1-07', 'D4']]);
   assert.match(await readFile(join(hubDir, 'docs', 'decisiones.md'), 'utf8'), /^# Decisiones\n\n## D3 · Algo\n\n## D4 · Usar X\n\*\*\d{4}-\d\d-\d\d · vigente\*\* · tarea 1\.7 \(m1-07\)\n$/);
 });
+
+// §39: un hub de otro protocolo (uno anterior que quedó corriendo) no se usa; se escribe directo y se avisa por qué.
+test('un hub de otro protocolo no se usa: la CLI escribe al disco y avisa', async () => {
+  const { createServer: httpServer } = await import('node:http');
+  const old = httpServer((req, res) => {
+    res.setHeader('content-type', 'application/json');
+    if (req.url === '/api/health') return res.end(JSON.stringify({ ok: true, name: 'scope-compass', version: '0.0.1', project: disk, pid: 1 }));
+    res.statusCode = 500;
+    res.end('{}');
+  });
+  await new Promise((r) => old.listen(0, '127.0.0.1', r));
+  try {
+    const cfgPath = join(disk, 'compass', 'config.json');
+    await writeFile(cfgPath, canonical({ ...JSON.parse(await readFile(cfgPath, 'utf8')), port: old.address().port }));
+    const r = await cli(disk, ['move', 'm1-04', 'review']);
+    assert.equal(r.code, 0, r.err);
+    assert.match(r.err, /protocolo anterior a §39.*no se usa/);
+    assert.equal(JSON.parse(await readFile(join(disk, 'compass', 'tasks', 'm1-04.json'), 'utf8')).status, 'review');
+  } finally {
+    await new Promise((r) => old.close(r));
+  }
+});

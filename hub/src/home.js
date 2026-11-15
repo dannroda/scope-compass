@@ -29,8 +29,8 @@ import { checkItem, newItem } from './lists.js';
 import { pickFolder } from './desktop.js';
 import { folderName, forgetProject, loadProjects, projectsDataDir, projectsFile, projectsStatus, ProjectsError, recordProject } from './projects.js';
 import { hubsOf, listHubs } from './registry.js';
-import { localOnly, VERSION, WEB_DIR } from './server.js';
-import { createHttpStore, detectHub } from './store/http.js';
+import { localOnly, PROTOCOL, VERSION, WEB_DIR } from './server.js';
+import { createHttpStore, detectHub, hubCompatible } from './store/http.js';
 import { createJsonFilesStore, StoreError } from './store/json-files.js';
 import { loadCompass } from './store/load.js';
 import { byToday, summarize, todayOf, weekOf } from './summary.js';
@@ -97,7 +97,8 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     const local = serving.local(path);
     if (local) return Object.assign(Object.create(local.store), { local });
     const hub = await detectHub(path, (await readConfig(path))?.port);
-    return hub ? createHttpStore(hub, compassOf(path), { validators }) : createJsonFilesStore(compassOf(path), { validators });
+    // Un hub de otro protocolo (§39) no se usa: se escribe directo y su watcher lo ve.
+    return hub && hubCompatible(hub) ? createHttpStore(hub, compassOf(path), { validators }) : createJsonFilesStore(compassOf(path), { validators });
   }
   // Después de escribir: si lo sirve este Inicio, se publica como cualquier escritura del hub (pestañas, export);
   // si fue directo a compass/, export markdown y aviso a las pestañas del Inicio. Con un hub suelto lo hace él.
@@ -125,7 +126,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
       outdated: outdatedFiles(compassOf(p.path)) };
   }
 
-  app.get('/api/health', async () => ({ ok: true, name: 'scope-compass-home', version: VERSION, pid: process.pid, projects_file: projectsFile() }));
+  app.get('/api/health', async () => ({ ok: true, name: 'scope-compass-home', version: VERSION, protocol: PROTOCOL, pid: process.pid, projects_file: projectsFile() }));
 
   app.get('/api/projects', async () => ({ projects: await Promise.all(projectsStatus().map(projectView)) }));
 
@@ -406,7 +407,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
       const forward = (e) => { if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(e)); };
       events.on('event', forward);
       socket.on('close', () => events.off('event', forward));
-      forward({ type: 'hello', server_version: VERSION });
+      forward({ type: 'hello', server_version: VERSION, protocol: PROTOCOL });
     });
   });
 

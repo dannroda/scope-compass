@@ -6,6 +6,8 @@ const DockView := preload("dock_view.gd")
 const GameShot := preload("game_shot.gd")
 const SCOMPASS_SETTING := "scope_compass/scompass_path"
 const KEEP_SETTING := "scope_compass/keep_hub_running"
+## Buscar versiones nuevas del addon al abrir el editor, una vez por día (spec §39).
+const UPDATES_SETTING := "scope_compass/check_updates"
 
 var _dock: EditorDock
 var _view: DockView
@@ -26,6 +28,15 @@ func _enter_tree() -> void:
 	es.add_property_info({ "name": KEEP_SETTING, "type": TYPE_BOOL })
 	_view.scompass_setting = func(): return str(es.get_setting(SCOMPASS_SETTING))
 	_view.keep_hub_setting = func(): return bool(es.get_setting(KEEP_SETTING))
+	if not es.has_setting(UPDATES_SETTING):
+		es.set_setting(UPDATES_SETTING, true)
+	es.set_initial_value(UPDATES_SETTING, true, false)
+	es.add_property_info({ "name": UPDATES_SETTING, "type": TYPE_BOOL })
+	_view.check_updates_setting = func(): return bool(es.get_setting(UPDATES_SETTING))
+	# Después de instalar una versión nueva del addon (§39): las escenas se guardan y el editor se reinicia.
+	_view.restart_editor = func():
+		EditorInterface.save_all_scenes()
+		EditorInterface.restart_editor(false)
 	# Los snippets de GDScript se ven como en el editor de scripts: su resaltado, sus colores y su fuente.
 	_view.make_highlighter = func(lang: String):
 		if lang == "gdscript" and ClassDB.can_instantiate("GDScriptSyntaxHighlighter"):
