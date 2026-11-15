@@ -91,7 +91,8 @@ test('resolver referencias por alias o por ruta; sectionMarkdown devuelve la sec
   }
 });
 
-test('las refs de las tareas de este repo resuelven contra sus documentos', async () => {
+// El tablero de este repo vive en la carpeta de tableros del usuario (m32-10): en un clon limpio o en CI no está.
+test('las refs de las tareas de este repo resuelven contra sus documentos', { skip: !existsSync(join(REPO, 'compass', 'config.json')) && 'sin el tablero de este repo (compass/)' }, async () => {
   const { readdir, readFile } = await import('node:fs/promises');
   const config = JSON.parse(await readFile(join(REPO, 'compass', 'config.json'), 'utf8'));
   const docs = await loadDocs(REPO, config);

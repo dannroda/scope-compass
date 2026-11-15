@@ -39,7 +39,8 @@ test('el hub y el addon de Godot llevan la misma versión (tools/build.mjs lo ex
   assert.equal(addon, hub);
 });
 
-test('compass/schema/ es copia exacta de schema/', async () => {
+// El tablero de este repo vive en la carpeta de tableros del usuario (m32-10): en un clon limpio o en CI no está.
+test('compass/schema/ es copia exacta de schema/', { skip: !existsSync(join(REPO, 'compass', 'schema')) && 'sin el tablero de este repo (compass/)' }, async () => {
   for (const name of await readdir(join(REPO, 'schema'))) {
     assert.equal(await readFile(join(REPO, 'compass', 'schema', name), 'utf8'), await readFile(join(REPO, 'schema', name), 'utf8'), name);
   }
