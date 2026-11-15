@@ -251,3 +251,31 @@ test('en el teléfono (29.4): pantalla completa, Atrás lo cierra, sigue al tecl
   await page.waitForTimeout(200);
   assert.equal(await page.isVisible('#chat'), false);
 });
+
+test('§47: el agente del chat se elige en Ajustes; una conversación con agy lo muestra, sin perfiles, y dice lo negado', async () => {
+  env.SCOMPASS_AGY = join(HERE, 'fake-agy.js');
+  env.SCOMPASS_GEMINI_DIR = join(root, 'gemini');
+  env.FAKE_AGY_STATE = join(root, 'agy-sessions');
+  await serve();
+  const page = await open();
+  await page.click('#settings-btn');
+  await page.waitForSelector('#set-engine:not([disabled])');
+  assert.equal(await page.inputValue('#set-engine'), '');
+  assert.match(await page.textContent('#set-engine option[value=""]'), /Claude Code/);
+  await page.selectOption('#set-engine', 'agy');
+  await page.waitForSelector('#set-engine option[value=""]:text-matches("agy")', { state: 'attached' });
+  await page.click('dialog.settings button[type=submit]');
+  await page.click('#chat-btn');
+  await page.waitForSelector('#chat .chat-engine b:text-is("Antigravity CLI (agy)")');
+  assert.match(await page.textContent('#chat .chat-empty'), /Antigravity CLI \(agy\)/);
+  await send(page, 'permiso escribí un archivo');
+  await page.waitForSelector('#chat .msg.bot .msg-text:text-matches("No se hizo: File out.txt")');
+  assert.equal(await page.isVisible('#chat-profile'), false);
+  await page.click('#chat .chat-head button:text-is("Conversaciones")');
+  await page.waitForSelector('#chat .chat-list .chat-engine-tag:text-is("agy")');
+  // De vuelta a Automático: con los dos instalados, Claude Code.
+  await page.click('#settings-btn');
+  await page.waitForSelector('#set-engine:not([disabled])');
+  await page.selectOption('#set-engine', '');
+  await page.waitForSelector('#set-engine option[value=""]:text-matches("Claude Code")', { state: 'attached' });
+});

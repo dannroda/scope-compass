@@ -773,6 +773,7 @@ dialog.settings h2 { margin: 0 0 6px; font-family: var(--font-display); font-siz
 .chat-list .pick:hover { background: var(--bg); }
 .chat-list .ctitle { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chat-list time { font-size: 12px; color: var(--muted); }
+.chat-list .chat-engine-tag { font-family: var(--font-mono); font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
 .chat-list .rm, .chat-attach .rm { border: 0; background: transparent; color: var(--muted); min-width: 32px; min-height: 32px; }
 .chat-form { border-top: 1px solid var(--line); padding: 10px 12px 0; display: flex; flex-direction: column; gap: 8px; }
 .chat-attach { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); }

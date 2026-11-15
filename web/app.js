@@ -2785,7 +2785,14 @@
   const C = { available: false, claude: true, open: pref(CHAT_OPEN) === '1' && !NARROW.matches, metaOpen: false, chats: [], id: pref(CHAT_ID) || null, entries: [], turn: null,
     listing: false, error: '', attach: null, confirmRemove: null,
     // Perfiles de Claude Code con su cuenta y sus límites (§33), el del proyecto y el elegido para una conversación nueva.
-    profiles: [], profile: 'default', newProfile: null };
+    profiles: [], profile: 'default', newProfile: null,
+    // Agentes instalados y el de una conversación nueva, elegido por equipo en Ajustes (§47).
+    engines: { claude: true, agy: false }, engine: 'claude' };
+  const ENGINE_NAME = { claude: 'Claude Code', agy: 'Antigravity CLI (agy)' };
+  // El agente de la conversación abierta (las de antes de §47 son de claude) o el de una nueva, y si está instalado.
+  const chatEngine = () => { const c = C.chats.find((x) => x.id === C.id); return c ? (c.engine ?? 'claude') : C.engine; };
+  const chatReady = () => !!C.engines[chatEngine()];
+  document.addEventListener('scompass:chat-engine', (e) => { C.engine = e.detail.engine; C.engines = e.detail.installed; renderChat(); });
   const chatEl = document.getElementById('chat');
   const chatInput = h('textarea', { id: 'chat-input', rows: 2, placeholder: T('Preguntá o pedí algo sobre el tablero'), 'aria-label': T('Mensaje') });
   const chatParts = { head: h('div', { class: 'chat-head' }), meta: h('div', { class: 'chat-meta' }), body: h('div', { class: 'chat-body', 'aria-live': 'polite' }), attach: h('div', { class: 'chat-attach' }), actions: h('div', { class: 'chat-actions' }) };
@@ -2802,6 +2809,8 @@
       const r = await api.chats();
       C.available = true;
       C.claude = r.claude;
+      C.engines = r.engines ?? { claude: r.claude, agy: false };
+      C.engine = r.engine ?? 'claude';
       C.chats = r.chats;
       C.profile = r.profile ?? 'default';
       if (C.open) chatProfiles();
@@ -2878,14 +2887,14 @@
 
   async function chatSendInput() {
     const text = chatInput.value.trim();
-    if (!text || C.turn || !C.claude) return;
+    if (!text || C.turn || !chatReady()) return;
     const task = chatTask()?.id;
     C.error = '';
     chatInput.value = '';
     try {
       if (C.id) await api.chatSend(C.id, text, task);
       else {
-        const chat = await api.chatCreate(text, task, undefined, C.newProfile ?? undefined);
+        const chat = await api.chatCreate(text, task, undefined, C.engine === 'claude' ? C.newProfile ?? undefined : undefined);
         if (C.newProfile) C.profile = C.newProfile;
         C.newProfile = null;
         C.chats = [chat, ...C.chats.filter((c) => c.id !== chat.id)];
@@ -2894,8 +2903,9 @@
       }
     } catch (e) {
       chatInput.value = text;
-      C.error = e.code === 'claude_missing' ? T('No se encontró Claude Code en este equipo.') : e.message;
-      if (e.code === 'claude_missing') C.claude = false;
+      C.error = e.code === 'claude_missing' ? T('No se encontró Claude Code en este equipo.') : e.code === 'agy_missing' ? T('No se encontró agy (Antigravity CLI) en este equipo.') : e.message;
+      if (e.code === 'claude_missing') C.claude = C.engines.claude = false;
+      if (e.code === 'agy_missing') C.engines.agy = false;
     }
     renderChat();
   }
@@ -2991,9 +3001,18 @@
     if (C.listing) { meta.replaceChildren(); meta.hidden = true; return; }
     meta.hidden = false;
     const current = C.chats.find((c) => c.id === C.id);
+    const kids = [];
+    const engine = chatEngine();
+    // Con agy no hay perfiles ni límites de Claude Code (§47): el agente y los tokens.
+    if (engine === 'agy' || C.engines.agy) kids.push(h('div', { class: 'chat-profile chat-engine' }, h('span', null, T('Agente')), h('b', null, ENGINE_NAME[engine])));
+    if (engine === 'agy') {
+      const total = C.entries.reduce((n, e) => n + tokensOf(e.tokens), 0);
+      if (current && total) kids.push(h('div', { class: 'chat-total' }, T('Esta conversación: ') + NUM.format(total) + T(' tokens')));
+      meta.replaceChildren(...kids);
+      return;
+    }
     const id = current ? current.profile ?? 'default' : C.newProfile ?? C.profile;
     const p = C.profiles.find((x) => x.id === id);
-    const kids = [];
     if (!current && C.profiles.length > 1) {
       kids.push(h('label', { class: 'chat-profile' }, h('span', null, T('Perfil')),
         h('select', { id: 'chat-profile', onchange: (e) => { C.newProfile = e.target.value; renderChatMeta(); } },
@@ -3039,7 +3058,8 @@
     const stick = chatAtBottom();
     if (C.listing) {
       body.replaceChildren(C.chats.length ? h('ul', { class: 'chat-list' }, C.chats.map((c) => h('li', { 'aria-current': c.id === C.id ? 'true' : null },
-        h('button', { class: 'pick', type: 'button', onclick: () => chatOpen(c.id) }, h('span', { class: 'ctitle' }, c.title), stamp(c.last_at)),
+        h('button', { class: 'pick', type: 'button', onclick: () => chatOpen(c.id) }, h('span', { class: 'ctitle' }, c.title),
+          c.engine === 'agy' ? h('span', { class: 'chat-engine-tag', title: ENGINE_NAME.agy }, 'agy') : null, stamp(c.last_at)),
         C.confirmRemove === c.id
           ? h('button', { class: 'btn danger', type: 'button', onclick: async () => {
             await api.chatRemove(c.id).catch(() => {});
@@ -3052,11 +3072,16 @@
       return;
     }
     const kids = [];
-    if (!C.claude) {
+    if (!chatReady() && chatEngine() === 'agy') {
+      kids.push(h('p', { class: 'chat-empty' }, T('Esta conversación es con Antigravity CLI, que no está en este equipo: instalalo, entrá una vez con '), h('code', null, 'agy'), T(' y volvé a abrir el panel.')));
+    } else if (!chatReady()) {
       kids.push(h('p', { class: 'chat-empty' }, T('El chat usa Claude Code, instalado en este equipo y con tu cuenta: instalalo ('), h('code', null, 'npm i -g @anthropic-ai/claude-code'),
-        T('), entrá una vez con '), h('code', null, 'claude'), T(' y volvé a abrir el panel.')));
+        T('), entrá una vez con '), h('code', null, 'claude'), T(' y volvé a abrir el panel.')),
+        h('p', { class: 'chat-empty' }, T('También anda con Antigravity CLI ('), h('code', null, 'agy'), T('): instalalo, entrá una vez y elegilo en Ajustes.')));
     } else if (!C.id) {
-      kids.push(h('p', { class: 'chat-empty' }, T('Una conversación con Claude Code sobre este proyecto: lee y escribe el tablero y lee los archivos, pero no edita ni corre comandos.')));
+      kids.push(h('p', { class: 'chat-empty' }, chatEngine() === 'agy'
+        ? T('Una conversación con Antigravity CLI (agy) sobre este proyecto: lee y escribe el tablero y lee los archivos, pero no edita ni corre comandos (el hub niega cada intento).')
+        : T('Una conversación con Claude Code sobre este proyecto: lee y escribe el tablero y lee los archivos, pero no edita ni corre comandos.')));
     }
     kids.push(...C.entries.map(chatEntry));
     if (C.turn) {
@@ -3079,7 +3104,7 @@
   function renderChatActions() {
     chatParts.actions.replaceChildren(C.turn
       ? h('button', { class: 'btn', type: 'button', onclick: () => api.chatInterrupt(C.id).catch(() => {}) }, T('Cortar'))
-      : h('button', { class: 'btn primary', type: 'submit', disabled: !chatInput.value.trim() || !C.claude }, T('Enviar')));
+      : h('button', { class: 'btn primary', type: 'submit', disabled: !chatInput.value.trim() || !chatReady() }, T('Enviar')));
   }
   function renderChat() {
     const btn = document.getElementById('chat-btn');
@@ -3090,7 +3115,7 @@
     document.body.classList.toggle('chat-open', show);
     if (!show) return;
     renderChatHead(); renderChatMeta(); renderChatBody(); renderChatAttach(); renderChatActions();
-    chatInput.disabled = !C.claude;
+    chatInput.disabled = !chatReady();
   }
   // Responder una pregunta en la sesión que la hizo (25.8): el hub la retoma con --resume y le manda la respuesta.
   async function chatAnswer(t, d) {

@@ -95,7 +95,7 @@ export function registerProjectRoutes(app, { validators, projects, onChange, dev
     // El chat solo desde este equipo o un dispositivo vinculado (§32, §49): el hub del proyecto ve al Inicio como
     // 127.0.0.1, así que se mira acá. Sobre la ruta decodificada, para que "/api/%63hats" no se saltee el chequeo.
     const local = isLoopback(req.socket.remoteAddress);
-    const isChat = /^api\/chats(\/|$)/.test(req.params['*']);
+    const isChat = /^api\/(chats|chat-engine)(\/|$)/.test(req.params['*']);
     const linked = isChat && !local && devices ? devices.of(req) : null;
     if (isChat && !local && !linked) {
       return reply.code(403).send({ error: { code: 'forbidden', message: T('el chat solo anda en este equipo (127.0.0.1)') } });

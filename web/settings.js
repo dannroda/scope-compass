@@ -1,4 +1,4 @@
-// Ajustes de la web (19.16): los bordes de fantasía y el idioma (§45). Se guardan en este navegador (localStorage), no en el
+// Ajustes de la web (19.16): los bordes de fantasía, el idioma (§45) y el agente del chat (§47). Se guardan en este navegador (localStorage), no en el
 // repo: es una preferencia de quien mira. El tablero y el Inicio cargan este mismo archivo en el <head>, sin defer, así
 // la clase está puesta antes de pintar; a través del Inicio (sus /p/…) es el mismo origen y comparten el ajuste.
 (function () {
@@ -40,6 +40,33 @@
     return el('div', { class: 'opt' }, el('label', { for: 'set-lang' }, el('strong', {}, T('Idioma'))), sel, note);
   }
 
+  // El agente del chat (§47): por equipo, para las conversaciones nuevas. Solo donde el chat anda (api/chat-engine
+  // responde en este equipo o en un teléfono vinculado); en el Inicio solo o desde la red, no aparece.
+  function engineField() {
+    const sel = el('select', { id: 'set-engine' });
+    const note = el('span', { class: 'muted small' }, T('Para las conversaciones nuevas del chat en este equipo; cada conversación sigue con el suyo.'));
+    const box = el('div', { class: 'opt' }, el('label', { for: 'set-engine' }, el('strong', {}, T('Agente del chat'))), sel, note);
+    box.hidden = true;
+    const fill = (x) => {
+      const name = { claude: 'Claude Code', agy: 'Antigravity CLI (agy)' };
+      const opt = (value, label, ok = true) => { const o = el('option', { value }, label + (ok ? '' : T(' (no está instalado)'))); if (!ok) o.disabled = true; return o; };
+      sel.replaceChildren(opt('', T`Automático (ahora: ${name[x.engine]})`), opt('claude', name.claude, x.installed.claude), opt('agy', name.agy, x.installed.agy));
+      sel.value = x.chosen || '';
+      box.hidden = false;
+      sel.disabled = false;
+    };
+    fetch('api/chat-engine').then((r) => (r.ok ? r.json() : null)).then((x) => { if (x) fill(x); }).catch(() => {});
+    sel.addEventListener('change', () => {
+      sel.disabled = true;
+      fetch('api/chat-engine', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ engine: sel.value || null }) })
+        .then((r) => (r.ok ? r.json() : null)).then((x) => {
+          if (x) { fill(x); document.dispatchEvent(new CustomEvent('scompass:chat-engine', { detail: x })); } else sel.disabled = false;
+        })
+        .catch(() => { sel.disabled = false; });
+    });
+    return box;
+  }
+
   function open() {
     document.querySelector('dialog.settings')?.remove();
     const box = el('input', { type: 'checkbox', id: 'set-fantasy' });
@@ -52,6 +79,7 @@
           el('span', {}, el('strong', {}, T('Bordes de fantasía')), el('br'),
             el('span', { class: 'muted small' }, T('Marcos de pixel art en botones, tarjetas y paneles. Usa siempre el tema oscuro. Se guarda en este navegador.')))),
         langField(),
+        engineField(),
         el('div', { class: 'row' }, el('button', { class: 'btn', type: 'submit' }, T('Cerrar')))));
     d.addEventListener('close', () => { d.remove(); document.getElementById('settings-btn')?.focus(); });
     document.body.append(d);

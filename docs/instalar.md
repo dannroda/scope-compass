@@ -20,7 +20,7 @@ Todo está en la última release: https://github.com/dannroda/scope-compass/rele
 - Git (los datos viven en git). En Windows, `winget install Git.Git`.
 - Godot 4.8 para el addon.
 - Con el `.tgz`, conexión a internet la primera vez: `npm` descarga las dependencias del hub.
-- Para el chat de la web (opcional): Claude Code instalado (`npm i -g @anthropic-ai/claude-code`) y con tu login (correr `claude` una vez). Lo busca en el PATH; si está en otro lado, `SCOMPASS_CLAUDE=<ruta>` al levantar el hub o el Inicio.
+- Para el chat de la web (opcional): Claude Code instalado (`npm i -g @anthropic-ai/claude-code`) y con tu login (correr `claude` una vez). Lo busca en el PATH; si está en otro lado, `SCOMPASS_CLAUDE=<ruta>` al levantar el hub o el Inicio. También anda con Antigravity CLI (`agy`, con tu login de Google; correr `agy` una vez): se elige en Ajustes › *Agente del chat*, y `SCOMPASS_AGY=<ruta>` si no está en el PATH. Con agy, el hub crea `~/.gemini/scope-compass-chat/` con ajustes propios del chat (sin modo automático y con permisos estrictos), para que cada edición y cada comando le pidan permiso y el hub los niegue; ahí quedan también sus conversaciones, y se puede borrar.
 
 ## 1. Hub y CLI
 

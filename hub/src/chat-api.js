@@ -5,6 +5,7 @@
 import { basename } from 'node:path';
 import { ChatError, findClaude } from './chat.js';
 import { ChatManager } from './chats.js';
+import { chosenEngine, ENGINES, engineFor, installedEngines, setChosenEngine } from './chat-engine.js';
 import { accountOf, loadLimits } from './profiles.js';
 import { StoreError } from './store/json-files.js';
 import { T } from './i18n.js';
@@ -60,7 +61,16 @@ export function registerChatApi(app, { projectDir, store, emit, token = null, en
 
     scope.get('/api/chats', async () => {
       const m = await chats();
-      return { chats: await m.list(), claude: findClaude(env) !== null, profile: await m.store.profile() };
+      // claude: si está Claude Code (el panel de antes); engines, los instalados; engine, el de una conversación nueva (§47).
+      return { chats: await m.list(), claude: findClaude(env) !== null, engines: installedEngines(env), engine: engineFor(env), profile: await m.store.profile() };
+    });
+    // El motor del chat, por equipo (§47, m27-04): el elegido en Ajustes (o null, el de por defecto) y los instalados.
+    scope.get('/api/chat-engine', async () => ({ engine: engineFor(env), chosen: chosenEngine(), installed: installedEngines(env) }));
+    scope.put('/api/chat-engine', async (req) => {
+      const engine = req.body?.engine ?? null;
+      if (engine !== null && !ENGINES.includes(engine)) throw new ChatError('invalid_argument', T`motor desconocido: ${engine} (claude o agy)`);
+      await setChosenEngine(engine);
+      return { engine: engineFor(env), chosen: chosenEngine(), installed: installedEngines(env) };
     });
     // Perfiles de Claude Code con su cuenta (§33): claude auth status por perfil, guardado un rato.
     scope.get('/api/chats/profiles', async () => {

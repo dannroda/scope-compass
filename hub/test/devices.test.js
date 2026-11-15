@@ -127,6 +127,11 @@ test('Inicio: el chat de un proyecto desde la red, sin vincular 403, vinculado 2
   const key = json(await app.inject('/api/projects')).projects.find((p) => p.path === dir).key;
   const url = `/p/${key}/api/chats`;
   assert.equal((await app.inject({ url, remoteAddress: AWAY })).statusCode, 403);
+  // El agente del chat (§47) pasa por el mismo corte.
+  const engine = `/p/${key}/api/chat-engine`;
+  assert.equal((await app.inject({ url: engine, remoteAddress: AWAY })).statusCode, 403);
+  assert.equal((await app.inject({ method: 'PUT', url: engine, payload: { engine: 'agy' }, remoteAddress: AWAY })).statusCode, 403);
+  assert.equal((await app.inject({ url: engine })).statusCode, 200);
   const { cookie, device } = await pair(app);
   const ok = await app.inject({ url, headers: { cookie }, remoteAddress: AWAY });
   assert.deepEqual([ok.statusCode, json(ok).claude], [200, true]);

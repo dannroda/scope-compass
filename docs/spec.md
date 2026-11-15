@@ -1689,6 +1689,17 @@ El chat de §32 también anda con Antigravity CLI (`agy`), el reemplazo de Gemin
 - **El motor:** cada conversación es de un motor, `claude` o `agy`, que queda anotado en `index.json` (`engine`; sin él, `claude`).
   - Las nuevas usan el que está elegido en Ajustes, que es por equipo (m27-04).
   - Si están los dos, por defecto `claude`; si está uno solo, ese.
+- **Elegirlo (m27-04):**
+  - **Guardado:** `<config>/settings.json › chat_engine`, junto al idioma.
+  - **API:** `GET /api/chat-engine` da `{ engine, chosen, installed: { claude, agy } }` y `PUT /api/chat-engine { engine: 'claude' | 'agy' | null }` lo cambia.
+    - Pasa por el mismo corte que `/api/chats`: este equipo o un teléfono vinculado, también a través del Inicio.
+    - `GET /api/chats` suma `engines` y `engine`.
+  - **Web:** en Ajustes, *Agente del chat* (Automático, Claude Code o Antigravity CLI; uno que no está instalado aparece deshabilitado). Solo aparece donde esa ruta responde.
+  - **El panel:**
+    - Muestra el agente de la conversación.
+    - Con agy no muestra perfil, cuenta ni límites, solo los tokens.
+    - En la lista de conversaciones, las de agy llevan la marca `agy`.
+    - Si el agente de la conversación no está instalado, dice cómo instalarlo.
 - **El proceso:** el hub lanza `agy acp --app-data-dir scope-compass-chat` en la carpeta del proyecto y le habla ACP (JSON-RPC 2.0, una línea por mensaje, por stdio). Hay un proceso por conversación mientras se usa, y se cierra a los 10 minutos sin uso, como con `claude`.
   - **Ejecutable:** `agy` del PATH (en Windows también `agy.exe` y `agy.cmd`), o el de `SCOMPASS_AGY` (para el test). Si no está, `agy_missing` (503).
   - **Arranque:**

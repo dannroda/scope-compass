@@ -52,7 +52,7 @@ More screenshots:
 - Git.
 - Godot 4.8, for the dock.
 - With the release binary, nothing else: it carries its own Node. With the npm package (`.tgz`), Node.js 22 or newer.
-- For the chat in the web UI (optional): Claude Code installed and logged in (run `claude` once).
+- For the chat in the web UI (optional): Claude Code installed and logged in (run `claude` once), or Antigravity CLI (run `agy` once and pick it in Settings).
 
 ## Install
 

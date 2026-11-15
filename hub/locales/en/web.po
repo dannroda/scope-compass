@@ -1543,6 +1543,9 @@ msgstr "Message"
 msgid "No se encontró Claude Code en este equipo."
 msgstr "Claude Code was not found on this computer."
 
+msgid "No se encontró agy (Antigravity CLI) en este equipo."
+msgstr "agy (Antigravity CLI) wasn't found on this computer."
+
 msgid "1 herramienta"
 msgstr "1 tool"
 
@@ -1606,11 +1609,14 @@ msgstr "earlier"
 msgid " · usando el excedente"
 msgstr " · using overage"
 
-msgid "Perfil"
-msgstr "Profile"
+msgid "Agente"
+msgstr "Agent"
 
 msgid "Esta conversación: "
 msgstr "This conversation: "
+
+msgid "Perfil"
+msgstr "Profile"
 
 msgid " tokens · "
 msgstr " tokens · "
@@ -1645,14 +1651,26 @@ msgstr "Delete the conversation "
 msgid "Todavía no hay conversaciones."
 msgstr "No conversations yet."
 
+msgid "Esta conversación es con Antigravity CLI, que no está en este equipo: instalalo, entrá una vez con "
+msgstr "This conversation is with Antigravity CLI, which isn't on this computer: install it, sign in once with "
+
+msgid " y volvé a abrir el panel."
+msgstr " and open the panel again."
+
 msgid "El chat usa Claude Code, instalado en este equipo y con tu cuenta: instalalo ("
 msgstr "The chat uses Claude Code, installed on this computer with your account: install it ("
 
 msgid "), entrá una vez con "
 msgstr "), sign in once with "
 
-msgid " y volvé a abrir el panel."
-msgstr " and open the panel again."
+msgid "También anda con Antigravity CLI ("
+msgstr "It also works with Antigravity CLI ("
+
+msgid "): instalalo, entrá una vez y elegilo en Ajustes."
+msgstr "): install it, sign in once and choose it in Settings."
+
+msgid "Una conversación con Antigravity CLI (agy) sobre este proyecto: lee y escribe el tablero y lee los archivos, pero no edita ni corre comandos (el hub niega cada intento)."
+msgstr "A conversation with Antigravity CLI (agy) about this project: it reads and writes the board and reads the files, but doesn't edit or run commands (the hub denies every attempt)."
 
 msgid "Una conversación con Claude Code sobre este proyecto: lee y escribe el tablero y lee los archivos, pero no edita ni corre comandos."
 msgstr "A conversation with Claude Code about this project: it reads and writes the board and reads the files, but does not edit them or run commands."
@@ -1686,6 +1704,18 @@ msgstr "Set by SCOMPASS_LANG={0}."
 
 msgid "Idioma"
 msgstr "Language"
+
+msgid "Para las conversaciones nuevas del chat en este equipo; cada conversación sigue con el suyo."
+msgstr "For new chat conversations on this computer; each conversation keeps its own."
+
+msgid "Agente del chat"
+msgstr "Chat agent"
+
+msgid " (no está instalado)"
+msgstr " (not installed)"
+
+msgid "Automático (ahora: {0})"
+msgstr "Automatic (now: {0})"
 
 msgid "Ajustes"
 msgstr "Settings"
