@@ -1435,3 +1435,19 @@ Comandos:
 - [x] `board link` en otro proyecto ve el mismo tablero.
 - [x] Con el repo de todos los tableros, `board move` trae el historial (el de cada tarea también) sin tocar lo sin commitear de otros tableros, e `init` crea una subcarpeta sin `.git`.
 - [ ] Probado en Windows (junction).
+
+## 37. scompass sin el PATH (M32)
+
+Instalar scompass no tiene que obligar a tocar el PATH: en Windows es un paso manual y fácil de errar, y en Linux el editor de Godot lanzado desde el menú no siempre ve el PATH de la terminal.
+
+- **La instalación se anota sola:** cada vez que corre, el binario (o un paquete de npm instalado) escribe en `<datos>/scompass.json` (`~/.local/share/scope-compass/` o `%LOCALAPPDATA%\scope-compass\`; `SCOMPASS_DATA` la cambia) cómo lanzarlo: `{ "command": <ruta>, "args": [] }`, o node con el `.js` del paquete. Solo si cambió. Un clon del repo no se anota (los tests y el desarrollo no pisan la instalación del usuario). Basta con abrir el binario una vez, por ejemplo con doble clic, que levanta el Inicio.
+- **El addon** busca scompass en este orden: la ruta de Editor Settings, `../scope-compass` al lado del proyecto, el propio proyecto, la instalación anotada y, al final, el PATH. Una anotada cuyo programa ya no existe se ignora.
+- **Claude Code:** `scompass mcp install` corre `claude mcp add --scope user scompass -- <ruta entera> mcp` con la ruta de esta instalación. Sin `claude` encontrable, imprime ese comando para correrlo a mano.
+- **Los agentes** que corren la CLI por Bash, si `scompass` no está en el PATH, toman el comando de `<datos>/scompass.json`.
+
+### Criterios de aceptación
+
+- [x] El binario anota su ruta al correr y no reescribe si no cambió; desde un clon del repo no anota nada.
+- [x] El dock encuentra la instalación anotada sin PATH ni ruta configurada, y no usa una anotada que ya no existe.
+- [x] `scompass mcp install` registra el MCP con la ruta entera; sin claude, dice qué correr.
+- [ ] Probado en Windows con el binario fuera del PATH.

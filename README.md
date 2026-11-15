@@ -53,9 +53,9 @@ Download from the [latest release](https://github.com/dannroda/scope-compass/rel
 
 Check the download with `sha256sum -c SHA256SUMS --ignore-missing` (on Windows, `Get-FileHash <file>` and compare).
 
-**Hub and CLI.** Put the binary in a folder on your `PATH` named `scompass` (`scompass.exe` on Windows) and run `scompass --help`. On Linux, the repository's [`tools/install.sh`](tools/install.sh), run as `sh install.sh <path to scompass-vX.Y.Z-linux-x64>`, copies it to `~/.local/bin/scompass` and adds **Scope Compass** to the applications menu, which starts Home with a tray icon. The first run of each version extracts its contents (about 30 MB) to `~/.cache/scope-compass/runtime/` (`%LOCALAPPDATA%\scope-compass\runtime\` on Windows).
+**Hub and CLI.** Put the binary anywhere and run it once (double-click opens Home): it records its own path, so the Godot addon and `scompass mcp install` find it without the `PATH`. To type `scompass` in a terminal, put it in a folder on your `PATH` named `scompass` (`scompass.exe` on Windows). On Linux, the repository's [`tools/install.sh`](tools/install.sh), run as `sh install.sh <path to scompass-vX.Y.Z-linux-x64>`, copies it to `~/.local/bin/scompass` and adds **Scope Compass** to the applications menu, which starts Home with a tray icon. The first run of each version extracts its contents (about 30 MB) to `~/.cache/scope-compass/runtime/` (`%LOCALAPPDATA%\scope-compass\runtime\` on Windows).
 
-**Godot addon.** Unzip the addon at the root of your Godot project (it creates `addons/scope_compass/`), then enable **Scope Compass** in Project › Project Settings › Plugins. If the editor does not find `scompass` on the `PATH`, set its path in Editor Settings › `scope_compass/scompass_path`.
+**Godot addon.** Unzip the addon at the root of your Godot project (it creates `addons/scope_compass/`), then enable **Scope Compass** in Project › Project Settings › Plugins. The dock finds the binary from its recorded path, or on the `PATH`; otherwise set it in Editor Settings › `scope_compass/scompass_path`.
 
 The full steps, including the npm package and Windows notes, are in [`docs/instalar.md`](docs/instalar.md) (Spanish).
 
@@ -64,7 +64,7 @@ The full steps, including the npm package and Windows notes, are in [`docs/insta
 - **All your projects:** `scompass home --tray --open` (or **Scope Compass** in the menu on Linux) opens Home in the browser. From there you can add existing projects or create new ones from a template.
 - **One project:** in the project's folder, `scompass init --template juego` creates a board (templates: `juego` for a game, `personal`, `vacio` for empty), or use **Crear compass/** (create compass/) in the Godot dock. Then `scompass serve --open`, or **Iniciar hub** (start hub) in the dock.
 - **From the terminal:** `scompass list`, `scompass add "Title" --milestone m00`, `scompass move <id> doing`. Add `--json` for machine-readable output.
-- **Claude Code:** register the MCP server once for all projects with `claude mcp add --scope user scompass -- scompass mcp`, and tell the agent about the board guide by adding this to the project's `AGENTS.md` or `CLAUDE.md`: "The task board is managed with scompass; read compass/AGENTS.md before touching it."
+- **Claude Code:** register the MCP server once for all projects with `scompass mcp install` (it runs `claude mcp add --scope user` with the full path), and tell the agent about the board guide by adding this to the project's `AGENTS.md` or `CLAUDE.md`: "The task board is managed with scompass; read compass/AGENTS.md before touching it."
 - **From your phone:** `scompass home --tray --lan`, or "Activar acceso en la red" (enable network access) in the tray. There is no login: anyone on that network can view and edit, so use it only on a network you trust. See [SECURITY.md](SECURITY.md).
 
 ## Where the boards live

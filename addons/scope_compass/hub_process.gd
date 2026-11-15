@@ -21,7 +21,8 @@ func _exit_tree() -> void:
 		th.wait_to_finish()
 
 
-## Dónde está scompass: la opción de Editor Settings (configured), al lado del proyecto, dentro de él o en el PATH.
+## Dónde está scompass: la opción de Editor Settings (configured), al lado del proyecto, dentro de él, la instalación
+## que anotó al correr (§37) o en el PATH.
 ## Devuelve [programa, args previos] listos para OS.create_process, o [] si no se encontró.
 func command(configured: String) -> Array:
 	var candidates: Array = []
@@ -40,6 +41,9 @@ func command(configured: String) -> Array:
 			return ["node", [path]]
 		if not path.ends_with(".js") and FileAccess.file_exists(path):
 			return [path, []]
+	var recorded := recorded_command()
+	if not recorded.is_empty():
+		return recorded
 	var out := []
 	if OS.get_name() == "Windows":
 		# `npm link` deja scompass.cmd: Godot no lanza un .cmd sin la consola de por medio, así que se usa el .js
@@ -57,6 +61,37 @@ func command(configured: String) -> Array:
 	if OS.execute("sh", ["-c", "command -v scompass"], out) == 0 and str(out[0]).strip_edges() != "":
 		return [str(out[0]).strip_edges(), []]
 	return []
+
+
+## La instalación que scompass anotó al correr (§37): <datos>/scompass.json, con command y args. Así el addon lo
+## encuentra aunque no esté en el PATH. [] si no hay archivo o el programa ya no existe.
+static func recorded_command() -> Array:
+	var data := OS.get_environment("SCOMPASS_DATA")
+	if data == "":
+		if OS.get_name() == "Windows":
+			var local := OS.get_environment("LOCALAPPDATA")
+			if local == "":
+				local = OS.get_environment("USERPROFILE").path_join("AppData/Local")
+			data = local.path_join("scope-compass")
+		else:
+			var xdg := OS.get_environment("XDG_DATA_HOME")
+			if xdg == "":
+				xdg = OS.get_environment("HOME").path_join(".local/share")
+			data = xdg.path_join("scope-compass")
+	var file := data.replace("\\", "/").path_join("scompass.json")
+	if not FileAccess.file_exists(file):
+		return []
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(file))
+	if not parsed is Dictionary or not parsed.get("command") is String:
+		return []
+	var cmd: String = parsed["command"]
+	var args: Array = parsed.get("args", []) if parsed.get("args", []) is Array else []
+	if not FileAccess.file_exists(cmd):
+		return []
+	for a in args:
+		if not a is String or not FileAccess.file_exists(a):
+			return []
+	return [cmd, args]
 
 
 ## Corre scompass (cmd, de command()) en el proyecto y espera, en otro hilo: el editor sigue dibujando mientras tanto.

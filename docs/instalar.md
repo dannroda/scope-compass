@@ -26,10 +26,10 @@ Todo está en la última release: https://github.com/dannroda/scope-compass/rele
 
 ### Con el binario (recomendado)
 
-Poné el binario en una carpeta del PATH con el nombre `scompass` (`scompass.exe` en Windows), que es donde lo busca el addon, y probá `scompass --help`.
+No hace falta ponerlo en el PATH: cada vez que corre anota su ruta en `~/.local/share/scope-compass/scompass.json` (`%LOCALAPPDATA%\scope-compass\scompass.json` en Windows), y de ahí lo toman el addon de Godot y `scompass mcp install` (spec §37). Basta con abrirlo una vez; con doble clic levanta el Inicio. El PATH sirve para escribir `scompass` en una terminal.
 
 - **Linux:** `sh install.sh scompass-v<versión>-linux-x64` (el `install.sh` está en `tools/` del repo; sin argumento, toma el binario más nuevo que tenga al lado) lo copia a `~/.local/bin/scompass` y deja **Scope Compass** en el menú de aplicaciones: levanta el Inicio con ícono en la bandeja y lo abre en el navegador. El acceso desde el teléfono se prende y apaga desde la bandeja ("Activar acceso en la red"). Sin el script: `install -m 755 scompass-v<versión>-linux-x64 ~/.local/bin/scompass`, con `~/.local/bin` en el PATH.
-- **Windows:** renombralo a `scompass.exe` y ponelo en una carpeta propia (por ejemplo `%LOCALAPPDATA%\Programs\scompass`) que agregues al PATH de tu usuario (Configuración › Sistema › Información › Configuración avanzada del sistema › Variables de entorno). El dock también lo encuentra con `where scompass`.
+- **Windows:** renombralo a `scompass.exe` y ponelo en una carpeta propia (por ejemplo `%LOCALAPPDATA%\Programs\scompass`) y abrilo una vez. Para usarlo desde una terminal, agregá esa carpeta al PATH de tu usuario (Configuración › Sistema › Información › Configuración avanzada del sistema › Variables de entorno).
 
 La primera vez que corre una versión extrae su contenido (unos 30 MB) a `~/.cache/scope-compass/runtime/` (`%LOCALAPPDATA%\scope-compass\runtime\` en Windows); `SCOMPASS_RUNTIME_DIR` cambia esa carpeta. Para actualizar, reemplazá el binario (o volvé a correr `install.sh` con el nuevo); las versiones viejas quedan en esa caché y se pueden borrar. Para quitarlo, borrá el binario, la caché y, en Linux, el lanzador (`~/.local/share/applications/scope-compass.desktop`).
 
@@ -58,7 +58,7 @@ Para actualizar, instalá el `.tgz` nuevo con el mismo comando. Para quitarlo: `
 2. En Godot: Proyecto › Configuración del proyecto › Plugins › activar **Scope Compass**.
 3. El dock "Tablero" aparece junto al Inspector.
 
-Si `scompass` no está en el PATH del editor, indicá su ruta en Editor Settings › `scope_compass/scompass_path`.
+El dock busca scompass en la ruta de Editor Settings › `scope_compass/scompass_path`, en `../scope-compass` al lado del proyecto, en la instalación anotada y en el PATH, en ese orden. Si no lo encuentra, abrí el binario una vez o indicá su ruta en esa opción.
 
 ## 3. Primer uso en un proyecto
 

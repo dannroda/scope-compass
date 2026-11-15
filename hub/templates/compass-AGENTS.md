@@ -6,7 +6,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
 
 - **Usá la CLI `scompass`, no edites los JSON a mano.** Valida, escribe en formato canónico, regenera el export markdown y, si hay un hub corriendo, avisa al instante a la UI web y al dock de Godot.
 - Corré los comandos desde cualquier carpeta del proyecto (busca `compass/` hacia arriba) o con `--dir <proyecto>`.
-- Si `scompass` no está en el PATH: la ruta al binario de la release, o `node <carpeta de scope-compass>/hub/bin/scompass.js` desde un clon del repo.
+- Si `scompass` no está en el PATH: el comando que la instalación anotó en `~/.local/share/scope-compass/scompass.json` (`%LOCALAPPDATA%\scope-compass\scompass.json` en Windows; `command` y después `args`), o `node <carpeta de scope-compass>/hub/bin/scompass.js` desde un clon del repo.
 - Agregá `--json` para leer la salida desde un programa. Código de salida 0 si anduvo; el error va por stderr.
 - No hace falta que el hub esté corriendo: sin hub, la CLI escribe directo en `compass/`. Con el Inicio corriendo (`scompass home`), la CLI pasa por él solo (lo encuentra en el registro).
 - Si la CLI avisa que el hub es de otra versión, reinicialo con `scompass restart` antes de seguir: un hub viejo puede no conocer campos nuevos.
@@ -19,8 +19,10 @@ Si en tus herramientas aparece el servidor `scompass` (`list_tasks`, `show_task`
 Para tenerlo en Claude Code en todos los proyectos (toma el de la carpeta de la sesión; `dir` en cada herramienta apunta a otro):
 
 ```sh
-claude mcp add --scope user scompass -- scompass mcp
+scompass mcp install
 ```
+
+Eso corre `claude mcp add --scope user scompass -- <ruta entera de scompass> mcp`, así que no hace falta que `scompass` esté en el PATH.
 
 Los hitos (`compass://milestone/<id>`), las tareas (`compass://task/<id>`) y los documentos (`compass://doc/<alias>`) se adjuntan con `@scompass:…`.
 

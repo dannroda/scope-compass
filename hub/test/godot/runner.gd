@@ -308,6 +308,28 @@ func test_start_hub_missing(a: Array) -> void:
 	if not _check(c, cmd.is_empty() or not str(cmd).contains("/no/existe"), "inventó un comando: " + str(cmd)): return
 
 
+# Sin PATH ni ruta configurada: usa la instalación que scompass anotó en <datos>/scompass.json (§37).
+func test_recorded_command(a: Array) -> void:
+	var c := "recorded_command"
+	var data: String = a[1]
+	var exe := OS.get_executable_path()
+	var f := FileAccess.open(data.path_join("scompass.json"), FileAccess.WRITE)
+	f.store_string(JSON.stringify({"command": exe, "args": []}))
+	f.close()
+	OS.set_environment("SCOMPASS_DATA", data)
+	var v := await _view(a[0])
+	v.scompass_setting = func(): return ""
+	v.project_root = "/no/existe"
+	var cmd := v.scompass_command()
+	if not _check(c, cmd == [exe, []], "no usó la anotada: " + str(cmd)): return
+	# Si el programa anotado ya no está, no lo devuelve.
+	f = FileAccess.open(data.path_join("scompass.json"), FileAccess.WRITE)
+	f.store_string(JSON.stringify({"command": "/no/existe/scompass", "args": []}))
+	f.close()
+	cmd = v.scompass_command()
+	if not _check(c, cmd.is_empty() or not str(cmd).contains("/no/existe"), "devolvió uno que no existe: " + str(cmd)): return
+
+
 # Lanza el hub desde el dock y se queda esperando: Node mata a Godot con kill -9 (5.8).
 func test_start_hub_and_hang(a: Array) -> void:
 	var c := "start_hub_and_hang"

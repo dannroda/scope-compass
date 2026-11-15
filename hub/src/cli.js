@@ -37,6 +37,7 @@ import { brokenLinks, linksOf, linkView, openBlockers, reviewBlockers, wouldCycl
 import { decisionCounts, decisionLabel, decisionState, DECISION_STATES, MARK } from './decisions.js';
 import { descriptionTemplate, DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, SIZES, splitList } from './filters.js';
 import { selfCommand } from './self.js';
+import { claudeSpawn, findClaude } from './chat.js';
 
 const STATUS = { todo: 'Pendiente', paused: 'Pausado', doing: 'En curso', review: 'Revisión', done: 'Hecho' };
 // --lan (D36): las direcciones de este equipo en la red, para abrir el hub o el Inicio desde el teléfono.
@@ -62,6 +63,8 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   restart                                   reinicia el hub de este proyecto (para cargar código nuevo)
   mcp                                       servidor MCP por stdio para Claude Code (§30): las herramientas son
                                             estos comandos; el proyecto es --dir o el de CLAUDE_PROJECT_DIR
+  mcp install                               registra este scompass en Claude Code (claude mcp add --scope user),
+                                            con su ruta entera: no hace falta tenerlo en el PATH
   hubs                                      hubs activos de todos los proyectos
   home [--port 4700] [--open] [--tray]      levanta el Inicio: todos los proyectos del equipo (uno solo por usuario;
        [--lan]                              si ya corre, dice dónde); --lan como en serve
@@ -688,6 +691,27 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     // Servidor MCP (§30, D41): el proyecto es --dir, el de la carpeta donde lo lanzan o, si ahí no hay compass/, el
     // de CLAUDE_PROJECT_DIR, que Claude Code pasa a sus servidores.
     async mcp() {
+      // mcp install (§37): registra este scompass en Claude Code, con la ruta entera, para todos los proyectos.
+      if (rest[0] === 'install') {
+        const [command, args] = selfCommand(['mcp']);
+        const add = ['mcp', 'add', '--scope', 'user', 'scompass', '--', command, ...args];
+        const quote = (a) => (/[\s"]/.test(a) ? `"${a}"` : a);
+        const claude = findClaude(env);
+        if (!claude) {
+          warn(`no encontré Claude Code (claude); registralo a mano:\n  claude ${add.map(quote).join(' ')}`);
+          return 1;
+        }
+        const code = await new Promise((res) => {
+          const p = claudeSpawn(claude, add, { env, stdio: ['ignore', 'pipe', 'pipe'] });
+          p.stdout.on('data', (d) => out.write(d));
+          p.stderr.on('data', (d) => err.write(d));
+          p.on('error', () => res(-1));
+          p.on('close', res);
+        });
+        if (code !== 0) warn(`claude terminó con ${code}; si ya estaba registrado, sacalo con \`claude mcp remove --scope user scompass\` y probá de nuevo`);
+        else print(`MCP scompass registrado en Claude Code: ${[command, ...args].map(quote).join(' ')} mcp`);
+        return code === 0 ? 0 : 1;
+      }
       const found = o.dir || existsSync(join(project, 'compass', 'config.json'));
       const root = found || !process.env.CLAUDE_PROJECT_DIR ? project : findProject(process.env.CLAUDE_PROJECT_DIR);
       await serveMcp({ project: root, stdin, out, err });

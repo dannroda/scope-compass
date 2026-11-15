@@ -140,7 +140,9 @@ export const installText = (v) => [
   '---',
   '',
   `**Install.** \`scompass-v${v}-linux-x64\` and \`scompass-v${v}-windows-x64.exe\` are the hub and the CLI as a single`
-    + ' executable that needs no Node: put it in your PATH as `scompass` (`scompass.exe` on Windows; on Linux, `chmod +x` it).'
+    + ' executable that needs no Node: run it once (on Linux, `chmod +x` it first) and the Godot dock and'
+    + ' `scompass mcp install` find it without the PATH; to type `scompass` in a terminal, put it in your PATH as'
+    + ' `scompass` (`scompass.exe` on Windows).'
     + ' For the Godot dock,'
     + ` unzip \`scope-compass-addon-v${v}.zip\` at the root of your project (it creates \`addons/scope_compass/\`) and`
     + ' enable **Scope Compass** in Project Settings → Plugins. `SHA256SUMS` has the checksums of every file.',

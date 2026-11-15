@@ -286,6 +286,15 @@ test('"Iniciar hub" sin scompass encontrable no inventa un comando', { skip }, a
   expectOk(await godotLive(['start_hub_missing', dir]), 'start_hub_missing');
 });
 
+test('sin scompass en el PATH, el dock usa la instalación que scompass anotó en la carpeta de datos (§37)', { skip }, async () => {
+  const data = await mkdtemp(join(tmpdir(), 'scompass-data-'));
+  try {
+    expectOk(await godot('recorded_command', dir, data), 'recorded_command');
+  } finally {
+    await rm(data, { recursive: true, force: true });
+  }
+});
+
 // --- El hub lanzado por el dock muere con el editor (5.8) ---
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
 const waitFor = async (cond, ms) => { const t0 = Date.now(); while (!cond() && Date.now() - t0 < ms) await new Promise((r) => setTimeout(r, 50)); return cond(); };

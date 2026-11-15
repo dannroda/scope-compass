@@ -53,9 +53,9 @@ Descargá de la [última release](https://github.com/dannroda/scope-compass/rele
 
 Para comprobar la descarga: `sha256sum -c SHA256SUMS --ignore-missing` (en Windows, `Get-FileHash <archivo>` y comparar).
 
-**Hub y CLI.** Poné el binario en una carpeta del `PATH` con el nombre `scompass` (`scompass.exe` en Windows) y corré `scompass --help`. En Linux, el [`tools/install.sh`](tools/install.sh) del repo, con `sh install.sh <ruta a scompass-vX.Y.Z-linux-x64>`, lo copia a `~/.local/bin/scompass` y deja **Scope Compass** en el menú de aplicaciones, que levanta el Inicio con ícono en la bandeja. La primera vez que corre cada versión extrae su contenido (unos 30 MB) a `~/.cache/scope-compass/runtime/` (`%LOCALAPPDATA%\scope-compass\runtime\` en Windows).
+**Hub y CLI.** Poné el binario donde quieras y abrilo una vez (con doble clic abre el Inicio): anota su ruta, así el addon de Godot y `scompass mcp install` lo encuentran sin el `PATH`. Para escribir `scompass` en una terminal, ponelo en una carpeta del `PATH` con el nombre `scompass` (`scompass.exe` en Windows). En Linux, el [`tools/install.sh`](tools/install.sh) del repo, con `sh install.sh <ruta a scompass-vX.Y.Z-linux-x64>`, lo copia a `~/.local/bin/scompass` y deja **Scope Compass** en el menú de aplicaciones, que levanta el Inicio con ícono en la bandeja. La primera vez que corre cada versión extrae su contenido (unos 30 MB) a `~/.cache/scope-compass/runtime/` (`%LOCALAPPDATA%\scope-compass\runtime\` en Windows).
 
-**Addon de Godot.** Descomprimí el zip en la raíz del proyecto de Godot (crea `addons/scope_compass/`) y activá **Scope Compass** en Proyecto › Configuración del proyecto › Plugins. Si el editor no encuentra `scompass` en el `PATH`, indicá su ruta en Editor Settings › `scope_compass/scompass_path`.
+**Addon de Godot.** Descomprimí el zip en la raíz del proyecto de Godot (crea `addons/scope_compass/`) y activá **Scope Compass** en Proyecto › Configuración del proyecto › Plugins. El dock encuentra el binario por la ruta que anotó o en el `PATH`; si no, indicala en Editor Settings › `scope_compass/scompass_path`.
 
 Los pasos completos, con el paquete de npm y lo propio de Windows, están en [`docs/instalar.md`](docs/instalar.md).
 
@@ -64,7 +64,7 @@ Los pasos completos, con el paquete de npm y lo propio de Windows, están en [`d
 - **Todos tus proyectos:** `scompass home --tray --open` (o **Scope Compass** en el menú, en Linux) abre el Inicio en el navegador. Desde ahí se agregan proyectos que ya existen o se crean nuevos con una plantilla.
 - **Un proyecto:** en su carpeta, `scompass init --template juego` crea el tablero (plantillas: `juego`, `personal`, `vacio`), o **Crear compass/** en el dock de Godot. Después, `scompass serve --open` o **Iniciar hub** en el dock.
 - **Desde la terminal:** `scompass list`, `scompass add "Título" --milestone m00`, `scompass move <id> doing`. Con `--json`, la salida es para programas.
-- **Claude Code:** registrá el servidor MCP una vez para todos los proyectos con `claude mcp add --scope user scompass -- scompass mcp`, y contale al agente de la guía del tablero agregando al `AGENTS.md` o `CLAUDE.md` del proyecto: "El tablero de tareas se maneja con scompass; leé compass/AGENTS.md antes de tocarlo."
+- **Claude Code:** registrá el servidor MCP una vez para todos los proyectos con `scompass mcp install` (corre `claude mcp add --scope user` con la ruta entera), y contale al agente de la guía del tablero agregando al `AGENTS.md` o `CLAUDE.md` del proyecto: "El tablero de tareas se maneja con scompass; leé compass/AGENTS.md antes de tocarlo."
 - **Desde el teléfono:** `scompass home --tray --lan`, o "Activar acceso en la red" en la bandeja. No hay login: cualquiera en esa red puede ver y editar, así que solo en una red de confianza. Ver [SECURITY.md](SECURITY.md).
 
 ## Dónde viven los tableros

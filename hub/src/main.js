@@ -2,6 +2,7 @@
 // await en el nivel superior del módulo.
 import { openSync, writeSync } from 'node:fs';
 import { run } from './cli.js';
+import { recordSelf } from './self.js';
 
 /** Corre scompass con estos argumentos y devuelve el código de salida. */
 export async function main(argv) {
@@ -26,5 +27,7 @@ export async function main(argv) {
     process.on('unhandledRejection', die);
   }
 
+  // El addon y `mcp install` encuentran esta instalación sin el PATH (§37).
+  recordSelf();
   return run(argv);
 }

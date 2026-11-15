@@ -502,3 +502,12 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Commit y tag al principio, como godot-agent: un build que falla deja una versión quemada.
   - Acciones de terceros para el changelog o la release: `gh` ya viene en los runners.
   - Un borrador de release al que cada runner sube su binario: deja borradores colgados cuando un build falla.
+
+## D48 · scompass sin el PATH: la instalación anota su ruta en la carpeta de datos
+
+- **Qué:** el binario anota en `<datos>/scompass.json` cómo lanzarse cada vez que corre. El addon de Godot lo busca ahí antes que en el PATH, y `scompass mcp install` registra el MCP en Claude Code con la ruta entera (spec §37).
+- **Por qué:** poner un programa en el PATH es un paso manual que falla seguido (en Windows, o con un editor lanzado desde el menú), y no tiene que ser requisito para usar el dock ni el MCP.
+- **Descartado:**
+  - Una carpeta fija de instalación que el addon conozca: obliga a instalar en un lugar, y el binario suelto (descargado y abierto) no funcionaría.
+  - Que el addon traiga el binario adentro: 150 MB por proyecto y una versión por proyecto.
+  - Agregar scompass al PATH desde un instalador: toca la configuración del sistema y en Linux depende de la sesión.
