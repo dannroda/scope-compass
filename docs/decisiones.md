@@ -467,3 +467,18 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - `bun build --compile`: un paso solo, pero cambia el runtime. Queda para revisar si el tamaño o el arranque molestan.
   - Leer los archivos desde los assets del SEA sin extraerlos: obliga a cambiar cada lectura de archivo y fastify no sirve estáticos desde ahí.
   - Borrar las versiones viejas de la caché: un Inicio que sigue corriendo con la versión anterior carga módulos de a poco y se rompería.
+
+## D46 · El tablero en su propio repo: compass/ como enlace o submódulo
+**2026-11-14 · vigente** · spec §36
+
+- **Qué:** el tablero puede vivir fuera del repo del proyecto, en `<datos>/boards/<nombre>/` con su propio git, y `<proyecto>/compass` es un enlace a esa carpeta, excluido en `.git/info/exclude`. Para trabajar con otros, `compass/` es un submódulo. `scompass board move` hace el cambio con el historial.
+- **Por qué:** el usuario va a hacer públicos sus proyectos (scope-compass, godot-manager), y el tablero commiteado con el código publica notas internas, nombres de otros proyectos y links privados. Quiere sus tableros en un repo privado aparte.
+- **Por qué un enlace y no un registro proyecto → tablero:** `<proyecto>/compass` está fijo en unos 100 lugares, incluidas las rutas `compass/images/…` guardadas en las tareas y el addon, que lee `res://compass`. Con el enlace todo eso sigue igual, el submódulo es el mismo caso, y solo cambian el git del tablero y los chequeos de rutas. Un registro habría que volver a llenarlo en cada equipo igual que el enlace.
+- **Por qué `info/exclude` y no `.gitignore`:** `.gitignore` se commitea y deja dicho en el repo público que hay un tablero aparte.
+- **Por qué la carpeta de datos y no la de config:** un tablero son datos (XDG), y es la carpeta donde el Inicio ya crea los proyectos nuevos.
+- **Por qué el export pasa adentro del tablero:** `docs/tareas.md` en el proyecto es una copia entera del tablero.
+- **Un repo por tablero o uno con todos:** los dos andan, porque `git -C compass` encuentra el repo que corresponda. Con uno por tablero, compartir uno es agregarlo como submódulo.
+- **Descartado:**
+  - Un registro proyecto → tablero en `projects.json` que resuelvan el hub, la CLI, el MCP y el addon: toca casi todo.
+  - Un archivo puntero en el proyecto: deja rastro en el repo público.
+  - Commitear el tablero nuevo al moverlo: la app no commitea (§4.5).

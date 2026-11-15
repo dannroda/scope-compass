@@ -26,6 +26,7 @@ import { boardStatus, docDiff, docLog, docsStatus, repoFiles } from './git.js';
 import { imageFile, repoFile } from './files-api.js';
 import { dropImage, IMAGE_EXT, importImage, insideProject, isImagePath } from './images.js';
 import { taskHistory } from './history.js';
+import { boardInfo, boardsDir, linkBoard, moveBoard } from './board.js';
 import { promoteDecision } from './promote.js';
 import { forgetProject, projectsFile, projectsStatus, pruneTempProjects, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listPlaytests, listTasks } from './views.js';
@@ -63,6 +64,11 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
        [--lan]                              si ya corre, dice dónde); --lan como en serve
   home restart                              reinicia el Inicio (para cargar código nuevo), en el mismo puerto
   home list                                 proyectos conocidos en este equipo, con el estado de su hub
+  board                                     dónde está el tablero: en el proyecto, enlazado a un tablero con su
+                                            propio git o en un submódulo (con su origin)
+  board move [<nombre>]                     saca compass/ a la carpeta de tableros del usuario, con su propio git y
+                                            su historial; compass/ queda como enlace y fuera del git del proyecto
+  board link <nombre|carpeta>               enlaza compass/ a un tablero ya clonado (en otro equipo)
   home add [<carpeta>]                      anota un proyecto sin levantar su hub (por defecto, el de --dir)
   home rm [<carpeta>]                       lo quita del registro (no toca sus datos)
   list [--milestone m00] [--status doing,review] [filtros]
@@ -226,7 +232,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const validators = loadValidators();
   let store = createJsonFilesStore(compass, { validators, ...(now && { now }) });
   // Con un hub de este proyecto corriendo, todo pasa por su API (eventos al instante, una sola cola de escritura).
-  if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'home', 'help', 'mcp'].includes(cmd)) {
+  if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'home', 'help', 'mcp', 'board'].includes(cmd)) {
     const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
     const hub = await detectHub(project, cfg?.port);
     if (hub) {
@@ -696,6 +702,36 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       const dup = hubs.filter((h, i) => h.kind !== 'home' && hubs.findIndex((x) => x.project === h.project) !== i);
       for (const h of dup) warn(`aviso: más de un hub para ${h.project}`);
       return 0;
+    },
+
+    // El tablero fuera del repo del proyecto (m32-10): ver board.js.
+    async board() {
+      const [sub, arg] = rest;
+      const KIND = { local: 'en el proyecto (compass/, en su repo)', linked: 'enlazado a un tablero con su propio git', repo: 'con su propio git dentro del proyecto (submódulo)', none: 'no hay tablero' };
+      if (sub === undefined) {
+        const info = await boardInfo(project);
+        if (o.json) return done({ ...info, boards: boardsDir() });
+        print(`Tablero: ${KIND[info.kind]}`);
+        if (info.kind !== 'none') print(`  ${info.path}${info.target !== info.path ? ` → ${info.target}` : ''}`);
+        if (info.kind === 'linked' || info.kind === 'repo') print(info.repo === false ? '  sin repo de git' : `  rama ${info.branch ?? '(HEAD suelto)'} · origin ${info.remote ?? '(ninguno: git -C compass remote add origin <url>)'}`);
+        if (info.kind === 'local') print(`Para sacarlo del repo del proyecto: scompass board move (va a ${boardsDir()})`);
+        return 0;
+      }
+      if (sub === 'move') {
+        // Con un hub mirando compass/, la carpeta desaparece debajo de él.
+        if (hubsOf(project).length) throw new StoreError('conflict', 'hay un hub de este proyecto corriendo: detenelo (o el Inicio) antes de mover el tablero');
+        const r = await moveBoard(project, arg);
+        const lines = [`Tablero movido a ${r.target}${r.history ? ', con su historial' : ''}`, `compass/ es ahora un enlace${r.exclude ? `, excluido en ${r.exclude}` : ''}`];
+        if (r.exportFrom) lines.push(`El export markdown pasó de ${r.exportFrom} a ${r.exportTo} (dentro del tablero)`);
+        if (r.history) lines.push('En el proyecto, compass/ quedó fuera del índice: commiteá ese cambio.');
+        lines.push(`Lo sin commitear quedó sin commitear en el tablero. Para un remoto: git -C ${r.target} remote add origin <url>`);
+        return done(r, lines.join('\n'));
+      }
+      if (sub === 'link') {
+        const r = await linkBoard(project, need(arg, 'el nombre o la carpeta del tablero'));
+        return done(r, `compass/ → ${r.target}${r.exclude ? ` (excluido en ${r.exclude})` : ''}`);
+      }
+      throw new UsageError(`subcomando desconocido: board ${sub} (move, link)`);
     },
 
     // Registro de proyectos conocidos (D23); sin subcomando, el Inicio (D24).

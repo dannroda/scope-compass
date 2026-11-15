@@ -10,7 +10,7 @@ Las tareas y los hitos de este proyecto viven en `compass/`, en el formato de Sc
 - Agregá `--json` para leer la salida desde un programa. Código de salida 0 si anduvo; el error va por stderr.
 - No hace falta que el hub esté corriendo: sin hub, la CLI escribe directo en `compass/`. Con el Inicio corriendo (`scompass home`), la CLI pasa por él solo (lo encuentra en el registro).
 - Si la CLI avisa que el hub es de otra versión, reinicialo con `scompass restart` antes de seguir: un hub viejo puede no conocer campos nuevos.
-- Los cambios quedan como archivos modificados en `compass/` (y en el export markdown). Commitealos solo si te lo piden. `scompass list` termina con cuántos hay sin commitear (`uncommitted` en `--json`).
+- Los cambios quedan como archivos modificados en `compass/` (y en el export markdown). Commitealos solo si te lo piden, y en el repo del tablero: `git -C compass …`, que es el del proyecto si `compass/` es una carpeta suya y el propio si es un enlace o un submódulo (ver *Dónde vive el tablero*). `scompass list` termina con cuántos hay sin commitear (`uncommitted` en `--json`).
 
 ## MCP
 
@@ -201,6 +201,23 @@ scompass doc search "salto doble"            # líneas con todas las palabras, c
 scompass doc status                          # estado de git de cada documento y su último commit
 scompass doc diff gdd                        # cambios sin commitear y las secciones que tocan
 ```
+
+## Dónde vive el tablero
+
+`compass/` puede ser una carpeta del proyecto, en su mismo repo, o estar en un repo propio, fuera del repo del proyecto, para no publicar el tablero con el código:
+
+- enlazado: `compass/` es un enlace (symlink; junction en Windows) a `~/.local/share/scope-compass/boards/<nombre>/` (en Windows, `%LOCALAPPDATA%\scope-compass\boards\`), un repo de git aparte, y el proyecto lo excluye en `.git/info/exclude`;
+- submódulo: `compass/` es un submódulo de git con el repo del tablero, para compartirlo con otros.
+
+Para la CLI, el MCP, la web y el dock da lo mismo: siempre es `<proyecto>/compass`. Lo que cambia es dónde se commitea (`git -C compass`).
+
+```sh
+scompass board                   # dónde está: en el proyecto, enlazado o submódulo, con su rama y su origin (--json)
+scompass board move [<nombre>]   # lo saca a boards/<nombre> con su historial; compass/ queda como enlace y fuera del índice del proyecto
+scompass board link <nombre>     # en otro equipo, después de clonar el repo del tablero en boards/<nombre>: crea el enlace
+```
+
+`board move` pasa el export markdown a `compass/tareas.md` (adentro del tablero), deja lo que no estaba commiteado sin commitear en el tablero y no commitea nada: la baja de `compass/` en el proyecto queda en su índice para commitear. No lo corras con un hub o el Inicio sirviendo el proyecto.
 
 ## Proyectos del equipo
 

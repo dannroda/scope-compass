@@ -2,6 +2,7 @@
 // con ../, ni con una ruta absoluta, ni con las llaves de un glob ({..,x}), ni a través de un enlace simbólico.
 import { realpath } from 'node:fs/promises';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
+import { linkedTarget } from './board.js';
 
 /**
  * La ruta relativa al proyecto, con "/", si es una ruta (o un patrón con *) que no puede salir de él; null si es
@@ -22,9 +23,15 @@ async function realOrParent(abs) {
   }
 }
 
-/** true si abs, siguiendo los enlaces simbólicos, queda dentro del proyecto. */
+const under = (root, real) => { const rel = relative(root, real); return rel === '' || (!rel.startsWith('..' + sep) && rel !== '..' && !isAbsolute(rel)); };
+
+/**
+ * true si abs, siguiendo los enlaces simbólicos, queda dentro del proyecto. Lo que está dentro de un tablero
+ * enlazado (compass/ → <datos>/boards/<nombre>, m32-10) también cuenta: es parte del proyecto aunque viva afuera.
+ */
 export async function realInside(projectDir, abs) {
   const [root, real] = await Promise.all([realpath(projectDir).catch(() => resolve(projectDir)), realOrParent(resolve(abs))]);
-  const rel = relative(root, real);
-  return rel === '' || (!rel.startsWith('..' + sep) && rel !== '..' && !isAbsolute(rel));
+  if (under(root, real)) return true;
+  const board = linkedTarget(projectDir);
+  return board !== null && under(board, real);
 }

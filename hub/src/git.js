@@ -2,22 +2,31 @@
 // commitea en local (spec §4.5); esto solo lo recuerda. Sin git o fuera de un repo: { repo: false }.
 import { execFile } from 'node:child_process';
 import { realpathSync } from 'node:fs';
-import { relative, resolve } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 
-/** { repo, uncommitted, files } con las rutas relativas al proyecto. */
-export function boardStatus(projectDir, config) {
-  const paths = ['compass'];
+const status = (dir, paths) => new Promise((done) => {
+  execFile('git', ['-C', dir, 'status', '--porcelain', '--untracked-files=all', '--', ...paths], { timeout: 5000, windowsHide: true }, (err, stdout) => {
+    done(err ? null : stdout.split('\n').filter(Boolean).map((l) => l.slice(3).replace(/^"|"$/g, '')));
+  });
+});
+
+/**
+ * { repo, uncommitted, files } con las rutas relativas al proyecto ("compass/tasks/…"). El git es el del tablero
+ * (git -C compass): el del proyecto si compass/ es una carpeta suya, o el propio si es un enlace o un submódulo
+ * (m32-10). El export markdown fuera de compass/ se mira en el git del proyecto.
+ */
+export async function boardStatus(projectDir, config) {
+  const compass = join(projectDir, 'compass');
+  const extra = [];
   if (config?.export_md) {
     const rel = relative(projectDir, resolve(projectDir, config.export_md));
-    if (rel && !rel.startsWith('..')) paths.push(rel);
+    if (rel && !rel.startsWith('..') && !rel.split(sep).join('/').startsWith('compass/')) extra.push(rel);
   }
-  return new Promise((done) => {
-    execFile('git', ['-C', projectDir, 'status', '--porcelain', '--untracked-files=all', '--', ...paths], { timeout: 5000, windowsHide: true }, (err, stdout) => {
-      if (err) return done({ repo: false, uncommitted: 0, files: [] });
-      const files = stdout.split('\n').filter(Boolean).map((l) => l.slice(3).replace(/^"|"$/g, ''));
-      done({ repo: true, uncommitted: files.length, files });
-    });
-  });
+  // porcelain da las rutas desde la raíz del repo: se les saca el prefijo de compass/ dentro de él.
+  const [board, prefix, other] = await Promise.all([status(compass, ['.']), git(compass, ['rev-parse', '--show-prefix']), extra.length ? status(projectDir, extra) : null]);
+  const p = (prefix ?? '').trim();
+  const files = [...(board ?? []).map((f) => 'compass/' + (f.startsWith(p) ? f.slice(p.length) : f)), ...(other ?? [])];
+  return board === null && other === null ? { repo: false, uncommitted: 0, files: [] } : { repo: true, uncommitted: files.length, files };
 }
 
 // Estado de git de los documentos (12.3). Solo lectura, como todo lo de acá. `git` falla (sin git, fuera de un repo,

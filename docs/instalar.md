@@ -69,6 +69,19 @@ La guía del tablero está en `addons/scope_compass/AGENTS.md` y en `compass/AGE
 
 > El tablero de tareas se maneja con scompass; leé compass/AGENTS.md antes de tocarlo.
 
+## El tablero en un repo aparte
+
+Para que el tablero no se publique con el proyecto (spec §36):
+
+```sh
+scompass board move              # lo saca a ~/.local/share/scope-compass/boards/<nombre>, con su historial
+git commit -m "Saco el tablero"  # en el proyecto: la baja de compass/ quedó en el índice
+git -C compass remote add origin <url-de-un-repo-privado>
+git -C compass add -A && git -C compass commit -m "Tablero" && git -C compass push -u origin main
+```
+
+`compass/` queda como un enlace (junction en Windows) y fuera del git del proyecto (`.git/info/exclude`). En otro equipo: clonar el repo del tablero en la carpeta de tableros y `scompass board link <nombre>` en el proyecto. Para compartirlo con otros, en lugar del enlace: `git submodule add <url> compass`. Antes de `board move`, detené el hub del proyecto y el Inicio.
+
 ## Si se publica el proyecto antes que Scope Compass
 
 Agregá `addons/scope_compass` (sin barra final) al `.gitignore` del proyecto, y no commitees `project.godot` con el plugin activado.

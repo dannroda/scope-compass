@@ -32,10 +32,12 @@ export async function repoFile(projectDir, raw) {
 /**
  * Una captura de una tarea (18.4): en un repo, lo mismo que repoFile; sin repo de git (19.6), cualquier imagen que
  * esté en el disco dentro del proyecto, así las capturas andan igual. Sin repo no se sirve ningún otro archivo.
+ * Las de compass/ se miran en el disco siempre: con el tablero enlazado o como submódulo (m32-10), el git del
+ * proyecto no las lista.
  */
 export async function imageFile(projectDir, raw) {
   const path = String(raw ?? '');
-  if ((await docsStatus(projectDir)).repo) return repoFile(projectDir, path);
+  if (!path.startsWith('compass/') && (await docsStatus(projectDir)).repo) return repoFile(projectDir, path);
   const ok = projectRel(path) === path && IMAGES[extname(path).toLowerCase()] &&
     (await lstat(join(projectDir, path)).then((s) => s.isFile(), () => false)) && (await realInside(projectDir, join(projectDir, path)));
   if (!ok) throw new StoreError('not_found', `no hay una imagen "${path}" en el proyecto`);

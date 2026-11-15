@@ -1382,3 +1382,30 @@ Cada uno tiene su test en `hub/test/m31-criteria.test.js`.
 - [ ] El binario corre `init`, `list`, `serve` (con la web), `home` (crea proyectos y prende hubs) y `mcp` en un equipo sin Node.
 - [ ] Dos `scompass` que arrancan a la vez por primera vez no rompen la carpeta de la caché.
 - [ ] El repo (`node hub/bin/scompass.js`) y el `.tgz` siguen andando igual.
+
+## 36. El tablero fuera del repo del proyecto (M32)
+
+Un proyecto que se hace público no tiene que publicar su tablero (notas internas, otros proyectos, links privados). `<proyecto>/compass` sigue siendo la única ruta que usan la CLI, el hub, el MCP, la web y el dock, pero puede ser de tres tipos (`hub/src/board.js`, D46):
+
+- **local:** una carpeta del proyecto, en su mismo repo (lo de siempre).
+- **enlazado:** un enlace (symlink en Linux; junction en Windows, que no pide permisos) a `<datos>/boards/<nombre>/` (`~/.local/share/scope-compass/boards`; `%LOCALAPPDATA%\scope-compass\boards`; `SCOMPASS_BOARDS` la cambia), un repo de git propio. El proyecto lo excluye en `.git/info/exclude`, no en `.gitignore`: el repo público no tiene ningún rastro.
+- **submódulo:** `compass/` con su propio `.git` dentro del proyecto, para compartir el tablero con otros.
+
+Qué cambia según el tipo:
+
+- **El git del tablero** es `git -C compass`: el estado sin commitear (`/api/git`, el aviso de `list`, el Inicio) y el historial de una tarea (`history`) corren ahí, con las rutas mostradas como `compass/…`. El export markdown fuera de `compass/` se sigue mirando en el git del proyecto.
+- **Rutas:** lo que está dentro del destino de un enlace `compass/` cuenta como del proyecto (`realInside`), siempre que ese destino sea un tablero (tenga `config.json`): un `compass/` que apunta a `/` no abre el disco.
+- **Capturas:** las de `compass/` se sirven desde el disco aunque el git del proyecto no las liste (con el tablero enlazado o como submódulo no las lista).
+
+Comandos:
+
+- `scompass board`: el tipo, la carpeta real, la rama y el origin.
+- `scompass board move [<nombre>]`: saca un tablero local a `<datos>/boards/<nombre>` (por defecto, el `project` de `config.json`). Si `compass/` está en el repo del proyecto, su historial pasa al repo nuevo con `git subtree split`, con `compass/` como raíz. Lo de disco, también lo sin commitear, se copia encima y queda sin commitear. `compass/` se saca del índice del proyecto (queda para commitear), se reemplaza por el enlace y se excluye. Un export markdown fuera de `compass/` pasa a `compass/tareas.md` y el viejo se borra del disco y del índice. No commitea nada (§4.5) y se niega con un hub o el Inicio sirviendo el proyecto.
+- `scompass board link <nombre|carpeta>`: crea el enlace a un tablero que ya existe (en otro equipo, después de clonar su repo) y lo excluye.
+
+### Criterios de aceptación
+
+- [x] Después de `board move`, el tablero tiene el historial de `compass/` y lo sin commitear; el proyecto tiene `compass/` fuera del índice y en `info/exclude`.
+- [x] Con el tablero enlazado andan escribir, el export (adentro del tablero), el historial, el estado de git, las capturas y el watcher.
+- [x] `board link` en otro proyecto ve el mismo tablero.
+- [ ] Probado en Windows (junction).

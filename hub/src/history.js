@@ -118,15 +118,18 @@ export function taskChanges(a, b) {
  * entrada, con hash null, es lo que hay sin commitear (si cambió algo visible). Sin repo: { repo: false, entries: [] }.
  */
 export async function taskHistory(projectDir, id, { limit = 30 } = {}) {
-  const path = `compass/tasks/${id}.json`;
-  const log = await git(projectDir, ['log', `-n${limit}`, '--format=%H%x1f%h%x1f%aI%x1f%an%x1f%s%x1e', '--', path]);
+  // El git del tablero (m32-10): desde compass/ sirve igual si es una carpeta del proyecto, un enlace a un tablero
+  // con su propio repo o un submódulo.
+  const board = join(projectDir, 'compass');
+  const path = `tasks/${id}.json`;
+  const log = await git(board, ['log', `-n${limit}`, '--format=%H%x1f%h%x1f%aI%x1f%an%x1f%s%x1e', '--', path]);
   if (log === null) return { repo: false, entries: [] };
   const commits = log.split('\x1e').map((l) => l.trim()).filter(Boolean).map((l) => {
     const [full, hash, date, author, subject] = l.split('\x1f');
     return { full, hash, date, author, subject };
   });
-  // "<rev>:./<ruta>" es relativo a la carpeta del proyecto, aunque esté dentro de un repo más grande (19.3).
-  const blobs = await catFiles(projectDir, commits.flatMap((c) => [`${c.full}:./${path}`, `${c.full}~1:./${path}`]));
+  // "<rev>:./<ruta>" es relativo a compass/, aunque esté dentro de un repo más grande (19.3).
+  const blobs = await catFiles(board, commits.flatMap((c) => [`${c.full}:./${path}`, `${c.full}~1:./${path}`]));
   // Un commit que no cambió nada visible (solo order o los sellos de fecha) no se lista.
   const entries = commits.map(({ full, ...c }, i) => {
     const [now, before] = [parse(blobs[2 * i]), parse(blobs[2 * i + 1])];
@@ -135,7 +138,7 @@ export async function taskHistory(projectDir, id, { limit = 30 } = {}) {
     return { ...c, changes: now === undefined || before === undefined ? ['(JSON inválido en este commit)'] : taskChanges(before, now) };
   }).filter((e) => e.created || e.deleted || e.changes.length);
   // Sin commitear: el disco contra HEAD.
-  const disk = parse(await readFile(join(projectDir, path), 'utf8').catch(() => null));
+  const disk = parse(await readFile(join(board, path), 'utf8').catch(() => null));
   const head = commits.length ? parse(blobs[0]) : null;
   const pending = disk && JSON.stringify(disk) !== JSON.stringify(head) ? (head ? taskChanges(head, disk) : []) : null;
   if (pending && (pending.length || !head)) entries.unshift({ hash: null, date: disk.updated_at ?? null, author: null, subject: 'Sin commitear', ...(head ? {} : { created: true }), changes: pending });

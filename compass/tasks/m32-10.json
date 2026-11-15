@@ -1,0 +1,71 @@
+{
+  "checklist": [
+    {
+      "detail": "move: git subtree split de compass/ si está en el repo del proyecto (conserva el historial), clon en <datos>/boards/<nombre>, git rm --cached del proyecto, enlace y /compass en .git/info/exclude. El export (docs/tareas.md) pasa a compass/tareas.md.",
+      "done": true,
+      "text": "board.js: tipo de tablero (local, enlazado, submódulo), carpeta de tableros, enlazar y mover"
+    },
+    {
+      "detail": "realInside acepta lo que está dentro del tablero; boardStatus y taskHistory corren git -C compass; imageFile sirve las de compass/ desde el disco (el git del proyecto no las lista, como ya pasa con un submódulo).",
+      "done": true,
+      "text": "Rutas, git e imágenes con el tablero enlazado o como submódulo"
+    },
+    {
+      "done": true,
+      "text": "CLI: scompass board, board move, board link"
+    },
+    {
+      "done": true,
+      "text": "Tests: tablero enlazado (watcher, imágenes, historial, estado), move con historial, link"
+    },
+    {
+      "done": true,
+      "text": "Docs: AGENTS.md (las tres copias), instalar.md, spec y decisiones"
+    },
+    {
+      "done": false,
+      "text": "Mover el tablero de scope-compass a la carpeta de datos (lo corre el usuario)"
+    }
+  ],
+  "code": "",
+  "created_at": "2026-11-14T23:59:32.915Z",
+  "decisions": [
+    {
+      "alternatives": "Un solo repo con todos los tableros; un repo por tablero sin superproyecto (cada uno suelto, con su origin).",
+      "asked": true,
+      "at": "2026-11-14T23:59:39.497Z",
+      "session": "f6a635b4-c190-4341-9804-2f7037baee5c",
+      "text": "¿Un repo git por tablero (cada uno con su origin, y tu repo privado de tableros como superproyecto con submódulos) o un solo repo con todos los tableros en carpetas?",
+      "why": "Con un repo por tablero, compartir uno es agregarlo como submódulo en el proyecto. Con un solo repo es más simple para tu caso, pero para compartir uno hay que separarlo antes."
+    },
+    {
+      "alternatives": "~/.config/scope-compass/boards, como dijo el usuario (\"userconfig\"), al lado de projects.json.",
+      "at": "2026-11-14T23:59:39.559Z",
+      "text": "Los tableros van en la carpeta de datos del usuario (~/.local/share/scope-compass/boards, %LOCALAPPDATA% en Windows), no en la de config (~/.config).",
+      "why": "Según XDG, ~/.config es para preferencias y ~/.local/share para datos; un tablero son datos. projects.js ya tiene las dos carpetas (líneas 19 y 31), así que no hace falta inventar ninguna."
+    },
+    {
+      "alternatives": "Un registro proyecto → tablero en projects.json y que el hub, la CLI, el MCP, el addon y las rutas de imágenes resuelvan la carpeta del tablero (lo de la propuesta original): toca casi todo y en otra máquina hay que volver a anotarlo igual. Un archivo puntero en el proyecto: deja rastro en el repo público.",
+      "at": "2026-11-15T00:04:37.205Z",
+      "text": "El tablero vive afuera (en la carpeta de datos, con su propio git) y <proyecto>/compass es un enlace a esa carpeta (symlink en Linux, junction en Windows), excluido en .git/info/exclude. En el caso colaborativo, compass es un submódulo. No hay un registro de proyecto a tablero.",
+      "why": "<proyecto>/compass está fijo en unos 100 lugares (hub, CLI, MCP, addon, rutas de imágenes compass/images/… guardadas en las tareas). Con el enlace, todo eso sigue igual y el submódulo es el mismo caso. Cambian el git del tablero (estado e historial con git -C compass) y los chequeos de rutas, que ahora aceptan lo que está dentro del tablero enlazado. Con info/exclude, el repo del proyecto no tiene ningún rastro (ni una línea en .gitignore). La pregunta de un repo por tablero o uno con todos queda libre: los dos funcionan, porque git -C compass encuentra el repo que corresponda."
+    }
+  ],
+  "description": "Hoy el tablero vive en <proyecto>/compass/ y se commitea con el código, así que hacer público un proyecto publica también su tablero: notas internas, otros proyectos y links a artifacts. Pasa con scope-compass y con godot-manager (ui/compass). Lo decidió el usuario el 2026-11-14.\n\nDiseño (ver la decisión 3):\n- El tablero vive en la carpeta de datos del usuario (<datos>/boards/<nombre>, ~/.local/share/scope-compass/boards en Linux y %LOCALAPPDATA%\\scope-compass\\boards en Windows), con su propio git y, si se quiere, un origin.\n- <proyecto>/compass es un enlace a esa carpeta (symlink en Linux, junction en Windows) y está en .git/info/exclude del proyecto: el repo del proyecto no tiene rastro del tablero.\n- Trabajo colaborativo: <proyecto>/compass es un submódulo de git con el repo del tablero. Para scompass es el mismo caso.\n- Un tablero dentro del proyecto, como hasta ahora, sigue funcionando.\n\nComandos:\n- `scompass board`: dónde está el tablero, de qué tipo es y su remoto.\n- `scompass board move [nombre]`: saca el compass/ del proyecto a <datos>/boards/<nombre> conservando su historial (git subtree split), lo saca del índice del proyecto y deja el enlace. El export markdown pasa a compass/tareas.md.\n- `scompass board link <carpeta>`: en otra máquina, después de clonar el repo del tablero, crea el enlace.\n\nQué cambia en el código: el git del tablero (estado sin commitear e historial de una tarea corren git -C compass), los chequeos de rutas (realInside acepta lo que está dentro del tablero enlazado) y las capturas en compass/images (el git del proyecto no las lista: se sirven desde el disco, lo que también arregla el caso del submódulo).\n\nEn scope-compass mismo: mover compass/ y docs/tareas.md al repo de tableros antes de hacer público el repo; eso reduce mucho la auditoría de m32-01.",
+  "links": [
+    {
+      "task": "m32-01",
+      "type": "blocks"
+    }
+  ],
+  "milestone": "m32",
+  "notes": "Hecho (2026-11-14):\n- hub/src/board.js: boardKind (none, local, linked, repo), boardInfo, linkedTarget, excludeBoard (/compass en .git/info/exclude, con el prefijo si el proyecto es una subcarpeta del repo), linkBoard y moveBoard. move usa git subtree split -b <rama temporal> y clona esa rama con --no-local; después copia lo de disco encima, así lo sin commitear llega sin commitear. No commitea nada.\n- paths.js: realInside acepta lo que está dentro del destino de compass/ si es un enlace a un tablero (con config.json).\n- git.js boardStatus y history.js taskHistory corren git -C compass. Las rutas siguen saliendo como compass/….\n- files-api.js imageFile: las de compass/ se miran en el disco (el git del proyecto no las lista con el tablero enlazado o como submódulo).\n- CLI: scompass board, board move [nombre], board link <nombre|carpeta>. move se niega con un hub o el Inicio sirviendo el proyecto.\n- Documentado en AGENTS.md (las tres copias), instalar.md, spec §36 y D46.\n\nFalta:\n- Probar en Windows (junction) por ssh win.\n- Mover el tablero de scope-compass: detener el Inicio (y los hubs), scompass board move, commitear la baja de compass/ en el proyecto y crear el repo privado del tablero. Lo decide el usuario.\n- El dock de Godot sigue ofreciendo \"Crear compass/\" local; para crearlo afuera desde ahí falta UI (después del backend, como siempre).\n- npm test completo se colgó en una corrida (más de una hora, en export-md); corridos de a un archivo, los 55 pasan. No parece de este cambio, pero hay que mirarlo.",
+  "order": 10,
+  "priority": "high",
+  "refs": [],
+  "size": "l",
+  "status": "review",
+  "test": "hub/test/board.test.js: board move con historial (subtree split), lo sin commitear, export a compass/tareas.md, info/exclude y baja del índice; board move sin git y board link en otro proyecto; con el tablero enlazado, el hub da el estado de git del tablero, guarda y sirve capturas, el watcher ve cambios de afuera y realInside acepta el tablero pero no otra carpeta. A mano: scompass board move en un proyecto de prueba, después move, image add, history y board link en un segundo proyecto.",
+  "title": "Tableros fuera del repo del proyecto, cada uno con su propio git",
+  "updated_at": "2026-11-15T01:23:55.640Z"
+}

@@ -1,7 +1,7 @@
 # Tareas — Scope Compass
 
 > Export de `compass/`, que es la fuente de verdad. No editar: los cambios se hacen en `compass/` o con `scompass`, y este archivo se regenera.
-> Generado: 2026-10-26
+> Generado: 2026-11-14
 
 ## M0 — Fundaciones del repo  (6/6)
 
@@ -2370,7 +2370,7 @@ Pedido del usuario (2026-10-11): después de ver los mockups con los marcos de P
 
 **Referencias:** `docs/spec.md#auditoria`
 
-## M20 — Playtest y Pausado  (7/7, 2 en revisión)
+## M20 — Playtest y Pausado  (7/7)
 
 Ordenar lo que está en Revisión: sesiones de playtest con tareas ya creadas en un orden de prueba, y un estado Pausado para lo que se dejó de lado sin terminar.
 
@@ -2387,6 +2387,31 @@ Un estado paused (Pausado) para tareas empezadas que se dejan de lado sin termin
 **Prueba:** playtest.test.js (CLI, schema, export), ui-playtest.test.js (columna), ui.test.js (atajos 1–5), dock.test.js
 
 **Notas:** Columna entre Pendiente y En curso; color --s-paused (#a99bd1 oscuro). En el dock va después de Pendiente en el árbol (su orden es doing, review, todo, paused, done). Atajos 1–5.
+
+### 20.4 Docs y tests de M20 · Hecho
+
+**Terminada:** 2026-10-26
+
+Spec, decisión, AGENTS.md (template, addon y compass/), README de compass y tests de lo nuevo.
+
+**Prueba:** npm test (404 pass) y dock.test.js con Godot
+
+**Notas:** spec §28, D39, AGENTS.md (template, addon y compass/), compass README.
+
+### 20.7 Resultado del playtest en la tarea · Hecho
+
+**Terminada:** 2026-10-26
+
+Pedido: una tarea que está en varias sesiones mostraba en cada una un resultado y una nota distintos (m11-130 anda en una y falla con nota en otra). Decidido: resultado y nota viven en la tarea (D40).
+
+- [x] Modelo: playtest en la tarea; sesión solo { task }
+- [x] CLI, API, export e historial
+- [x] Web: fila, detalle, contadores y Reiniciar
+- [x] scompass playtest migrate
+
+**Prueba:** playtest.test.js (schema, misma tarea en dos sesiones por CLI, reset sin nada quita el campo, migrate con dos sesiones y una tarea borrada), ui-playtest.test.js (dos sesiones muestran lo mismo; Reiniciar en una se ve en la otra), history.test.js
+
+**Notas:** La tarea lleva playtest: { result?, note? } (minProperties 1; sin nada, el campo se va). La sesión queda { task } en orden. hub/src/playtests.js: sessionState (cuántas faltan y fallan), nextPlaytest (undefined no cambia, null o "" quita) y migrateSessions (lee las sesiones crudas, ordena por updated_at, la más reciente que la probó gana el resultado, notas distintas se juntan de la vieja a la nueva, respeta lo que la tarea ya tenía; reescribe las sesiones directo con writeAtomic porque el store no pisa inválidas). La CLI avisa en playtest list si ve sesiones del formato anterior. Web: ptOf, ptSetResult y ptSetNote van por updateTask; Reiniciar quita result de cada tarea de la sesión (se ve en las otras). El historial muestra Playtest: anda → falla, nota agregada.
 
 ### 20.5 Tarea abierta encima de la vista desde la que se abre · Hecho
 
@@ -2435,28 +2460,7 @@ Colección compass/playtests/<id>.json: sesiones con tareas ya creadas en un ord
 
 **Notas:** Colección playtests con la forma de las listas; ítems { task, result?, note? }. CLI: scompass playtest (show/new/set/rm/add/move/drop/pass/fail/reset), por posición o por id. POST /api/playtests { title, tasks? }. Export: sección Playtest al final; la paridad con artifact_to_md.py se mide sin playtests (y sin images, que faltaba).
 
-### 20.4 Docs y tests de M20 · Revisión
-
-Spec, decisión, AGENTS.md (template, addon y compass/), README de compass y tests de lo nuevo.
-
-**Prueba:** npm test (404 pass) y dock.test.js con Godot
-
-**Notas:** spec §28, D39, AGENTS.md (template, addon y compass/), compass README.
-
-### 20.7 Resultado del playtest en la tarea · Revisión
-
-Pedido: una tarea que está en varias sesiones mostraba en cada una un resultado y una nota distintos (m11-130 anda en una y falla con nota en otra). Decidido: resultado y nota viven en la tarea (D40).
-
-- [x] Modelo: playtest en la tarea; sesión solo { task }
-- [x] CLI, API, export e historial
-- [x] Web: fila, detalle, contadores y Reiniciar
-- [x] scompass playtest migrate
-
-**Prueba:** playtest.test.js (schema, misma tarea en dos sesiones por CLI, reset sin nada quita el campo, migrate con dos sesiones y una tarea borrada), ui-playtest.test.js (dos sesiones muestran lo mismo; Reiniciar en una se ve en la otra), history.test.js
-
-**Notas:** La tarea lleva playtest: { result?, note? } (minProperties 1; sin nada, el campo se va). La sesión queda { task } en orden. hub/src/playtests.js: sessionState (cuántas faltan y fallan), nextPlaytest (undefined no cambia, null o "" quita) y migrateSessions (lee las sesiones crudas, ordena por updated_at, la más reciente que la probó gana el resultado, notas distintas se juntan de la vieja a la nueva, respeta lo que la tarea ya tenía; reescribe las sesiones directo con writeAtomic porque el store no pisa inválidas). La CLI avisa en playtest list si ve sesiones del formato anterior. Web: ptOf, ptSetResult y ptSetNote van por updateTask; Reiniciar quita result de cada tarea de la sesión (se ve en las otras). El historial muestra Playtest: anda → falla, nota agregada.
-
-## M21 — Dock al día  (6/6, 6 en revisión)
+## M21 — Dock al día  (6/6)
 
 Que el dock de Godot se conecte solo al Inicio, que sus tests no se salteen en silencio, y que sirva durante el playtest: ver el resultado de cada tarea, cargar bugs con captura desde el editor y buscar tareas.
 
@@ -2467,15 +2471,9 @@ Que el dock de Godot se conecte solo al Inicio, que sus tests no se salteen en s
 - Desde el dock se carga un bug con la plantilla y una captura del juego o del editor.
 - El dock filtra la lista por texto.
 
-### 21.1 Conectarse solo al Inicio · Revisión
+### 21.2 Tests del dock sin saltearse en silencio · Hecho
 
-Si el Inicio corre pero todavía no sirve el proyecto, el dock dice 'No hay hub en 127.0.0.1:<puerto> (no responde)' hasta apretar Iniciar hub. Al abrir y en Reintentar, pedirle al Inicio que active el proyecto (POST /api/projects/activate) antes de rendirse.
-
-**Prueba:** dock.test.js: con el Inicio corriendo, el dock se conecta solo (start_hub_home), 39/39.
-
-**Notas:** _try_hub (al abrir, Reintentar y el sondeo cada 3 s sin hub): si detect() no encuentra hub y el registro tiene el Inicio, POST /api/projects/activate (1 s de timeout) y detect() de nuevo. Si el Inicio responde con error, ese puerto no se vuelve a pedir hasta Reintentar; si no responde (arrancando, entrada vieja), se prueba en el próximo sondeo. Sin compass/ no se pide. Comprobado contra el Inicio real con Project Epiphany: conectado en /p/project-epiphany, sin aviso.
-
-### 21.2 Tests del dock sin saltearse en silencio · Revisión
+**Terminada:** 2026-10-26
 
 dock.test.js salteaba los 39 tests cuando 'godot --version' fallaba, como si no hubiera Godot: el wrapper de godot-manager corría la versión de .godot-version (4.8-dev6), que ya no estaba instalada. Usar GODOT si está, saltear solo si no hay binario y, si lo hay pero no arranca, fallar con el motivo.
 
@@ -2483,7 +2481,9 @@ dock.test.js salteaba los 39 tests cuando 'godot --version' fallaba, como si no 
 
 **Notas:** La causa no era el PATH: .godot-version pedía 4.8-dev6, desinstalada; pasa a 4.8-beta1. Con beta1, godot --import se colgaba (Message queue out of memory, millones de 'Object was deleted while awaiting a callback') por .godot/editor/editor_layout.cfg guardado por una versión anterior; no es el addon (pasa con el plugin vacío o desactivado). Es estado local: se movió y Godot lo vuelve a crear. El test sugiere eso si ve ese error. 39/39 con 4.8-beta1.
 
-### 21.3 Resultado del playtest en el dock · Revisión
+### 21.3 Resultado del playtest en el dock · Hecho
+
+**Terminada:** 2026-10-26
 
 El resultado vive en la tarea (D40): mostrar Anda / Falla y la nota en el detalle, y una marca en la lista. Las sesiones siguen fuera del dock.
 
@@ -2491,15 +2491,19 @@ El resultado vive en la tarea (D40): mostrar Anda / Falla y la nota en el detall
 
 **Notas:** Lista: ✓/✗ delante del código y el resultado y la nota en el tooltip. Detalle (task_detail.gd): fila Playtest con ✓ Anda / ✗ Falla y la nota debajo (roja si falla), visible si la tarea tiene playtest o está en Revisión. Con hub los botones escriben playtest.result con update_task sobre la versión más reciente (Board.next_playtest, las reglas de la web: otro clic lo quita; sin nada, playtest se borra). La nota es de solo lectura en el dock. Sin hub, compass_reader avisa un playtest que no sea objeto.
 
-### 21.4 Cargar un bug con captura desde el dock · Revisión
+### 21.6 Partir dock_view.gd · Hecho
 
-Nueva tarea con la etiqueta bug (y su plantilla de description_templates) y una captura del juego corriendo o del viewport del editor, guardada en compass/images/.
+**Terminada:** 2026-10-26
 
-**Prueba:** dock.test.js 21.4: con hub, bug con captura (tags, plantilla, PNG en compass/images/), sin juego se carga sin captura y avisa, sin título no carga; con Xvfb, editor real: game_shot.gd trae la ventana del juego y el recorte 2D es más chico que la ventana (falla si se rompe el pedido del depurador).
+Tiene ~1600 líneas y mezcla la vida del hub, la lista, el detalle y las referencias. Separarlo en dos o tres scripts sin cambiar el comportamiento.
 
-**Notas:** Menú Bug al lado de Agregar: Con captura del juego (solo con juego corriendo), del editor o sin captura; título de la caja, tags [bug] y description_templates.bug. Captura antes de crear la tarea; después POST /api/tasks/<id>/images (30 s, PNG o JPEG si pasa 9 MB). Si la captura falla, el bug se carga igual y se avisa. Juego: game_shot.gd (EditorDebuggerPlugin) manda scene:rq_screenshot y lee game_view:get_screenshot (ids desde 2^40; lo tardío se borra). Editor: el viewport 2D/3D visible (unión si el 3D está partido), si no la ventana entera; en 4.8 get_editor_main_screen() es un LegacyMainScreenContainer de 0x0. Probado en un editor real con xvfb-run: el juego devuelve su ventana (roja) y el 2D se recorta.
+**Prueba:** dock.test.js 39/39 sin cambios de comportamiento; el editor sin ventana monta el plugin sin errores.
 
-### 21.5 Buscar tareas en el dock · Revisión
+**Notas:** dock_view.gd (~1150 líneas) queda con la vida del hub, la lista y las escrituras. task_detail.gd (ScrollContainer) arma y pinta el detalle: estado, pasos, capturas, vínculos, referencias y archivos; lo que necesita lo toma de view (board, online, update_task, web_url, icon_button, fold_icon, go_to_task). hub_process.gd (Node hijo) busca scompass, lo corre en otro hilo y lanza, cierra y vigila el hub (pid, kept). En los tests: v.detail.<caja>, v.hub.pid; DockView.TaskDetail.basic_highlighter en el plugin.
+
+### 21.5 Buscar tareas en el dock · Hecho
+
+**Terminada:** 2026-10-26
 
 Una caja de texto que filtra la lista por código, título o id, sin tildes, como scompass list --q.
 
@@ -2507,13 +2511,25 @@ Una caja de texto que filtra la lista por código, título o id, sin tildes, com
 
 **Notas:** Board.search(q) y Board.norm (las reglas de filters.js: minúsculas, sin tildes ni ñ, todas las palabras en código, título o id). Busca en todos los hitos, como list --q: lo de otro hito lleva ' · M5' al final, los grupos van desplegados y lo que se pliega buscando no cambia la lista del hito. Esc o la × la vacían. La caja se esconde con la lista plegada.
 
-### 21.6 Partir dock_view.gd · Revisión
+### 21.1 Conectarse solo al Inicio · Hecho
 
-Tiene ~1600 líneas y mezcla la vida del hub, la lista, el detalle y las referencias. Separarlo en dos o tres scripts sin cambiar el comportamiento.
+**Terminada:** 2026-10-26
 
-**Prueba:** dock.test.js 39/39 sin cambios de comportamiento; el editor sin ventana monta el plugin sin errores.
+Si el Inicio corre pero todavía no sirve el proyecto, el dock dice 'No hay hub en 127.0.0.1:<puerto> (no responde)' hasta apretar Iniciar hub. Al abrir y en Reintentar, pedirle al Inicio que active el proyecto (POST /api/projects/activate) antes de rendirse.
 
-**Notas:** dock_view.gd (~1150 líneas) queda con la vida del hub, la lista y las escrituras. task_detail.gd (ScrollContainer) arma y pinta el detalle: estado, pasos, capturas, vínculos, referencias y archivos; lo que necesita lo toma de view (board, online, update_task, web_url, icon_button, fold_icon, go_to_task). hub_process.gd (Node hijo) busca scompass, lo corre en otro hilo y lanza, cierra y vigila el hub (pid, kept). En los tests: v.detail.<caja>, v.hub.pid; DockView.TaskDetail.basic_highlighter en el plugin.
+**Prueba:** dock.test.js: con el Inicio corriendo, el dock se conecta solo (start_hub_home), 39/39.
+
+**Notas:** _try_hub (al abrir, Reintentar y el sondeo cada 3 s sin hub): si detect() no encuentra hub y el registro tiene el Inicio, POST /api/projects/activate (1 s de timeout) y detect() de nuevo. Si el Inicio responde con error, ese puerto no se vuelve a pedir hasta Reintentar; si no responde (arrancando, entrada vieja), se prueba en el próximo sondeo. Sin compass/ no se pide. Comprobado contra el Inicio real con Project Epiphany: conectado en /p/project-epiphany, sin aviso.
+
+### 21.4 Cargar un bug con captura desde el dock · Hecho
+
+**Terminada:** 2026-10-26
+
+Nueva tarea con la etiqueta bug (y su plantilla de description_templates) y una captura del juego corriendo o del viewport del editor, guardada en compass/images/.
+
+**Prueba:** dock.test.js 21.4: con hub, bug con captura (tags, plantilla, PNG en compass/images/), sin juego se carga sin captura y avisa, sin título no carga; con Xvfb, editor real: game_shot.gd trae la ventana del juego y el recorte 2D es más chico que la ventana (falla si se rompe el pedido del depurador).
+
+**Notas:** Menú Bug al lado de Agregar: Con captura del juego (solo con juego corriendo), del editor o sin captura; título de la caja, tags [bug] y description_templates.bug. Captura antes de crear la tarea; después POST /api/tasks/<id>/images (30 s, PNG o JPEG si pasa 9 MB). Si la captura falla, el bug se carga igual y se avisa. Juego: game_shot.gd (EditorDebuggerPlugin) manda scene:rq_screenshot y lee game_view:get_screenshot (ids desde 2^40; lo tardío se borra). Editor: el viewport 2D/3D visible (unión si el 3D está partido), si no la ventana entera; en 4.8 get_editor_main_screen() es un LegacyMainScreenContainer de 0x0. Probado en un editor real con xvfb-run: el juego devuelve su ventana (roja) y el 2D se recorta.
 
 ## M22 — MCP  (7/7)
 
@@ -2622,7 +2638,7 @@ El registro tiene project-epiphany y sus worktrees (epiphany-wt/art, design, ove
 
 **Notas:** git.js repoWorktree: rev-parse --git-common-dir/--git-dir/--show-toplevel; repo = common dir + #carpeta del proyecto dentro del repo (dos compass/ en un mismo repo no se juntan). Sin git, la clave es la ruta. El registro no cambia: los worktrees se siguen anotando solos al servirlos, la página los junta. La fila que queda es la del principal (su enlace y su ítem para tildar).
 
-## M24 — Decisiones  (10/10, 10 en revisión)
+## M24 — Decisiones  (10/10)
 
 Ver qué decidió el agente al trabajar, sobre todo lo que decidió sin preguntar: decisiones registradas en la tarea, revisables desde la web, el Inicio y el dock.
 
@@ -2632,7 +2648,9 @@ Ver qué decidió el agente al trabajar, sobre todo lo que decidió sin pregunta
 - La web muestra las decisiones en la tarea con OK y Revertir, y una vista del proyecto filtra las tomadas sin consultar y sin revisar.
 - El Inicio cuenta las decisiones sin revisar por proyecto y Hoy muestra las preguntas esperando respuesta.
 
-### 24.1 Spec y decisión de las decisiones · Revisión
+### 24.1 Spec y decisión de las decisiones · Hecho
+
+**Terminada:** 2026-10-26
 
 Sección §31 en la spec con los criterios de aceptación de M24 y D42 en decisiones.md. Las decisiones viven en la tarea (campo decisions), no en una colección aparte: nacen de una tarea y viajan con ella en git, el export y history. Definir el modelo ({ text, why?, alternatives?, by: agent|user, asked, review: pending|ok|revert, answer?, at }), qué cuenta como decisión (elegir entre alternativas que el usuario podría querer distinto) y cómo se representa una pregunta abierta (asked sin respuesta). Relación con decisiones.md: D-n son las de diseño, escritas a mano; las de la tarea son las chicas. Promover a D-n choca con D33 (la app no escribe documentos): decidirlo acá.
 
@@ -2653,105 +2671,9 @@ Sección §31 en la spec con los criterios de aceptación de M24 y D42 en decisi
 
 **Bloquea a:** 24.2 Campo decisions en la tarea; 24.10 Promover una decisión a D-n
 
-### 24.2 Campo decisions en la tarea · Revisión
+### 24.10 Promover una decisión a D-n · Hecho
 
-Modelo, validación y JSON Schema del campo decisions (opcional; sin decisiones el campo no está). El store pone at al agregar. El export markdown las lista debajo de la tarea marcando las tomadas sin consultar y sin revisar. Tests del store y del export.
-
-**Prueba:** cd hub && node --test test/store.test.js test/history.test.js test/export-md.test.js: el store pone at a las decisiones nuevas y rechaza las inválidas; el historial dice agregadas, quitadas y cambios de estado; el export las lista debajo de los pasos con ? ! ↺ ✓.
-
-**Notas:** hub/src/decisions.js calcula el estado (open, pending, revert, resolved) para el export, el historial y lo que sigue (CLI, Inicio). El store pone at = updated_at a las que llegan sin at. schema/task.schema.json copiado a compass/schema/ y al fixture (lo exigen m1-criteria y la bandeja). La identidad de una decisión en el historial es at + texto. AGENTS.md (las tres copias) y §4.2 describen el campo; los comandos y la regla van en 24.3 y 24.5.
-
-**Bloquea a:** 24.3 CLI: registrar y revisar decisiones
-
-**Bloqueada por:** 24.1 Spec y decisión de las decisiones
-
-### 24.3 CLI: registrar y revisar decisiones · Revisión
-
-Los comandos de §31: scompass decide <id> "<texto>" [--why] [--alternatives] [--ask]; decision ok|revert|reverted <id> <n> [--reply]; decision reply <id> <n> "<respuesta>"; decision rm <id> <n>; scompass decisions [--open|--pending|--revert] [--milestone] [--json]; list --decisions open|pending|revert; show las lista debajo de los pasos. Escriben como los pasos: leen la tarea y la escriben entera con PATCH e If-Match. (promote es 24.10.)
-
-**Decisiones:**
-- ✓ Las preguntas se responden, no se revisan con ok/revert
-  Por qué: el usuario ya las decidió al responder; revisar su propia respuesta no agrega nada
-  Descartado: permitir ok/revert también en las respondidas
-
-**Prueba:** cd hub && node --test test/cli.test.js test/cli-hub.test.js: decide, decision ok/revert/reverted/reply/rm, show, list --decisions y decisions, con los errores (pregunta revisada, decisión respondida, revertir sin marcar) y la misma salida con y sin hub.
-
-**Notas:** decide guarda why/alternatives solo si no están vacíos. decision ok/revert/reverted rechaza las preguntas (se responden con reply) y reply rechaza las que no son preguntas; reverted exige que esté marcada para revertir y conserva el reply (qué hacer). Quitar la última decisión borra el campo. list muestra "· N sin revisar / preguntas abiertas / a revertir" en la línea de la tarea. filterTasks suma decisions (el filtro de la web, cuando llegue, repite la regla). AGENTS.md (las tres copias) con los comandos; la regla de cuándo registrar es 24.5.
-
-**Bloquea a:** 24.4 MCP: herramientas de decisiones
-
-**Bloqueada por:** 24.2 Campo decisions en la tarea
-
-### 24.4 MCP: herramientas de decisiones · Revisión
-
-add_decision, review_decision, reply_decision y list_decisions sobre los comandos de 24.3 (promote_decision con 24.10), y el filtro decisions en list_tasks, con etag. Casos en mcp.test.js con y sin hub.
-
-**Decisiones:**
-- ✓ Sumé remove_decision al MCP
-  Por qué: es decision rm, y sin él un agente no puede corregir una que registró mal
-  Descartado: solo las cuatro herramientas de la propuesta
-
-**Prueba:** cd hub && node --test test/mcp.test.js: add_decision, reply_decision, review_decision (una pregunta revisada da error), remove_decision, list_decisions y list_tasks con decisions, igual que la CLI.
-
-**Notas:** Sumé remove_decision (no estaba en la propuesta; es decision rm). list_decisions toma states [open, pending, revert] y los pasa como --open/--pending/--revert. promote_decision llega con 24.10.
-
-**Bloquea a:** 24.5 AGENTS.md: registrar las decisiones; 25.8 Responder una pregunta abierta retoma la sesión
-
-**Bloqueada por:** 24.3 CLI: registrar y revisar decisiones
-
-### 24.5 AGENTS.md: registrar las decisiones · Revisión
-
-Regla en el template, el addon y compass/: cada vez que el agente elige entre alternativas sin preguntar, lo registra con add_decision (asked false); si pregunta, también, con asked true y la respuesta. Qué no hace falta registrar (detalles sin alternativa razonable). Las instrucciones del servidor MCP lo repiten. Sin esto el resto del hito queda vacío.
-
-**Prueba:** Leer la sección "Decisiones" de compass/AGENTS.md (igual en hub/templates y el addon) y las instrucciones de scompass mcp: dicen qué registrar, qué no, que las preguntas también, y que antes de seguir una tarea se miran las que hay que revertir.
-
-**Notas:** Los comandos de decisiones se movieron de Leer/Escribir a la sección propia, después de Vínculos. La sección MCP mapea decide → add_decision y decision ok → review_decision. Las instrucciones del servidor MCP (lo que Claude Code ve siempre) llevan la regla en un renglón.
-
-**Bloqueada por:** 24.4 MCP: herramientas de decisiones
-
-### 24.6 Web: decisiones en la tarea · Revisión
-
-Sección Decisiones en el detalle de la tarea: texto, por qué y alternativas plegados, quién y si se consultó. Las tomadas sin consultar y sin revisar van marcadas, con OK y Revertir; las preguntas abiertas, con un campo para responder. La tarjeta muestra un indicador si tiene decisiones sin revisar.
-
-**Prueba:** cd hub && node --test test/ui-decisions.test.js: la tarjeta marca ? N / ! N; en el detalle, OK, Revertir con qué hacer, Deshacer, Responder una pregunta y Promover (D-n en el documento, sin botón después).
-
-**Notas:** Sección Decisiones debajo de Pasos. El estado se calcula en la web igual que hub/src/decisions.js (comentado). Cada decisión se identifica por at + texto, así una escritura en fila no toca otra si se quitó una de antes. Revertir y Responder abren un textarea (#d-dreply, conserva lo escrito al redibujar). Deshacer vuelve una a revertir a sin revisar. Promover usa POST /api/tasks/:id/decisions/:n/promote (24.10). Pendiente fuera de esta tarea: un filtro de decisiones en Filtros del tablero.
-
-### 24.7 Web: vista Decisiones del proyecto · Revisión
-
-Línea de tiempo de todas las decisiones del proyecto con su tarea e hito, filtros por hito, quién, consultada o no y revisión. Por defecto: tomadas sin consultar y sin revisar, como bandeja. OK y Revertir desde la lista; un clic lleva a la tarea.
-
-**Decisiones:**
-- ✓ La pestaña Decisiones se ve por defecto en todos los proyectos
-  Por qué: el tablero es de agentes primero; un proyecto con config.views elegido no la ve hasta agregarla
-  Descartado: solo con decisions en config.views
-
-**Prueba:** cd hub && node --test test/ui-decisions.test.js: la pestaña Decisiones cuenta las que esperan; filtros Esperan/Preguntas abiertas/Sin revisar/A revertir/Todas; responder desde la vista; filtro por hito; un clic en la tarea la abre encima. En el teléfono las pestañas se desplazan de costado sin scroll de página.
-
-**Notas:** Pestaña nueva `decisions` en config.views (schema, VIEWS del hub, web, README/AGENTS), después de Playtest; sin views se ve. La pestaña lleva un globito con cuántas esperan. Agrupada por día, la más nueva arriba; el filtro y el hito se recuerdan en el navegador (pref). decisionItem sirve al detalle y a la vista (where), así las acciones son las mismas. Con seis pestañas, en el teléfono la fila de pestañas se desplaza de costado.
-
-### 24.8 Inicio: decisiones sin revisar y preguntas abiertas · Revisión
-
-Cada tarjeta de proyecto cuenta sus decisiones sin revisar (enlace a la vista 24.7). Hoy muestra las preguntas esperando respuesta, porque bloquean al agente. Worktrees: una sola vez, como las tareas (23.2).
-
-**Prueba:** cd hub && node --test test/home.test.js test/ui-home.test.js: Hoy pone las preguntas abiertas arriba (las de todos los proyectos, una vez por repo) con un enlace a la tarea; la tarjeta dice "Decisiones: N preguntas abiertas · N sin revisar · N a revertir" con enlace a #decisions.
-
-**Notas:** summarize suma decisions { open, pending, revert }; todayOf agrega { kind: 'question', id, n, etag, text, task, at }. El orden de Hoy (byToday en summary.js) lo comparten todayOf y /api/today: preguntas, vencido, hoy, en curso. En la web, las preguntas van sueltas arriba, con ? y el tag "pregunta · <código>"; se responden en la tarea (no desde Hoy). Con worktrees, una pregunta se junta por id + at + texto.
-
-### 24.9 Dock: decisiones en el detalle · Revisión
-
-El detalle de la tarea en el dock de Godot muestra sus decisiones y marca las sin revisar; con hub, OK y Revertir escriben como la web. La lista marca las tareas con decisiones sin revisar.
-
-**Decisiones:**
-- ✓ En el dock solo OK y Revertir; responder y escribir qué hacer, en el navegador
-  Por qué: el dock es para mirar sin salir del editor; un campo de texto ahí suma poco y mucho código
-  Descartado: responder preguntas y escribir qué hacer desde el dock
-
-**Prueba:** cd hub && node --test test/dock.test.js (con Godot): la lista marca ? / ! y el tooltip dice cuántas; el detalle muestra las decisiones con su estado, porqué y respuesta; OK / Revertir solo en las sin revisar, deshabilitados sin hub; con hub, Revertir escribe review: revert.
-
-**Notas:** board.gd: decisions_of, decision_state, decision_counts (las reglas de hub/src/decisions.js). compass_reader valida que decisions sea una lista de objetos (sin hub nadie valida el schema). En el dock no se responden preguntas ni se escribe qué hacer al revertir: eso va en el navegador (lo dicen el estado y el tooltip). Se busca la decisión por at + texto, como la web.
-
-### 24.10 Promover una decisión a D-n · Revisión
+**Terminada:** 2026-10-26
 
 Pasar una decisión de tarea que resultó ser de diseño a una entrada nueva al final de decisiones.md (config.json › decisions_doc; sin él, el alias decisiones). D42 habilita que la app escriba documentos. Primero el documento (relee, escritura atómica), después la tarea con promoted. Con hub, POST /api/tasks/:id/decisions/:n/promote; sin hub, la CLI. scompass decision promote, promote_decision en el MCP y Promover en la web. Formato y numeración en §31.
 
@@ -2771,7 +2693,121 @@ Pasar una decisión de tarea que resultó ser de diseño a una entrada nueva al 
 
 **Bloqueada por:** 24.1 Spec y decisión de las decisiones
 
-## M25 — Chat  (8/8, 8 en revisión)
+### 24.9 Dock: decisiones en el detalle · Hecho
+
+**Terminada:** 2026-10-26
+
+El detalle de la tarea en el dock de Godot muestra sus decisiones y marca las sin revisar; con hub, OK y Revertir escriben como la web. La lista marca las tareas con decisiones sin revisar.
+
+**Decisiones:**
+- ✓ En el dock solo OK y Revertir; responder y escribir qué hacer, en el navegador
+  Por qué: el dock es para mirar sin salir del editor; un campo de texto ahí suma poco y mucho código
+  Descartado: responder preguntas y escribir qué hacer desde el dock
+
+**Prueba:** cd hub && node --test test/dock.test.js (con Godot): la lista marca ? / ! y el tooltip dice cuántas; el detalle muestra las decisiones con su estado, porqué y respuesta; OK / Revertir solo en las sin revisar, deshabilitados sin hub; con hub, Revertir escribe review: revert.
+
+**Notas:** board.gd: decisions_of, decision_state, decision_counts (las reglas de hub/src/decisions.js). compass_reader valida que decisions sea una lista de objetos (sin hub nadie valida el schema). En el dock no se responden preguntas ni se escribe qué hacer al revertir: eso va en el navegador (lo dicen el estado y el tooltip). Se busca la decisión por at + texto, como la web.
+
+### 24.8 Inicio: decisiones sin revisar y preguntas abiertas · Hecho
+
+**Terminada:** 2026-10-26
+
+Cada tarjeta de proyecto cuenta sus decisiones sin revisar (enlace a la vista 24.7). Hoy muestra las preguntas esperando respuesta, porque bloquean al agente. Worktrees: una sola vez, como las tareas (23.2).
+
+**Prueba:** cd hub && node --test test/home.test.js test/ui-home.test.js: Hoy pone las preguntas abiertas arriba (las de todos los proyectos, una vez por repo) con un enlace a la tarea; la tarjeta dice "Decisiones: N preguntas abiertas · N sin revisar · N a revertir" con enlace a #decisions.
+
+**Notas:** summarize suma decisions { open, pending, revert }; todayOf agrega { kind: 'question', id, n, etag, text, task, at }. El orden de Hoy (byToday en summary.js) lo comparten todayOf y /api/today: preguntas, vencido, hoy, en curso. En la web, las preguntas van sueltas arriba, con ? y el tag "pregunta · <código>"; se responden en la tarea (no desde Hoy). Con worktrees, una pregunta se junta por id + at + texto.
+
+### 24.7 Web: vista Decisiones del proyecto · Hecho
+
+**Terminada:** 2026-10-26
+
+Línea de tiempo de todas las decisiones del proyecto con su tarea e hito, filtros por hito, quién, consultada o no y revisión. Por defecto: tomadas sin consultar y sin revisar, como bandeja. OK y Revertir desde la lista; un clic lleva a la tarea.
+
+**Decisiones:**
+- ✓ La pestaña Decisiones se ve por defecto en todos los proyectos
+  Por qué: el tablero es de agentes primero; un proyecto con config.views elegido no la ve hasta agregarla
+  Descartado: solo con decisions en config.views
+
+**Prueba:** cd hub && node --test test/ui-decisions.test.js: la pestaña Decisiones cuenta las que esperan; filtros Esperan/Preguntas abiertas/Sin revisar/A revertir/Todas; responder desde la vista; filtro por hito; un clic en la tarea la abre encima. En el teléfono las pestañas se desplazan de costado sin scroll de página.
+
+**Notas:** Pestaña nueva `decisions` en config.views (schema, VIEWS del hub, web, README/AGENTS), después de Playtest; sin views se ve. La pestaña lleva un globito con cuántas esperan. Agrupada por día, la más nueva arriba; el filtro y el hito se recuerdan en el navegador (pref). decisionItem sirve al detalle y a la vista (where), así las acciones son las mismas. Con seis pestañas, en el teléfono la fila de pestañas se desplaza de costado.
+
+### 24.6 Web: decisiones en la tarea · Hecho
+
+**Terminada:** 2026-10-26
+
+Sección Decisiones en el detalle de la tarea: texto, por qué y alternativas plegados, quién y si se consultó. Las tomadas sin consultar y sin revisar van marcadas, con OK y Revertir; las preguntas abiertas, con un campo para responder. La tarjeta muestra un indicador si tiene decisiones sin revisar.
+
+**Prueba:** cd hub && node --test test/ui-decisions.test.js: la tarjeta marca ? N / ! N; en el detalle, OK, Revertir con qué hacer, Deshacer, Responder una pregunta y Promover (D-n en el documento, sin botón después).
+
+**Notas:** Sección Decisiones debajo de Pasos. El estado se calcula en la web igual que hub/src/decisions.js (comentado). Cada decisión se identifica por at + texto, así una escritura en fila no toca otra si se quitó una de antes. Revertir y Responder abren un textarea (#d-dreply, conserva lo escrito al redibujar). Deshacer vuelve una a revertir a sin revisar. Promover usa POST /api/tasks/:id/decisions/:n/promote (24.10). Pendiente fuera de esta tarea: un filtro de decisiones en Filtros del tablero.
+
+### 24.5 AGENTS.md: registrar las decisiones · Hecho
+
+**Terminada:** 2026-10-26
+
+Regla en el template, el addon y compass/: cada vez que el agente elige entre alternativas sin preguntar, lo registra con add_decision (asked false); si pregunta, también, con asked true y la respuesta. Qué no hace falta registrar (detalles sin alternativa razonable). Las instrucciones del servidor MCP lo repiten. Sin esto el resto del hito queda vacío.
+
+**Prueba:** Leer la sección "Decisiones" de compass/AGENTS.md (igual en hub/templates y el addon) y las instrucciones de scompass mcp: dicen qué registrar, qué no, que las preguntas también, y que antes de seguir una tarea se miran las que hay que revertir.
+
+**Notas:** Los comandos de decisiones se movieron de Leer/Escribir a la sección propia, después de Vínculos. La sección MCP mapea decide → add_decision y decision ok → review_decision. Las instrucciones del servidor MCP (lo que Claude Code ve siempre) llevan la regla en un renglón.
+
+**Bloqueada por:** 24.4 MCP: herramientas de decisiones
+
+### 24.4 MCP: herramientas de decisiones · Hecho
+
+**Terminada:** 2026-10-26
+
+add_decision, review_decision, reply_decision y list_decisions sobre los comandos de 24.3 (promote_decision con 24.10), y el filtro decisions en list_tasks, con etag. Casos en mcp.test.js con y sin hub.
+
+**Decisiones:**
+- ✓ Sumé remove_decision al MCP
+  Por qué: es decision rm, y sin él un agente no puede corregir una que registró mal
+  Descartado: solo las cuatro herramientas de la propuesta
+
+**Prueba:** cd hub && node --test test/mcp.test.js: add_decision, reply_decision, review_decision (una pregunta revisada da error), remove_decision, list_decisions y list_tasks con decisions, igual que la CLI.
+
+**Notas:** Sumé remove_decision (no estaba en la propuesta; es decision rm). list_decisions toma states [open, pending, revert] y los pasa como --open/--pending/--revert. promote_decision llega con 24.10.
+
+**Bloquea a:** 24.5 AGENTS.md: registrar las decisiones; 25.8 Responder una pregunta abierta retoma la sesión
+
+**Bloqueada por:** 24.3 CLI: registrar y revisar decisiones
+
+### 24.3 CLI: registrar y revisar decisiones · Hecho
+
+**Terminada:** 2026-10-26
+
+Los comandos de §31: scompass decide <id> "<texto>" [--why] [--alternatives] [--ask]; decision ok|revert|reverted <id> <n> [--reply]; decision reply <id> <n> "<respuesta>"; decision rm <id> <n>; scompass decisions [--open|--pending|--revert] [--milestone] [--json]; list --decisions open|pending|revert; show las lista debajo de los pasos. Escriben como los pasos: leen la tarea y la escriben entera con PATCH e If-Match. (promote es 24.10.)
+
+**Decisiones:**
+- ✓ Las preguntas se responden, no se revisan con ok/revert
+  Por qué: el usuario ya las decidió al responder; revisar su propia respuesta no agrega nada
+  Descartado: permitir ok/revert también en las respondidas
+
+**Prueba:** cd hub && node --test test/cli.test.js test/cli-hub.test.js: decide, decision ok/revert/reverted/reply/rm, show, list --decisions y decisions, con los errores (pregunta revisada, decisión respondida, revertir sin marcar) y la misma salida con y sin hub.
+
+**Notas:** decide guarda why/alternatives solo si no están vacíos. decision ok/revert/reverted rechaza las preguntas (se responden con reply) y reply rechaza las que no son preguntas; reverted exige que esté marcada para revertir y conserva el reply (qué hacer). Quitar la última decisión borra el campo. list muestra "· N sin revisar / preguntas abiertas / a revertir" en la línea de la tarea. filterTasks suma decisions (el filtro de la web, cuando llegue, repite la regla). AGENTS.md (las tres copias) con los comandos; la regla de cuándo registrar es 24.5.
+
+**Bloquea a:** 24.4 MCP: herramientas de decisiones
+
+**Bloqueada por:** 24.2 Campo decisions en la tarea
+
+### 24.2 Campo decisions en la tarea · Hecho
+
+**Terminada:** 2026-10-26
+
+Modelo, validación y JSON Schema del campo decisions (opcional; sin decisiones el campo no está). El store pone at al agregar. El export markdown las lista debajo de la tarea marcando las tomadas sin consultar y sin revisar. Tests del store y del export.
+
+**Prueba:** cd hub && node --test test/store.test.js test/history.test.js test/export-md.test.js: el store pone at a las decisiones nuevas y rechaza las inválidas; el historial dice agregadas, quitadas y cambios de estado; el export las lista debajo de los pasos con ? ! ↺ ✓.
+
+**Notas:** hub/src/decisions.js calcula el estado (open, pending, revert, resolved) para el export, el historial y lo que sigue (CLI, Inicio). El store pone at = updated_at a las que llegan sin at. schema/task.schema.json copiado a compass/schema/ y al fixture (lo exigen m1-criteria y la bandeja). La identidad de una decisión en el historial es at + texto. AGENTS.md (las tres copias) y §4.2 describen el campo; los comandos y la regla van en 24.3 y 24.5.
+
+**Bloquea a:** 24.3 CLI: registrar y revisar decisiones
+
+**Bloqueada por:** 24.1 Spec y decisión de las decisiones
+
+## M25 — Chat  (8/8)
 
 Un chat chico sobre el tablero, desde la web, que habla con el Claude Code local: preguntar por tareas, cargarlas y responder las preguntas del agente sin abrir una terminal.
 
@@ -2783,83 +2819,64 @@ Un chat chico sobre el tablero, desde la web, que habla con el Claude Code local
 - Responder una pregunta abierta de M24 puede retomar la sesión que la hizo.
 - Un test de punta a punta corre con un claude falso, sin gastar tokens.
 
-### 25.1 Spec y decisión del chat · Revisión
+### 25.5 Test del chat con un claude falso · Hecho
 
-Sección §32 en la spec con los criterios de M25 y D43 en decisiones.md: el chat lanza el claude instalado con -p --input-format/--output-format stream-json, sin dependencias, con el login y la config del usuario. Permisos fijados de antemano (MCP scompass y herramientas de lectura), sin aprobar desde la web. Solo 127.0.0.1 aunque haya --lan, porque no hay login. Descartado por ahora: ACP con @agentclientprotocol/claude-agent-acp (trae el Agent SDK, zod y otro Claude Code; conviene si el chat crece a consola de trabajo, por los pedidos de permiso) y el Agent SDK directo.
+**Terminada:** 2026-10-26
 
-**Decisiones:**
-- ! Con --strict-mcp-config, el chat solo ve el MCP scompass y no los otros servidores del usuario · sin revisar
-  Por qué: las herramientas son siempre las mismas y no choca con un scompass ya registrado
-  Descartado: sumar los MCP del usuario
-- ! El hub guarda una copia liviana de cada conversación para mostrarla · sin revisar
-  Por qué: las sesiones de Claude Code son un formato interno
-  Descartado: leer ~/.claude/projects
-- ! Herramientas permitidas: mcp__scompass, Read, Grep y Glob; nada de Edit ni Bash · sin revisar
-  Por qué: sin pedidos de permiso desde la web, solo lo que no cambia el repo
-- ! El proceso se cierra tras 10 minutos sin uso; cortar mata el proceso si no termina en 5 s · sin revisar
-- ! Las conversaciones viven en <config>/scope-compass/chats/<sha1 de la ruta>/ junto a projects.json · sin revisar
-  Por qué: son de la máquina, no van a git
+Un script que imita a claude en stream-json (init con session_id, texto en partes, una herramienta, resultado), para probar proceso, --resume, API, WebSocket y el rechazo fuera de 127.0.0.1 sin gastar tokens ni depender de la red.
 
-**Prueba:** docs/spec.md §32 y docs/decisiones.md D43; la suite sigue pasando (432)
+**Prueba:** hub/test/fake-claude.js, usado por chat.test.js (14), chats.test.js (11) y chat-api.test.js (9): proceso, --resume y sus errores, API, WebSocket, cortar, caída, sin claude y el 403 fuera del equipo, sin red ni tokens
 
-**Notas:** Claude Code 2.1.306 tiene --session-id <uuid>: el hub elige el id al crear la conversación y no hace falta esperar al init. stream-json de salida pide --verbose.
-
-**Bloquea a:** 25.2 Proceso de Claude Code en el hub
-
-### 25.2 Proceso de Claude Code en el hub · Revisión
-
-Un módulo del hub que lanza claude con stream-json en la carpeta del proyecto, con --mcp-config para scompass, --allowedTools y --permission-mode, y --include-partial-messages para el texto en vivo. Un proceso por conversación: manda los mensajes del usuario por stdin, lee los eventos línea por línea, cierra el proceso tras un rato sin uso. Avisa si claude no está instalado. La ruta del ejecutable se puede configurar (para el test y para Windows).
-
-**Decisiones:**
-- ! Además de --allowedTools, --tools Read,Grep,Glob: el agente ni ve Bash ni Edit · sin revisar
-  Por qué: en la prueba con el real no intenta usarlas y dice que no puede
-  Descartado: solo --allowedTools, con Bash visible pero negado
-- ! mcp.json y prompt.md se escriben en la carpeta del chat y se pasan como archivos · sin revisar
-  Por qué: ningún argumento con JSON ni espacios; claude.cmd en Windows va por el shell
-  Descartado: JSON y prompt en línea
-- ! Un segundo mensaje durante un turno falla con busy en vez de encolarse · sin revisar
-  Por qué: la spec pide 409; stream-json encola, pero la web no tendría cómo mostrar la cola
-- ! El claude falso (test/fake-claude.js) se hizo ya en 25.2; la 25.5 lo usa para API y WebSocket · sin revisar
-
-**Prueba:** hub/test/chat.test.js (12 tests con test/fake-claude.js: argumentos, eventos, --resume, cortar, sin uso, sin claude, caída, la config del MCP levanta scompass). Probado una vez con el claude real: usó list_tasks y no intentó Bash.
-
-**Notas:** ChatProcess en hub/src/chat.js: send/interrupt/close y el evento 'event' (turn, text, tool, tool_result, end, error). Falta el que las administra (una por conversación, cerrarlas con el hub): va con 25.3/25.4. El primer mensaje cuesta ~0,1 USD por crear la caché del prompt de Claude Code.
-
-**Bloquea a:** 25.3 Conversaciones: retomar y listar; 25.5 Test del chat con un claude falso
-
-**Bloqueada por:** 25.1 Spec y decisión del chat
-
-### 25.3 Conversaciones: retomar y listar · Revisión
-
-Guarda el session_id de cada conversación con un título y la fecha, por proyecto, fuera de compass/ (es de la máquina, no va a git), y la retoma con --resume. El historial lo tiene Claude Code; el hub solo guarda qué conversaciones hay. Borrar una conversación la saca de la lista.
-
-**Decisiones:**
-- ! El id de la conversación es el session_id de Claude Code; el índice suma started para saber si ya se puede usar --resume · sin revisar
-  Por qué: si el primer lanzamiento falla, --resume de una sesión que no existe da error
-  Descartado: un id propio y el session_id aparte
-- ! La respuesta se guarda en la copia al terminar el turno, no a medida que llega · sin revisar
-  Por qué: una sola línea por respuesta; lo que va del turno lo tiene la memoria del hub (get lo devuelve)
-
-**Prueba:** hub/test/chats.test.js (11 tests con el claude falso: índice, copia en orden, --resume tras cerrar el hub, turno en curso, cortar, caída, sin claude, borrar, varias a la vez)
-
-**Notas:** hub/src/chats.js: chatStore (index.json y <id>.jsonl en chatDir) y ChatManager (create, send, get, interrupt, remove, close; 'event' con { chat, … }). La 25.4 lo cuelga del server y del WebSocket.
-
-**Bloquea a:** 25.4 API y WebSocket del chat; 25.8 Responder una pregunta abierta retoma la sesión
+**Notas:** Se fue armando con 25.2–25.4. Imita los errores reales de claude: 'Session ID … is already in use' y 'No conversation found with session ID'.
 
 **Bloqueada por:** 25.2 Proceso de Claude Code en el hub
 
-### 25.4 API y WebSocket del chat · Revisión
+### 25.8 Responder una pregunta abierta retoma la sesión · Hecho
+
+**Terminada:** 2026-10-26
+
+La decisión de M24 guarda la sesión de Claude que hizo la pregunta (session, opcional, desde CLAUDE_SESSION_ID o lo que exponga Claude Code; investigar). Al responderla en la web se ofrece retomar esa sesión en el chat con la respuesta, así el agente sigue sin volver a leer la tarea.
+
+**Decisiones:**
+- ✓ La sesión se guarda solo en las preguntas (--ask), no en las decisiones tomadas solas
+  Por qué: es lo que se retoma con la respuesta; en las otras sería ruido
+  Descartado: guardarla siempre, para retomar también al revertir
+- ✓ Una sesión de afuera no se crea vacía si --resume no la encuentra: el chat muestra el error
+  Por qué: crearla con ese id le mandaría la respuesta a un agente sin contexto
+- ✓ Seguir en el chat es un botón en la pregunta respondida, no un paso automático al responder
+  Por qué: si la sesión sigue abierta en una terminal, es mejor responder ahí
+  Descartado: retomarla sola al responder
+
+**Prueba:** cli.test.js (decide --ask toma CLAUDE_CODE_SESSION_ID, --session, inválida), mcp.test.js (add_decision con ask desde el entorno del servidor), chats.test.js y chat-api.test.js (retomar una sesión de afuera, no crearla vacía), ui-chat.test.js (Seguir en el chat). Suite: 477.
+
+**Notas:** Investigado: Claude Code 2.1.306 pone CLAUDE_CODE_SESSION_ID en el entorno de Bash y de los servidores MCP que lanza (visto en /proc/<pid>/environ del scompass mcp). Los tests la borran en isolate.js para no heredar la sesión que los corre. Una sesión hecha en otra carpeta (worktree) no se encuentra con --resume desde el proyecto: el chat muestra el error.
+
+**Bloqueada por:** 24.4 MCP: herramientas de decisiones; 25.3 Conversaciones: retomar y listar
+
+### 25.6 Documentar el chat · Hecho
+
+**Terminada:** 2026-10-26
+
+AGENTS.md (template, addon y compass/): que hay un chat, que el agente que corre ahí es Claude Code con el MCP scompass y qué puede hacer. README e instalar.md: requiere claude instalado y con login; qué herramientas tiene permitidas y por qué solo anda en local.
+
+**Prueba:** Las tres copias de AGENTS.md iguales (los tests de update y del dock lo comparan); la suite pasa (472).
+
+**Notas:** AGENTS.md: sección Chat (qué es, qué puede el agente de ahí, el prefijo 'Tarea abierta:') y dónde quedan las conversaciones. instalar.md: requisito, uso, por qué solo local, Windows. README: principio 3. hub/README: los módulos y SCOMPASS_CLAUDE.
+
+### 25.4 API y WebSocket del chat · Hecho
+
+**Terminada:** 2026-10-26
 
 Endpoints para listar, crear, mandar un mensaje, cortar y borrar conversaciones, y eventos por el WebSocket con el texto en vivo, las herramientas que usa y el fin del turno. Rechaza los pedidos que no vienen de 127.0.0.1, también con --lan. Con varias pestañas abiertas, todas ven la misma conversación.
 
 **Decisiones:**
-- ! Si no se sabe si la sesión existe, ChatProcess prueba una vez con la otra opción (--resume o --session-id) según el error de claude · sin revisar
+- ✓ Si no se sabe si la sesión existe, ChatProcess prueba una vez con la otra opción (--resume o --session-id) según el error de claude
   Por qué: cerrar el hub a mitad del primer turno dejaba la conversación sin poder retomarse
   Descartado: marcar started al mandar el primer mensaje (falla si claude muere antes de crear la sesión)
-- ! claude_missing responde 503 · sin revisar
+- ✓ claude_missing responde 503
   Por qué: es el servicio que falta, no un error del pedido
   Descartado: 424 o 500
-- ! El corte fuera del equipo también se hace en el Inicio (HTTP y WebSocket) · sin revisar
+- ✓ El corte fuera del equipo también se hace en el Inicio (HTTP y WebSocket)
   Por qué: el hub del proyecto ve al Inicio como 127.0.0.1
 
 **Prueba:** hub/test/chat-api.test.js (9 tests con el claude falso: conversar, pedidos inválidos, sin claude, 403 fuera del equipo y con token, WebSocket con dos pestañas locales y una por la IP de la red, cerrar el hub a mitad de un turno y retomar, el Inicio). chat.test.js suma probar al revés --resume/--session-id.
@@ -2870,33 +2887,88 @@ Endpoints para listar, crear, mandar un mensaje, cortar y borrar conversaciones,
 
 **Bloqueada por:** 25.3 Conversaciones: retomar y listar
 
-### 25.5 Test del chat con un claude falso · Revisión
+### 25.3 Conversaciones: retomar y listar · Hecho
 
-Un script que imita a claude en stream-json (init con session_id, texto en partes, una herramienta, resultado), para probar proceso, --resume, API, WebSocket y el rechazo fuera de 127.0.0.1 sin gastar tokens ni depender de la red.
+**Terminada:** 2026-10-26
 
-**Prueba:** hub/test/fake-claude.js, usado por chat.test.js (14), chats.test.js (11) y chat-api.test.js (9): proceso, --resume y sus errores, API, WebSocket, cortar, caída, sin claude y el 403 fuera del equipo, sin red ni tokens
+Guarda el session_id de cada conversación con un título y la fecha, por proyecto, fuera de compass/ (es de la máquina, no va a git), y la retoma con --resume. El historial lo tiene Claude Code; el hub solo guarda qué conversaciones hay. Borrar una conversación la saca de la lista.
 
-**Notas:** Se fue armando con 25.2–25.4. Imita los errores reales de claude: 'Session ID … is already in use' y 'No conversation found with session ID'.
+**Decisiones:**
+- ✓ El id de la conversación es el session_id de Claude Code; el índice suma started para saber si ya se puede usar --resume
+  Por qué: si el primer lanzamiento falla, --resume de una sesión que no existe da error
+  Descartado: un id propio y el session_id aparte
+- ✓ La respuesta se guarda en la copia al terminar el turno, no a medida que llega
+  Por qué: una sola línea por respuesta; lo que va del turno lo tiene la memoria del hub (get lo devuelve)
+
+**Prueba:** hub/test/chats.test.js (11 tests con el claude falso: índice, copia en orden, --resume tras cerrar el hub, turno en curso, cortar, caída, sin claude, borrar, varias a la vez)
+
+**Notas:** hub/src/chats.js: chatStore (index.json y <id>.jsonl en chatDir) y ChatManager (create, send, get, interrupt, remove, close; 'event' con { chat, … }). La 25.4 lo cuelga del server y del WebSocket.
+
+**Bloquea a:** 25.4 API y WebSocket del chat; 25.8 Responder una pregunta abierta retoma la sesión
 
 **Bloqueada por:** 25.2 Proceso de Claude Code en el hub
 
-### 25.6 Documentar el chat · Revisión
+### 25.2 Proceso de Claude Code en el hub · Hecho
 
-AGENTS.md (template, addon y compass/): que hay un chat, que el agente que corre ahí es Claude Code con el MCP scompass y qué puede hacer. README e instalar.md: requiere claude instalado y con login; qué herramientas tiene permitidas y por qué solo anda en local.
+**Terminada:** 2026-10-26
 
-**Prueba:** Las tres copias de AGENTS.md iguales (los tests de update y del dock lo comparan); la suite pasa (472).
+Un módulo del hub que lanza claude con stream-json en la carpeta del proyecto, con --mcp-config para scompass, --allowedTools y --permission-mode, y --include-partial-messages para el texto en vivo. Un proceso por conversación: manda los mensajes del usuario por stdin, lee los eventos línea por línea, cierra el proceso tras un rato sin uso. Avisa si claude no está instalado. La ruta del ejecutable se puede configurar (para el test y para Windows).
 
-**Notas:** AGENTS.md: sección Chat (qué es, qué puede el agente de ahí, el prefijo 'Tarea abierta:') y dónde quedan las conversaciones. instalar.md: requisito, uso, por qué solo local, Windows. README: principio 3. hub/README: los módulos y SCOMPASS_CLAUDE.
+**Decisiones:**
+- ✓ Además de --allowedTools, --tools Read,Grep,Glob: el agente ni ve Bash ni Edit
+  Por qué: en la prueba con el real no intenta usarlas y dice que no puede
+  Descartado: solo --allowedTools, con Bash visible pero negado
+- ✓ mcp.json y prompt.md se escriben en la carpeta del chat y se pasan como archivos
+  Por qué: ningún argumento con JSON ni espacios; claude.cmd en Windows va por el shell
+  Descartado: JSON y prompt en línea
+- ✓ Un segundo mensaje durante un turno falla con busy en vez de encolarse
+  Por qué: la spec pide 409; stream-json encola, pero la web no tendría cómo mostrar la cola
+- ✓ El claude falso (test/fake-claude.js) se hizo ya en 25.2; la 25.5 lo usa para API y WebSocket
 
-### 25.7 Web: panel de chat · Revisión
+**Prueba:** hub/test/chat.test.js (12 tests con test/fake-claude.js: argumentos, eventos, --resume, cortar, sin uso, sin claude, caída, la config del MCP levanta scompass). Probado una vez con el claude real: usó list_tasks y no intentó Bash.
+
+**Notas:** ChatProcess en hub/src/chat.js: send/interrupt/close y el evento 'event' (turn, text, tool, tool_result, end, error). Falta el que las administra (una por conversación, cerrarlas con el hub): va con 25.3/25.4. El primer mensaje cuesta ~0,1 USD por crear la caché del prompt de Claude Code.
+
+**Bloquea a:** 25.3 Conversaciones: retomar y listar; 25.5 Test del chat con un claude falso
+
+**Bloqueada por:** 25.1 Spec y decisión del chat
+
+### 25.1 Spec y decisión del chat · Hecho
+
+**Terminada:** 2026-10-26
+
+Sección §32 en la spec con los criterios de M25 y D43 en decisiones.md: el chat lanza el claude instalado con -p --input-format/--output-format stream-json, sin dependencias, con el login y la config del usuario. Permisos fijados de antemano (MCP scompass y herramientas de lectura), sin aprobar desde la web. Solo 127.0.0.1 aunque haya --lan, porque no hay login. Descartado por ahora: ACP con @agentclientprotocol/claude-agent-acp (trae el Agent SDK, zod y otro Claude Code; conviene si el chat crece a consola de trabajo, por los pedidos de permiso) y el Agent SDK directo.
+
+**Decisiones:**
+- ✓ Con --strict-mcp-config, el chat solo ve el MCP scompass y no los otros servidores del usuario
+  Por qué: las herramientas son siempre las mismas y no choca con un scompass ya registrado
+  Descartado: sumar los MCP del usuario
+- ✓ El hub guarda una copia liviana de cada conversación para mostrarla
+  Por qué: las sesiones de Claude Code son un formato interno
+  Descartado: leer ~/.claude/projects
+- ✓ Herramientas permitidas: mcp__scompass, Read, Grep y Glob; nada de Edit ni Bash
+  Por qué: sin pedidos de permiso desde la web, solo lo que no cambia el repo
+- ✓ El proceso se cierra tras 10 minutos sin uso; cortar mata el proceso si no termina en 5 s
+- ✓ Las conversaciones viven en <config>/scope-compass/chats/<sha1 de la ruta>/ junto a projects.json
+  Por qué: son de la máquina, no van a git
+
+**Prueba:** docs/spec.md §32 y docs/decisiones.md D43; la suite sigue pasando (432)
+
+**Notas:** Claude Code 2.1.306 tiene --session-id <uuid>: el hub elige el id al crear la conversación y no hace falta esperar al init. stream-json de salida pide --verbose.
+
+**Bloquea a:** 25.2 Proceso de Claude Code en el hub
+
+### 25.7 Web: panel de chat · Hecho
+
+**Terminada:** 2026-10-26
 
 Un panel lateral plegable en el tablero: la conversación con el texto en vivo, las herramientas que usa (plegadas), Cortar, y la lista de conversaciones. Con una tarea abierta, la adjunta como contexto (compass://task/<id>). Fuera de 127.0.0.1 el panel no aparece.
 
 **Decisiones:**
-- ! El panel va a la izquierda y en pantallas anchas corre el tablero · sin revisar
+- ✓ El panel va a la izquierda y en pantallas anchas corre el tablero
   Por qué: el detalle de la tarea está a la derecha y la tarea abierta es contexto del chat: tienen que verse juntos
   Descartado: a la derecha encima del detalle; flotante abajo
-- ! La respuesta se muestra como texto con código en línea (rich), sin markdown completo · sin revisar
+- ✓ La respuesta se muestra como texto con código en línea (rich), sin markdown completo
   Por qué: la web no tiene un renderizador de markdown en el cliente
   Descartado: renderizar markdown en el hub
 
@@ -2905,26 +2977,6 @@ Un panel lateral plegable en el tablero: la conversación con el texto en vivo, 
 **Notas:** Panel #chat en index.html, la lógica al final de app.js (C, chatCheck, chatEvent, renderChat). De paso se arregló un 'null' suelto en el detalle de las tareas sin decisiones (M24), con su test en ui-decisions.test.js.
 
 **Bloqueada por:** 25.4 API y WebSocket del chat
-
-### 25.8 Responder una pregunta abierta retoma la sesión · Revisión
-
-La decisión de M24 guarda la sesión de Claude que hizo la pregunta (session, opcional, desde CLAUDE_SESSION_ID o lo que exponga Claude Code; investigar). Al responderla en la web se ofrece retomar esa sesión en el chat con la respuesta, así el agente sigue sin volver a leer la tarea.
-
-**Decisiones:**
-- ! La sesión se guarda solo en las preguntas (--ask), no en las decisiones tomadas solas · sin revisar
-  Por qué: es lo que se retoma con la respuesta; en las otras sería ruido
-  Descartado: guardarla siempre, para retomar también al revertir
-- ! Una sesión de afuera no se crea vacía si --resume no la encuentra: el chat muestra el error · sin revisar
-  Por qué: crearla con ese id le mandaría la respuesta a un agente sin contexto
-- ! Seguir en el chat es un botón en la pregunta respondida, no un paso automático al responder · sin revisar
-  Por qué: si la sesión sigue abierta en una terminal, es mejor responder ahí
-  Descartado: retomarla sola al responder
-
-**Prueba:** cli.test.js (decide --ask toma CLAUDE_CODE_SESSION_ID, --session, inválida), mcp.test.js (add_decision con ask desde el entorno del servidor), chats.test.js y chat-api.test.js (retomar una sesión de afuera, no crearla vacía), ui-chat.test.js (Seguir en el chat). Suite: 477.
-
-**Notas:** Investigado: Claude Code 2.1.306 pone CLAUDE_CODE_SESSION_ID en el entorno de Bash y de los servidores MCP que lanza (visto en /proc/<pid>/environ del scompass mcp). Los tests la borran en isolate.js para no heredar la sesión que los corre. Una sesión hecha en otra carpeta (worktree) no se encuentra con --resume desde el proyecto: el chat muestra el error.
-
-**Bloqueada por:** 24.4 MCP: herramientas de decisiones; 25.3 Conversaciones: retomar y listar
 
 ## M26 — Documentos al día para el agente  (0/5)
 
@@ -3022,10 +3074,10 @@ Saber qué cuenta usa el chat y cuánto gasta, y poder usar varias cuentas (perf
 §33 en la spec y D44: perfiles de Claude Code (~/.claude y las carpetas de ~/.claude-profiles), la cuenta de cada uno con claude auth status, el perfil por conversación y por defecto del proyecto, los límites del rate_limit_event y los tokens del result.
 
 **Decisiones:**
-- ! El perfil predeterminado es siempre ~/.claude, sin CLAUDE_CONFIG_DIR, aunque el hub lo tenga · sin revisar
+- ✓ El perfil predeterminado es siempre ~/.claude, sin CLAUDE_CONFIG_DIR, aunque el hub lo tenga
   Por qué: si dependiera del entorno del hub, cambiaría según desde dónde se levantó
   Descartado: usar el CLAUDE_CONFIG_DIR del hub
-- ! El perfil de una pregunta se encuentra buscando su sesión en <perfil>/projects/*/<id>.jsonl · sin revisar
+- ✓ El perfil de una pregunta se encuentra buscando su sesión en <perfil>/projects/*/<id>.jsonl
   Por qué: no hay que guardar rutas de la máquina en compass/
   Descartado: guardar el perfil en la decisión
 
@@ -3038,9 +3090,9 @@ Saber qué cuenta usa el chat y cuánto gasta, y poder usar varias cuentas (perf
 Detectar los perfiles (~/.claude predeterminado y las carpetas de ~/.claude-profiles con .claude.json o settings.json; SCOMPASS_CLAUDE_PROFILES para otra carpeta), su cuenta con claude auth status --json (en caché), el perfil de cada conversación (CLAUDE_CONFIG_DIR al lanzar claude) y el predeterminado del proyecto. Una pregunta (25.8) se retoma en el perfil que tiene su sesión. API para listarlos y elegir.
 
 **Decisiones:**
-- ! El claude falso guarda las sesiones en la carpeta del perfil, como el real, pero nunca fuera de la carpeta temporal · sin revisar
+- ✓ El claude falso guarda las sesiones en la carpeta del perfil, como el real, pero nunca fuera de la carpeta temporal
   Por qué: un test sin FAKE_CLAUDE_STATE no puede escribir en el ~/.claude de verdad
-- ! Elegir un perfil al crear una conversación lo deja como el del proyecto; retomar una pregunta no lo cambia · sin revisar
+- ✓ Elegir un perfil al crear una conversación lo deja como el del proyecto; retomar una pregunta no lo cambia
   Por qué: la spec dice que el proyecto recuerda el último elegido
 
 **Prueba:** hub/test/profiles.test.js (6: lista, entorno, cuenta guardada, perfil por conversación y del proyecto, pregunta en su perfil, API y 403)
@@ -3056,7 +3108,7 @@ Detectar los perfiles (~/.claude predeterminado y las carpetas de ~/.claude-prof
 Del stream-json: rate_limit_event (uso y renovación de las ventanas de 5 horas y de la semana) como evento del chat y guardado por perfil; los tokens del result (entrada, salida, caché) en el fin del turno y en la copia de la conversación.
 
 **Decisiones:**
-- ! Los límites se guardan por perfil en chats/limits.json y salen en /api/chats/profiles, no en cada conversación · sin revisar
+- ✓ Los límites se guardan por perfil en chats/limits.json y salen en /api/chats/profiles, no en cada conversación
   Por qué: son de la cuenta, no de la conversación ni del proyecto
 
 **Prueba:** chat.test.js (el evento limits y los tokens del fin del turno), chats.test.js (con el perfil y guardados; la copia guarda tokens), profiles.test.js (la API trae el último uso), chat-api.test.js (el WebSocket los manda)
@@ -3072,11 +3124,11 @@ Del stream-json: rate_limit_event (uso y renovación de las ventanas de 5 horas 
 En el panel del chat: la cuenta del perfil (email, organización, plan), elegir el perfil para una conversación nueva, el uso de los límites con cuándo se renuevan, y los tokens y el costo estimado de cada respuesta y de la conversación.
 
 **Decisiones:**
-- ! Los perfiles (y su claude auth status) se piden recién al abrir el panel · sin revisar
+- ✓ Los perfiles (y su claude auth status) se piden recién al abrir el panel
   Por qué: pedirlos lanza un claude por perfil; con el panel cerrado no hace falta
-- ! Una ventana de límites al 90 % o más se pinta en rojo · sin revisar
+- ✓ Una ventana de límites al 90 % o más se pinta en rojo
   Por qué: aviso visual simple; avisar antes de llegar quedó fuera de M28
-- ! Los tests de la UI del chat usan un HOME propio · sin revisar
+- ✓ Los tests de la UI del chat usan un HOME propio
   Por qué: si no, mostrarían los perfiles reales de la máquina
 
 **Prueba:** hub/test/ui-chat.test.js (7): el selector de perfil en una nueva, la cuenta de cada uno, las barras (con una al 93 % en rojo), los tokens plegados y el total; la nueva recuerda el perfil del proyecto. Capturas en claro y oscuro.
@@ -3186,3 +3238,362 @@ init --template clean-room (M8): AGENTS.md con las reglas (no leer el fuente ori
 **Prioridad:** baja
 
 Estado por sección (borrador → revisado limpio, quién y cuándo) y marcar las tareas que referencian secciones sin revisar. Baja: esconder secciones al lado limpio no protege si leen la misma carpeta, y git más 30.1 ya dan el rastro de auditoría. Retomar si el uso real lo pide.
+
+## M31 — Inicio para la vida  (6/6, 6 en revisión)
+
+Que el Inicio sirva para organizar la vida (rutina, trabajo, hobbies, aprendizaje) y no solo como bandeja de trabajo con agentes: lo mío primero, anotar rápido, ver la semana, filtrar por área y rutinas cada N días.
+
+**Hecho cuando:**
+- En 1440×900 y en 390×844, Hoy muestra lo vencido, lo de hoy y lo en curso sin scrollear aunque haya 7 preguntas abiertas.
+- Desde el Inicio se anota un ítem en una lista con un campo y Enter, sin abrir el proyecto.
+- La franja Esta semana muestra lo que vence en los próximos 7 días, de todos los proyectos, por día.
+- Hoy y Esta semana se filtran por área (etiqueta) y el filtro se recuerda en el navegador.
+- Un ítem con repeat { every: day, interval: 2 } avanza dos días al tildarlo.
+
+### 31.1 Hoy en secciones: lo mío arriba, las preguntas plegadas · Revisión
+
+**Etiquetas:** `ui`
+
+Hoy pone las preguntas abiertas de los agentes primero y sueltas: con 7 de un proyecto ocupan la primera pantalla y lo mío queda abajo (en el teléfono, ~4 pantallas). Separar Hoy en secciones: arriba "Hoy" (vencido y de hoy, con casillas), después "En curso" (el grupo plegable por proyecto de 23.1) y al final "Esperan tu respuesta (n)", plegada por defecto y recordada en el navegador como los grupos en curso.
+
+- [x] Separar las filas de Hoy en tres secciones
+- [x] Esperan tu respuesta plegada por defecto, recordada en localStorage
+- [x] Probar 1440×900 y 390×844 con 7 preguntas
+
+**Decisiones:**
+- ! Orden dentro de Hoy: lo vencido y de hoy, después los grupos en curso y al final Esperan tu respuesta, en la misma caja · sin revisar
+  Por qué: una sola franja; las preguntas quedan a un clic sin empujar nada
+  Descartado: las preguntas en una sección aparte debajo de Esta semana
+- ! En el teléfono (≤560 px) se ocultan la fecha y los subtítulos de las secciones, Anotar va en dos filas, las áreas en una fila que se desplaza y las filas son más bajas · sin revisar
+  Por qué: con 4 vencidos/hoy y 4 en curso, sin eso lo en curso quedaba debajo del pliegue en 390×844
+  Descartado: dejar todo y aceptar scroll
+- ! Las tareas vencidas o de hoy siguen siendo un enlace al tablero, sin casilla; las casillas son para los ítems · sin revisar
+  Por qué: tildar una tarea es moverla de estado y se saltearía Revisión
+  Descartado: casilla que la pasa a done con move-task
+
+**Prueba:** Con 7 preguntas abiertas en un proyecto y un ítem vencido en otro, abrir el Inicio en 1440×900 y en 390×844: el ítem y lo en curso se ven sin scrollear; Esperan tu respuesta (7) está plegada; desplegarla, recargar y sigue desplegada. Test: hub/test/m31-criteria.test.js.
+
+**Notas:** web/home.js renderHoy + rowsOf (la deduplicación de worktrees, compartida con Esta semana). El pliegue de las preguntas se guarda en localStorage scompass.home.questions-open. El test viejo de ui-home (preguntas arriba) se cambió a plegadas. Medido con datos de ejemplo (4 vencidos/hoy, 4 en curso, 7 preguntas): lo mío termina en 727 px a 1440×900 y en 775 px a 390×844.
+
+### 31.2 Captura rápida: Anotar… arriba del Inicio · Revisión
+
+**Etiquetas:** `ui`
+
+Anotar un pendiente hoy pide proyecto → Listas → lista → campo. Sumar un campo "Anotar…" fijo arriba del Inicio que agrega un ítem a una lista elegida (recuerda la última; por defecto "Quiero hacer" del proyecto "Vida" si existe), con fecha opcional. Agregar proyecto pasa a botón secundario. Escribe con la misma regla que item add: por el hub si está vivo, o directo al Store con etag.
+
+- [x] POST /api/projects/add-item con la regla de item add
+- [x] Campo Anotar…, selector de lista y fecha
+- [x] Recordar la última lista; por defecto Vida › Quiero hacer
+- [x] Agregar proyecto como botón secundario
+
+**Decisiones:**
+- ! Anotar es lo primero de la página, no queda pegado arriba al hacer scroll · sin revisar
+  Por qué: pegado le come alto a la pantalla del teléfono, que es justo lo que había que ganar
+  Descartado: position: sticky
+- ! Agregar proyecto pasó a un botón chico en la cabecera de Proyectos (con su panel ahí) · sin revisar
+  Por qué: queda donde se usa y deja la cabecera de arriba libre en el teléfono
+  Descartado: botón secundario en la cabecera de arriba
+- ! Lista por defecto: la última elegida; si no, Quiero hacer de Vida; si no, la primera de Vida; si no, la primera que haya. Los nombres se comparan sin mayúsculas ni tildes · sin revisar
+  Por qué: sigue el pedido y no queda vacío si no hay Vida
+- ! Ruta nueva POST /api/projects/add-item y la regla de item add movida a newItem (lists.js), que usan la CLI y el Inicio · sin revisar
+  Por qué: sin lógica de escritura nueva: store.patch con etag por el hub o directo, como check-item
+  Descartado: que la página llame a la API del hub del proyecto
+- ! Anotar no ofrece repetición, solo fecha · sin revisar
+  Por qué: lo pedido; repetir se arma en la lista
+
+**Prueba:** En el Inicio, escribir "Llamar al dentista", elegir fecha y Enter: aparece al final de la lista elegida (compass/lists/<id>.json cambia en un ítem). Recargar: la lista elegida sigue siendo la misma. Sin elegir nada y con un proyecto Vida con Quiero hacer, va ahí. Test: m31-criteria.
+
+**Notas:** Formulario fijo en web/home.html (#capture); render() solo rearma el selector si cambian las listas (data-sig), así no se pierde lo escrito. API: POST /api/projects/add-item en hub/src/home.js; regla compartida newItem en hub/src/lists.js. Preferencia: localStorage scompass.home.capture = { path, list }.
+
+### 31.3 Franja Esta semana · Revisión
+
+**Etiquetas:** `ui`
+
+No hay una vista de lo que vence en los próximos 7 días entre proyectos. Sumar a GET /api/today los ítems de lista y tareas sin terminar que vencen después de hoy y antes de la medianoche de dentro de 7 días (la regla de list --due week), y mostrarlos en una franja Esta semana agrupada por día.
+
+- [x] Reusar dueMatches(week) para las entradas de la semana
+- [x] Franja agrupada por día
+- [x] Tildar desde la franja
+
+**Decisiones:**
+- ! week va en la misma respuesta de GET /api/today, no en una ruta hermana · sin revisar
+  Por qué: una lectura de disco por proyecto en vez de dos; los clientes viejos ignoran el campo
+- ! Esta semana no repite lo vencido ni lo de hoy (ya está en Hoy); una tarea en curso con fecha esta semana sale en los dos lados · sin revisar
+  Por qué: la franja es de fechas; en curso no dice cuándo vence
+  Descartado: sacarla de Esta semana si ya está en curso
+
+**Prueba:** Con ítems y tareas que vencen mañana y en 6 días en dos proyectos, la franja muestra dos días con sus filas; uno que vence en 8 días no aparece. Test: hub/test/home.test.js y m31-criteria.
+
+**Notas:** weekOf en hub/src/summary.js (dueState later + dueMatches week); GET /api/today devuelve { items, week }. Puro JS, sin nada de plataforma: Windows y Linux igual.
+
+### 31.4 Áreas en Hoy y Esta semana · Revisión
+
+**Etiquetas:** `ui`
+
+Las áreas (trabajo, casa, música, aprender) van como etiquetas de tarea. Mostrar chips con las etiquetas de lo que hay en Hoy y Esta semana; elegir uno filtra las dos. El filtro se recuerda en el navegador (localStorage), nunca en compass/.
+
+- [x] today/week traen las etiquetas de cada tarea
+- [x] Chips de área, filtro en localStorage
+
+**Decisiones:**
+- ! Los ítems de lista no tienen área: con un filtro puesto no se ven (tampoco las preguntas sin etiqueta) · sin revisar
+  Por qué: el área es la etiqueta de tarea; sumar etiquetas a los ítems cambia el schema de listas
+  Descartado: mostrarlos siempre; o agregar tags a los ítems
+- ! Un área a la vez; un área guardada que ya no aparece no filtra (queda guardada) · sin revisar
+  Por qué: lo más simple que sirve; no deja Hoy vacío sin chip para quitarlo
+  Descartado: varias áreas a la vez
+
+**Prueba:** Con tareas etiquetadas casa y musica, tocar el chip casa deja solo las de casa en Hoy y Esta semana; recargar mantiene el filtro; Todas lo quita. Test: m31-criteria.
+
+**Notas:** summary.js agrega tags a las entradas de tareas y preguntas (solo si hay). web/home.js renderAreas; localStorage scompass.home.area.
+
+### 31.5 Estilo de Hoy: sin subrayado, dorado solo para lo urgente · Revisión
+
+**Etiquetas:** `ui`
+
+Todos los enlaces de Hoy van subrayados en dorado y no se distingue lo urgente de lo normal. Sin subrayado permanente (solo en hover y foco); el dorado (acento) solo para lo vencido o de hoy. Respetar tema claro y oscuro, los bordes de fantasía (19.16) y la tipografía.
+
+- [x] Enlaces de Hoy sin subrayado, subrayado en hover/foco
+- [x] Dorado solo para vencido o de hoy
+
+**Decisiones:**
+- ! Lo vencido o de hoy va con el título en dorado (ítems y tareas); el resto, en el color del texto · sin revisar
+  Por qué: así lo urgente se distingue de un vistazo, también en los ítems, que no son enlaces
+  Descartado: dorado solo en los enlaces
+
+**Prueba:** En el Inicio, en claro y oscuro y con bordes de fantasía: los títulos de Hoy no están subrayados hasta pasar el mouse o enfocarlos; solo las filas vencidas o de hoy van en dorado.
+
+**Notas:** web/home.css: .hoy-row .what a sin subrayado (hover/focus-visible lo subrayan); .hoy-row.urgent en --accent. .capture en las reglas de bordes de fantasía de app.css. Revisado a ojo en claro, oscuro y fantasía (capturas a 1440×900 y 390×844).
+
+### 31.6 repeat cada N: { every, interval } · Revisión
+
+**Etiquetas:** `cli`, `ui`
+
+Las rutinas reales son cada 2 o 3 días. repeat suma interval opcional (entero, mínimo 1; sin él vale 1), como ya reservaba §16.5, sin migrar los archivos. Tildar avanza due interval períodos desde la fecha límite. Los días fijos de la semana (lun/mié/vie) no van todavía: queda una decisión preguntada sobre cómo modelarlos.
+
+- [x] Schema: interval opcional, mínimo 1
+- [x] nextDue con intervalo
+- [x] CLI --interval, web y textos (cada 2 días)
+- [x] Decisión preguntada: días fijos de la semana
+
+**Decisiones:**
+- ! interval 1 no se escribe: { every } queda igual que antes · sin revisar
+  Por qué: los archivos existentes no cambian y el diff de git no se ensucia; sin interval vale 1
+  Descartado: escribir siempre interval
+- ! En la web, un campo numérico Cada cuántos al lado del selector de repetición · sin revisar
+  Por qué: sin él, editar un ítem con interval lo perdía
+  Descartado: opciones fijas en el selector (cada 2 días, cada 3 días)
+- ? ¿Cómo modelo los días fijos de la semana (lun/mié/vie)? Propuesta: repeat { every: "week", days: ["mon","wed","fri"] } (days solo con every week; interval sigue valiendo: cada 2 semanas lun y vie). Tildar mueve due al próximo día de la lista después de la fecha límite (si es el último de la semana, al primero de la semana siguiente + interval-1 semanas). Alternativa: días como números 1-7 (ISO), o un every: "weekdays" aparte. ¿Va así? · pregunta abierta
+- ! CLI: --interval N junto a --repeat; en item set, --repeat solo cambia la unidad y conserva el intervalo · sin revisar
+  Por qué: cambiar de cada 2 días a cada 2 semanas es un solo flag; --repeat "" quita todo
+  Descartado: --repeat 2d (formato compacto)
+
+**Prueba:** scompass item add rutina "Regar" --due 2026-11-03 --repeat day --interval 2 y tildarlo: due pasa a 2026-11-05 y lists show dice "cada 2 días". Un archivo sin interval sigue validando y no cambia. En la web, editar el ítem conserva el intervalo. Tests: hub/test/repeat.test.js.
+
+**Notas:** dates.js: nextDue(due, every, interval) y repeatLabel; lists.js: repeatOf. Schema list: repeat.interval entero ≥1 (schema/, compass/schema/ con scompass update, y el fixture de tests). Guía de agentes (hub/templates/compass-AGENTS.md y copias) actualizada. Días fijos de la semana: pregunta abierta (decisión 3).
+
+## M32 — Repo público y releases  (1/10, 1 en revisión)
+
+Hacer público el repo y publicar releases: pulir lo que ve alguien de afuera, sacar scompass como binario y el addon de Godot como descargas separadas, definir cómo se actualizan (coordinado con godot-agent) y tener una landing page.
+
+**Hecho cuando:**
+- El repo es público sin secretos, rutas personales ni enlaces privados, también en el historial de git.
+- El README está en inglés y en castellano, con capturas, y hay CHANGELOG, CONTRIBUTING y SECURITY.
+- Un tag vX.Y.Z publica una release en GitHub con dos descargas separadas: el binario de scompass (Linux y Windows) y el zip del addon de Godot, con la misma versión.
+- El addon y scompass avisan cuando hay una versión nueva y cuando sus versiones no son compatibles, según lo acordado con godot-agent.
+- La landing en dann.com.ar enlaza la última release.
+
+### Auditoría para publicar: secretos, rutas personales y enlaces privados · Pendiente
+
+**Prioridad:** alta · **Tamaño:** M
+
+Antes de hacer público el repo hay que revisar el árbol y todo el historial de git en busca de tokens, emails, rutas como /home/dannode, referencias a ../project-epiphany y a otros proyectos privados, y enlaces a artifacts de claude.ai. Hay que decidir qué se publica: compass/ (el tablero propio), docs/decisiones.md, docs/reference/tablero-artifact.html y los fixtures. Si el historial tiene algo que no se puede publicar, hay que elegir entre reescribirlo o arrancar un repo nuevo sin historial.
+
+**Bloqueada por:** Tableros fuera del repo del proyecto, cada uno con su propio git
+
+### scompass como binario (Linux y Windows) · En curso
+
+**Prioridad:** alta · **Tamaño:** L
+
+Hoy scompass se distribuye como un .tgz de npm y necesita Node 22 o más. La release tiene que traer un ejecutable que no dependa de Node, con web/, schema/, templates y assets adentro. Opciones: Node SEA (nativo de Node, sin dependencias de runtime, pero hay que juntar todo en un solo archivo y ver si soporta ESM) o bun build --compile (un solo paso, pero cambia el runtime). Hay que confirmar que fastify, ajv y dbus-native (la bandeja) funcionan, medir el tamaño y el arranque, y que `scompass mcp` y el --dev de install.sh sigan andando. Antes de elegir el stack, se analiza con el usuario.
+
+**Decisiones:**
+- ! Node SEA (node --build-sea) que trae el paquete entero comprimido y lo extrae a ~/.cache/scope-compass/runtime/<versión>-<hash>/ la primera vez (D45). · sin revisar
+  Por qué: El usuario pidió que no haga falta instalar Node y me dejó elegir el stack. SEA es de Node mismo, así que no suma runtime ni dependencias de build. Extraer deja el código sin cambios: fastify sirve web/ desde el disco y las plantillas, los íconos y el .ps1 siguen siendo archivos.
+  Descartado: bun build --compile (cambia el runtime). Un bundler como esbuild con los assets leídos desde el SEA (obliga a cambiar cada lectura de archivo). Borrar de la caché las versiones viejas (rompería un Inicio que siga corriendo con la versión anterior).
+
+**Notas:** Hecho (2026-11-12):
+- tools/sea-main.cjs: el arranque del binario. Extrae el payload (gzip con un índice y los archivos) con un rename atómico y carga src/main.js con require(). En el script principal de un SEA, import() solo resuelve módulos internos de Node; require() de un módulo ESM sí anda mientras no tenga await en el nivel superior.
+- src/main.js: el cuerpo de bin/scompass.js, que tenía un await en el nivel superior.
+- src/self.js: selfCommand. El binario se relanza sin script; desde el repo o npm, con node bin/scompass.js. Lo usan el reinicio del hub (cli.js), el Inicio (init y prender hubs, en home.js) y el MCP del chat (chat.js).
+- tools/build.mjs arma dist/scompass-v<ver>-<so>-<arq> (con .exe en Windows) y lo prueba con list. Necesita Node 25.5 o más nuevo para --build-sea.
+- install.sh prefiere el binario y lo copia a ~/.local/bin/scompass.
+- El dock en Windows acepta scompass.exe de `where`.
+- Documentado en AGENTS.md (las tres copias: el MCP se registra con `scompass mcp`), instalar.md, README, spec §35 y D45.
+
+Medido en Linux x64: el binario pesa 155 MB, la caché 27 MB por versión, y cada comando tarda unos 0,25 s.
+Probado sin Node: init, list, serve con la web, home (init y prender un hub), mcp, e install.sh con un HOME aparte. 24 primeros arranques en paralelo, sin fallos.
+Falta: probar el build y el binario en Windows (VM, ssh win).
+
+**Bloquea a:** Releases en GitHub Actions: binario y addon como descargas separadas
+
+### Releases en GitHub Actions: binario y addon como descargas separadas · Pendiente
+
+**Prioridad:** alta · **Tamaño:** M
+
+Al pushear un tag vX.Y.Z, un workflow corre los tests en Linux y Windows, arma el binario de cada plataforma y el zip de addons/scope_compass, verifica que hub/package.json, plugin.cfg y el tag tengan la misma versión, y publica la release con notas sacadas del CHANGELOG y checksums. Los nombres de los archivos siguen la convención que acordemos con godot-agent (que publica godot-agent-harness-vX.Y.Z.zip). Se basa en tools/build.mjs.
+
+**Notas:** Convención de godot-agent para copiar (agent-harness-81, 2026-11-12):
+- El workflow release.yml se lanza a mano con bump patch, minor, major o X.Y.Z. Corre el CI, sube la versión en plugin.cfg (acá también en hub/package.json) y commitea «Release vX.Y.Z» con el tag.
+- CHANGELOG.md en inglés, formato Keep a Changelog. La sección Unreleased pasa a la versión nueva; si está vacía, el release falla. Las notas son esa sección más una línea de instalación.
+- `gh release create vX.Y.Z <assets> --title vX.Y.Z --notes-file notes.md`, con --prerelease opcional.
+- Assets:
+  - scope-compass-addon-vX.Y.Z.zip, con addons/scope_compass/ desde la raíz, solo lo versionado, más README, CHANGELOG y LICENSE;
+  - scompass-vX.Y.Z-linux-x64 y scompass-vX.Y.Z-windows-x64.exe;
+  - SHA256SUMS.
+
+**Bloqueada por:** scompass como binario (Linux y Windows)
+
+### Actualizaciones y compatibilidad entre el addon y scompass (coordinado con godot-agent) · Pendiente
+
+**Prioridad:** alta · **Tamaño:** L
+
+Scope Compass tiene tres partes que se actualizan por separado: el binario scompass (uno por equipo), el addon de Godot (uno por proyecto) y el MCP registrado en Claude Code. Hay que definir: quién avisa y quién instala cada actualización (el addon solo, como godot_agent, o el harness desde Extensiones o el Asset Store); cómo el addon sabe si el scompass que encontró es compatible (versión en la API del hub y una versión mínima en plugin.cfg); y si hace falta un `scompass update`. Le pregunté a la sesión agent-harness-81 el 2026-11-12. El diseño se acuerda con ellos antes de implementar.
+
+**Decisiones:**
+- ✓ ¿Aprobás el diseño que propuso agent-harness-81? El addon se actualiza solo (como godot_agent), la compatibilidad va por un número de protocolo en /api/health, y el MCP sale como plugin en godot-agent-plugins que usa el scompass del PATH.
+  Por qué: Funciona sin el harness y no queda acoplado a él. Un binario viejo solo deja de servir cuando cambia el protocolo.
+  Descartado: Que el harness actualice el addon (lo acopla al harness). Compatibilidad por semver (rompe en cada release). Que el plugin traiga el binario (pesado, y depende de la plataforma).
+  Respuesta: Sí, aprobado.
+
+**Notas:** Propuesta de agent-harness-81 (2026-11-12), pendiente de que la apruebe el usuario:
+- El harness no actualiza scope_compass. El addon se actualiza solo, con una copia de addons/godot_agent/core/addon_updater.gd de godot-agent cambiando REPO, ADDON_DIR y el nombre del zip. Ese updater:
+  - mira api.github.com/repos/<repo>/releases y elige la versión más alta, sin prereleases;
+  - baja el .zip y lo rechaza si el plugin.cfg de adentro no dice la versión del tag;
+  - reemplaza la carpeta, respalda los archivos que el usuario pudo editar y reinicia el editor;
+  - no corre en copias de desarrollo (symlink o plugin de dev).
+  Si algún día está en el Asset Store, el harness lo actualiza como cualquier asset.
+- Release: los binarios y el addon salen en el mismo release y con la misma versión, con un SHA256SUMS. Ver m32-03.
+- Compatibilidad por un número de protocolo entero, no por semver. Sube solo si se rompe la API HTTP/WS o el formato de compass/. El hub ya tiene GET /api/health con version (server.js y home.js): se le suma protocol. El addon tiene un const PROTOCOL. Si no coincide o no hay hub, el dock avisa, ofrece el binario del mismo tag (URL directa) y mientras tanto lee compass/ sin hub.
+- MCP: plugin en dannroda/godot-agent-plugins con .mcp.json (scompass mcp) y la skill. No trae el binario: lo busca en el PATH o en una ruta configurable. Subir la version del plugin.json cuando cambian las tools o la skill. serverInfo.version ya dice la versión del binario (mcp.js); falta avisar si el protocolo es viejo. El marketplace lo edita la sesión de godot-agent-plugins.
+
+**Bloquea a:** Plugin de Claude Code con el MCP scompass
+
+### Plugin de Claude Code con el MCP scompass · Pendiente
+
+**Prioridad:** media · **Tamaño:** M
+
+Hoy el MCP se registra a mano. Un plugin de Claude Code, quizás en el marketplace dannroda/godot-agent-plugins, traería el MCP scompass y una skill con lo de AGENTS.md, y el harness lo mostraría en Extensiones. Hay que definir cómo encuentra el binario y cómo se actualiza el plugin cuando cambia la versión de scompass. Depende de lo que se acuerde sobre las actualizaciones.
+
+**Bloqueada por:** Actualizaciones y compatibilidad entre el addon y scompass (coordinado con godot-agent)
+
+### README en inglés y castellano, capturas, CHANGELOG, CONTRIBUTING y SECURITY · Pendiente
+
+**Prioridad:** media · **Tamaño:** M
+
+El README de hoy es un registro de estado interno, en castellano. Para el repo público hace falta un README.md en inglés y un README.es.md, como godot-agent: qué es, capturas de la web, del Inicio y del dock, cómo instalar desde la release y requisitos. También un CHANGELOG que arranque en la primera versión pública, y CONTRIBUTING y SECURITY. Instalar.md tiene que pasar a usar el binario.
+
+**Bloquea a:** Landing page en dann.com.ar
+
+### Landing page en dann.com.ar · Pendiente
+
+**Prioridad:** media · **Tamaño:** S
+
+La hace la sesión de dann.com.ar (dann-com-ar-fb), a la que se le pidió el 2026-11-12. De este lado hay que pasarle los textos, las capturas y el enlace a releases/latest, y revisar que lo que dice coincida con lo que hace la release.
+
+**Decisiones:**
+- ✓ ¿La UI (web, Inicio, dock y CLI) se traduce al inglés antes del lanzamiento, o sale solo en castellano y la landing en inglés lo avisa?
+  Por qué: La landing en inglés hoy dice "The interface is in Spanish" y nombra los botones en castellano. Traducir es trabajo grande (m) y cambia las capturas en inglés.
+  Descartado: Sacarla en castellano y traducirla después. Traducirla ahora, siguiendo el idioma del editor o del navegador, como godot-agent.
+  Respuesta: Sí, se traduce al inglés antes del lanzamiento.
+- ✓ ¿Qué etiqueta de uso de IA lleva Scope Compass en dann.com.ar: hand, assisted o vibe? (Godot Agent está en vibe.)
+  Por qué: Es una declaración tuya sobre cómo se hizo; no la puedo decidir yo.
+  Respuesta: vibe
+
+**Notas:** Borrador en dann.com.ar/content/pages/scope-compass.json (draft: true): se ve con npm run dev en /es/ y /en/scope-compass/. Los pasos de instalación usan el binario. Si el primer release sale solo con el .tgz, hay que avisarle a dann-com-ar-fb para que los pase a npm install -g con Node 22. Por ahora no usa el logo; si lo suma, pone el crédito de @icons/Voxy. Le falta de este lado: las capturas con alt y epígrafe (m32-08), el nivel de IA, si se traduce la UI y el README en inglés (m32-06).
+
+**Bloqueada por:** README en inglés y castellano, capturas, CHANGELOG, CONTRIBUTING y SECURITY; Capturas para el README y la landing (es y en)
+
+### Capturas para el README y la landing (es y en) · Pendiente
+
+**Prioridad:** media · **Tamaño:** M
+
+Las pidió la landing (dann-com-ar-fb, 2026-11-12). Van en PNG a 1920×1200 en docs/images/{es,en}/, con datos de ejemplo y sin proyectos privados. Son seis:
+- el tablero con una tarea abierta;
+- la versión angosta o de teléfono;
+- el Inicio;
+- una sesión de playtest;
+- la bandeja de decisiones;
+- el dock Tablero dentro de Godot.
+Cada una lleva una línea de alt y un epígrafe. Las capturas en inglés dependen de si la UI se traduce.
+
+**Bloquea a:** Landing page en dann.com.ar
+
+**Bloqueada por:** Interfaz en inglés y castellano (web, Inicio, dock y CLI)
+
+### Interfaz en inglés y castellano (web, Inicio, dock y CLI) · Pendiente
+
+**Prioridad:** alta · **Tamaño:** L
+
+El usuario decidió el 2026-11-12 que la UI se traduce al inglés antes del lanzamiento. Hoy todo está en castellano. Hay que sacar los textos a catálogos en la web, el Inicio, el dock y la CLI, incluidos los mensajes de error y las descripciones del MCP. El idioma sigue al navegador, al editor de Godot o al LANG, con la opción de elegirlo, como godot-agent. Las plantillas (AGENTS.md, Juego, Personal) también tienen que salir en los dos idiomas. Las capturas en inglés (m32-08) dependen de esta tarea.
+
+**Bloquea a:** Capturas para el README y la landing (es y en)
+
+### Tableros fuera del repo del proyecto, cada uno con su propio git · Revisión
+
+**Prioridad:** alta · **Tamaño:** L
+
+Hoy el tablero vive en <proyecto>/compass/ y se commitea con el código, así que hacer público un proyecto publica también su tablero: notas internas, otros proyectos y links a artifacts. Pasa con scope-compass y con godot-manager (ui/compass). Lo decidió el usuario el 2026-11-14.
+
+Diseño (ver la decisión 3):
+- El tablero vive en la carpeta de datos del usuario (<datos>/boards/<nombre>, ~/.local/share/scope-compass/boards en Linux y %LOCALAPPDATA%\scope-compass\boards en Windows), con su propio git y, si se quiere, un origin.
+- <proyecto>/compass es un enlace a esa carpeta (symlink en Linux, junction en Windows) y está en .git/info/exclude del proyecto: el repo del proyecto no tiene rastro del tablero.
+- Trabajo colaborativo: <proyecto>/compass es un submódulo de git con el repo del tablero. Para scompass es el mismo caso.
+- Un tablero dentro del proyecto, como hasta ahora, sigue funcionando.
+
+Comandos:
+- `scompass board`: dónde está el tablero, de qué tipo es y su remoto.
+- `scompass board move [nombre]`: saca el compass/ del proyecto a <datos>/boards/<nombre> conservando su historial (git subtree split), lo saca del índice del proyecto y deja el enlace. El export markdown pasa a compass/tareas.md.
+- `scompass board link <carpeta>`: en otra máquina, después de clonar el repo del tablero, crea el enlace.
+
+Qué cambia en el código: el git del tablero (estado sin commitear e historial de una tarea corren git -C compass), los chequeos de rutas (realInside acepta lo que está dentro del tablero enlazado) y las capturas en compass/images (el git del proyecto no las lista: se sirven desde el disco, lo que también arregla el caso del submódulo).
+
+En scope-compass mismo: mover compass/ y docs/tareas.md al repo de tableros antes de hacer público el repo; eso reduce mucho la auditoría de m32-01.
+
+- [x] board.js: tipo de tablero (local, enlazado, submódulo), carpeta de tableros, enlazar y mover
+  move: git subtree split de compass/ si está en el repo del proyecto (conserva el historial), clon en <datos>/boards/<nombre>, git rm --cached del proyecto, enlace y /compass en .git/info/exclude. El export (docs/tareas.md) pasa a compass/tareas.md.
+- [x] Rutas, git e imágenes con el tablero enlazado o como submódulo
+  realInside acepta lo que está dentro del tablero; boardStatus y taskHistory corren git -C compass; imageFile sirve las de compass/ desde el disco (el git del proyecto no las lista, como ya pasa con un submódulo).
+- [x] CLI: scompass board, board move, board link
+- [x] Tests: tablero enlazado (watcher, imágenes, historial, estado), move con historial, link
+- [x] Docs: AGENTS.md (las tres copias), instalar.md, spec y decisiones
+- [ ] Mover el tablero de scope-compass a la carpeta de datos (lo corre el usuario)
+
+**Decisiones:**
+- ? ¿Un repo git por tablero (cada uno con su origin, y tu repo privado de tableros como superproyecto con submódulos) o un solo repo con todos los tableros en carpetas? · pregunta abierta
+  Por qué: Con un repo por tablero, compartir uno es agregarlo como submódulo en el proyecto. Con un solo repo es más simple para tu caso, pero para compartir uno hay que separarlo antes.
+  Descartado: Un solo repo con todos los tableros; un repo por tablero sin superproyecto (cada uno suelto, con su origin).
+- ! Los tableros van en la carpeta de datos del usuario (~/.local/share/scope-compass/boards, %LOCALAPPDATA% en Windows), no en la de config (~/.config). · sin revisar
+  Por qué: Según XDG, ~/.config es para preferencias y ~/.local/share para datos; un tablero son datos. projects.js ya tiene las dos carpetas (líneas 19 y 31), así que no hace falta inventar ninguna.
+  Descartado: ~/.config/scope-compass/boards, como dijo el usuario ("userconfig"), al lado de projects.json.
+- ! El tablero vive afuera (en la carpeta de datos, con su propio git) y <proyecto>/compass es un enlace a esa carpeta (symlink en Linux, junction en Windows), excluido en .git/info/exclude. En el caso colaborativo, compass es un submódulo. No hay un registro de proyecto a tablero. · sin revisar
+  Por qué: <proyecto>/compass está fijo en unos 100 lugares (hub, CLI, MCP, addon, rutas de imágenes compass/images/… guardadas en las tareas). Con el enlace, todo eso sigue igual y el submódulo es el mismo caso. Cambian el git del tablero (estado e historial con git -C compass) y los chequeos de rutas, que ahora aceptan lo que está dentro del tablero enlazado. Con info/exclude, el repo del proyecto no tiene ningún rastro (ni una línea en .gitignore). La pregunta de un repo por tablero o uno con todos queda libre: los dos funcionan, porque git -C compass encuentra el repo que corresponda.
+  Descartado: Un registro proyecto → tablero en projects.json y que el hub, la CLI, el MCP, el addon y las rutas de imágenes resuelvan la carpeta del tablero (lo de la propuesta original): toca casi todo y en otra máquina hay que volver a anotarlo igual. Un archivo puntero en el proyecto: deja rastro en el repo público.
+
+**Prueba:** hub/test/board.test.js: board move con historial (subtree split), lo sin commitear, export a compass/tareas.md, info/exclude y baja del índice; board move sin git y board link en otro proyecto; con el tablero enlazado, el hub da el estado de git del tablero, guarda y sirve capturas, el watcher ve cambios de afuera y realInside acepta el tablero pero no otra carpeta. A mano: scompass board move en un proyecto de prueba, después move, image add, history y board link en un segundo proyecto.
+
+**Notas:** Hecho (2026-11-14):
+- hub/src/board.js: boardKind (none, local, linked, repo), boardInfo, linkedTarget, excludeBoard (/compass en .git/info/exclude, con el prefijo si el proyecto es una subcarpeta del repo), linkBoard y moveBoard. move usa git subtree split -b <rama temporal> y clona esa rama con --no-local; después copia lo de disco encima, así lo sin commitear llega sin commitear. No commitea nada.
+- paths.js: realInside acepta lo que está dentro del destino de compass/ si es un enlace a un tablero (con config.json).
+- git.js boardStatus y history.js taskHistory corren git -C compass. Las rutas siguen saliendo como compass/….
+- files-api.js imageFile: las de compass/ se miran en el disco (el git del proyecto no las lista con el tablero enlazado o como submódulo).
+- CLI: scompass board, board move [nombre], board link <nombre|carpeta>. move se niega con un hub o el Inicio sirviendo el proyecto.
+- Documentado en AGENTS.md (las tres copias), instalar.md, spec §36 y D46.
+
+Falta:
+- Probar en Windows (junction) por ssh win.
+- Mover el tablero de scope-compass: detener el Inicio (y los hubs), scompass board move, commitear la baja de compass/ en el proyecto y crear el repo privado del tablero. Lo decide el usuario.
+- El dock de Godot sigue ofreciendo "Crear compass/" local; para crearlo afuera desde ahí falta UI (después del backend, como siempre).
+- npm test completo se colgó en una corrida (más de una hora, en export-md); corridos de a un archivo, los 55 pasan. No parece de este cambio, pero hay que mirarlo.
+
+**Bloquea a:** Auditoría para publicar: secretos, rutas personales y enlaces privados
