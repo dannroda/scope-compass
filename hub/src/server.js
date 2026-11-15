@@ -48,7 +48,7 @@ export function localOnly(app) {
   });
 }
 
-const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, invalid_file: 409, io_error: 500 };
+const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, invalid_file: 409, forbidden_pattern: 422, io_error: 500 };
 
 // token: si se pasa, cada request tiene que traer `Authorization: Bearer <token>` (hosting, §12). En local no se usa.
 // watch: mira compass/ y publica los cambios externos (necesita validators).
@@ -122,6 +122,7 @@ export function createServer({ projectDir, store, validators, watch = false, exp
       if (err.current) body.error.current = err.current;
       if (err.tasks) body.error.tasks = err.tasks;
       if (err.details) body.error.details = err.details;
+      if (err.matches) body.error.matches = err.matches;
       return reply.code(HTTP_STATUS[err.code] ?? 500).send(body);
     }
     // Errores de Fastify del lado del cliente: JSON roto (400), Content-Type (415), cuerpo grande (413)…

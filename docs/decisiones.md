@@ -543,3 +543,14 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Un etag con el hash de cada sección adentro: largo, y sigue sin decir qué cambió adentro de una sección que el agente no leyó.
   - Diff de líneas para las secciones tocadas: la comparación por id dice lo mismo para una sección y además distingue las nuevas y las quitadas.
   - `resources/subscribe` y `notifications/resources/updated`: la documentación de Claude Code no dice que los atienda, y un MCP común no puede empujar nada a la sesión. Los channels sí pueden, pero son preview y piden `--channels`.
+
+## D52 · Patrones prohibidos: en la config del proyecto, al escribir y con `lint`
+
+- **Qué:** `config.json › forbidden` lista expresiones regulares (texto u objeto con `ignore_case` y `note`). El store rechaza entera cualquier escritura cuyo texto coincida, y `scompass lint` revisa lo editado a mano en `compass/` y en los documentos declarados (spec §42).
+- **Por qué:** el texto prohibido entra por el tablero (notas, pasos, decisiones), casi siempre de la mano de un agente, y cada proyecto sabe qué no puede decir. Revisar en el store cubre la CLI, la API, el MCP, la web y el dock con un solo punto. Rechazar en lugar de limpiar deja la decisión de cómo decirlo a quien escribió. La lista va en el proyecto, versionada con el tablero, para que valga en cualquier equipo.
+- **Descartado:**
+  - Reemplazar lo que coincide por `[…]` y guardar igual: guarda un texto que nadie escribió, y el agente no se entera de qué hizo mal.
+  - Avisar sin rechazar: el texto ya quedó en el tablero, y en el historial de git del tablero.
+  - Revisar solo en el MCP: la web y la CLI también escriben.
+  - Revisar el código del proyecto y los commits: eso es de los ganchos de git del proyecto, que pueden llamar a `scompass lint`.
+  - Patrones en una lista global del usuario: no viajan con el proyecto, y lo prohibido depende del proyecto.

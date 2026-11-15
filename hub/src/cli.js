@@ -3,7 +3,8 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
-import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { compileForbidden, describeMatch, findForbidden, matchText } from './forbidden.js';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import { exportMarkdown } from './export-md.js';
@@ -161,6 +162,7 @@ const USAGE = `Uso: scompass [--dir <proyecto>] <comando>
   doc diff <alias>                          cambios sin commitear del documento (contra HEAD) y las secciones que toca
   doc changed <alias>[#<id>] --since <etag> qué secciones cambiaron desde el etag que dio doc show (sale con 1 si cambió)
   refs check                                referencias rotas (sale con 1 si hay) y frágiles; también archivos que ya no están
+  lint                                      patrones prohibidos (config.json › forbidden) en compass/ y en los documentos (sale con 1 si hay)
   refs suggest                              propone refs a partir de citas "gdd.md §4.3" (no aplica nada)
   ref add|rm <tarea> <alias>[#<id>]         agrega o quita una referencia (sin #<id>, al documento entero)
   file add|rm <tarea> <ruta>                vincula un archivo del repo a la tarea (un script, una escena; acepta res://)
@@ -241,7 +243,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const validators = loadValidators();
   let store = createJsonFilesStore(compass, { validators, ...(now && { now }) });
   // Con un hub de este proyecto corriendo, todo pasa por su API (eventos al instante, una sola cola de escritura).
-  if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'home', 'help', 'mcp', 'board'].includes(cmd)) {
+  if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'home', 'help', 'mcp', 'board', 'lint'].includes(cmd)) {
     const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
     const hub = await detectHub(project, cfg?.port);
     // Un hub de otro protocolo (§39) no se usa: la API pudo cambiar. Se escribe directo en compass/ y su watcher lo ve.
@@ -943,6 +945,47 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         return 0;
       }
       throw new UsageError(`subcomando desconocido: doc ${sub ?? ''}`);
+    },
+
+    // Patrones prohibidos (§42) en lo que se editó a mano: los JSON de compass/ (también los que no pasan el schema) y
+    // los documentos declarados. Para un pre-commit: sale con 1 si encuentra algo.
+    async lint() {
+      const config = JSON.parse(await readFile(join(compass, 'config.json'), 'utf8').catch(() => { throw new StoreError('not_found', 'no hay compass/config.json'); }));
+      const { patterns, errors } = compileForbidden(config);
+      const findings = errors.map((e) => ({ file: 'compass/config.json', where: `forbidden[${e.index}]`, pattern: e.source, problem: 'invalid_pattern', message: e.message }));
+      const jsonFiles = async (rel) => {
+        const entries = await readdir(join(compass, rel), { withFileTypes: true }).catch(() => []);
+        const out = [];
+        for (const e of entries) {
+          const r = rel ? `${rel}/${e.name}` : e.name;
+          if (e.isDirectory() && !e.name.startsWith('.') && !(rel === '' && ['schema', 'images'].includes(e.name))) out.push(...await jsonFiles(r));
+          else if (e.isFile() && e.name.endsWith('.json') && r !== 'config.json') out.push(r);
+        }
+        return out.sort();
+      };
+      let files = 0;
+      if (patterns.length) {
+        for (const rel of await jsonFiles('')) {
+          let doc;
+          try { doc = JSON.parse(await readFile(join(compass, rel), 'utf8')); } catch { warn(`aviso: compass/${rel} no es JSON; no se revisó`); continue; }
+          files++;
+          for (const m of findForbidden(doc, patterns)) findings.push({ file: `compass/${rel}`, ...m });
+        }
+        // Los documentos, enteros: un patrón puede cruzar líneas. El export markdown sale de las tareas, que ya se revisaron.
+        for (const d of await loadDocs(project, config)) {
+          if (d.missing) continue;
+          files++;
+          const text = d.lines.join('\n');
+          for (const { index, ...m } of matchText(text, patterns)) findings.push({ file: d.path, line: text.slice(0, index).split('\n').length, ...m });
+        }
+      }
+      if (o.json) print(JSON.stringify({ patterns: patterns.length, files, findings }));
+      else if (!patterns.length && !errors.length) print('Sin patrones prohibidos en compass/config.json › forbidden.');
+      else {
+        for (const f of findings) print(f.problem === 'invalid_pattern' ? `${f.file} › ${f.where}: /${f.pattern}/ no es una expresión regular válida (${f.message})` : describeMatch(f.file, f));
+        print(findings.length ? `${findings.length} coincidencias en ${new Set(findings.map((f) => f.file)).size} archivos.` : `Sin coincidencias: ${patterns.length} patrones en ${files} archivos.`);
+      }
+      return findings.length ? 1 : 0;
     },
 
     async refs() {

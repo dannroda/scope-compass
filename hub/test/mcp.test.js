@@ -282,3 +282,14 @@ test('aviso: un documento que la sesión leyó y cambió se avisa una vez, en el
   const other = mcp();
   assert.ok(!/Aviso/.test(text(await other.tool('list_milestones'))));
 });
+
+test('patrones prohibidos (§42): una escritura con una coincidencia da isError con el patrón y no cambia la tarea', async () => {
+  const path = join(dir, 'compass', 'config.json');
+  await writeFile(path, canonical({ ...JSON.parse(await readFile(path, 'utf8')), forbidden: [{ pattern: '\\b\\w+\\.c\\b', note: 'archivo .c' }] }));
+  const before = await task('m1-04');
+  const s = mcp();
+  const r = await s.tool('update_task', { id: 'm1-04', notes: 'ver Game_Character.c:15983' });
+  assert.equal(r.isError, true);
+  assert.match(r.content[0].text, /notes: «Game_Character\.c» coincide con el patrón prohibido .*archivo \.c/);
+  assert.deepEqual(await task('m1-04'), before);
+});

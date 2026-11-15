@@ -50,6 +50,38 @@
       "description": "Ruta del export markdown (.md), relativa a la raíz del proyecto y dentro de él",
       "pattern": "^(?![/\\\\])(?![a-zA-Z]:)(?!(.*/)?\\.\\.(/|$))[^\\\\{}]+\\.md$"
     },
+    "forbidden": {
+      "type": "array",
+      "description": "Patrones prohibidos (spec §42): expresiones regulares de JavaScript que ningún texto de compass/ puede tener (una clean-room que no puede citar el código original). Una escritura que tiene una coincidencia se rechaza, y scompass lint las busca en compass/ y en los documentos. Distinguen mayúsculas salvo ignore_case.",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "object",
+            "required": [
+              "pattern"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "minLength": 1
+              },
+              "ignore_case": {
+                "type": "boolean"
+              },
+              "note": {
+                "type": "string",
+                "description": "Qué atrapa y por qué: va en el mensaje del rechazo"
+              }
+            }
+          }
+        ]
+      }
+    },
     "decisions_doc": {
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9_/-]*$",

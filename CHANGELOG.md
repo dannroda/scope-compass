@@ -35,6 +35,7 @@ First public release. The interface and the documentation in `docs/` are in Span
 ### CLI and agents
 
 - `scompass` CLI covering tasks, steps, links, milestones, lists, playtests, decisions, documents and boards, with `--json` output and etags to detect concurrent changes.
+- Forbidden patterns (`config.json › forbidden`): regular expressions a project must never have on its board. Any write that matches is rejected whole (HTTP 422 `forbidden_pattern` with the matches), and `scompass lint` checks hand-edited files in `compass/` and the declared documents, exiting with 1 on a match.
 - `scompass mcp`: an MCP server over stdio exposing the CLI as typed tools and the board as resources, for Claude Code and other MCP clients.
 - A guide for agents (`AGENTS.md`) that `scompass init` and `scompass update` keep in each board.
 - A chat panel in the web UI that runs the locally installed Claude Code with read-only file tools and the board's MCP tools, with profile selection and usage shown per response. Available only from the same machine.

@@ -1535,3 +1535,33 @@ scompass doc changed <alias>[#sección] --since <etag> [--json]   # sale con 0 s
 - [x] `show_doc` con el mismo etag no repite el texto; con otro, lo da con las secciones cambiadas.
 - [x] Un documento que el MCP mostró y después cambió genera un aviso, una sola vez, en el resultado de la herramienta siguiente.
 - [x] AGENTS.md (y la skill del plugin) dicen cuándo volver a leer un documento y cómo preguntar si cambió.
+
+## 42. Patrones prohibidos (M30)
+<!-- id: patrones-prohibidos -->
+
+Algunos proyectos tienen texto que no puede aparecer en el tablero ni en los documentos. Por ejemplo, una reimplementación a sala limpia no puede citar nombres de archivos ni de funciones del código original, y un proyecto bajo NDA no puede nombrar al cliente. Un agente que lee una referencia y anota lo que vio los cuela sin querer. La lista de lo prohibido vive en el proyecto, y el tablero la hace cumplir.
+
+- **`config.json › forbidden`:** una lista de expresiones regulares de JavaScript. Cada una es un texto (`"\\bCliente\\b"`) o un objeto `{ pattern, ignore_case?, note? }`. `note` dice por qué está prohibido y sale en el mensaje. Sin `forbidden` no se revisa nada.
+- **Al escribir:** toda escritura del store (tareas, hitos, listas, sesiones de playtest y lo que agreguen la CLI, la API, el MCP, la web y el dock) revisa todos los textos del documento, a cualquier profundidad, contra los patrones. Si alguno coincide, la escritura entera se rechaza con `forbidden_pattern`, que es HTTP 422 en la API, y no se escribe nada.
+  - El mensaje dice el archivo, el campo (`checklist[2].detail`), el texto que coincidió, el patrón y la nota.
+  - La API trae además `error.matches` con `{ where, pattern, note, match }`.
+  - `config.json` no se revisa: es donde están los patrones.
+  - La config se lee de nuevo en cada escritura, así que un patrón agregado vale enseguida, sin reiniciar el hub.
+  - Un patrón inválido frena las escrituras con un mensaje que lo nombra (`forbidden[0]: /(roto/ no es una expresión regular válida`), en lugar de dejar pasar todo.
+- **`scompass lint`:** revisa lo que se editó a mano, sin pasar por el store.
+  - Recorre todos los `.json` de `compass/` (menos `config.json`, `schema/`, `images/` y las carpetas ocultas; un JSON roto se avisa y se sigue) y los documentos declarados en `config.json › docs` (el texto entero, con el número de línea).
+  - Imprime una línea por coincidencia y un resumen, y sale con 1 si hay alguna. Con `--json`: `{ patterns, files, findings: [{ file, where | line, pattern, note, match }] }`.
+  - El export markdown no se revisa porque se genera de los JSON.
+  - Sirve como gancho de pre-commit o en CI.
+- **Lo que no hace:** no revisa el código del proyecto ni los commits. Para eso está el gancho de git del proyecto, que puede llamar a `scompass lint` o usar los mismos patrones. Tampoco reescribe nada: quien escribió decide cómo decirlo sin el texto prohibido.
+
+```
+scompass lint [--json]   # sale con 1 si hay coincidencias
+```
+
+### Criterios de aceptación
+
+- [x] `forbidden` en `config.json` acepta textos y objetos `{pattern, ignore_case, note}`, y el schema rechaza campos de más.
+- [x] Una escritura por la CLI, la API o el MCP con una coincidencia se rechaza entera con el campo, el texto, el patrón y la nota; la API responde 422 con `matches`.
+- [x] Un patrón inválido frena las escrituras con un mensaje claro.
+- [x] `scompass lint` encuentra coincidencias en los JSON editados a mano y en los documentos (con la línea), y sale con 1.

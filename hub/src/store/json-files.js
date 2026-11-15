@@ -12,9 +12,10 @@ import { writeAtomic } from './atomic.js';
 import { COLLECTIONS, loadCollection, loadCompass } from './load.js';
 import { parseDoc } from '../schema.js';
 import { isValidDue } from '../dates.js';
+import { compileForbidden, describeMatch, findForbidden } from '../forbidden.js';
 
 export class StoreError extends Error {
-  // code: invalid_argument | not_found | conflict | invalid_file | io_error
+  // code: invalid_argument | not_found | conflict | invalid_file | io_error | forbidden_pattern
   constructor(code, message, extra = {}) {
     super(message);
     this.code = code;
@@ -78,6 +79,22 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
     }
   }
 
+  // Patrones prohibidos (§42): se lee la config en cada escritura, como todo en este store. Una coincidencia en
+  // cualquier texto del documento rechaza la escritura entera, con el patrón y el campo.
+  async function checkForbidden(collection, id, doc) {
+    const config = await readFile(join(compassDir, 'config.json'), 'utf8').then(JSON.parse, () => null);
+    if (!config?.forbidden?.length) return;
+    const { patterns, errors } = compileForbidden(config);
+    if (errors.length) {
+      const e = errors[0];
+      throw new StoreError('invalid_file', `compass/config.json › forbidden[${e.index}]: /${e.source}/ no es una expresión regular válida (${e.message})`);
+    }
+    const hits = findForbidden(doc, patterns);
+    if (!hits.length) return;
+    const file = `compass/${collection}/${id}.json`;
+    throw new StoreError('forbidden_pattern', `no se guardó: ${hits.slice(0, 3).map((m) => describeMatch(file, m)).join('; ')}${hits.length > 3 ? `; y ${hits.length - 3} más` : ''}`, { matches: hits });
+  }
+
   async function write(collection, id, doc, current) {
     if (collection === 'tasks' || collection === 'lists' || collection === 'playtests') {
       doc = { ...doc, updated_at: now() };
@@ -97,6 +114,7 @@ export function createJsonFilesStore(compassDir, { validators, now = () => new D
     // El schema mira el formato; una fecha que no existe (2026-02-30) se rechaza al ponerla (19.8). Una que ya estaba
     // en el archivo no impide editar otra cosa.
     if (doc.due !== undefined && doc.due !== current?.doc.due && !isValidDue(doc.due)) throw new StoreError('invalid_argument', `fecha inexistente: ${doc.due}`);
+    await checkForbidden(collection, id, res.doc);
     try {
       // La carpeta puede faltar en un proyecto de antes de esa colección (lists/, D25; playtests/, D39).
       await mkdir(dirname(pathOf(collection, id)), { recursive: true });
