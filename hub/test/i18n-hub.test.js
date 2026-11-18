@@ -1,5 +1,6 @@
 // El hub y el MCP en inglés (§45): errores de la API por pedido, etiquetas que se arman al usarlas y las
 // descripciones de las herramientas del MCP.
+import './isolate.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';

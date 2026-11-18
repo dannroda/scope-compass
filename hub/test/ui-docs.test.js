@@ -351,7 +351,9 @@ test('el panel de detalle se agranda arrastrando su borde, con el teclado, y se 
   await page.click('.card[data-id="m1-03"]');
   const width = () => page.$eval('#detail', (el) => Math.round(el.getBoundingClientRect().width));
   assert.equal(await width(), 460);
-  const box = await page.locator('#detail .resize').boundingBox();
+  // Si el detalle se vuelve a dibujar justo ahora (llega la historia), el borde está un instante fuera del DOM.
+  let box = null;
+  for (let i = 0; i < 50 && !box; i++) { box = await page.locator('#detail .resize').boundingBox().catch(() => null); if (!box) await page.waitForTimeout(50); }
   await page.mouse.move(box.x + 4, box.y + 300);
   await page.mouse.down();
   // Un cambio de la tarea a mitad del arrastre vuelve a dibujar el detalle (como cuando llegan la historia o una

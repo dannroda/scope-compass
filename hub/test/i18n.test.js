@@ -1,4 +1,5 @@
 // Idioma de la interfaz (§45, D56): cómo se elige, los .po, T`…` y que los catálogos estén completos.
+import './isolate.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
