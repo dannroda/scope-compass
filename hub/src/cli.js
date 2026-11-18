@@ -40,7 +40,8 @@ import { dueState, isValidDue, repeatLabel, localDay, localStamp, milestoneDueSt
 import { brokenLinks, linksOf, linkView, openBlockers, reviewBlockers, wouldCycle } from './links.js';
 import { decisionCounts, decisionLabel, decisionState, DECISION_STATES, MARK } from './decisions.js';
 import { descriptionTemplate, DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, SIZES, splitList } from './filters.js';
-import { relaunchStdio, selfCommand } from './self.js';
+import { IS_BINARY, relaunchStdio, selfCommand } from './self.js';
+import { checkUpgrade, installUpgrade, UpgradeError } from './upgrade.js';
 import { claudeSpawn, findClaude } from './chat.js';
 import { chosenLang, processLang, setChosenLang, setLang, T } from './i18n.js';
 
@@ -73,6 +74,10 @@ const USAGE = T`Uso: scompass [--dir <proyecto>] <comando>
                                             estos comandos; el proyecto es --dir o el de CLAUDE_PROJECT_DIR
   mcp install                               registra este scompass en Claude Code (claude mcp add --scope user),
                                             con su ruta entera: no hace falta tenerlo en el PATH
+  upgrade [--check] [--pre]                 actualiza el binario de scompass a la release más nueva de GitHub (la baja,
+                                            la verifica con SHA256SUMS y reemplaza este ejecutable); --check solo dice
+                                            si hay una (sale con 1 si la hay); --pre también cuenta las pre-releases
+                                            (sin --pre, solo si esta versión es una)
   hubs                                      hubs activos de todos los proyectos
   devices                                   teléfonos vinculados al chat de este equipo (§49), con su último uso
   devices rm <id>                           desvincular uno: su próximo pedido al chat da 403
@@ -210,7 +215,7 @@ const OPTIONS = {
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
   raw: { type: 'boolean' }, since: { type: 'string' }, check: { type: 'boolean' }, template: { type: 'string' }, due: { type: 'string' }, repeat: { type: 'string' }, interval: { type: 'string' },
-  port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, lan: { type: 'boolean' }, force: { type: 'boolean' }, log: { type: 'string' },
+  port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, pre: { type: 'boolean' }, lan: { type: 'boolean' }, force: { type: 'boolean' }, log: { type: 'string' },
   q: { type: 'string' }, blocked: { type: 'boolean' }, unblocked: { type: 'boolean' }, 'pending-steps': { type: 'boolean' }, 'with-refs': { type: 'boolean' },
   tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, size: { type: 'string' }, assignee: { type: 'string' },
   at: { type: 'string' }, review: { type: 'boolean' }, note: { type: 'string' },
@@ -265,7 +270,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
   const validators = loadValidators();
   let store = createJsonFilesStore(compass, { validators, ...(now && { now }) });
   // Con un hub de este proyecto corriendo, todo pasa por su API (eventos al instante, una sola cola de escritura).
-  if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'home', 'help', 'mcp', 'board', 'lint', 'lang', 'devices'].includes(cmd)) {
+  if (!o.direct && !['init', 'update', 'serve', 'restart', 'hubs', 'home', 'help', 'mcp', 'board', 'lint', 'lang', 'devices', 'upgrade'].includes(cmd)) {
     const cfg = await readFile(join(compass, 'config.json'), 'utf8').then(JSON.parse).catch(() => null);
     const hub = await detectHub(project, cfg?.port);
     // Un hub de otro protocolo (§39) no se usa: la API pudo cambiar. Se escribe directo en compass/ y su watcher lo ve.
@@ -377,9 +382,15 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         warn(T`sin ícono en la bandeja: ${e.message}`);
       }
     }
+    // ¿Hay un binario más nuevo? (§39, D62): al arrancar y una vez por día; la web y la bandeja lo avisan.
+    const checkUpgradeNow = () => app.upgrade.check().then(() => tray?.refresh(), () => {});
+    checkUpgradeNow();
+    const upgradeTimer = setInterval(checkUpgradeNow, 24 * 60 * 60 * 1000).unref();
+    app.events.on('event', (e) => { if (e.type === 'upgrade') tray?.refresh(); });
     if (signal) signal.addEventListener('abort', () => ac.abort(), { once: true });
     else { process.once('SIGINT', () => ac.abort()); process.once('SIGTERM', () => ac.abort()); }
     if (!ac.signal.aborted && !signal?.aborted) await new Promise((res) => ac.signal.addEventListener('abort', res, { once: true }));
+    clearInterval(upgradeTimer);
     tray?.close();
     await app.close();
     unregisterHub();
@@ -461,6 +472,29 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         if (board) { await rm(board.path, { force: true }).catch(() => {}); await rm(board.target, { recursive: true, force: true }).catch(() => {}); }
         throw e;
       }
+    },
+
+    // El binario a la release más nueva (§39, D62). Los procesos que ya corren siguen con el anterior hasta reiniciarse.
+    async upgrade() {
+      const s = await checkUpgrade({ pre: o.pre, force: true, env });
+      const rel = s.release;
+      const latest = rel ? `${rel.version}${rel.prerelease ? T(' (pre-release)') : ''}` : '';
+      if (o.check) {
+        done(s, !rel ? T`scompass ${s.current} · no hay releases con un binario para esta plataforma`
+          : s.available ? T`scompass ${s.current} · hay una más nueva: ${latest} (${rel.html_url ?? rel.binary_url}); se instala con scompass upgrade`
+          : T`scompass ${s.current} · al día (la más nueva: ${latest})`);
+        return s.available ? 1 : 0;
+      }
+      if (!s.available) return done(s, rel ? T`scompass ${s.current} ya está al día (la más nueva: ${latest})` : T('no hay releases con un binario para esta plataforma'));
+      // SCOMPASS_UPGRADE_TARGET: otro archivo a reemplazar, como si fuera el binario (los tests).
+      const target = env.SCOMPASS_UPGRADE_TARGET;
+      if (!IS_BINARY && !target) throw new StoreError('not_binary', T`hay una versión nueva (${latest}), pero este scompass no es el binario: se actualiza con npm (npm install -g scope-compass) o con git pull en el repo`);
+      if (!o.json) print(T`Bajando scompass ${latest}…`);
+      const r = await installUpgrade(rel, target ? { target, binary: true } : {});
+      const running = liveHome();
+      return done({ ...s, installed: r.version, path: r.path }, T`Listo: ${r.path} es la ${r.version} (era la ${s.current}).` + (running
+        ? '\n' + T('El Inicio y los hubs que ya corren siguen con la versión anterior: `scompass home restart` (o Reiniciar Inicio en la bandeja) carga la nueva.')
+        : ''));
     },
 
     // schema/ y AGENTS.md al día con esta versión de Scope Compass (ver update.js).
@@ -1675,6 +1709,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     return await commands[cmd]();
   } catch (e) {
     if (e instanceof UsageError) { warn(`${e.message}\n\n${USAGE}`); return 2; }
+    if (e instanceof UpgradeError) e = new StoreError(e.code, e.message);
     if (!(e instanceof StoreError) && !(e instanceof ProjectsError)) throw e;
     if (o.json) err.write(JSON.stringify({ error: { code: e.code, message: e.message, ...(e.current && { current: e.current }) } }) + '\n');
     else warn(T`error [${e.code}]: ${e.message}`);
@@ -1712,9 +1747,20 @@ function homeTrayItems({ app, url, openUrl, warn, close, restart, lan, toggleLan
     { label: T('Agregar proyecto…'), onClick: () => openUrl(url) },
     // Con --lan, el label dice dónde abrirlo desde el teléfono (lanzado desde el menú no hay terminal que lo muestre).
     { label: lan ? T`Desactivar acceso en la red (${lan.join(' ') || T('sin dirección')})` : T('Activar acceso en la red (teléfono)'), onClick: toggleLan },
+    // Un binario más nuevo (§39, D62): se baja, reemplaza al que corre y el Inicio se reinicia con él.
+    ...upgradeItems({ app, warn, restart }),
     { label: T('Reiniciar Inicio'), onClick: restart },
     { label: T('Cerrar Inicio'), onClick: close }
   ];
+}
+
+function upgradeItems({ app, warn, restart }) {
+  const { state, installed } = app.upgrade;
+  if (installed) return [{ label: T`Reiniciar para usar la ${installed}`, onClick: restart }];
+  if (!state?.available) return [];
+  return [{ label: T`Actualizar a la ${state.latest}${state.release?.prerelease ? T(' (pre-release)') : ''}`, onClick: async () => {
+    try { await app.upgrade.install(); restart(); } catch (e) { warn(T`bandeja: ${e.message}`); }
+  } }];
 }
 
 export { listTemplates };

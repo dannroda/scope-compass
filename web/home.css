@@ -97,6 +97,8 @@ a.tag:hover { text-decoration: underline; }
 .areas { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
 .areas[hidden] { display: none; }
 /* Captura rápida (31.2). */
+.upgrade { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; }
+.upgrade .what { flex: 1 1 16em; }
 .capture { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .capture[hidden] { display: none; }
 .capture input, .capture select { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 10px; min-height: 44px; min-width: 0; }

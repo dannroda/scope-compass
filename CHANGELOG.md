@@ -31,6 +31,7 @@ First public release. The interface is in English and Spanish; the documentation
 - Lists with due dates and repetition (every N days, weeks, months or years).
 - Templates for game, personal and empty projects.
 - Optional access from a phone on a trusted network (`--lan`).
+- Self-update for the binary: `scompass upgrade` downloads the newest release for your platform, checks it against `SHA256SUMS` and replaces itself (`--check` only reports; `--pre` includes pre-releases, which are also followed when the running version is one). Home checks once a day and offers **Update** in the page and in the tray.
 
 ### CLI and agents
 

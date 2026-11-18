@@ -337,6 +337,30 @@ msgstr "Create project"
 msgid "Importar carpeta"
 msgstr "Import folder"
 
+msgid "Se instaló Scope Compass {0}. El Inicio sigue con la {1} hasta reiniciarse."
+msgstr "Scope Compass {0} is installed. Home keeps running {1} until it restarts."
+
+msgid "Reiniciar Inicio"
+msgstr "Restart Home"
+
+msgid " (pre-release)"
+msgstr " (pre-release)"
+
+msgid "Hay una versión nueva de Scope Compass: {0}{1} (esta es la {2})."
+msgstr "A new version of Scope Compass is out: {0}{1} (this is {2})."
+
+msgid "Qué cambió"
+msgstr "What's new"
+
+msgid "Bajando…"
+msgstr "Downloading…"
+
+msgid "Instalada la {0}"
+msgstr "{0} installed"
+
+msgid "No se pudo actualizar: {0}"
+msgstr "Couldn't update: {0}"
+
 msgid "Listo: {0} quedó vinculado. Ya puede usar el chat de los proyectos."
 msgstr "Done: {0} is linked. It can now use the projects' chat."
 

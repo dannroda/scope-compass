@@ -662,3 +662,18 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Commitear al guardar: mezclaría el diseño con commits que nadie revisó (D33).
   - WYSIWYG: una librería y otro formato que mantener para algo que se escribe en Markdown.
 - **Respondido por Dann (2026-11-15):** se hace, por sección, y desde donde se edita el tablero, también con `--lan`.
+
+## D62 · El binario se actualiza a sí mismo: `scompass upgrade` y el aviso del Inicio, verificado con SHA256SUMS
+**2026-11-18 · vigente** · spec §39 · cambia «el binario no se actualiza solo»
+
+- **Qué:** `scompass upgrade` baja de la release de GitHub el ejecutable de su plataforma, lo verifica con `SHA256SUMS` y reemplaza al que corre. El Inicio consulta una vez por día y ofrece **Actualizar** en la web y en la bandeja.
+- **Por qué:** con el binario suelto o instalado (`install.ps1`, `install.sh`), actualizar era bajar el archivo nuevo y volver a instalar a mano. El addon ya se actualiza solo (`addon_updater.gd`); el binario, que es uno por equipo y del que dependen el Inicio, los hubs y el MCP, quedaba atrás.
+- **Cómo:**
+  - Las reglas del addon para elegir la release (sin borradores, pre-releases si se piden), más una: si la versión que corre es una pre-release, cuentan las pre-releases (quien instaló una sigue en ese canal sin configurar nada).
+  - Sin `SHA256SUMS` o si el hash no coincide, no se instala.
+  - En Windows el `.exe` que corre se renombra a `.old` (se puede renombrar, no pisar ni borrar), como hace `install.ps1`; en Linux y macOS, un rename sobre el archivo. Lo que ya corre sigue con la versión anterior hasta reiniciarse: el Inicio se reinicia desde la bandeja o la web.
+  - La consulta a GitHub se guarda un día; solo el binario la hace (npm y el repo se actualizan con npm o git, y los tests no salen a internet).
+- **Descartado:**
+  - Un actualizador aparte (un segundo ejecutable o un script): otro archivo que bajar y mantener, cuando el binario ya puede reemplazarse a sí mismo.
+  - Actualizar en segundo plano sin preguntar: cambiaría el programa con hubs abiertos del dock, y la persona no sabría qué versión corre.
+  - Firmar los binarios: `SHA256SUMS` viene de la misma release por HTTPS, que alcanza contra una descarga rota; contra una release comprometida no protege, y firmar necesita claves y un certificado (pendiente si algún día hace falta).

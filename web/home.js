@@ -512,12 +512,47 @@
     ws.onmessage = (e) => {
       let m;
       try { m = JSON.parse(e.data); } catch { return; }
-      if (m.type === 'hello') load();
+      if (m.type === 'hello') { if (U.reload) { location.reload(); return; } load(); loadUpgrade(); }
+      else if (m.type === 'upgrade') loadUpgrade();
       else if (m.type === 'changed' || m.type === 'hubs' || m.type === 'projects') reload();
       else if (m.type === 'devices' && P.dlg) phoneDevices();
     };
     ws.onopen = () => { retry = 500; S.connected = true; renderConn(); };
     ws.onclose = () => { S.connected = false; renderConn(); setTimeout(connect, retry); retry = Math.min(retry * 2, 10000); };
+  }
+
+  // Un binario más nuevo (§39, D62), solo en este equipo (desde el teléfono no se instala): Actualizar lo baja y lo pone
+  // en lugar del que corre; el Inicio sigue con el anterior hasta Reiniciar, que vuelve en el mismo puerto.
+  const U = { state: null, busy: false };
+  async function loadUpgrade(force) {
+    try { U.state = await call('GET', '/api/upgrade' + (force ? '?force=1' : '')); } catch { U.state = null; }
+    renderUpgrade();
+  }
+  function renderUpgrade() {
+    const box = document.getElementById('upgrade');
+    const s = U.state;
+    if (!LOCAL || !s || (!s.available && !s.installed)) { box.hidden = true; box.replaceChildren(); return; }
+    box.hidden = false;
+    if (s.installed) {
+      box.replaceChildren(h('span', { class: 'what' }, T`Se instaló Scope Compass ${s.installed}. El Inicio sigue con la ${s.current} hasta reiniciarse.`),
+        h('button', { class: 'btn small primary', type: 'button', disabled: U.busy, onclick: restartHome }, T('Reiniciar Inicio')));
+      return;
+    }
+    const pre = s.release?.prerelease ? T(' (pre-release)') : '';
+    box.replaceChildren(h('span', { class: 'what' }, T`Hay una versión nueva de Scope Compass: ${s.latest}${pre} (esta es la ${s.current}).`),
+      s.release?.html_url ? h('a', { class: 'btn small ghost', href: s.release.html_url, target: '_blank', rel: 'noopener' }, T('Qué cambió')) : null,
+      h('button', { class: 'btn small primary', type: 'button', disabled: U.busy, onclick: installUpgrade }, U.busy ? T('Bajando…') : T('Actualizar')));
+  }
+  async function installUpgrade() {
+    U.busy = true; renderUpgrade();
+    try { U.state = await call('POST', '/api/upgrade'); toast(T`Instalada la ${U.state.installed}`); } catch (e) { toast(T`No se pudo actualizar: ${e.message}`); }
+    U.busy = false; renderUpgrade();
+  }
+  async function restartHome() {
+    U.busy = true; renderUpgrade();
+    try { await call('POST', '/api/restart'); } catch (e) { toast(T`No se pudo: ${e.message}`); U.busy = false; renderUpgrade(); return; }
+    // El WebSocket se corta y se reconecta solo; al volver (hello) la página se recarga con la versión nueva.
+    U.reload = true;
   }
 
   // Vincular teléfono (§49): solo en este equipo. El diálogo muestra el QR con la dirección de la red y el código, el

@@ -238,3 +238,31 @@ test('en el teléfono no hay scroll horizontal', async () => {
   const page = await open({ viewport: { width: 390, height: 844 } });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
 });
+
+test('versión nueva del binario (§39, D62): el aviso, Actualizar y después Reiniciar', async () => {
+  await home.close();
+  let installed = 0, restarted = 0;
+  const rel = { version: '9.0.0', tag: 'v9.0.0', prerelease: true, html_url: 'https://example.com/v9.0.0', binary_url: 'x', sums_url: 'y' };
+  home = createHomeServer({ validators: V, pollMs: 100, onRestart: () => { restarted++; }, upgrade: {
+    enabled: true,
+    check: async () => ({ current: '8.0.0', latest: '9.0.0', available: true, release: rel, binary: true }),
+    install: async () => { installed++; return { version: '9.0.0', path: '/x/scompass' }; }
+  } });
+  url = `http://127.0.0.1:${(await listen(home, 0)).port}/`;
+  const page = await open();
+  const box = page.locator('#upgrade');
+  await box.getByText('Hay una versión nueva de Scope Compass: 9.0.0 (pre-release) (esta es la 8.0.0).').waitFor();
+  assert.equal(await box.getByRole('link', { name: 'Qué cambió' }).getAttribute('href'), rel.html_url);
+  await box.getByRole('button', { name: 'Actualizar' }).click();
+  await box.getByText('Se instaló Scope Compass 9.0.0. El Inicio sigue con la 8.0.0 hasta reiniciarse.').waitFor();
+  assert.equal(installed, 1);
+  await box.getByRole('button', { name: 'Reiniciar Inicio' }).click();
+  for (let i = 0; i < 50 && !restarted; i++) await page.waitForTimeout(20);
+  assert.equal(restarted, 1);
+});
+
+test('sin una versión nueva (o fuera del binario) no hay aviso', async () => {
+  const page = await open();
+  await page.waitForTimeout(300);
+  assert.equal(await page.locator('#upgrade').isHidden(), true);
+});

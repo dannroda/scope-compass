@@ -106,6 +106,9 @@ msgstr "the chat is off on a hub with a token"
 msgid "el chat solo anda en este equipo (127.0.0.1)"
 msgstr "the chat only works on this computer (127.0.0.1)"
 
+msgid "motor desconocido: {0} (claude o agy)"
+msgstr "unknown engine: {0} (claude or agy)"
+
 msgid "falta profile"
 msgstr "missing profile"
 
@@ -132,9 +135,6 @@ msgstr "there's no conversation {0}"
 
 msgid "session tiene que ser el id de una sesión de Claude Code"
 msgstr "session must be a Claude Code session id"
-
-msgid "motor desconocido: {0} (claude o agy)"
-msgstr "unknown engine: {0} (claude or agy)"
 
 msgid "no hay un perfil {0} de Claude Code en este equipo"
 msgstr "there's no Claude Code profile {0} on this computer"
@@ -592,6 +592,15 @@ msgstr "Home isn't on the network: open it with --lan to link a phone"
 msgid "no hay un dispositivo {0}"
 msgstr "there's no device {0}"
 
+msgid "este Inicio no corre del binario: se actualiza con npm o con git pull"
+msgstr "this Home doesn't run from the binary: update it with npm or with git pull"
+
+msgid "ya está la versión más nueva ({0})"
+msgstr "the newest version is already installed ({0})"
+
+msgid "scompass se actualiza solo desde este equipo"
+msgstr "scompass can only be updated from this computer"
+
 msgid "este Inicio no se puede reiniciar desde la API"
 msgstr "this Home can't be restarted from the API"
 
@@ -774,6 +783,36 @@ msgstr "PowerShell exited{0}"
 
 msgid "no hay bus de sesión de D-Bus"
 msgstr "there's no D-Bus session bus"
+
+msgid "no se pudo conectar con GitHub: {0}"
+msgstr "couldn't connect to GitHub: {0}"
+
+msgid "GitHub respondió {0} ({1})"
+msgstr "GitHub answered {0} ({1})"
+
+msgid "GitHub no devolvió una lista de releases"
+msgstr "GitHub didn't return a list of releases"
+
+msgid "este scompass no es el binario: se actualiza con npm (npm install -g scope-compass) o con git pull en el repo"
+msgstr "this scompass is not the binary: update it with npm (npm install -g scope-compass) or with git pull in the repo"
+
+msgid "no hay un binario para esta plataforma en la release"
+msgstr "the release doesn't have a binary for this platform"
+
+msgid "la release {0} no trae SHA256SUMS: no se instala sin verificar"
+msgstr "release {0} has no SHA256SUMS: it isn't installed without checking"
+
+msgid "SHA256SUMS no tiene {0}"
+msgstr "SHA256SUMS doesn't list {0}"
+
+msgid "el binario bajado no coincide con SHA256SUMS ({0}… en lugar de {1}…)"
+msgstr "the downloaded binary doesn't match SHA256SUMS ({0}… instead of {1}…)"
+
+msgid "no se pudo escribir {0}: {1}"
+msgstr "couldn't write {0}: {1}"
+
+msgid "no se pudo reemplazar {0}: {1}"
+msgstr "couldn't replace {0}: {1}"
 
 msgid "mensaje que no es JSON"
 msgstr "message isn't JSON"

@@ -19,7 +19,10 @@
 //   GET    /api/devices                      solo local: los dispositivos vinculados
 //   DELETE /api/devices/:id                  solo local: desvincular (cierra sus WebSocket)
 //   GET    /vincular                         la página del teléfono que canjea el código (#código en la dirección)
-//   GET    /ws                               { type: 'changed', path, collection?, id? } | { type: 'hubs' } | { type: 'projects' } | { type: 'devices' }
+//   GET    /api/upgrade[?force=1]            ¿hay un binario más nuevo? (§39, D62; la consulta a GitHub se guarda un día)
+//   POST   /api/upgrade                      solo local: lo baja y lo pone en lugar del que corre; el Inicio sigue con
+//                                            el anterior hasta reiniciarse (POST /api/restart)
+//   GET    /ws                               { type: 'changed', path, collection?, id? } | { type: 'hubs' } | { type: 'projects' } | { type: 'devices' } | { type: 'upgrade' }
 // Las escrituras pasan por el hub del proyecto si está vivo (lo publica a sus pestañas y al dock); si no, van
 // directo a compass/ con etag, como la CLI, y regeneran el export markdown.
 import { execFile, spawn } from 'node:child_process';
@@ -47,18 +50,19 @@ import { outdatedFiles, updateAllCompasses, updateCompass } from './update.js';
 import { boardStatus, repoWorktree } from './git.js';
 import { listTemplates, loadTemplate } from './templates.js';
 import { STATUSES } from './views.js';
-import { selfCommand } from './self.js';
+import { IS_BINARY, selfCommand } from './self.js';
+import { checkUpgrade, installUpgrade, UpgradeError } from './upgrade.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
 
-const HTTP_STATUS = { invalid_argument: 400, forbidden: 403, not_found: 404, conflict: 409, invalid_file: 409, invalid: 409, io_error: 500 };
+const HTTP_STATUS = { invalid_argument: 400, forbidden: 403, not_found: 404, conflict: 409, invalid_file: 409, invalid: 409, io_error: 500, not_binary: 409 };
 
 // now: función que devuelve la fecha "de hoy" (los tests la fijan). pollMs: cada cuánto mira el registro de hubs
 // (medio segundo: un hub que se levanta se ve en el Inicio en menos de 1 s, §16.8). lan(): las direcciones de la red
 // donde escucha (`--lan`, D36), para vincular un teléfono (§49); null si solo escucha en 127.0.0.1. devices: las
 // opciones de createDevices (los tests acortan los tiempos).
-export function createHomeServer({ validators, now = () => new Date(), pollMs = 500, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null, lan = () => null, devices: deviceOptions = {} }) {
+export function createHomeServer({ validators, now = () => new Date(), pollMs = 500, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null, lan = () => null, devices: deviceOptions = {}, upgrade: upgradeOptions = {} }) {
   const app = Fastify({ logger, forceCloseConnections: true });
   langRoutes(app);
   localOnly(app);
@@ -85,6 +89,7 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
   app.decorate('serving', serving);
 
   app.setErrorHandler((err, req, reply) => {
+    if (err instanceof UpgradeError) return reply.code(err.code === 'offline' ? 502 : HTTP_STATUS[err.code] ?? 500).send({ error: { code: err.code, message: err.message } });
     if (err instanceof DeviceError) return reply.code(HTTP_STATUS[err.code] ?? 500).send({ error: { code: err.code, message: err.message } });
     if (err instanceof StoreError || err instanceof ProjectsError) {
       const body = { error: { code: err.code, message: err.message } };
@@ -187,6 +192,40 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     const updated = updateAllCompasses(projectsStatus());
     if (updated.length) emit({ type: 'projects' });
     return { updated };
+  });
+
+  // Actualizar el binario (§39, D62). app.upgrade.state: la última consulta (la bandeja la lee sin esperar); installed:
+  // la versión que quedó en disco, que este proceso todavía no corre. Solo el binario consulta GitHub (enabled): desde
+  // npm o el repo no hay nada que reemplazar, y los tests no salen a internet; ellos pasan enabled, check e install.
+  const up = { enabled: IS_BINARY, check: checkUpgrade, install: installUpgrade, ...upgradeOptions };
+  const upgrade = {
+    state: null,
+    installed: null,
+    async check({ force = false } = {}) {
+      if (!up.enabled) return { current: VERSION, latest: null, available: false, release: null, binary: false, installed: null };
+      const state = await up.check({ force });
+      const changed = state.latest !== upgrade.state?.latest || state.available !== upgrade.state?.available;
+      upgrade.state = state;
+      if (changed) emit({ type: 'upgrade' });
+      return upgrade.view();
+    },
+    async install() {
+      if (!up.enabled) throw new UpgradeError('not_binary', T('este Inicio no corre del binario: se actualiza con npm o con git pull'));
+      const state = await up.check({ force: true });
+      upgrade.state = state;
+      if (!state.available) throw new UpgradeError('conflict', T`ya está la versión más nueva (${state.current})`);
+      const r = await up.install(state.release);
+      upgrade.installed = r.version;
+      emit({ type: 'upgrade' });
+      return { ...upgrade.view(), path: r.path };
+    },
+    view: () => ({ ...upgrade.state, installed: upgrade.installed })
+  };
+  app.decorate('upgrade', upgrade);
+  app.get('/api/upgrade', async (req) => upgrade.check({ force: req.query?.force === '1' }));
+  app.post('/api/upgrade', async (req) => {
+    if (!isLoopback(req.socket.remoteAddress)) throw new StoreError('forbidden', T('scompass se actualiza solo desde este equipo'));
+    return upgrade.install();
   });
 
   // Reiniciar el Inicio (9.8): responde antes de cerrar; el nuevo toma el mismo puerto (lo hace `scompass home`).
