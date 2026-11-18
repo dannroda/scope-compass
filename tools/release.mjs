@@ -8,8 +8,9 @@
 //                                                            Claude Code (claude-plugin/); imprime la nueva
 //   node tools/release.mjs changelog <X.Y.Z> [AAAA-MM-DD]   pasa «## [Unreleased]» de CHANGELOG.md a
 //                                                            «## [X.Y.Z] - fecha» (falla si está vacía)
-//   node tools/release.mjs notes <X.Y.Z>                     imprime las notas: la sección de esa versión del
-//                                                            CHANGELOG más cómo instalar
+//   node tools/release.mjs notes <X.Y.Z> [--prerelease]      imprime las notas: la sección de esa versión del
+//                                                            CHANGELOG más cómo instalar (con --prerelease, los
+//                                                            comandos instalan del canal beta)
 //   node tools/release.mjs check <vX.Y.Z>                    falla si el tag, package.json, plugin.cfg y el
 //                                                            plugin de Claude Code no tienen la misma versión
 //   node tools/release.mjs sums <carpeta>                    escribe SHA256SUMS con los archivos de la carpeta
@@ -143,22 +144,39 @@ export function releaseChangelog(text, version, date) {
   return `${s.before}${s.header}${nl}${nl}## [${version}] - ${date}${nl}${nl}${body}${nl}${after ? nl + after : ''}`;
 }
 
-export const installText = (v) => [
-  '---',
-  '',
-  `**Install.** \`scompass-v${v}-linux-x64\` and \`scompass-v${v}-windows-x64.exe\` are the hub and the CLI as a single`
-    + ' executable that needs no Node: run it once (on Linux, `chmod +x` it first) and the Godot dock and'
-    + ' `scompass mcp install` find it without the PATH; to type `scompass` in a terminal, put it in your PATH as'
-    + ' `scompass` (`scompass.exe` on Windows).'
-    + ' To install it instead (on your `PATH`, with **Scope Compass** in the applications or Start menu): `sh install.sh <binary>`'
-    + ' on Linux, `powershell -ExecutionPolicy Bypass -File install.ps1 <binary>` on Windows.'
-    + ' For the Godot dock,'
-    + ` unzip \`scope-compass-addon-v${v}.zip\` at the root of your project (it creates \`addons/scope_compass/\`) and`
-    + ' enable **Scope Compass** in Project Settings → Plugins. `SHA256SUMS` has the checksums of every file.',
-].join('\n');
+export const SLUG = 'dannroda/scope-compass';
+const RAW = `https://raw.githubusercontent.com/${SLUG}/main/tools`;
 
-export function releaseNotes(text, version) {
-  return `${changelogSection(text, version)}\n\n${installText(version)}\n`;
+// Cómo instalar (D63): los instaladores no van en la release; se corren desde el repo y bajan el binario más nuevo
+// del canal. En una pre-release, los comandos llevan el canal beta (sin él instalarían la última estable).
+export const installText = (v, { prerelease = false } = {}) => {
+  const ps = `irm ${RAW}/install.ps1 | iex`;
+  const sh = `curl -fsSL ${RAW}/install.sh | sh`;
+  return [
+    '---',
+    '',
+    `**Install** (only the first time: after that the binary updates itself, with \`scompass upgrade\` or Home's notice).`
+      + (prerelease ? ' This is a pre-release, a version for testing: these commands install the newest one on the beta channel and leave the binary on that channel.' : ''),
+    '',
+    `- Windows (PowerShell): \`${prerelease ? "$env:SCOMPASS_CHANNEL = 'beta'; " : ''}${ps}\``,
+    `- Linux: \`${prerelease ? sh.replace(/\| sh$/, '| SCOMPASS_CHANNEL=beta sh') : sh}\``,
+    '',
+    'They download the binary, check it against `SHA256SUMS`, put `scompass` on your `PATH` and add **Scope Compass**'
+      + ' (Home with a tray icon) to the Start or applications menu, with no admin rights.'
+      + (prerelease ? ' If you already have it installed: `scompass upgrade --channel beta` and then `scompass upgrade`.' : ''),
+    '',
+    `**Portable.** \`scompass-v${v}-linux-x64\` and \`scompass-v${v}-windows-x64.exe\` are the hub and the CLI as a single`
+      + ' executable that needs no Node: run it once (on Linux, `chmod +x` it first) and the Godot dock and'
+      + ' `scompass mcp install` find it without the PATH.',
+    '',
+    `**Godot addon.** Unzip \`scope-compass-addon-v${v}.zip\` at the root of your project (it creates`
+      + ' `addons/scope_compass/`) and enable **Scope Compass** in Project Settings → Plugins; it updates itself too.'
+      + ' `SHA256SUMS` has the checksums of every file.',
+  ].join('\n');
+};
+
+export function releaseNotes(text, version, { prerelease = false } = {}) {
+  return `${changelogSection(text, version)}\n\n${installText(version, { prerelease })}\n`;
 }
 
 // --- README del zip del addon ---
@@ -189,7 +207,8 @@ export function sha256sums(dir) {
 const USAGE = `usage: node tools/release.mjs <command>
   bump <patch|minor|major|X.Y.Z>   bump hub/package.json (and its lock), plugin.cfg and the Claude Code plugin; prints the new version
   changelog <X.Y.Z> [YYYY-MM-DD]   turn '## [Unreleased]' of CHANGELOG.md into '## [X.Y.Z] - date'
-  notes <X.Y.Z>                    print the release notes: that CHANGELOG section plus how to install
+  notes <X.Y.Z> [--prerelease]     print the release notes: that CHANGELOG section plus how to install (with
+                                   --prerelease, the commands install from the beta channel)
   check <vX.Y.Z>                   fail unless the tag, hub/package.json, plugin.cfg and the Claude Code plugin have the same version
   sums <dir>                       write <dir>/SHA256SUMS with the files of <dir>`;
 
@@ -209,7 +228,8 @@ function main([cmd, arg, extra]) {
       writeFileSync(changelog, releaseChangelog(readFileSync(changelog, 'utf8'), exact(arg), extra ?? new Date().toISOString().slice(0, 10)));
       return;
     case 'notes':
-      process.stdout.write(releaseNotes(readFileSync(changelog, 'utf8'), exact(arg)));
+      if (extra !== undefined && extra !== '--prerelease') break;
+      process.stdout.write(releaseNotes(readFileSync(changelog, 'utf8'), exact(arg), { prerelease: extra === '--prerelease' }));
       return;
     case 'check':
       console.log(checkVersions(REPO, arg));

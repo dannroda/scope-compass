@@ -97,11 +97,9 @@ jobs:
             assets: |
               dist/scompass-v*-linux-x64
               dist/scope-compass-addon-v*.zip
-              dist/install.sh
           - os: windows-latest
             assets: |
               dist/scompass-v*-windows-x64.exe
-              dist/install.ps1
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       DATE: ${{ needs.prepare.outputs.date }}
@@ -139,6 +137,7 @@ jobs:
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       DATE: ${{ needs.prepare.outputs.date }}
+      PRERELEASE: ${{ inputs.prerelease && '--prerelease' || '' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -158,7 +157,7 @@ jobs:
             node tools/release.mjs changelog "$VERSION" "$DATE"
           fi
           node tools/release.mjs check "v$VERSION"
-          node tools/release.mjs notes "$VERSION" > notes.md
+          node tools/release.mjs notes "$VERSION" $PRERELEASE > notes.md
           cat notes.md
           node tools/release.mjs sums release
           ls -l release
@@ -177,7 +176,6 @@ jobs:
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
-          PRERELEASE: ${{ inputs.prerelease && '--prerelease' || '' }}
         run: |
           gh release create "v$VERSION" release/* \
             --verify-tag \

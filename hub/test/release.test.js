@@ -158,6 +158,16 @@ test('releaseNotes: la sección de la versión, sin los links del final, más c�
   assert.match(notes, /scope-compass-addon-v0\.2\.0\.zip/);
   assert.match(notes, /SHA256SUMS/);
   assert.doesNotMatch(notes, /0\.1\.0|compare/);
+  // Cómo instalar es un comando que baja el instalador del repo (D63), solo la primera vez; sin el canal beta.
+  assert.match(notes, /only the first time/);
+  assert.ok(notes.includes('`irm https://raw.githubusercontent.com/dannroda/scope-compass/main/tools/install.ps1 | iex`'));
+  assert.ok(notes.includes('`curl -fsSL https://raw.githubusercontent.com/dannroda/scope-compass/main/tools/install.sh | sh`'));
+  assert.doesNotMatch(notes, /SCOMPASS_CHANNEL|beta/);
+  // En una pre-release, los comandos instalan del canal beta.
+  const pre = releaseNotes(out, '0.2.0', { prerelease: true });
+  assert.ok(pre.includes("`$env:SCOMPASS_CHANNEL = 'beta'; irm https://raw.githubusercontent.com/dannroda/scope-compass/main/tools/install.ps1 | iex`"));
+  assert.ok(pre.includes('`curl -fsSL https://raw.githubusercontent.com/dannroda/scope-compass/main/tools/install.sh | SCOMPASS_CHANNEL=beta sh`'));
+  assert.match(pre, /scompass upgrade --channel beta/);
   // La última sección no se lleva las definiciones de links del final del archivo.
   assert.equal(changelogSection(out, '0.1.0'), '### Added\n\n- First version.');
   assert.throws(() => releaseNotes(out, '0.3.0'), /no '## \[0\.3\.0\]' section/);
@@ -204,4 +214,14 @@ test('el repo: hub, addon y plugin de Claude Code con la misma versión; la skil
   assert.match(front, /^description: .{40,}$/m);
   const market = JSON.parse(readFileSync(join(REAL, '.claude-plugin', 'marketplace.json'), 'utf8'));
   assert.deepEqual(market.plugins.map((p) => [p.name, p.source]), [['scope-compass', './claude-plugin']]);
+});
+
+// install.ps1 corre con `irm … | iex` en PowerShell 5.1 (D63): un BOM al principio rompe iex, y como -File sin BOM se
+// lee en ANSI antes de volver a leerse como UTF-8, ningún carácter puede tener en UTF-8 un byte que en Windows-1252 sea
+// una comilla (0x82, 0x84, 0x91-0x94: el — y la → los tienen) o el script ni se llega a parsear.
+test('install.ps1: sin BOM y sin caracteres que en ANSI se vuelvan comillas', () => {
+  const bytes = readFileSync(join(REAL, 'tools', 'install.ps1'));
+  assert.notDeepEqual([...bytes.subarray(0, 3)], [0xef, 0xbb, 0xbf], 'sin BOM');
+  const bad = [...new Set(bytes.toString('utf8'))].filter((c) => [...Buffer.from(c)].some((b) => [0x82, 0x84, 0x91, 0x92, 0x93, 0x94].includes(b)));
+  assert.deepEqual(bad, []);
 });

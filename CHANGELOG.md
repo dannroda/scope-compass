@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- The installers are no longer release files: you run them from the repository with one command (`curl -fsSL https://raw.githubusercontent.com/dannroda/scope-compass/main/tools/install.sh | sh` on Linux, `irm https://raw.githubusercontent.com/dannroda/scope-compass/main/tools/install.ps1 | iex` in PowerShell on Windows), and they download the newest release, check it against `SHA256SUMS` and install it. Set `SCOMPASS_CHANNEL=beta` to install from the beta channel. You only need them the first time: after that, `scompass upgrade` (or Home's notice) keeps the binary up to date. Each release's notes have the commands.
+
 ## [0.1.1] - 2026-11-18
 
 ### Added

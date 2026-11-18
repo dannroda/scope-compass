@@ -495,7 +495,7 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
 - **Por qué Node y no sh o Python:** los pasos corren en Windows también, y Node ya está en todos los runners del proyecto. Sin dependencias.
 - **Por qué `upload-artifact` y `download-artifact`:** son acciones oficiales de GitHub (`actions/`), igual que checkout y setup-node; pasan los binarios de cada runner al job que publica, y así la release se crea entera en un solo `gh release create`, sin borradores a medio subir.
 - **Por qué el `.tgz` no va en la release:** README e instalar.md ofrecen el binario como camino principal y el `.tgz` como alternativa para quien ya tiene Node y clona el repo (`node tools/build.mjs`). Subirlo es una línea en el workflow si hace falta.
-- **Por qué `install.sh` no va en la release:** el README lo nombra desde el repo (`sh tools/install.sh <ruta al binario>`), y acepta la ruta como argumento.
+- **Por qué `install.sh` no va en la release:** el README lo nombra desde el repo (`sh tools/install.sh <ruta al binario>`), y acepta la ruta como argumento. (Después `install.ps1` sí fue; D63 los saca a los dos.)
 - **El zip del addon** lleva `addons/scope_compass/` desde la raíz, solo lo versionado, y adentro los README, el CHANGELOG y la LICENSE; los links relativos de los README pasan a GitHub en el tag, porque esos archivos no viajan en el zip.
 - **Descartado:**
   - Release solo por tag (sin workflow_dispatch): obliga a subir las versiones y el CHANGELOG a mano antes, que es lo que el bump automatiza.
@@ -678,3 +678,17 @@ Se desarrolla en Linux y para Linux, pero Scope Compass tiene que funcionar en W
   - Un actualizador aparte (un segundo ejecutable o un script): otro archivo que bajar y mantener, cuando el binario ya puede reemplazarse a sí mismo.
   - Actualizar en segundo plano sin preguntar: cambiaría el programa con hubs abiertos del dock, y la persona no sabría qué versión corre.
   - Firmar los binarios: `SHA256SUMS` viene de la misma release por HTTPS, que alcanza contra una descarga rota; contra una release comprometida no protege, y firmar necesita claves y un certificado (pendiente si algún día hace falta).
+
+## D63 · Los instaladores se corren desde el repo, no van en la release
+**2026-11-18 · vigente** · spec §35 · cambia D47 (`install.ps1` iba en la release)
+
+- **Qué:** `install.sh` e `install.ps1` dejan de ser archivos de la release. Se corren desde el repo con un comando (`curl -fsSL …/main/tools/install.sh | sh`, `irm …/main/tools/install.ps1 | iex`) que baja el binario de la release más nueva del canal, lo verifica con `SHA256SUMS` y lo instala. Las notas de cada release traen los comandos, con el canal beta si es pre-release, y dicen que es solo la primera vez.
+- **Por qué (Dann, 2026-11-18):** «no entiendo el sentido de tener los scripts para instalar como descarga separada, tranquilamente podría ser un comando de consola que descarga y ejecuta el script del repo. Aparte no va a cambiar seguido como para que estén en cada versión, eso es lo que definiría entre ser portable e instalable. Igual el comando iría en el cuerpo de cada release y señalando que solo debería hacerse la primera vez porque tiene un updater». La release queda con lo portable (los binarios y el zip del addon); instalar es un comando, y actualizar es `scompass upgrade` (D62).
+- **Cómo:**
+  - El instalador elige la versión como `upgrade`: `stable` sin pre-releases, `beta` la más alta (`SCOMPASS_CHANNEL`), ordenadas por versión y no por fecha. En beta, deja el canal anotado con `scompass upgrade --channel beta`.
+  - Con un archivo como argumento (o `--dev` en Linux) instala ese, sin bajar nada: para un binario ya bajado o un `.tgz` armado en el repo.
+  - `install.ps1` va sin BOM, porque `irm` lo deja al principio del texto e `iex` no lo entiende; sin BOM, PowerShell 5.1 lee un `-File` como ANSI, así que el script se vuelve a leer como UTF-8 si hace falta. Corre dentro de un bloque para no dejar variables en la sesión, y con `return` en lugar de `exit`, que cerraría la consola.
+  - Lo que baja sale de `main`: un cambio del instalador llega a todas las versiones, que es lo que se busca (cambia poco y no depende de la versión).
+- **Descartado:**
+  - Dejarlos también en la release: dos lugares para lo mismo, y uno queda viejo.
+  - Fijar el script a un tag (`…/v0.1.1/tools/install.ps1`): el comando cambiaría en cada release, y un arreglo del instalador no llegaría a las anteriores.
