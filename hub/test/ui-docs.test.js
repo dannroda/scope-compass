@@ -539,8 +539,11 @@ test('12.6: editar un documento con el hub abierto: marca sin recargar, diff, ta
   // Se edita la sección de las ventanas de ataque, que citan m1-03 y m1-04.
   await writeFile(join(dir, 'gdd.md'), GDD.replace('Las ventanas de golpe son datos.', 'Las ventanas de golpe son datos y curvas.'));
   await page.waitForSelector('.tree-doc .gitflag.modified', { timeout: 3000 });
-  await page.waitForSelector('.toc a[href="#docs/gdd/ventanas-ataque"] .chg');
-  assert.deepEqual(await page.$$eval('.toc a:has(.chg)', (as) => as.map((a) => a.getAttribute('href').split('/').pop())), ['juego', 'combate', 'ventanas-ataque']);
+  // Esperando la lista entera y no solo una marca: el índice se vuelve a dibujar cuando llega el estado de git, y
+  // leerlo justo entonces daba [] (pasó en el CI de Windows).
+  const changed = () => page.$$eval('.toc a:has(.chg)', (as) => as.map((a) => a.getAttribute('href').split('/').pop()));
+  for (const t = Date.now(); Date.now() - t < 5000 && (await changed()).join() !== 'juego,combate,ventanas-ataque';) await page.waitForTimeout(50);
+  assert.deepEqual(await changed(), ['juego', 'combate', 'ventanas-ataque']);
   assert.match(await page.textContent('.affected .label'), /Pueden quedar afectadas · 2 tareas/);
   assert.deepEqual(await page.$$eval('.affected .bl-task .code', (xs) => xs.map((x) => x.textContent)), ['1.3', '1.4']);
   await page.click('#doc-diff-btn');
