@@ -2,7 +2,9 @@
 import './isolate.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildMenu, compassIco, compassPixmap } from '../src/tray-menu.js';
+import { readFileSync } from 'node:fs';
+import { buildMenu } from '../src/tray-menu.js';
+import { ICO } from '../src/tray-win.js';
 
 test('buildMenu: numera en orden (cada ítem y después sus hijos), evalúa funciones y cambia shape si cambia algo visible', () => {
   let n = 1;
@@ -18,20 +20,26 @@ test('buildMenu: numera en orden (cada ítem y después sus hijos), evalúa func
   assert.equal(b.map.get(5).visible, true);
 });
 
-test('compassIco: un .ico válido con un BMP de 32 bits por tamaño, el mismo dibujo que el pixmap', () => {
-  const sizes = [16, 32];
-  const ico = compassIco(sizes);
-  assert.deepEqual([ico.readUInt16LE(0), ico.readUInt16LE(2), ico.readUInt16LE(4)], [0, 1, 2], 'ICONDIR: tipo ícono, 2 imágenes');
+test('assets/icons/scope-compass.ico (tools/make-ico.mjs): BMP de 32 bits de 16 a 64 y PNG de 256, con el dorado del SVG', () => {
+  const ico = readFileSync(ICO);
+  const sizes = [16, 20, 24, 32, 40, 48, 64, 256];
+  assert.deepEqual([ico.readUInt16LE(0), ico.readUInt16LE(2), ico.readUInt16LE(4)], [0, 1, sizes.length], 'ICONDIR: tipo ícono');
   sizes.forEach((s, i) => {
     const e = 6 + i * 16;
-    assert.deepEqual([ico[e], ico[e + 1], ico.readUInt16LE(e + 6)], [s, s, 32]);
+    assert.deepEqual([ico[e], ico[e + 1], ico.readUInt16LE(e + 6)], [s & 0xff, s & 0xff, 32], `entrada de ${s}`);
     const len = ico.readUInt32LE(e + 8), off = ico.readUInt32LE(e + 12);
-    assert.equal(len, 40 + s * s * 4 + Math.ceil(s / 32) * 4 * s);
     assert.ok(off + len <= ico.length);
+    if (s === 256) {
+      assert.deepEqual([...ico.subarray(off, off + 4)], [0x89, 0x50, 0x4e, 0x47], 'el de 256 es un PNG');
+      return;
+    }
+    assert.equal(len, 40 + s * s * 4 + Math.ceil(s / 32) * 4 * s);
     assert.deepEqual([ico.readUInt32LE(off), ico.readInt32LE(off + 4), ico.readInt32LE(off + 8)], [40, s, 2 * s], 'BITMAPINFOHEADER: alto doble');
-    // El píxel de arriba en el centro (borde dorado) está en la última fila del BMP, en BGRA.
-    const [, , argb] = compassPixmap(s);
-    const x = Math.floor(s / 2), src = x * 4, dst = off + 40 + ((s - 1) * s + x) * 4;
-    assert.deepEqual([...ico.subarray(dst, dst + 4)], [argb[src + 3], argb[src + 2], argb[src + 1], argb[src]]);
+    // El punto del centro de la aguja es dorado (#d9a441; en 16 px, un píxel con algo de antialiasing); la esquina,
+    // transparente. BGRA de abajo arriba.
+    const px = (x, y) => [...ico.subarray(off + 40 + ((s - 1 - y) * s + x) * 4, off + 40 + ((s - 1 - y) * s + x) * 4 + 4)];
+    const [b, g, r, a] = px(Math.floor(s / 2), Math.floor(s / 2));
+    assert.ok(a > 150 && Math.abs(r - 0xd9) < 40 && Math.abs(g - 0xa4) < 40 && Math.abs(b - 0x41) < 40, `centro de ${s}: ${[r, g, b, a]}`);
+    assert.equal(px(0, 0)[3], 0, `esquina de ${s}`);
   });
 });

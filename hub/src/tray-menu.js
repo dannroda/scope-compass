@@ -1,7 +1,7 @@
 // Lo que comparten las dos bandejas (D20 en Linux, D31 en Windows): el dibujo del ícono y el menú evaluado.
 
 // Ícono dibujado en píxeles (ARGB32, big endian, filas de arriba abajo), el compass de @icons: lo usa la bandeja
-// de Linux si no encuentra el SVG del tema, y la de Windows para armar su .ico.
+// de Linux si no encuentra el SVG del tema. La de Windows usa assets/icons/scope-compass.ico (tools/make-ico.mjs).
 export function compassPixmap(size) {
   const buf = Buffer.alloc(size * size * 4);
   const c = (size - 1) / 2, r = size / 2 - 1;
@@ -16,37 +16,6 @@ export function compassPixmap(size) {
     }
   }
   return [size, size, buf];
-}
-
-/**
- * El mismo dibujo como .ico de Windows, con un BMP de 32 bits por tamaño (BGRA de abajo arriba, más la máscara
- * AND vacía: la transparencia la da el alfa).
- */
-export function compassIco(sizes = [16, 20, 24, 32, 40, 48]) {
-  const images = sizes.map((s) => {
-    const [, , argb] = compassPixmap(s);
-    const maskRow = Math.ceil(s / 32) * 4;
-    const img = Buffer.alloc(40 + s * s * 4 + maskRow * s);
-    img.writeUInt32LE(40, 0); img.writeInt32LE(s, 4); img.writeInt32LE(s * 2, 8);
-    img.writeUInt16LE(1, 12); img.writeUInt16LE(32, 14);
-    for (let y = 0; y < s; y++) {
-      for (let x = 0; x < s; x++) {
-        const from = (y * s + x) * 4, to = 40 + ((s - 1 - y) * s + x) * 4;
-        img[to] = argb[from + 3]; img[to + 1] = argb[from + 2]; img[to + 2] = argb[from + 1]; img[to + 3] = argb[from];
-      }
-    }
-    return [s, img];
-  });
-  const head = Buffer.alloc(6 + 16 * images.length);
-  head.writeUInt16LE(1, 2); head.writeUInt16LE(images.length, 4);
-  let offset = head.length;
-  images.forEach(([s, img], i) => {
-    const e = 6 + i * 16;
-    head[e] = s; head[e + 1] = s; head.writeUInt16LE(1, e + 4); head.writeUInt16LE(32, e + 6);
-    head.writeUInt32LE(img.length, e + 8); head.writeUInt32LE(offset, e + 12);
-    offset += img.length;
-  });
-  return Buffer.concat([head, ...images.map(([, img]) => img)]);
 }
 
 const val = (v) => (typeof v === 'function' ? v() : v);

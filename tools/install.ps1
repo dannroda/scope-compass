@@ -61,6 +61,16 @@ Unblock-File $Bin # sin la marca de "descargado de internet", SmartScreen no lo 
 
 Set-UserPath { param($parts) if ($parts | Where-Object { & $same $_ }) { $parts } else { $parts + $Dir } }
 
+# La primera vez extrae su contenido y anota su ruta (scompass.json), para el dock de Godot y `scompass mcp install`.
+& $Bin hubs | Out-Null
+
+# El ícono del acceso directo, el mismo de Linux y de la bandeja: el .ico que trae el binario, copiado al lado (la
+# carpeta de la caché cambia con cada versión). Sin él, el acceso directo muestra el de Node.
+$runtime = if ($env:SCOMPASS_RUNTIME_DIR) { $env:SCOMPASS_RUNTIME_DIR } else { Join-Path $env:LOCALAPPDATA 'scope-compass\runtime' }
+$ico = Get-ChildItem -Path (Join-Path $runtime '*\assets\icons\scope-compass.ico') -ErrorAction SilentlyContinue |
+  Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName
+if ($ico) { Copy-Item -Force $ico (Join-Path $Dir 'scope-compass.ico') }
+
 $shell = New-Object -ComObject WScript.Shell
 $s = $shell.CreateShortcut($Lnk)
 $s.TargetPath = $Bin
@@ -68,10 +78,9 @@ $s.Arguments = 'home --tray --open'
 $s.WorkingDirectory = $Dir
 $s.WindowStyle = 7 # la consola, minimizada: el Inicio se maneja desde la bandeja y el navegador
 $s.Description = 'Inicio de Scope Compass con ícono en la bandeja'
+if ($ico) { $s.IconLocation = (Join-Path $Dir 'scope-compass.ico') + ',0' }
 $s.Save()
 
-# La primera vez extrae su contenido y anota su ruta (scompass.json), para el dock de Godot y `scompass mcp install`.
-& $Bin hubs | Out-Null
 Write-Output "Listo: $Bin, en el PATH de tu usuario (en las consolas nuevas), y ""Scope Compass"" en el menú Inicio."
 Remove-Item $old -Force -ErrorAction SilentlyContinue
 if (Test-Path $old) { Write-Output 'El Inicio (o un hub) sigue abierto con la versión anterior: `scompass home restart` carga la nueva.' }

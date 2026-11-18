@@ -6,10 +6,12 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { buildMenu, compassIco } from './tray-menu.js';
+import { buildMenu } from './tray-menu.js';
 import { T } from './i18n.js';
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'tray-win.ps1');
+// El mismo ícono que en Linux y en la web, como .ico (tools/make-ico.mjs lo arma desde el SVG).
+export const ICO = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'icons', 'scope-compass.ico');
 
 // Lo que viaja: solo lo visible, con su id, label, si está habilitado y sus hijos.
 const wire = (nodes) => nodes.filter((n) => n.visible).map((n) => (n.separator ? { id: n.id, separator: true }
@@ -50,7 +52,7 @@ export async function startWinTray({ title, tooltip, items, onActivate, timeoutM
       else if (m.type === 'opening') refresh();
       else waiting.get(m.type)?.(m);
     });
-    send({ type: 'set', icon: compassIco().toString('base64'), tooltip: `${title}\n${tooltip}`, menu: wire(menu.root.children) });
+    send({ type: 'set', icon: readFileSync(ICO).toString('base64'), tooltip: `${title}\n${tooltip}`, menu: wire(menu.root.children) });
   });
 
   return {
