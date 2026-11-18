@@ -4,19 +4,20 @@ import './isolate.js';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { cp, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadValidators } from '../src/schema.js';
 import { createJsonFilesStore } from '../src/store/json-files.js';
 import { createServer, listen } from '../src/server.js';
+import { link } from './links.js';
 
 const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'compass');
 const V = loadValidators();
 // Un PNG de 1×1.
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==', 'base64');
-let dir, app, base;
+let dir, app, base, linked;
 const git = (...a) => execFileSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { stdio: 'ignore' });
 const get = async (u) => { const r = await fetch(base + u); return { status: r.status, type: r.headers.get('content-type'), body: r.headers.get('content-type')?.startsWith('application/json') ? await r.json() : Buffer.from(await r.arrayBuffer()) }; };
 const q = (p) => encodeURIComponent(p);
@@ -34,7 +35,8 @@ before(async () => {
   git('init', '-q', '-b', 'main'); git('add', '-A'); git('commit', '-qm', 'base');
   await writeFile(join(dir, 'src', 'player.gd'), 'extends Node\n\nfunc _ready():\n\tprint("hola")\n');
   await writeFile(join(dir, 'src', 'enemy.gd'), 'extends Node\n');
-  await symlink('/etc/hostname', join(dir, 'afuera'));
+  // En Windows sin permiso para enlaces simbólicos no hay enlace a un archivo: se saltea solo esa parte.
+  linked = await link('/etc/hostname', join(dir, 'afuera'));
   app = createServer({ projectDir: dir, store: createJsonFilesStore(join(dir, 'compass'), { validators: V }), validators: V });
   base = `http://127.0.0.1:${(await listen(app, 0)).port}`;
 });
@@ -62,8 +64,10 @@ test('/api/files/file: código resaltado, markdown renderizado, imagen, enlace s
   assert.deepEqual([md.kind, md.git], ['markdown', 'clean']);
   assert.match(md.html, /<h1>Juego<\/h1>/);
   assert.equal((await get('/api/files/file?path=art/icon.png')).body.kind, 'image');
-  const link = (await get('/api/files/file?path=afuera')).body;
-  assert.deepEqual([link.kind, link.target, link.html], ['link', process.platform === 'win32' ? resolve('/etc/hostname') : '/etc/hostname', undefined]);
+  if (linked) {
+    const l = (await get('/api/files/file?path=afuera')).body;
+    assert.deepEqual([l.kind, l.target, l.html], ['link', process.platform === 'win32' ? resolve('/etc/hostname') : '/etc/hostname', undefined]);
+  }
   const raw = await get('/api/files/raw?path=art/icon.png');
   assert.equal(raw.type, 'image/png');
   assert.deepEqual(raw.body, PNG);

@@ -20,12 +20,17 @@ const quiet = { out: { write() {} }, err: { write() {} } };
 async function python(src, board, title) {
   const dir = await mkdtemp(join(tmpdir(), 'scompass-py-'));
   try {
-    execFileSync('python3', [join(REPO, 'tools', 'artifact_to_md.py'), src, join(dir, 'out.md'), '--board', board, '--title', title]);
-    return await readFile(join(dir, 'out.md'), 'utf8');
-  } catch (e) {
-    // Sin Python: no está (ENOENT), o en Windows `python3` es el alias de la Store, que sale con 9009.
-    if (e.code === 'ENOENT' || e.status === 9009) return null;
-    throw e;
+    // En Windows `python3` suele ser el alias de la Store (sale con 9009) y el instalado se llama `python`.
+    for (const py of process.platform === 'win32' ? ['python3', 'python'] : ['python3']) {
+      try {
+        execFileSync(py, [join(REPO, 'tools', 'artifact_to_md.py'), src, join(dir, 'out.md'), '--board', board, '--title', title]);
+        return await readFile(join(dir, 'out.md'), 'utf8');
+      } catch (e) {
+        // Sin Python: no está (ENOENT), o es el alias de la Store.
+        if (e.code !== 'ENOENT' && e.status !== 9009) throw e;
+      }
+    }
+    return null;
   } finally {
     await rm(dir, { recursive: true, force: true, maxRetries: 10 });
   }
@@ -39,7 +44,7 @@ for (const [name, dir] of [['Scope Compass', join(REPO, 'compass')], ['Proyecto 
     const all = await loadCompass(dir, V);
     const board = all.config.board_url ?? 'https://example.com/tablero';
     const expected = await python(dir, board, name);
-    if (expected === null) return t.skip('sin python3');
+    if (expected === null) return t.skip('sin Python');
     // El prototipo de Python es anterior a los vínculos (D22), las listas (D25), las fechas (D26), a etiquetas, prioridad y
     // responsable (D32), a los archivos de la tarea (15.1), a la descripción (D37), a done_at (18.1), al tamaño (18.3), a las
     // capturas (D38), al playtest (D39) y a las decisiones (D42): la paridad se mide sin ellos.
@@ -104,7 +109,7 @@ test('el detalle de un paso va sangrado debajo, igual que en tools/artifact_to_m
     const md = renderMarkdown(all, { title: 'T', board: 'https://x', date: '2026-01-01' });
     assert.match(md, /- \[x\] [^\n]+\n {2}Primera línea con `código`\n\n {2}Tercera, tras una vacía\n/);
     const expected = await python(join(d, 'compass'), 'https://x', 'T');
-    if (expected === null) return t.skip('sin python3');
+    if (expected === null) return t.skip('sin Python');
     assert.equal(renderMarkdown(all, { title: 'T', board: 'https://x', date: dateOf(expected) }), expected);
   } finally {
     await rm(d, { recursive: true, force: true, maxRetries: 10 });

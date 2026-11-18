@@ -2,12 +2,13 @@
 import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { folderName, forgetProject, loadProjects, projectsDataDir, projectsFile, projectsStatus, recordProject } from '../src/projects.js';
 import { run } from '../src/cli.js';
+import { link } from './links.js';
 
 const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'compass');
 let dir, saved;
@@ -41,7 +42,7 @@ test('el archivo vive en SCOMPASS_CONFIG si está', () => {
 
 test('recordProject: alta con el nombre de la config, sin duplicar por otra forma de la ruta', async () => {
   const p = join(dir, 'p');
-  await symlink(p, join(dir, 'enlace'));
+  await link(p, join(dir, 'enlace'));
   const times = ['2026-10-04T10:00:00.000Z', '2026-10-04T11:00:00.000Z'];
   const a = await recordProject(p, { now: () => times[0] });
   assert.equal(a.added, true);

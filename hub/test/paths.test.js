@@ -3,7 +3,7 @@ import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { cp, mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +15,7 @@ import { dropImage, saveImage } from '../src/images.js';
 import { repoFile } from '../src/files-api.js';
 import { loadDocs } from '../src/docs.js';
 import { projectRel } from '../src/paths.js';
+import { link, NO_FILE_LINKS } from './links.js';
 
 const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'compass');
 const V = loadValidators();
@@ -53,7 +54,7 @@ test('export_md: tiene que ser un .md dentro del proyecto, también siguiendo en
     await assert.rejects(exportMarkdown(dir, { ...all, config: { ...all.config, export_md: bad } }), /export_md/, bad);
   }
   // Una carpeta del proyecto que es un enlace a otra parte.
-  await symlink(outside, join(dir, 'enlace'));
+  await link(outside, join(dir, 'enlace'));
   await assert.rejects(exportMarkdown(dir, { ...all, config: { ...all.config, export_md: 'enlace/tareas.md' } }), /enlace simbólico/);
   assert.equal(await stat(join(outside, 'tareas.md')).catch(() => null), null);
   // El schema tampoco deja pasar una config así.
@@ -67,8 +68,9 @@ test('export_md: tiene que ser un .md dentro del proyecto, también siguiendo en
 
 test('POST /api/docs: ni llaves, ni .., ni enlaces afuera, ni lo que git ignora, ni algo que no sea .md', async () => {
   const post = (path) => app.inject({ method: 'POST', url: '/api/docs', payload: { alias: 'x', path } });
-  await symlink(join(outside, 'secreto.md'), join(dir, 'enlace.md'));
-  await symlink(outside, join(dir, 'carpeta'));
+  // Sin enlaces a archivos (Windows sin permiso), enlace.md no existe y da 404 igual.
+  await link(join(outside, 'secreto.md'), join(dir, 'enlace.md'));
+  await link(outside, join(dir, 'carpeta'));
   for (const p of ['{..,x}/*.md', '../afuera/secreto.md', join(outside, 'secreto.md'), 'enlace.md', 'carpeta/*.md', '.env', 'ignorado.md']) {
     const r = await post(p);
     assert.ok([400, 404].includes(r.statusCode), `${p}: ${r.statusCode}`);
@@ -76,18 +78,18 @@ test('POST /api/docs: ni llaves, ni .., ni enlaces afuera, ni lo que git ignora,
   assert.equal((await post('gdd.md')).statusCode, 201);
 });
 
-test('loadDocs: un patrón no sigue un enlace que lleva afuera, ni un documento declarado a mano', async () => {
+test('loadDocs: un patrón no sigue un enlace que lleva afuera, ni un documento declarado a mano', async (t) => {
   await mkdir(join(dir, 'docs'));
   await writeFile(join(dir, 'docs', 'uno.md'), '# Uno\n');
-  await symlink(join(outside, 'secreto.md'), join(dir, 'docs', 'secreto.md'));
-  await symlink(join(outside, 'secreto.md'), join(dir, 'fijo.md'));
+  if (!(await link(join(outside, 'secreto.md'), join(dir, 'docs', 'secreto.md')))) return t.skip(NO_FILE_LINKS);
+  await link(join(outside, 'secreto.md'), join(dir, 'fijo.md'));
   const docs = await loadDocs(dir, { docs: [{ alias: 'd', path: 'docs/*.md' }, { alias: 'f', path: 'fijo.md' }] });
   assert.deepEqual(docs.map((d) => [d.alias, d.missing ?? false]), [['d/uno', false], ['f', true]]);
   assert.match(docs[1].warnings[0].message, /fuera del proyecto/);
 });
 
 test('compass/images como enlace afuera: no se guarda ni se borra nada ahí', async () => {
-  await symlink(outside, join(dir, 'compass', 'images'));
+  await link(outside, join(dir, 'compass', 'images'));
   await assert.rejects(saveImage(dir, 'm1-07', PNG), /fuera del proyecto/);
   await writeFile(join(outside, 'm1-07-1.png'), PNG);
   assert.equal(await dropImage(dir, 'compass/images/m1-07-1.png', []), false);
