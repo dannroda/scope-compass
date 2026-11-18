@@ -97,9 +97,11 @@ jobs:
             assets: |
               dist/scompass-v*-linux-x64
               dist/scope-compass-addon-v*.zip
+              dist/install.sh
           - os: windows-latest
             assets: |
               dist/scompass-v*-windows-x64.exe
+              dist/install.ps1
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       DATE: ${{ needs.prepare.outputs.date }}

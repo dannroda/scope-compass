@@ -63,11 +63,12 @@ Download from the [latest release](https://github.com/dannroda/scope-compass/rel
 | `scompass-vX.Y.Z-linux-x64` | The CLI, hub and web UI for Linux, as one binary |
 | `scompass-vX.Y.Z-windows-x64.exe` | The same for Windows |
 | `scope-compass-addon-vX.Y.Z.zip` | The Godot addon (the dock) |
+| `install.sh`, `install.ps1` | Optional installers for the binary (Linux, Windows) |
 | `SHA256SUMS` | Checksums of the files above |
 
 Check the download with `sha256sum -c SHA256SUMS --ignore-missing` (on Windows, `Get-FileHash <file>` and compare).
 
-**Hub and CLI.** Put the binary anywhere and run it once (double-click opens Home): it records its own path, so the Godot addon and `scompass mcp install` find it without the `PATH`. To type `scompass` in a terminal, put it in a folder on your `PATH` named `scompass` (`scompass.exe` on Windows). On Linux, the repository's [`tools/install.sh`](tools/install.sh), run as `sh install.sh <path to scompass-vX.Y.Z-linux-x64>`, copies it to `~/.local/bin/scompass` and adds **Scope Compass** to the applications menu, which starts Home with a tray icon. The first run of each version extracts its contents (about 30 MB) to `~/.cache/scope-compass/runtime/` (`%LOCALAPPDATA%\scope-compass\runtime\` on Windows).
+**Hub and CLI.** Put the binary anywhere and run it once (double-click opens Home): it records its own path, so the Godot addon and `scompass mcp install` find it without the `PATH`. To type `scompass` in a terminal, put it in a folder on your `PATH` named `scompass` (`scompass.exe` on Windows). That is the portable way. To install it instead, use the installer from the release: on Linux, `sh install.sh <path to scompass-vX.Y.Z-linux-x64>` copies it to `~/.local/bin/scompass` and adds **Scope Compass** to the applications menu, which starts Home with a tray icon; on Windows, `powershell -ExecutionPolicy Bypass -File install.ps1 <path to scompass-vX.Y.Z-windows-x64.exe>` copies it to `%LOCALAPPDATA%\Programs\scompass`, adds that folder to your user `PATH` and adds **Scope Compass** to the Start menu, with no admin rights (`install.ps1 -Uninstall` removes it). The first run of each version extracts its contents (about 30 MB) to `~/.cache/scope-compass/runtime/` (`%LOCALAPPDATA%\scope-compass\runtime\` on Windows).
 
 **Godot addon.** Unzip the addon at the root of your Godot project (it creates `addons/scope_compass/`), then enable **Scope Compass** in Project › Project Settings › Plugins. The dock finds the binary from its recorded path, or on the `PATH`; otherwise set it in Editor Settings › `scope_compass/scompass_path`.
 

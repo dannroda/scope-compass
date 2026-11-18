@@ -1414,7 +1414,7 @@ La publica `.github/workflows/release.yml` (D47), con la lógica en `tools/relea
 Lo mismo a mano, en un equipo: `node tools/release.mjs bump <cómo>`, `node tools/release.mjs changelog <X.Y.Z>`, `node tools/release.mjs notes <X.Y.Z>`, `node tools/build.mjs` y `node tools/release.mjs sums dist`.
 
 Si main tiene protección de rama que no deja pushear al `GITHUB_TOKEN`, el paso del commit falla: hay que permitirle a GitHub Actions saltear la protección, o usar el camino del tag.
-- **Instalar:** `install.sh` prefiere el binario: lo copia a `~/.local/bin/scompass`. El dock lo encuentra en el PATH; en Windows también acepta `scompass.exe` de `where`.
+- **Instalar:** dos formas, instalado o portable (el binario en cualquier carpeta, abierto una vez: §37). `install.sh` prefiere el binario: lo copia a `~/.local/bin/scompass`. En Windows, `install.ps1` lo copia a `%LOCALAPPDATA%\Programs\scompass\scompass.exe`, suma la carpeta al PATH del usuario (en el registro, sin expandir las entradas que ya hay) y crea el acceso directo del menú Inicio (`home --tray --open`), sin permisos de administrador. Para actualizar renombra el .exe viejo (Windows deja renombrar uno que corre) y pone el nuevo. `-Uninstall` deshace todo menos los tableros y la caché. Los dos van en la release. El dock lo encuentra en el PATH; en Windows también acepta `scompass.exe` de `where`.
 
 ### Criterios de aceptación
 

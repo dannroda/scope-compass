@@ -50,7 +50,7 @@ First public release. The interface is in English and Spanish; the documentation
 ### Distribution
 
 - Standalone binaries for Linux x64 and Windows x64 that do not need Node, and the Godot addon as a zip. `node tools/build.mjs` also builds the hub as an npm package (`.tgz`) for systems with Node 22 or newer.
-- `tools/install.sh` installs `scompass` on Linux and adds a launcher for Home to the applications menu.
+- `install.sh` (Linux) and `install.ps1` (Windows), attached to each release, install the binary: on Linux in `~/.local/bin` with a launcher for Home in the applications menu; on Windows in `%LOCALAPPDATA%\Programs\scompass`, on the user `PATH` and with a Start menu shortcut, without admin rights (`-Uninstall` removes it). The binary also works portable, from any folder.
 - **Update all** in Home (and `scompass update --all`) brings every known board's generated files (schemas and the agent guide) up to date after a new version of Scope Compass.
 - The Godot addon updates itself from GitHub releases (once a day when the editor opens; it can be turned off). The addon, the hub and the CLI check compatibility by a protocol number instead of the version: a hub that speaks another protocol is not used, and the dock offers the matching `scompass` binary.
 - A Claude Code plugin (`claude-plugin/`, with this repository as its marketplace) whose skill sends the agent to the board guide; it follows the Scope Compass version.

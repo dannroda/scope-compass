@@ -122,7 +122,8 @@ else {
 rmSync(ADDON, { recursive: true });
 
 cpSync(join(REPO, 'tools', 'install.sh'), join(DIST, 'install.sh')); // Linux: npm install -g y el lanzador del menú
+cpSync(join(REPO, 'tools', 'install.ps1'), join(DIST, 'install.ps1')); // Windows: el binario, el PATH y el menú Inicio
 writeFileSync(join(DIST, 'INSTALAR.md'), readFileSync(join(REPO, 'docs', 'instalar.md'), 'utf8')
   .replaceAll('<versión>', pkg.version) + `\n---\nBuild ${pkg.version} · commit ${commit}\n`);
 
-console.log(`dist/${tgz}\ndist/${bin}\ndist/${zip}\ndist/install.sh\ndist/INSTALAR.md\n(${pkg.version}, commit ${commit})`);
+console.log(`dist/${tgz}\ndist/${bin}\ndist/${zip}\ndist/install.sh\ndist/install.ps1\ndist/INSTALAR.md\n(${pkg.version}, commit ${commit})`);
