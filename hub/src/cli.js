@@ -352,6 +352,8 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     // Reiniciar (9.8): se cierra y se vuelve a lanzar el mismo comando en el mismo puerto (carga código nuevo).
     // withLan: con qué --lan vuelve al reiniciar; la bandeja lo cambia (una IP no se suma a un servidor que ya escucha).
     let restart = false, withLan = !!o.lan;
+    // Antes que el servidor: un POST /api/shutdown o /api/restart puede llegar apenas escucha.
+    const ac = new AbortController();
     // lan(): adónde apunta el QR de Vincular teléfono (§49); addr existe una vez que escucha.
     const app = createHomeServer({ validators, lan: () => (o.lan && addr ? lanUrls(addr.port) : null), onRestart: () => { restart = true; ac.abort(); }, onShutdown: () => ac.abort() });
     let addr;
@@ -368,7 +370,6 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     o.json ? print(JSON.stringify({ url, port: addr.port, lan })) : print(T`Inicio de Scope Compass en ${url} · ${projectsFile()} · Ctrl+C para cerrar`);
     if (lan && !o.json) print(T`En la red (${LAN_WARNING}): ${lan.join(' ') || T('ninguna dirección')}`);
     if (o.open) openUrl(url);
-    const ac = new AbortController();
     let tray = null;
     if (o.tray) {
       try {
@@ -545,7 +546,9 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
           port = free;
         }
       }
+      // Antes que el servidor: un POST /api/shutdown o /api/restart puede llegar apenas escucha.
       let restart = false;
+      const ac = new AbortController();
       const app = createServer({ projectDir: project, store, validators, watch: true, exportMd: true,
         onRestart: () => { restart = true; ac.abort(); }, onShutdown: () => ac.abort() });
       if (!o.json) app.events.on('event', (e) => { if (e.type === 'warning') warn(T`aviso [${e.code}] ${e.path}: ${e.message}`); });
@@ -569,7 +572,6 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       // Desde la bandeja: si ya hay un tablero abierto que puede notificar, se le pide que llame la atención en
       // lugar de abrir otra pestaña (el navegador no deja enfocar una pestaña desde afuera).
       const showBoard = () => { if (!app.focusBoard()) openBoard(); };
-      const ac = new AbortController();
       let tray = null;
       // Con un Inicio con bandeja (D24, §16.3) el ícono de este hub se esconde: el Inicio lo muestra en su menú.
       // Se revisa cada segundo; si el Inicio se va, el ícono vuelve.

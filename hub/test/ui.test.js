@@ -108,8 +108,10 @@ test('destildar varios pasos seguidos: se guardan todos, sin 409', async () => {
   assert.ok(n >= 3);
   for (let i = 0; i < n; i++) await boxes.nth(i).click({ noWaitAfter: true });
   await page.waitForFunction(() => document.querySelectorAll('.checklist input:checked').length === 0, null, { timeout: 2000 });
-  await page.waitForTimeout(200);
-  assert.deepEqual((await task('m0-01')).checklist.map((c) => c.done), Array(n).fill(false));
+  // El último guardado puede tardar en llegar al disco (en el CI de Windows, más de 200 ms).
+  let saved;
+  for (let i = 0; i < 50; i++) { saved = (await task('m0-01')).checklist.map((c) => c.done); if (!saved.includes(true)) break; await page.waitForTimeout(100); }
+  assert.deepEqual(saved, Array(n).fill(false));
   assert.equal(await page.locator('#toast:not([hidden])').count(), 0, 'sin avisos de conflicto');
   await page.context().close();
 });
