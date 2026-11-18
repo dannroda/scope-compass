@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-18
+
 ### Added
 
 - Link a board that already exists to a project without `compass/`: another project's board, a standalone one, or one cloned from the boards repo. `scompass board list` shows the boards in the boards folder and which projects use them; Home has Add project › Link board, and the Godot dock offers the boards next to "Create compass/".
