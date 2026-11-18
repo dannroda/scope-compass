@@ -10,7 +10,7 @@ The project's tasks and milestones live in `compass/` (often a link to the user'
 ## Tools
 
 - **MCP first.** If the `scompass` MCP tools are available (`list_tasks`, `show_task`, `move_task`, `check_step`, `update_task`, `add_decision`…), use them: they are the CLI with typed parameters.
-- **Not available?** Register them once for all projects with `scompass mcp install` (it registers the full path, no `PATH` needed), then ask the user to run `/mcp` or restart Claude Code. If `scompass` is not on the `PATH`, the installed binary recorded its command in `~/.local/share/scope-compass/scompass.json` (`%LOCALAPPDATA%\scope-compass\scompass.json` on Windows): run its `command` with its `args`, then `mcp install`. With no binary at all, it is downloaded from https://github.com/dannroda/scope-compass/releases/latest.
+- **Not available?** Register them once for all projects with `scompass mcp install` (it registers the full path, no `PATH` needed), then ask the user to run `/mcp` or restart Claude Code. If `scompass` is not on the `PATH`, the installed binary recorded its command in `~/.local/share/scope-compass/scompass.json` (`%LOCALAPPDATA%\scope-compass\scompass.json` on Windows): run its `command` with its `args`, then `mcp install`. With no binary at all, it is downloaded from https://github.com/dannroda/scope-compass/releases.
 - **CLI otherwise.** `scompass <command> --json` from any folder of the project (or `--dir <project>`). Never edit the JSON in `compass/` by hand: the CLI validates, writes the canonical format and regenerates the markdown export.
 
 ## Workflow

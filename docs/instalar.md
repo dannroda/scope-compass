@@ -6,7 +6,7 @@ Se desarrolla en Linux y se prueba también en Windows 10/11 (D30). Los pasos so
 
 ## Descargas
 
-Todo está en la última release: https://github.com/dannroda/scope-compass/releases/latest. Los archivos llevan la versión con una `v` adelante:
+Todo está en la release más nueva: https://github.com/dannroda/scope-compass/releases (por ahora son pre-releases, desde la 0.1.0). Los archivos llevan la versión con una `v` adelante:
 
 - `scompass-v<versión>-linux-x64`: el hub y la CLI para Linux, en un solo binario.
 - `scompass-v<versión>-windows-x64.exe`: lo mismo para Windows.

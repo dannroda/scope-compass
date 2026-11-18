@@ -56,7 +56,7 @@ More screenshots:
 
 ## Install
 
-Download from the [latest release](https://github.com/dannroda/scope-compass/releases/latest):
+Download the newest release from the [releases page](https://github.com/dannroda/scope-compass/releases) (for now they are pre-releases, starting with 0.1.0):
 
 | File | What |
 |---|---|
@@ -71,6 +71,8 @@ Check the download with `sha256sum -c SHA256SUMS --ignore-missing` (on Windows, 
 **Hub and CLI.** Put the binary anywhere and run it once (double-click opens Home): it records its own path, so the Godot addon and `scompass mcp install` find it without the `PATH`. To type `scompass` in a terminal, put it in a folder on your `PATH` named `scompass` (`scompass.exe` on Windows). That is the portable way. To install it instead, use the installer from the release: on Linux, `sh install.sh <path to scompass-vX.Y.Z-linux-x64>` copies it to `~/.local/bin/scompass` and adds **Scope Compass** to the applications menu, which starts Home with a tray icon; on Windows, `powershell -ExecutionPolicy Bypass -File install.ps1 <path to scompass-vX.Y.Z-windows-x64.exe>` copies it to `%LOCALAPPDATA%\Programs\scompass`, adds that folder to your user `PATH` and adds **Scope Compass** to the Start menu, with no admin rights (`install.ps1 -Uninstall` removes it). The first run of each version extracts its contents (about 30 MB) to `~/.cache/scope-compass/runtime/` (`%LOCALAPPDATA%\scope-compass\runtime\` on Windows).
 
 **Godot addon.** Unzip the addon at the root of your Godot project (it creates `addons/scope_compass/`), then enable **Scope Compass** in Project › Project Settings › Plugins. The dock finds the binary from its recorded path, or on the `PATH`; otherwise set it in Editor Settings › `scope_compass/scompass_path`.
+
+**Updating.** `scompass upgrade` downloads the newest release for your platform, checks it against `SHA256SUMS` and replaces the binary (`--check` only tells you whether there is one). Home checks once a day and, when there is a new version, offers **Update** at the top of the page and in the tray. Home and the hubs that are already running keep the previous version until they restart (`scompass home restart`, or **Restart Home**). The Godot addon updates itself: the dock offers the new version and restarts the editor (Editor Settings › `scope_compass/check_updates` turns that off).
 
 The full steps, including the npm package and Windows notes, are in [`docs/instalar.md`](docs/instalar.md) (Spanish).
 
