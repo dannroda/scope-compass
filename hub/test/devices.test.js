@@ -3,7 +3,7 @@
 import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { networkInterfaces, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,7 +13,7 @@ import { createHomeServer } from '../src/home.js';
 import { recordProject } from '../src/projects.js';
 import { chatDir } from '../src/chat.js';
 import { run } from '../src/cli.js';
-import { createDevices, devicesFile, removeDevice, tokenFromCookie } from '../src/devices.js';
+import { createDevices, deviceId, devicesFile, removeDevice, tokenFromCookie } from '../src/devices.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const V = loadValidators();
@@ -192,4 +192,13 @@ test('CLI: scompass devices lista y devices rm desvincula', async () => {
   assert.notEqual(await cli('devices', 'rm', device.id), 0);
   assert.equal(await cli('devices'), 0);
   assert.match(out, /No hay dispositivos vinculados/);
+});
+
+test('los ids nuevos no empiezan con - (devices rm los tomaría por una opción); uno viejo así se quita con --', async () => {
+  for (let i = 0; i < 3000; i++) assert.ok(!deviceId().startsWith('-'));
+  await mkdir(dirname(devicesFile()), { recursive: true });
+  await writeFile(devicesFile(), JSON.stringify({ devices: [{ id: '-viejo1', name: 'Viejo', hash: 'x', created_at: '2026-11-01T00:00:00Z', last_seen: '2026-11-01T00:00:00Z' }] }));
+  const quiet = { out: { write: () => {} }, err: { write: () => {} }, cwd: root };
+  assert.equal(await run(['devices', 'rm', '--', '-viejo1'], quiet), 0);
+  assert.equal(JSON.parse(await readFile(devicesFile(), 'utf8')).devices.length, 0);
 });

@@ -26,6 +26,8 @@ export class DeviceError extends Error {
 export const devicesFile = () => join(configDir(), 'devices.json');
 const hashOf = (token) => createHash('sha256').update(token).digest('hex');
 const random = (bytes) => randomBytes(bytes).toString('base64url');
+// El id va en la línea de comandos (`scompass devices rm <id>`): uno que empieza con - se tomaría por una opción.
+export const deviceId = () => { let id; do id = random(6); while (id.startsWith('-')); return id; };
 
 // Lectura con caché por fecha de cambio: se mira en cada pedido del chat y en cada evento del WebSocket, y un
 // `scompass devices rm` en otro proceso tiene que verse enseguida.
@@ -138,7 +140,7 @@ export function createDevices({ ttlMs = CODE_TTL_MS, now = Date.now, watchMs = 1
       const clean = typeof name === 'string' ? name.trim().slice(0, NAME_MAX) : '';
       const token = random(32);
       const at = new Date(now()).toISOString();
-      const device = { id: random(6), name: clean || T('Teléfono'), hash: hashOf(token), created_at: at, last_seen: at };
+      const device = { id: deviceId(), name: clean || T('Teléfono'), hash: hashOf(token), created_at: at, last_seen: at };
       const devices = readDevices();
       await writeDevices([...devices, device]);
       known.add(device.id);
