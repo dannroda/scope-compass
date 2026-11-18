@@ -101,6 +101,8 @@ test('una conversación: se lista, guarda la copia en orden y los eventos llevan
   // Los límites salen con el perfil y quedan guardados para la próxima vez (§33).
   const lim = m.events.find((e) => e.event === 'limits');
   assert.deepEqual([lim.profile, lim.limits.five_hour.used], ['default', 0.25]);
+  // Se guardan aparte del turno: el fin del turno puede llegar antes que la escritura (en el CI de Windows, pasó).
+  await Promise.all(m.pending);
   assert.equal((await loadLimits()).default.five_hour.used, 0.25);
   const { entries, busy } = await m.get(chat.id);
   assert.equal(busy, false);
