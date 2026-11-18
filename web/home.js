@@ -383,15 +383,17 @@
       h('p', { class: 'muted', style: 'margin:0;max-width:300px' }, T('Los proyectos aparecen solos al abrir su hub. También se pueden agregar sin prenderlo, o crear uno nuevo.')),
       h('div', { class: 'foot', style: 'border:0;justify-content:center' },
         h('button', { class: 'btn', type: 'button', onclick: () => openAdd('import') }, T('Importar carpeta…')),
-        h('button', { class: 'btn', type: 'button', onclick: () => openAdd('create') }, T('Crear con plantilla')))));
+        h('button', { class: 'btn', type: 'button', onclick: () => openAdd('create') }, T('Crear con plantilla')),
+        h('button', { class: 'btn', type: 'button', onclick: () => openAdd('link') }, T('Vincular tablero…')))));
     box.replaceChildren(...cards);
   }
 
   function openAdd(mode) {
     S.add = { open: true, mode, err: '', busy: false, parent: '', manual: false };
+    S.boards = null;
     render();
     document.getElementById('add').scrollIntoView({ block: 'nearest' });
-    document.getElementById(mode === 'import' ? 'add-path' : 'new-name')?.focus();
+    document.getElementById({ import: 'add-path', create: 'new-name', link: 'link-path' }[mode])?.focus();
   }
   function closeAdd() { S.add.open = false; render(); document.getElementById('add-btn').focus(); }
 
@@ -419,6 +421,47 @@
         h('p', { class: 'hint' }, T('Se anota sin prender su hub. No se copia ni se cambia nada en la carpeta.')),
         h('p', { class: 'err', role: 'alert' }, S.add.err),
         h('div', { class: 'actions' }, h('button', { class: 'btn ghost', type: 'button', onclick: closeAdd }, T('Cancelar')), h('button', { class: 'btn primary', type: 'submit' }, T('Agregar'))));
+    } else if (S.add.mode === 'link') {
+      // Un tablero que ya existe (de otro proyecto, uno suelto o uno clonado) para un proyecto sin compass/.
+      if (!S.boards) {
+        S.boards = { loading: true, boards: [], dir: '' };
+        call('GET', '/api/boards').then((r) => { S.boards = r; }, (e) => { S.boards = { boards: [], dir: '', err: e.message }; })
+          .then(() => {
+            if (!S.add.open || S.add.mode !== 'link') return;
+            // Se rearma con la lista: lo que ya se escribió en la carpeta queda.
+            const typed = document.getElementById('link-path')?.value ?? '';
+            box.dataset.mode = ''; render();
+            document.getElementById('link-path').value = typed;
+          });
+      }
+      const pick = async () => {
+        const input = document.getElementById('link-path');
+        try {
+          const r = await call('POST', '/api/pick-folder', { start: input.value.trim() || S.dataDir, for: 'link' });
+          if (r.path) input.value = r.path;
+        } catch (e) { box.querySelector('.err').textContent = e.message; }
+      };
+      const { boards, dir, loading, err } = S.boards;
+      const list = loading ? h('p', { class: 'hint' }, T('Buscando tableros…'))
+        : !boards.length ? h('p', { class: 'hint' }, err ?? T`No hay tableros en ${dir}. Se crean con «Crear con plantilla» o con scompass init.`)
+        : h('fieldset', { class: 'tpls' }, h('legend', null, T('Tablero')),
+          boards.map((b, i) => h('label', { class: 'tpl' }, h('input', { type: 'radio', name: 'board', value: b.name, checked: i === 0 }),
+            h('span', null, h('b', null, b.project && b.project !== b.name ? `${b.project} (${b.name})` : b.name),
+              b.used_by.length ? T`Lo usa ${b.used_by.join(', ')}` : T('Sin proyecto')))));
+      form = h('form', { onsubmit: (e) => submit(e, async () => {
+        const board = box.querySelector('input[name="board"]:checked')?.value;
+        if (!board) throw new Error(T('Elegí un tablero'));
+        const r = await call('POST', '/api/projects/link', { path: document.getElementById('link-path').value.trim(), board });
+        S.boards = null;
+        toast(T`Vinculado: ${r.project.name} → ${r.target}`);
+      }) },
+        h('div', { class: 'field' }, h('label', { for: 'link-path' }, T('Carpeta del proyecto (ruta absoluta, sin compass/ adentro)')),
+          h('div', { class: 'where-row' }, h('input', { type: 'text', id: 'link-path', required: true, placeholder: T('/home/…/mi-proyecto'), autocomplete: 'off', spellcheck: 'false' }),
+            h('button', { class: 'btn', type: 'button', onclick: pick }, T('Elegir carpeta…')))),
+        list,
+        h('p', { class: 'hint' }, T('compass/ queda como enlace al tablero y fuera del git del proyecto, como con scompass board link. Un tablero puede estar vinculado a varios proyectos.')),
+        h('p', { class: 'err', role: 'alert' }, S.add.err),
+        h('div', { class: 'actions' }, h('button', { class: 'btn ghost', type: 'button', onclick: closeAdd }, T('Cancelar')), h('button', { class: 'btn primary', type: 'submit', disabled: !boards.length }, T('Vincular'))));
     } else {
       const tpls = S.templates.length ? [...S.templates].sort((a, b) => tplRank(a.name) - tplRank(b.name)) : [{ name: 'vacio', description: '' }];
       // La carpeta es <dónde>/<nombre>; <dónde> es la carpeta de datos del usuario (D28) salvo que se elija otra.
@@ -459,7 +502,7 @@
         h('p', { class: 'err', role: 'alert' }, S.add.err),
         h('div', { class: 'actions' }, h('button', { class: 'btn ghost', type: 'button', onclick: closeAdd }, T('Cancelar')), h('button', { class: 'btn primary', type: 'submit' }, T('Crear proyecto'))));
     }
-    box.replaceChildren(h('h2', null, T('Agregar proyecto')), h('div', { class: 'tabs' }, tab('import', T('Importar carpeta')), tab('create', T('Crear con plantilla'))), form);
+    box.replaceChildren(h('h2', null, T('Agregar proyecto')), h('div', { class: 'tabs' }, tab('import', T('Importar carpeta')), tab('create', T('Crear con plantilla')), tab('link', T('Vincular tablero'))), form);
     document.getElementById('new-name')?.dispatchEvent(new Event('input'));
   }
 

@@ -29,10 +29,10 @@ import { boardStatus, docDiff, docLog, docsStatus, repoFiles } from './git.js';
 import { imageFile, repoFile } from './files-api.js';
 import { dropImage, IMAGE_EXT, importImage, insideProject, isImagePath } from './images.js';
 import { taskHistory } from './history.js';
-import { boardInfo, boardsDir, linkBoard, moveBoard, newBoard } from './board.js';
+import { boardInfo, boardsDir, linkBoard, listBoards, moveBoard, newBoard } from './board.js';
 import { promoteDecision } from './promote.js';
 import { listDevices, removeDevice } from './devices.js';
-import { forgetProject, isTempPath, projectsFile, projectsStatus, pruneTempProjects, recordProject, ProjectsError } from './projects.js';
+import { forgetProject, isTempPath, loadProjects, projectsFile, projectsStatus, pruneTempProjects, recordProject, ProjectsError } from './projects.js';
 import { listLists, listMilestones, listPlaytests, listTasks } from './views.js';
 import { checkItem, freeId, newItem, repeatOf, slugify } from './lists.js';
 import { migrateSessions, nextPlaytest, sessionState } from './playtests.js';
@@ -92,7 +92,9 @@ const USAGE = T`Uso: scompass [--dir <proyecto>] <comando>
                                             propio git o en un submódulo (con su origin)
   board move [<nombre>]                     saca compass/ a la carpeta de tableros del usuario, con su propio git y
                                             su historial; compass/ queda como enlace y fuera del git del proyecto
-  board link <nombre|carpeta>               enlaza compass/ a un tablero ya clonado (en otro equipo)
+  board list                                los tableros de la carpeta de tableros y qué proyectos los usan
+  board link <nombre|carpeta>               enlaza compass/ a un tablero que ya existe (de otro proyecto, uno
+                                            suelto o uno clonado en otro equipo)
   home add [<carpeta>]                      anota un proyecto sin levantar su hub (por defecto, el de --dir)
   home rm [<carpeta>]                       lo quita del registro (no toca sus datos)
   list [--milestone m00] [--status doing,review] [filtros]
@@ -891,11 +893,18 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         lines.push(T`Lo sin commitear quedó sin commitear en el tablero.${r.shared ? '' : T` Para un remoto: git -C ${r.target} remote add origin <url>`}`);
         return done(r, lines.join('\n'));
       }
+      if (sub === 'list') {
+        const boards = listBoards(loadProjects().map((p) => p.path));
+        if (o.json) return done({ dir: boardsDir(), boards });
+        if (!boards.length) print(T`No hay tableros en ${boardsDir()}.`);
+        for (const b of boards) print(`${b.name.padEnd(20)} ${(b.project ?? '').padEnd(20)} ${b.used_by.length ? T`usado por ${b.used_by.join(', ')}` : T('sin proyecto')}`);
+        return 0;
+      }
       if (sub === 'link') {
         const r = await linkBoard(project, need(arg, T('el nombre o la carpeta del tablero')));
         return done(r, T`compass/ → ${r.target}${r.exclude ? T` (excluido en ${r.exclude})` : ''}`);
       }
-      throw new UsageError(T`subcomando desconocido: board ${sub} (move, link)`);
+      throw new UsageError(T`subcomando desconocido: board ${sub} (list, move, link)`);
     },
 
     // Registro de proyectos conocidos (D23); sin subcomando, el Inicio (D24).

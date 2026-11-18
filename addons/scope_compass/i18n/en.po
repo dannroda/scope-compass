@@ -169,6 +169,18 @@ msgstr "scompass printed nothing"
 msgid "Creada compass/ (plantilla %s). Ya podés iniciar el hub."
 msgstr "Created compass/ (%s template). You can start the hub now."
 
+msgid "Lo usa %s"
+msgstr "Used by %s"
+
+msgid "Sin proyecto"
+msgstr "No project"
+
+msgid "No se pudo vincular el tablero: %s"
+msgstr "Couldn't link the board: %s"
+
+msgid "compass/ vinculada al tablero %s. Ya podés iniciar el hub."
+msgstr "compass/ linked to the board %s. You can start the hub now."
+
 msgid "No se pudo actualizar compass/: %s"
 msgstr "Couldn't update compass/: %s"
 
@@ -210,6 +222,15 @@ msgstr "Runs `scompass init` in this project"
 
 msgid "Plantilla: Juego trae el hito M0, listas de ideas y assets, y docs/gdd.md (si no existe)"
 msgstr "Template: Game brings milestone M0, idea and asset lists, and docs/gdd.md (if missing)"
+
+msgid "Un tablero que ya existe en la carpeta de tableros"
+msgstr "A board that already exists in the boards folder"
+
+msgid "Vincular tablero"
+msgstr "Link board"
+
+msgid "Corre `scompass board link`: compass/ queda como enlace a ese tablero, fuera del git del proyecto"
+msgstr "Runs `scompass board link`: compass/ becomes a link to that board, outside the project's git"
 
 msgid "Iniciar hub"
 msgstr "Start hub"
@@ -288,6 +309,9 @@ msgstr "This project has no compass/"
 
 msgid "Ahí se guardan las tareas y los hitos del proyecto. Creala para empezar a usar el tablero."
 msgstr "That's where the project's tasks and milestones live. Create it to start using the board."
+
+msgid "Ahí se guardan las tareas y los hitos del proyecto. Creala o vinculá un tablero que ya existe."
+msgstr "That's where the project's tasks and milestones live. Create it or link a board that already exists."
 
 msgid ", %d en revisión"
 msgstr ", %d in review"

@@ -4,7 +4,7 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile, execFileSync } from 'node:child_process';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -287,6 +287,21 @@ test('"Crear compass/" con la plantilla vacío no trae datos', { skip }, async (
   expectOk(await godotLive(['init_compass', dir, join(REPO, 'hub', 'bin', 'scompass.js'), 'vacio']), 'init_compass');
   assert.ok(!existsSync(join(dir, 'compass', 'lists')));
   assert.ok(!existsSync(join(dir, 'docs', 'gdd.md')));
+});
+
+test('proyecto sin compass/ y un tablero en la carpeta de tableros: "Vincular tablero" corre scompass board link', { skip }, async () => {
+  const board = join(ISOLATED, 'data', 'boards', 'compartido');
+  await cp(join(dir, 'compass'), board, { recursive: true });
+  await rm(join(dir, 'compass'), { recursive: true });
+  try {
+    const r = await godotLive(['link_compass', dir, join(REPO, 'hub', 'bin', 'scompass.js'), 'compartido']);
+    expectOk(r, 'link_compass');
+    assert.doesNotMatch(r.out, /ERROR/);
+    assert.equal(realpathSync(join(dir, 'compass')), realpathSync(board));
+  } finally {
+    await rm(join(dir, 'compass'), { force: true }).catch(() => {});
+    await rm(board, { recursive: true, force: true, maxRetries: 10 });
+  }
 });
 
 test('compass/ con el schema viejo: el dock avisa y "Actualizar" corre scompass update', { skip }, async () => {

@@ -386,6 +386,25 @@ func test_init_compass(a: Array) -> void:
 	if not _check(c, v.board.warnings.is_empty(), "avisos: " + str(v.board.warnings)): return
 
 
+# Proyecto sin compass/ con tableros en la carpeta de tableros: el dock ofrece vincular uno (`scompass board link`).
+func test_link_compass(a: Array) -> void:
+	var c := "link_compass"
+	var v := await _view(a[0])
+	v.scompass_setting = func(): return a[1]
+	await v.load_boards()
+	if not _check(c, v.link_button.visible and v.board_select.visible and v.init_button.visible, "no ofrece vincular"): return
+	var found := false
+	for i in v.board_select.item_count:
+		if v.board_select.get_item_metadata(i) == a[2]:
+			v.board_select.select(i)
+			found = true
+	if not _check(c, found, "falta el tablero %s en la lista" % a[2]): return
+	if not _check(c, await v.link_compass(), "no se vinculó: " + v.notice.text): return
+	if not _check(c, FileAccess.file_exists(a[0].path_join("compass/config.json")), "falta compass/config.json"): return
+	if not _check(c, v.start_button.visible and not v.link_button.visible and not v.board_select.visible, "no ofrece iniciar el hub"): return
+	if not _check(c, v.board.tasks.size() > 0, "no cargó las tareas del tablero"): return
+
+
 # compass/ con el schema de una versión anterior: el dock lo avisa y "Actualizar" corre `scompass update`.
 func test_update_compass(a: Array) -> void:
 	var c := "update_compass"

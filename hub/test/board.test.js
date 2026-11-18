@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { run } from '../src/cli.js';
-import { boardInfo, boardKind, boardsDir } from '../src/board.js';
+import { boardInfo, boardKind, boardsDir, listBoards } from '../src/board.js';
 import { realInside } from '../src/paths.js';
 import { loadValidators } from '../src/schema.js';
 import { createJsonFilesStore } from '../src/store/json-files.js';
@@ -110,6 +110,13 @@ test('board move sin git en el proyecto, y board link en otro proyecto', async (
     assert.match(readFileSync(join(other, '.git', 'info', 'exclude'), 'utf8'), /^\/compass$/m);
     assert.equal(await cli(other, 'board', 'link', name), 1, 'compass/ ya existe');
     assert.equal(await cli(other, 'board', 'link', 'no-existe'), 1);
+
+    // board list: los tableros de la carpeta de tableros, con los proyectos que los usan (de los que se pasan).
+    const listed = listBoards([dir, other]).find((b) => b.name === name);
+    assert.deepEqual(listed, { name, path: realpathSync(target), project: 'Scope Compass', used_by: [dir, other] });
+    let out = '';
+    assert.equal(await run(['board', 'list', '--json'], { cwd: other, out: { write: (s) => { out += s; } }, err: { write() {} } }), 0);
+    assert.equal(JSON.parse(out).boards.find((b) => b.name === name).path, realpathSync(target));
   } finally {
     for (const d of [dir, other, join(boardsDir(), name)]) await rm(d, { recursive: true, force: true });
   }

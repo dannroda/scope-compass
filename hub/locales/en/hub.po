@@ -625,6 +625,18 @@ msgstr "{0} already exists: pick another name or another folder"
 msgid "scompass init salió con {0}"
 msgstr "scompass init exited with {0}"
 
+msgid "la carpeta del proyecto tiene que ser una ruta absoluta"
+msgstr "the project folder has to be an absolute path"
+
+msgid "falta el tablero"
+msgstr "the board is missing"
+
+msgid "no existe la carpeta {0}"
+msgstr "the folder {0} doesn't exist"
+
+msgid "Carpeta del proyecto"
+msgstr "Project folder"
+
 msgid "Dónde crear el proyecto"
 msgstr "Where to create the project"
 

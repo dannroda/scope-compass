@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Link a board that already exists to a project without `compass/`: another project's board, a standalone one, or one cloned from the boards repo. `scompass board list` shows the boards in the boards folder and which projects use them; Home has Add project › Link board, and the Godot dock offers the boards next to "Create compass/".
+
 ### Changed
 
 - Update channels for the binary and the Godot addon: `stable` (the default) only gets releases; `beta` also gets pre-releases, which are versions for testing. Choose it with `scompass upgrade --channel stable|beta` (used by `upgrade` and Home) and, for the addon, in Editor Settings › `scope_compass/update_channel`. The binary no longer follows pre-releases just because the running version is one. Pre-releases show as "(beta)" in the notices.

@@ -48,6 +48,7 @@ import { isLoopback } from './chat-api.js';
 import { createDevices, deviceCookie, DeviceError } from './devices.js';
 import { outdatedFiles, updateAllCompasses, updateCompass } from './update.js';
 import { boardStatus, repoWorktree } from './git.js';
+import { boardsDir, linkBoard, listBoards } from './board.js';
 import { listTemplates, loadTemplate } from './templates.js';
 import { STATUSES } from './views.js';
 import { IS_BINARY, selfCommand } from './self.js';
@@ -299,11 +300,28 @@ export function createHomeServer({ validators, now = () => new Date(), pollMs = 
     return reply.code(201).send({ ...JSON.parse(r.out), path, git_init: !!gitInit });
   });
 
+  // Vincular un tablero que ya existe (de otro proyecto, uno suelto o uno clonado del repo de tableros) a un
+  // proyecto sin compass/: los tableros para elegir, y el enlace (lo mismo que `scompass board link`). El proyecto
+  // queda anotado en el Inicio.
+  app.get('/api/boards', async () => ({ dir: boardsDir(), boards: listBoards(loadProjects().map((p) => p.path)) }));
+  app.post('/api/projects/link', async (req, reply) => {
+    const path = typeof req.body?.path === 'string' ? req.body.path.trim() : '';
+    const board = typeof req.body?.board === 'string' ? req.body.board.trim() : '';
+    if (!path || !isAbsolute(path)) throw new StoreError('invalid_argument', T('la carpeta del proyecto tiene que ser una ruta absoluta'));
+    if (!board) throw new StoreError('invalid_argument', T('falta el tablero'));
+    if (!existsSync(path) || !statSync(path).isDirectory()) throw new StoreError('not_found', T`no existe la carpeta ${path}`);
+    const r = await linkBoard(path, board);
+    const { entry } = await recordProject(path);
+    emit({ type: 'projects' });
+    return reply.code(201).send({ ...r, project: entry });
+  });
+
   // Elegir una carpeta (el botón "Elegir otra carpeta…"): el navegador no puede darle una ruta al servidor, así que
   // el diálogo lo abre el Inicio con el del escritorio (desktop.js: kdialog o zenity, o el de Windows).
   app.post('/api/pick-folder', async (req) => {
     const start = typeof req.body?.start === 'string' ? req.body.start : projectsDataDir();
-    const r = await pickFolder(start, T('Dónde crear el proyecto'));
+    // for: link, la carpeta del proyecto al que se vincula un tablero; si no, dónde crear uno nuevo.
+    const r = await pickFolder(start, req.body?.for === 'link' ? T('Carpeta del proyecto') : T('Dónde crear el proyecto'));
     if (!r) throw new StoreError('not_found', T('no hay un selector de carpetas (instalá kdialog o zenity); escribí la ruta'));
     return r;
   });

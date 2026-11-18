@@ -4,7 +4,8 @@ import './isolate.js';
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -306,6 +307,36 @@ test('init: <carpeta de datos>/<nombre> con git init, o <otra>/<nombre>; una que
     r = await api('POST', '/api/projects/init', { name: 'Sub', parent: join(root, 'datos', 'Vida') });
     assert.equal(r.body.path, join(root, 'datos', 'Vida', 'Sub'));
     assert.equal(r.body.git_init, false);
+  } finally {
+    if (saved === undefined) delete process.env.SCOMPASS_DATA; else process.env.SCOMPASS_DATA = saved;
+  }
+});
+
+test('vincular un tablero que ya existe a un proyecto sin compass/: la lista, el enlace y el proyecto anotado', async () => {
+  const saved = process.env.SCOMPASS_DATA;
+  process.env.SCOMPASS_DATA = join(root, 'datos');
+  try {
+    const board = join(root, 'datos', 'boards', 'compartido');
+    await cp(FIXTURE, board, { recursive: true });
+    const game = join(root, 'juego');
+    await mkdir(game);
+    execFileSync('git', ['-C', game, 'init', '-q']);
+    let r = await api('GET', '/api/boards');
+    assert.equal(r.body.dir, join(root, 'datos', 'boards'));
+    assert.deepEqual(r.body.boards.map((b) => [b.name, b.project, b.used_by]), [['compartido', 'Scope Compass', []]]);
+
+    assert.equal((await api('POST', '/api/projects/link', { path: 'relativa', board: 'compartido' })).status, 400);
+    assert.equal((await api('POST', '/api/projects/link', { path: game })).status, 400, 'sin tablero');
+    assert.equal((await api('POST', '/api/projects/link', { path: join(root, 'no-existe'), board: 'compartido' })).status, 404);
+    assert.equal((await api('POST', '/api/projects/link', { path: game, board: 'otro' })).status, 404);
+    r = await api('POST', '/api/projects/link', { path: game, board: 'compartido' });
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    assert.equal(realpathSync(join(game, 'compass')), realpathSync(board));
+    assert.match(await readFile(join(game, '.git', 'info', 'exclude'), 'utf8'), /^\/compass$/m);
+    assert.equal(r.body.project.path, game);
+    assert.ok((await api('GET', '/api/projects')).body.projects.some((p) => p.path === game), 'queda en el Inicio');
+    assert.deepEqual((await api('GET', '/api/boards')).body.boards[0].used_by, [game]);
+    assert.equal((await api('POST', '/api/projects/link', { path: game, board: 'compartido' })).status, 409, 'ya tiene compass/');
   } finally {
     if (saved === undefined) delete process.env.SCOMPASS_DATA; else process.env.SCOMPASS_DATA = saved;
   }

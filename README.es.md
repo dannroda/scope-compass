@@ -97,7 +97,7 @@ El enlace se excluye en `.git/info/exclude` del proyecto, así que su repo no ti
 
 - `scompass init --in-project` deja el tablero dentro del proyecto, en el repo del proyecto.
 - `git submodule add <url> compass` sirve para compartir un tablero con otras personas.
-- `scompass board move` saca a la carpeta de tableros un tablero que estaba dentro del proyecto, con su historial; `scompass board link <nombre>` enlaza un tablero clonado en otro equipo.
+- `scompass board move` saca a la carpeta de tableros un tablero que estaba dentro del proyecto, con su historial; `scompass board link <nombre>` enlaza un tablero que ya existe (el de otro proyecto, uno suelto o uno clonado en otro equipo) y `scompass board list` los muestra. Lo mismo desde el Inicio (Agregar proyecto › Vincular tablero) y desde el dock de Godot.
 
 ## Documentación
 

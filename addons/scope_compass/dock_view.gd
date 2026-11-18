@@ -53,6 +53,10 @@ var banner_text: Label
 var init_button: Button
 ## Plantilla para "Crear compass/" (8.14): juego por defecto, porque desde el dock es un proyecto de Godot.
 var template_select: OptionButton
+## Los tableros que ya existen en la carpeta de tableros (`scompass board list`), para vincular uno en lugar de crearla.
+var boards: Array = []
+var board_select: OptionButton
+var link_button: Button
 static var TEMPLATES := [["juego", I18n.t("Juego")], ["personal", I18n.t("Personal")], ["vacio", I18n.t("Vacío")]]
 var start_button: Button
 var open_tasks_button: Button
@@ -517,6 +521,42 @@ func init_compass() -> bool:
 	return true
 
 
+## Los tableros que se pueden vincular (`scompass board list --json`); sin scompass, ninguno.
+func load_boards() -> void:
+	boards = []
+	if not scompass_command().is_empty():
+		var r: Array = await _scompass(["board", "list", "--json"])
+		var data = HubClient.parse_json(r[1]) if r[0] == 0 else null
+		if data is Dictionary and data.get("boards") is Array:
+			boards = data.boards
+	board_select.clear()
+	for b in boards:
+		var label := str(b.name)
+		if b.get("project") is String and b.project != b.name:
+			label = "%s (%s)" % [b.project, b.name]
+		board_select.add_item(label)
+		board_select.set_item_metadata(board_select.item_count - 1, str(b.name))
+		var used: Array = b.get("used_by", [])
+		board_select.set_item_tooltip(board_select.item_count - 1, I18n.t("Lo usa %s") % ", ".join(used) if not used.is_empty() else I18n.t("Sin proyecto"))
+	_render()
+
+
+## Corre `scompass board link <elegido>`: compass/ pasa a ser un enlace a un tablero que ya existe, y recarga.
+func link_compass() -> bool:
+	if has_compass():
+		return true
+	if board_select.selected < 0:
+		return false
+	var name := str(board_select.get_item_metadata(board_select.selected))
+	var r: Array = await _scompass(["board", "link", name])
+	if r[0] != 0 or not has_compass():
+		show_notice(I18n.t("No se pudo vincular el tablero: %s") % (r[1] if r[1] != "" else I18n.t("sin salida de scompass")))
+		return false
+	show_notice(I18n.t("compass/ vinculada al tablero %s. Ya podés iniciar el hub.") % board_select.get_item_text(board_select.selected))
+	await reload()
+	return true
+
+
 ## Corre scompass en el proyecto, en otro hilo (hub_process.gd): [código, salida]; código -1 si no se encontró.
 func _scompass(args: Array) -> Array:
 	return await hub.run(scompass_command(), args)
@@ -526,6 +566,8 @@ func _scompass(args: Array) -> Array:
 ## Se mira al abrir el dock; sin scompass a mano no se puede saber y no se avisa nada.
 func check_compass() -> void:
 	outdated = []
+	if not has_compass():
+		await load_boards()
 	if has_compass():
 		var r: Array = await _scompass(["update", "--check", "--json"])
 		var data = HubClient.parse_json(r[1]) if r[0] == 1 else null
@@ -721,6 +763,15 @@ func _build() -> void:
 		template_select.set_item_metadata(template_select.item_count - 1, t[0])
 	bb.add_child(template_select)
 	bb.add_child(init_button)
+	# O un tablero que ya existe (de otro proyecto, uno suelto o uno clonado): solo si hay alguno.
+	board_select = OptionButton.new()
+	board_select.tooltip_text = I18n.t("Un tablero que ya existe en la carpeta de tableros")
+	link_button = Button.new()
+	link_button.text = I18n.t("Vincular tablero")
+	link_button.tooltip_text = I18n.t("Corre `scompass board link`: compass/ queda como enlace a ese tablero, fuera del git del proyecto")
+	link_button.pressed.connect(link_compass)
+	bb.add_child(board_select)
+	bb.add_child(link_button)
 	start_button = Button.new()
 	start_button.text = I18n.t("Iniciar hub")
 	start_button.icon = ICONS.start
@@ -963,9 +1014,12 @@ func _render() -> void:
 		banner_text.text = I18n.t("Mostrando las tareas desde compass/ en solo lectura. Para editarlas, iniciá el hub o editá los JSON y commiteá con git.")
 	else:
 		banner_title.text = I18n.t("Este proyecto no tiene compass/")
-		banner_text.text = I18n.t("Ahí se guardan las tareas y los hitos del proyecto. Creala para empezar a usar el tablero.")
+		banner_text.text = I18n.t("Ahí se guardan las tareas y los hitos del proyecto. Creala para empezar a usar el tablero.") if boards.is_empty() \
+			else I18n.t("Ahí se guardan las tareas y los hitos del proyecto. Creala o vinculá un tablero que ya existe.")
 	init_button.visible = not compass
 	template_select.visible = not compass
+	board_select.visible = not compass and not boards.is_empty()
+	link_button.visible = board_select.visible
 	start_button.visible = compass
 	open_tasks_button.visible = compass
 	warnings_label.visible = board.warnings.size() > 0

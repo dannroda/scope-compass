@@ -280,6 +280,9 @@ msgstr "Import folder…"
 msgid "Crear con plantilla"
 msgstr "Create from template"
 
+msgid "Vincular tablero…"
+msgstr "Link board…"
+
 msgid "Agregado: {0}"
 msgstr "Added: {0}"
 
@@ -300,6 +303,39 @@ msgstr "Cancel"
 
 msgid "Agregar"
 msgstr "Add"
+
+msgid "Buscando tableros…"
+msgstr "Looking for boards…"
+
+msgid "No hay tableros en {0}. Se crean con «Crear con plantilla» o con scompass init."
+msgstr "There are no boards in {0}. Create one with \"Create from template\" or scompass init."
+
+msgid "Tablero"
+msgstr "Board"
+
+msgid "Lo usa {0}"
+msgstr "Used by {0}"
+
+msgid "Sin proyecto"
+msgstr "No project"
+
+msgid "Elegí un tablero"
+msgstr "Choose a board"
+
+msgid "Vinculado: {0} → {1}"
+msgstr "Linked: {0} → {1}"
+
+msgid "Carpeta del proyecto (ruta absoluta, sin compass/ adentro)"
+msgstr "Project folder (absolute path, without compass/ inside)"
+
+msgid "Elegir carpeta…"
+msgstr "Choose folder…"
+
+msgid "compass/ queda como enlace al tablero y fuera del git del proyecto, como con scompass board link. Un tablero puede estar vinculado a varios proyectos."
+msgstr "compass/ becomes a link to the board, outside the project's git, as with scompass board link. A board can be linked to several projects."
+
+msgid "Vincular"
+msgstr "Link"
 
 msgid "Nombre"
 msgstr "Name"
@@ -336,6 +372,9 @@ msgstr "Create project"
 
 msgid "Importar carpeta"
 msgstr "Import folder"
+
+msgid "Vincular tablero"
+msgstr "Link board"
 
 msgid "Se instaló Scope Compass {0}. El Inicio sigue con la {1} hasta reiniciarse."
 msgstr "Scope Compass {0} is installed. Home keeps running {1} until it restarts."
@@ -480,9 +519,6 @@ msgstr "This phone will be able to use the chat of the projects on the computer 
 
 msgid "Nombre de este dispositivo"
 msgstr "Name of this device"
-
-msgid "Vincular"
-msgstr "Link"
 
 msgid "Abrir el Inicio"
 msgstr "Open Home"

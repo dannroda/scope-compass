@@ -2,8 +2,8 @@
 import './isolate.js';
 import { test, before, after, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { existsSync, realpathSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join, sep } from 'node:path';
@@ -217,6 +217,34 @@ test('agregar: importar una carpeta y crear un proyecto con plantilla', async ()
     await page.click('#add button[type="submit"]');
     await page.waitForSelector('article.proj[aria-label="Mi juego"]');
     assert.ok(existsSync(join(otra, 'Mi juego', 'compass', 'milestones', 'm00.json')));
+  } finally {
+    delete process.env.SCOMPASS_PICKER;
+  }
+});
+
+test('agregar: vincular un tablero que ya existe a un proyecto sin compass/', async () => {
+  const board = join(process.env.SCOMPASS_DATA, 'boards', 'compartido');
+  await cp(FIXTURE, board, { recursive: true });
+  const game = join(root, 'mi-juego');
+  await mkdir(game);
+  execFileSync('git', ['-C', game, 'init', '-q']);
+  const picker = join(root, 'picker.js');
+  await writeFile(picker, `process.stdout.write(${JSON.stringify(game)});`);
+  process.env.SCOMPASS_PICKER = picker;
+  try {
+    const page = await open();
+    await page.click('article.proj button:has-text("Vincular tablero…")');
+    await page.waitForSelector('input[name="board"][value="compartido"]');
+    assert.match(await page.textContent('label.tpl:has(input[value="compartido"])'), /Scope Compass \(compartido\)Sin proyecto/);
+    await page.click('#add button:has-text("Elegir carpeta…")');
+    await page.waitForFunction((d) => document.getElementById('link-path').value === d, game);
+    await page.click('#add button[type="submit"]');
+    await page.waitForFunction(() => document.querySelectorAll('article.proj').length === 4);
+    assert.equal(realpathSync(join(game, 'compass')), realpathSync(board));
+    // Al volver a abrirlo, el tablero dice quién lo usa.
+    await page.click('#add-btn');
+    await page.click('#add .tabs button:has-text("Vincular tablero")');
+    await page.waitForFunction((g) => document.querySelector('label.tpl:has(input[value="compartido"])')?.textContent.includes(`Lo usa ${g}`), game);
   } finally {
     delete process.env.SCOMPASS_PICKER;
   }

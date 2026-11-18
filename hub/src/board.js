@@ -145,8 +145,31 @@ function makeLink(target, compass) {
 }
 
 /**
+ * Los tableros de boardsDir() (las subcarpetas con config.json), para elegir uno y enlazarlo: { name, path, project,
+ * used_by }. project es el de su config.json; used_by, los proyectos (de los que se pasan, los del Inicio) cuyo
+ * compass/ apunta a él: uno se puede enlazar desde varios.
+ */
+export function listBoards(projects = []) {
+  const dir = boardsDir();
+  const users = new Map();
+  for (const p of projects) {
+    if (boardKind(p) !== 'linked') continue;
+    const t = realOr(join(p, 'compass'));
+    users.set(t, [...(users.get(t) ?? []), p]);
+  }
+  let entries = [];
+  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return []; }
+  return entries.filter((e) => e.isDirectory() && existsSync(join(dir, e.name, 'config.json'))).map((e) => {
+    const path = realOr(join(dir, e.name));
+    let project = null;
+    try { project = JSON.parse(readFileSync(join(path, 'config.json'), 'utf8')).project ?? null; } catch { /* un config.json roto igual es un tablero */ }
+    return { name: e.name, path, project, used_by: users.get(path) ?? [] };
+  }).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
  * <proyecto>/compass pasa a ser un enlace al tablero de target (una ruta, o un nombre dentro de boardsDir()), que ya
- * tiene que existir: es lo que se hace en otro equipo después de clonar el repo del tablero.
+ * tiene que existir: un tablero creado antes (en este equipo, por otro proyecto o solo) o el que se clonó en otro equipo.
  */
 export async function linkBoard(projectDir, target) {
   const dir = isAbsolute(target) || target.includes('/') || target.includes('\\') ? resolve(target) : join(boardsDir(), target);

@@ -81,6 +81,7 @@ a.tag:hover { text-decoration: underline; }
 .proj .ms .bar { flex: none; }
 .add .where-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .add .where-row .hint { flex: 1 1 280px; overflow-wrap: anywhere; }
+.add .where-row input { flex: 1 1 280px; min-width: 0; }
 /* Transiciones entre el Inicio y los tableros (mismo origen, D29). */
 @view-transition { navigation: auto; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 160ms; }
