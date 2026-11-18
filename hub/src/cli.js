@@ -40,7 +40,7 @@ import { dueState, isValidDue, repeatLabel, localDay, localStamp, milestoneDueSt
 import { brokenLinks, linksOf, linkView, openBlockers, reviewBlockers, wouldCycle } from './links.js';
 import { decisionCounts, decisionLabel, decisionState, DECISION_STATES, MARK } from './decisions.js';
 import { descriptionTemplate, DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, SIZES, splitList } from './filters.js';
-import { selfCommand } from './self.js';
+import { relaunchStdio, selfCommand } from './self.js';
 import { claudeSpawn, findClaude } from './chat.js';
 import { chosenLang, processLang, setChosenLang, setLang, T } from './i18n.js';
 
@@ -385,7 +385,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
     unregisterHub();
     if (restart) {
       const again = argv.filter((x, i) => x !== '--port' && argv[i - 1] !== '--port' && !x.startsWith('--port=') && x !== '--open' && x !== '--lan');
-      spawn(...selfCommand([...again, '--port', String(addr.port), ...(withLan ? ['--lan'] : [])]), { cwd, env: process.env, stdio: 'inherit', detached: true, windowsHide: true }).unref();
+      spawn(...selfCommand([...again, '--port', String(addr.port), ...(withLan ? ['--lan'] : [])]), { cwd, env: process.env, stdio: relaunchStdio(), detached: true, windowsHide: true }).unref();
       if (!o.json) print(T('Reiniciando el Inicio…'));
     }
     return 0;
@@ -601,7 +601,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
       if (restart) {
         // En el mismo puerto que tenía (con --port 0 tomaría otro al azar).
         const again = argv.filter((x, i) => x !== '--port' && argv[i - 1] !== '--port' && !x.startsWith('--port='));
-        spawn(...selfCommand([...again, '--port', String(addr.port)]), { cwd, env: process.env, stdio: 'inherit', detached: true, windowsHide: true }).unref();
+        spawn(...selfCommand([...again, '--port', String(addr.port)]), { cwd, env: process.env, stdio: relaunchStdio(), detached: true, windowsHide: true }).unref();
         if (!o.json) print(T('Reiniciando el hub…'));
         if (stdin === process.stdin) process.exit(0);
       }

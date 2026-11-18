@@ -13,6 +13,13 @@ export const IS_BINARY = isSea();
 /** [programa, argumentos] para correr `scompass <args>` con esta misma instalación. */
 export const selfCommand = (args) => (IS_BINARY ? [process.execPath, args] : [process.execPath, [BIN, ...args]]);
 
+/**
+ * La salida del proceso que se relanza (restart del hub y del Inicio): la misma que la de este, salvo en Windows con
+ * una consola propia (doble clic, el acceso directo del menú Inicio): esa consola se cierra con este proceso y el nuevo,
+ * que la heredaba, moría al escribir en ella. Ahí, sin salida: se maneja desde la bandeja y la web.
+ */
+export const relaunchStdio = () => (process.platform === 'win32' && (process.stdout.isTTY || process.stderr.isTTY) ? 'ignore' : 'inherit');
+
 /** Dónde anota scompass su propia ruta (§37): <datos>/scompass.json. */
 export const selfFile = () => join(projectsDataDir(), 'scompass.json');
 
