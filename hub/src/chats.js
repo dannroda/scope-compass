@@ -123,6 +123,8 @@ export class ChatManager extends EventEmitter {
     this.procs = new Map();
     this.turns = new Map();
     this.saving = new Map();
+    // Lo que falta guardar del último fin de turno de cada conversación (la respuesta y la fecha): get lo espera.
+    this.ending = new Map();
     this.pending = new Set();
   }
 
@@ -130,6 +132,8 @@ export class ChatManager extends EventEmitter {
 
   /** Una conversación con su copia, si hay un turno en curso y lo que va de él. */
   async get(id) {
+    // Recién terminado un turno, la respuesta se está guardando: sin esperarla, daba busy false y la copia sin ella.
+    await this.ending.get(id);
     const chat = await this.store.get(id);
     if (!chat) throw new ChatError('not_found', T`no hay una conversación ${id}`);
     const turn = this.turns.get(id);
@@ -261,7 +265,11 @@ export class ChatManager extends EventEmitter {
         const done = save.catch((err) => this.emit('event', { chat: id, event: 'error', code: 'io_error', message: err.message }))
           .then(() => this.emit('event', { chat: id, ...e }));
         this.pending.add(done);
-        done.finally(() => this.pending.delete(done));
+        this.ending.set(id, done);
+        done.finally(() => {
+          this.pending.delete(done);
+          if (this.ending.get(id) === done) this.ending.delete(id);
+        });
         return;
       }
     }

@@ -23,7 +23,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   for (const m of managers) m.close();
-  await rm(chatDir(dir), { recursive: true, force: true });
+  await rm(chatDir(dir), { recursive: true, force: true, maxRetries: 10 });
   await rm(root, { recursive: true, force: true, maxRetries: 10 });
 });
 
