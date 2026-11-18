@@ -111,8 +111,9 @@ for (const f of EXTRA) {
   if (f.startsWith('README') && slug) text = absoluteLinks(text, slug, `v${pkg.version}`, EXTRA);
   writeFileSync(join(ADDON, 'addons', 'scope_compass', f), text);
 }
-// En Windows no hay zip: el tar.exe que trae Windows 10/11 (bsdtar) arma un .zip con -a.
-if (WIN) execFileSync('tar.exe', ['-a', '-c', '-f', join(DIST, zip), 'addons'], { cwd: ADDON });
+// En Windows no hay zip: el tar.exe que trae Windows 10/11 (bsdtar) arma un .zip con -a. Con la ruta entera: desde Git
+// Bash, tar.exe a secas es el GNU tar de Git, que no arma zips y toma «C:» de la ruta por un host remoto.
+if (WIN) execFileSync(join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe'), ['-a', '-c', '-f', join(DIST, zip), 'addons'], { cwd: ADDON });
 else {
   // Sin zip instalado (Arch no lo trae), bsdtar de libarchive arma el mismo .zip.
   try { execFileSync('zip', ['-q', '-X', '-r', join(DIST, zip), 'addons'], { cwd: ADDON }); }
