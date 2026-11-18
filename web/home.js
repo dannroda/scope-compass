@@ -538,7 +538,7 @@
         h('button', { class: 'btn small primary', type: 'button', disabled: U.busy, onclick: restartHome }, T('Reiniciar Inicio')));
       return;
     }
-    const pre = s.release?.prerelease ? T(' (pre-release)') : '';
+    const pre = s.release?.prerelease ? ' (beta)' : '';
     box.replaceChildren(h('span', { class: 'what' }, T`Hay una versión nueva de Scope Compass: ${s.latest}${pre} (esta es la ${s.current}).`),
       s.release?.html_url ? h('a', { class: 'btn small ghost', href: s.release.html_url, target: '_blank', rel: 'noopener' }, T('Qué cambió')) : null,
       h('button', { class: 'btn small primary', type: 'button', disabled: U.busy, onclick: installUpgrade }, U.busy ? T('Bajando…') : T('Actualizar')));

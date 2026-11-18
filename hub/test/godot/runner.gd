@@ -256,6 +256,10 @@ func test_addon_update(a: Array) -> void:
 	if not _check(c, v.addon_update_row.visible and v.addon_update_label.text.contains("9.9.9") and v.addon_update_label.text.contains(v.addon_version()), "sin aviso: " + v.addon_update_label.text): return
 	v.dismiss_addon_update()
 	if not _check(c, not v.addon_update_row.visible and prefs.get("update_dismissed") == "9.9.9", "Después no se recordó: %s" % prefs): return
+	# Una pre-release (canal beta, D62) se marca como tal.
+	v.show_addon_release({ "version": "9.9.10", "html_url": "https://h", "prerelease": true })
+	if not _check(c, v.addon_update_label.text.contains("9.9.10 (beta)"), "sin (beta): " + v.addon_update_label.text): return
+	if not _check(c, v.update_channel_setting.call() == "stable", "el canal por defecto no es stable"): return
 
 
 func test_online_receive(a: Array) -> void:

@@ -9,6 +9,8 @@ const SCOMPASS_SETTING := "scope_compass/scompass_path"
 const KEEP_SETTING := "scope_compass/keep_hub_running"
 ## Buscar versiones nuevas del addon al abrir el editor, una vez por día (spec §39).
 const UPDATES_SETTING := "scope_compass/check_updates"
+## El canal (D62): stable, solo releases; beta, también las pre-releases (las versiones para probar).
+const CHANNEL_SETTING := "scope_compass/update_channel"
 
 var _dock: EditorDock
 var _view: DockView
@@ -36,6 +38,11 @@ func _enter_tree() -> void:
 	es.set_initial_value(UPDATES_SETTING, true, false)
 	es.add_property_info({ "name": UPDATES_SETTING, "type": TYPE_BOOL })
 	_view.check_updates_setting = func(): return bool(es.get_setting(UPDATES_SETTING))
+	if not es.has_setting(CHANNEL_SETTING):
+		es.set_setting(CHANNEL_SETTING, "stable")
+	es.set_initial_value(CHANNEL_SETTING, "stable", false)
+	es.add_property_info({ "name": CHANNEL_SETTING, "type": TYPE_STRING, "hint": PROPERTY_HINT_ENUM, "hint_string": "stable,beta" })
+	_view.update_channel_setting = func(): return str(es.get_setting(CHANNEL_SETTING))
 	# Después de instalar una versión nueva del addon (§39): las escenas se guardan y el editor se reinicia.
 	_view.restart_editor = func():
 		EditorInterface.save_all_scenes()

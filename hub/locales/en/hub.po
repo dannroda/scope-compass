@@ -784,6 +784,9 @@ msgstr "PowerShell exited{0}"
 msgid "no hay bus de sesión de D-Bus"
 msgstr "there's no D-Bus session bus"
 
+msgid "canal inválido: {0} (stable o beta)"
+msgstr "invalid channel: {0} (stable or beta)"
+
 msgid "no se pudo conectar con GitHub: {0}"
 msgstr "couldn't connect to GitHub: {0}"
 

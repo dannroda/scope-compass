@@ -56,7 +56,7 @@ More screenshots:
 
 ## Install
 
-Download the newest release from the [releases page](https://github.com/dannroda/scope-compass/releases) (for now they are pre-releases, starting with 0.1.0):
+Download the newest release from the [releases page](https://github.com/dannroda/scope-compass/releases) (0.1.0 is a pre-release; after it, pre-releases are beta versions for testing):
 
 | File | What |
 |---|---|
@@ -72,7 +72,7 @@ Check the download with `sha256sum -c SHA256SUMS --ignore-missing` (on Windows, 
 
 **Godot addon.** Unzip the addon at the root of your Godot project (it creates `addons/scope_compass/`), then enable **Scope Compass** in Project › Project Settings › Plugins. The dock finds the binary from its recorded path, or on the `PATH`; otherwise set it in Editor Settings › `scope_compass/scompass_path`.
 
-**Updating.** `scompass upgrade` downloads the newest release for your platform, checks it against `SHA256SUMS` and replaces the binary (`--check` only tells you whether there is one). Home checks once a day and, when there is a new version, offers **Update** at the top of the page and in the tray. Home and the hubs that are already running keep the previous version until they restart (`scompass home restart`, or **Restart Home**). The Godot addon updates itself: the dock offers the new version and restarts the editor (Editor Settings › `scope_compass/check_updates` turns that off).
+**Updating.** `scompass upgrade` downloads the newest release for your platform, checks it against `SHA256SUMS` and replaces the binary (`--check` only tells you whether there is one). Pre-releases only reach the beta channel: `scompass upgrade --channel beta` (back with `--channel stable`), and Editor Settings › `scope_compass/update_channel` for the addon. Home checks once a day and, when there is a new version, offers **Update** at the top of the page and in the tray. Home and the hubs that are already running keep the previous version until they restart (`scompass home restart`, or **Restart Home**). The Godot addon updates itself: the dock offers the new version and restarts the editor (Editor Settings › `scope_compass/check_updates` turns that off).
 
 The full steps, including the npm package and Windows notes, are in [`docs/instalar.md`](docs/instalar.md) (Spanish).
 

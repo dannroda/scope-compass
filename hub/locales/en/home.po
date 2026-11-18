@@ -343,9 +343,6 @@ msgstr "Scope Compass {0} is installed. Home keeps running {1} until it restarts
 msgid "Reiniciar Inicio"
 msgstr "Restart Home"
 
-msgid " (pre-release)"
-msgstr " (pre-release)"
-
 msgid "Hay una versión nueva de Scope Compass: {0}{1} (esta es la {2})."
 msgstr "A new version of Scope Compass is out: {0}{1} (this is {2})."
 

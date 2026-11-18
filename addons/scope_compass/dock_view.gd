@@ -76,6 +76,9 @@ var updater := Updater.new()
 var restart_editor: Callable = func(): pass
 ## Si se buscan versiones nuevas al abrir el editor (Editor Settings › scope_compass/check_updates).
 var check_updates_setting: Callable = func(): return true
+## El canal de actualizaciones (Editor Settings › scope_compass/update_channel, D62): "stable" o "beta" (con las
+## pre-releases).
+var update_channel_setting: Callable = func(): return "stable"
 const UPDATE_CHECK_INTERVAL_S := 86400
 ## Archivos desactualizados según `scompass update --check`.
 var outdated: Array = []
@@ -417,7 +420,7 @@ func check_addon_update(manual := false) -> String:
 	var now := int(Time.get_unix_time_from_system())
 	if not manual and now - int(get_pref.call("update_last_check", 0)) < UPDATE_CHECK_INTERVAL_S:
 		return I18n.t("ya se buscó hoy")
-	var result: Dictionary = await updater.check()
+	var result: Dictionary = await updater.check(str(update_channel_setting.call()) == "beta")
 	if not result.error.is_empty():
 		return result.error
 	set_pref.call("update_last_check", now)
@@ -432,7 +435,8 @@ func check_addon_update(manual := false) -> String:
 ## Muestra el aviso de `release` (como lo da Updater.pick_release()).
 func show_addon_release(release: Dictionary) -> void:
 	addon_release = release
-	addon_update_label.text = I18n.t("Scope Compass %s está disponible (tenés la %s). Actualizar cambia el addon; si cambia el protocolo, el dock ofrece después el scompass nuevo.") % [release.version, addon_version()]
+	var shown := str(release.version) + (" (beta)" if bool(release.get("prerelease", false)) else "")
+	addon_update_label.text = I18n.t("Scope Compass %s está disponible (tenés la %s). Actualizar cambia el addon; si cambia el protocolo, el dock ofrece después el scompass nuevo.") % [shown, addon_version()]
 	_set_update_buttons(true)
 	addon_update_row.visible = true
 

@@ -41,7 +41,7 @@ import { brokenLinks, linksOf, linkView, openBlockers, reviewBlockers, wouldCycl
 import { decisionCounts, decisionLabel, decisionState, DECISION_STATES, MARK } from './decisions.js';
 import { descriptionTemplate, DUE_FILTERS, filterTasks, PRIORITIES, PRIORITY_LABEL, SIZES, splitList } from './filters.js';
 import { IS_BINARY, relaunchStdio, selfCommand } from './self.js';
-import { checkUpgrade, installUpgrade, UpgradeError } from './upgrade.js';
+import { checkUpgrade, installUpgrade, setUpdateChannel, UpgradeError } from './upgrade.js';
 import { claudeSpawn, findClaude } from './chat.js';
 import { chosenLang, processLang, setChosenLang, setLang, T } from './i18n.js';
 
@@ -76,8 +76,9 @@ const USAGE = T`Uso: scompass [--dir <proyecto>] <comando>
                                             con su ruta entera: no hace falta tenerlo en el PATH
   upgrade [--check] [--pre]                 actualiza el binario de scompass a la release más nueva de GitHub (la baja,
                                             la verifica con SHA256SUMS y reemplaza este ejecutable); --check solo dice
-                                            si hay una (sale con 1 si la hay); --pre también cuenta las pre-releases
-                                            (sin --pre, solo si esta versión es una)
+                                            si hay una (sale con 1 si la hay); --pre cuenta esta vez las pre-releases
+  upgrade --channel stable|beta             el canal de actualizaciones, para upgrade y el Inicio: stable, solo
+                                            releases; beta, también las pre-releases (versiones para probar)
   hubs                                      hubs activos de todos los proyectos
   devices                                   teléfonos vinculados al chat de este equipo (§49), con su último uso
   devices rm <id>                           desvincular uno: su próximo pedido al chat da 403
@@ -215,7 +216,7 @@ const OPTIONS = {
   milestone: { type: 'string' }, status: { type: 'string' }, code: { type: 'string' },
   file: { type: 'string' }, out: { type: 'string' }, overwrite: { type: 'boolean' }, 'dry-run': { type: 'boolean' }, undo: { type: 'boolean' }, project: { type: 'string' },
   raw: { type: 'boolean' }, since: { type: 'string' }, check: { type: 'boolean' }, template: { type: 'string' }, due: { type: 'string' }, repeat: { type: 'string' }, interval: { type: 'string' },
-  port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, pre: { type: 'boolean' }, lan: { type: 'boolean' }, force: { type: 'boolean' }, log: { type: 'string' },
+  port: { type: 'string' }, open: { type: 'boolean' }, direct: { type: 'boolean' }, 'exit-on-stdin-close': { type: 'boolean' }, tray: { type: 'boolean' }, pre: { type: 'boolean' }, channel: { type: 'string' }, lan: { type: 'boolean' }, force: { type: 'boolean' }, log: { type: 'string' },
   q: { type: 'string' }, blocked: { type: 'boolean' }, unblocked: { type: 'boolean' }, 'pending-steps': { type: 'boolean' }, 'with-refs': { type: 'boolean' },
   tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, size: { type: 'string' }, assignee: { type: 'string' },
   at: { type: 'string' }, review: { type: 'boolean' }, note: { type: 'string' },
@@ -477,9 +478,14 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
 
     // El binario a la release más nueva (§39, D62). Los procesos que ya corren siguen con el anterior hasta reiniciarse.
     async upgrade() {
-      const s = await checkUpgrade({ pre: o.pre, force: true, env });
+      if (o.channel !== undefined) await setUpdateChannel(o.channel);
+      const s = await checkUpgrade({ pre: o.pre ? true : undefined, force: true, env });
       const rel = s.release;
-      const latest = rel ? `${rel.version}${rel.prerelease ? T(' (pre-release)') : ''}` : '';
+      const latest = rel ? `${rel.version}${rel.prerelease ? ' (beta)' : ''}` : '';
+      // Elegir el canal no instala nada: dice cuál quedó y si en él hay una versión más nueva.
+      if (o.channel !== undefined) {
+        return done(s, T`Canal de actualizaciones: ${s.channel}` + '\n' + (s.available ? T`hay una más nueva: ${latest}; se instala con scompass upgrade` : T`scompass ${s.current} está al día en ese canal`));
+      }
       if (o.check) {
         done(s, !rel ? T`scompass ${s.current} · no hay releases con un binario para esta plataforma`
           : s.available ? T`scompass ${s.current} · hay una más nueva: ${latest} (${rel.html_url ?? rel.binary_url}); se instala con scompass upgrade`
@@ -1760,7 +1766,7 @@ function upgradeItems({ app, warn, restart }) {
   const { state, installed } = app.upgrade;
   if (installed) return [{ label: T`Reiniciar para usar la ${installed}`, onClick: restart }];
   if (!state?.available) return [];
-  return [{ label: T`Actualizar a la ${state.latest}${state.release?.prerelease ? T(' (pre-release)') : ''}`, onClick: async () => {
+  return [{ label: T`Actualizar a la ${state.latest}${state.release?.prerelease ? ' (beta)' : ''}`, onClick: async () => {
     try { await app.upgrade.install(); restart(); } catch (e) { warn(T`bandeja: ${e.message}`); }
   } }];
 }

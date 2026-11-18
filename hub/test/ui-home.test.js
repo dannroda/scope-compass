@@ -251,7 +251,7 @@ test('versión nueva del binario (§39, D62): el aviso, Actualizar y después Re
   url = `http://127.0.0.1:${(await listen(home, 0)).port}/`;
   const page = await open();
   const box = page.locator('#upgrade');
-  await box.getByText('Hay una versión nueva de Scope Compass: 9.0.0 (pre-release) (esta es la 8.0.0).').waitFor();
+  await box.getByText('Hay una versión nueva de Scope Compass: 9.0.0 (beta) (esta es la 8.0.0).').waitFor();
   assert.equal(await box.getByRole('link', { name: 'Qué cambió' }).getAttribute('href'), rel.html_url);
   await box.getByRole('button', { name: 'Actualizar' }).click();
   await box.getByText('Se instaló Scope Compass 9.0.0. El Inicio sigue con la 8.0.0 hasta reiniciarse.').waitFor();

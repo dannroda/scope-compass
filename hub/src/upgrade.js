@@ -2,15 +2,17 @@
 // plataforma, lo compara con SHA256SUMS y lo pone en lugar del que corre. Lo usan `scompass upgrade` y el Inicio (el
 // aviso de la web y de la bandeja). Solo el binario: un paquete de npm o un clon del repo se actualizan con npm o git.
 //
-// Las mismas reglas que el actualizador del addon (addon_updater.gd): sin borradores y sin pre-releases, salvo que se
-// pidan (--pre) o que la versión que corre sea una pre-release (quien instaló una sigue recibiendo las siguientes).
+// Las mismas reglas que el actualizador del addon (addon_updater.gd): sin borradores, y las pre-releases (las versiones
+// para probar) solo en el canal beta, que se elige con `scompass upgrade --channel beta` y queda en settings.json
+// (el addon tiene el suyo en Editor Settings). --pre las cuenta una vez, sin cambiar el canal.
 import { createHash } from 'node:crypto';
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { projectsDataDir } from './projects.js';
 import { IS_BINARY } from './self.js';
 import { VERSION } from './server.js';
-import { T } from './i18n.js';
+import { settingsFile, T } from './i18n.js';
+import { writeAtomic } from './store/atomic.js';
 
 export const REPO = 'dannroda/scope-compass';
 // SCOMPASS_RELEASES_URL: otra lista de releases con el formato de la API de GitHub (los tests usan un servidor local).
@@ -18,6 +20,22 @@ const releasesUrl = (env = process.env) => env.SCOMPASS_RELEASES_URL || `https:/
 // Una vez por día alcanza (y la API de GitHub sin token permite 60 consultas por hora).
 const CHECK_EVERY_MS = 24 * 60 * 60 * 1000;
 const USER_AGENT = `scope-compass/${VERSION}`;
+export const CHANNELS = ['stable', 'beta'];
+
+const readSettings = () => { try { return JSON.parse(readFileSync(settingsFile(), 'utf8')); } catch { return {}; } };
+/** El canal de actualizaciones elegido: 'stable' (por defecto) o 'beta' (también las pre-releases). */
+export const updateChannel = () => (readSettings().update_channel === 'beta' ? 'beta' : 'stable');
+/** Guarda el canal en <config>/settings.json, junto al idioma. */
+export async function setUpdateChannel(channel) {
+  if (!CHANNELS.includes(channel)) throw new UpgradeError('invalid_argument', T`canal inválido: ${channel} (stable o beta)`);
+  const s = readSettings();
+  if (channel === 'beta') s.update_channel = 'beta';
+  else delete s.update_channel;
+  mkdirSync(dirname(settingsFile()), { recursive: true });
+  await writeAtomic(settingsFile(), `${JSON.stringify(s, null, 2)}
+`);
+  return channel;
+}
 
 export class UpgradeError extends Error {
   constructor(code, message) { super(message); this.code = code; }
@@ -47,16 +65,15 @@ export function assetName(version, { platform = process.platform, arch = process
 
 /**
  * La release más nueva de la lista de la API que trae el binario de esta plataforma, o null.
- * { version, tag, prerelease, notes, html_url, binary_url, sums_url }. Las pre-releases cuentan con pre, o si la
- * versión `current` es una release marcada como pre-release en la lista.
+ * { version, tag, prerelease, notes, html_url, binary_url, sums_url }. Las pre-releases cuentan solo con pre (el canal
+ * beta).
  */
-export function pickRelease(list, { pre = false, current = VERSION, platform, arch } = {}) {
+export function pickRelease(list, { pre = false, platform, arch } = {}) {
   if (!Array.isArray(list)) return null;
   const releases = list.filter((r) => r && typeof r === 'object' && !r.draft);
-  const onPre = pre || releases.some((r) => r.prerelease && compareVersions(String(r.tag_name ?? ''), current) === 0);
   let best = null;
   for (const r of releases) {
-    if (r.prerelease && !onPre) continue;
+    if (r.prerelease && !pre) continue;
     const version = String(r.tag_name ?? '').replace(/^v/, '');
     const assets = Array.isArray(r.assets) ? r.assets : [];
     const url = (name) => assets.find((a) => a?.name === name)?.browser_download_url ?? null;
@@ -83,9 +100,10 @@ const cacheFile = () => join(projectsDataDir(), 'upgrade-check.json');
 
 /**
  * ¿Hay una versión más nueva? { current, latest, available, release, checked_at, binary }. latest es la versión de la
- * release elegida (o null). Guarda la respuesta un día en la carpeta de datos; force la vuelve a pedir.
+ * release elegida (o null), channel el canal que se usó. Guarda la respuesta un día en la carpeta de datos; force la
+ * vuelve a pedir. pre: también las pre-releases, como el canal beta (por defecto, el canal elegido).
  */
-export async function checkUpgrade({ pre = false, force = false, current = VERSION, now = () => Date.now(), env = process.env, platform, arch } = {}) {
+export async function checkUpgrade({ pre, force = false, current = VERSION, now = () => Date.now(), env = process.env, platform, arch } = {}) {
   const file = cacheFile();
   const url = releasesUrl(env);
   let cached = null;
@@ -106,8 +124,9 @@ export async function checkUpgrade({ pre = false, force = false, current = VERSI
       writeFileSync(file, JSON.stringify({ url, checked_at: checkedAt, list }) + '\n');
     } catch { /* sin caché: se vuelve a pedir la próxima vez */ }
   }
-  const release = pickRelease(list, { pre, current, platform, arch });
-  return { current, latest: release?.version ?? null, available: !!release && compareVersions(release.version, current) > 0, release, checked_at: checkedAt, binary: IS_BINARY };
+  const channel = pre === true ? 'beta' : pre === false ? 'stable' : updateChannel();
+  const release = pickRelease(list, { pre: channel === 'beta', platform, arch });
+  return { current, channel, latest: release?.version ?? null, available: !!release && compareVersions(release.version, current) > 0, release, checked_at: checkedAt, binary: IS_BINARY };
 }
 
 /** El sha256 de `name` en un SHA256SUMS ("<hash>  <nombre>" por línea), o null. */
