@@ -24,6 +24,8 @@ const opts = (a, names) => names.flatMap(([key, flag = key.replace(/_/g, '-')]) 
   return [`--${flag}=${Array.isArray(v) ? v.join(',') : v}`];
 });
 const named = (...keys) => keys.map((k) => [k]);
+// none en estos campos es "" para la CLI (lo quita).
+const cleared = (a, ...keys) => ({ ...a, ...Object.fromEntries(keys.filter((k) => a[k] === 'none').map((k) => [k, ''])) });
 
 // Las herramientas y las instrucciones, en el idioma del proceso (§45): se arman al arrancar el servidor.
 function definitions() {
@@ -77,12 +79,13 @@ function definitions() {
         description: str(T('qué hay que hacer y por qué')), due: str(DUE), tags: strs(T('etiquetas (usá las que ya existen)')), priority: str(T('prioridad'), { enum: ['high', 'medium', 'low'] }),
         size: str(T('estimación'), { enum: ['s', 'm', 'l'] }), assignee: str(T('responsable')) },
       required: ['title', 'milestone'], argv: (a) => [opts(a, named('milestone', 'code', 'status', 'description', 'due', 'tags', 'priority', 'size', 'assignee')), ['add', a.title]] },
-    { name: 'update_task', description: T('Cambia solo los campos que se pasan. "" quita description, due, tags, priority, size o assignee.'),
+    { name: 'update_task', description: T('Cambia solo los campos que se pasan. "" quita description, due, tags o assignee; none quita priority o size.'),
       props: { id: ID, title: str(T('título')), description: str(T('qué y por qué (el pedido)')), notes: str(T('lo que va saliendo al trabajarla: decisiones, hallazgos, lo que el siguiente necesita saber')),
         test: str(T('cómo se comprueba que está terminada')), code: str(T('número visible')), milestone: str(T('id del hito al que se mueve')), status: str(T('estado'), { enum: STATUSES }),
-        due: str(DUE), tags: strs(T('etiquetas (reemplaza la lista; [] las quita)')), priority: str(T('prioridad'), { enum: ['high', 'medium', 'low', ''] }),
-        size: str(T('estimación'), { enum: ['s', 'm', 'l', ''] }), assignee: str(T('responsable')), etag: ETAG },
-      required: ['id'], argv: (a) => [opts(a, named('title', 'description', 'notes', 'test', 'code', 'milestone', 'status', 'due', 'tags', 'priority', 'size', 'assignee', 'etag')), ['set', a.id]] },
+        due: str(DUE), tags: strs(T('etiquetas (reemplaza la lista; [] las quita)')), priority: str(T('prioridad'), { enum: ['high', 'medium', 'low', 'none'] }),
+        size: str(T('estimación'), { enum: ['s', 'm', 'l', 'none'] }), assignee: str(T('responsable')), etag: ETAG },
+      // none y no "": la API de Gemini (agy) rechaza las herramientas con un valor vacío en un enum.
+      required: ['id'], argv: (a) => [opts(cleared(a, 'priority', 'size'), named('title', 'description', 'notes', 'test', 'code', 'milestone', 'status', 'due', 'tags', 'priority', 'size', 'assignee', 'etag')), ['set', a.id]] },
     { name: 'delete_task', description: T('Borra una tarea (y sus capturas guardadas por la app que nadie más cita). Los vínculos de otras tareas hacia ella quedan rotos.'), props: { id: ID, etag: ETAG },
       required: ['id'], argv: (a) => [opts(a, named('etag')), ['rm', a.id]] },
     { name: 'move_task', description: T('Cambia el estado de una tarea.'), props: { id: ID, status: str(T('estado nuevo'), { enum: STATUSES }), etag: ETAG },

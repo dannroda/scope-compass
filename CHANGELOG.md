@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Update channels for the binary and the Godot addon: `stable` (the default) only gets releases; `beta` also gets pre-releases, which are versions for testing. Choose it with `scompass upgrade --channel stable|beta` (used by `upgrade` and Home) and, for the addon, in Editor Settings › `scope_compass/update_channel`. The binary no longer follows pre-releases just because the running version is one. Pre-releases show as "(beta)" in the notices.
 
+### Fixed
+
+- Chat with Antigravity CLI: every message failed with `INVALID_ARGUMENT … enum[3]: cannot be empty`, because the Gemini API rejects the MCP tools when an enum contains an empty value. `update_task` now takes `none` to remove `priority` or `size` (`""` still works).
+
 ## [0.1.0] - 2026-11-18
 
 First public release. The interface is in English and Spanish; the documentation in `docs/` is in Spanish.

@@ -86,6 +86,8 @@ test('initialize, ping, tools/list y lo que no existe', async () => {
   for (const t of tools) {
     assert.equal(t.inputSchema.type, 'object', t.name);
     assert.ok(t.inputSchema.properties.dir, `${t.name} acepta dir`);
+    // La API de Gemini (agy, §47) rechaza todas las herramientas si un enum tiene un valor vacío.
+    for (const [k, p] of Object.entries(t.inputSchema.properties)) assert.ok(!(p.enum ?? p.items?.enum ?? []).includes(''), `${t.name}.${k}`);
   }
   assert.equal(tools.find((t) => t.name === 'list_tasks').annotations.readOnlyHint, true);
   assert.equal(tools.find((t) => t.name === 'add_task').annotations.readOnlyHint, false);
@@ -136,12 +138,12 @@ test('las escrituras pasan por la CLI: archivo canónico, export y etag', async 
   const now = await task(t.id);
   assert.equal(now.status, 'doing');
   assert.deepEqual(now.checklist, [{ text: 'Primero', done: false }, { text: 'Segundo', done: true }]);
-  // update_task: "" quita; un etag viejo es un conflicto.
+  // update_task: "" quita (none en priority y size); un etag viejo es un conflicto.
   const u = await s.tool('update_task', { id: t.id, notes: 'listo', priority: '', tags: [], etag: t.etag });
   assert.equal(u.isError, true);
   assert.match(u.content[0].text, /conflict/);
   const fresh = data(await s.tool('show_task', { id: t.id }));
-  const ok = await s.tool('update_task', { id: t.id, notes: 'listo', priority: '', tags: [], etag: fresh.etag });
+  const ok = await s.tool('update_task', { id: t.id, notes: 'listo', priority: 'none', tags: [], etag: fresh.etag });
   assert.equal(ok.structuredContent.notes, 'listo');
   assert.equal((await task(t.id)).priority, undefined);
   assert.equal((await task(t.id)).tags, undefined);

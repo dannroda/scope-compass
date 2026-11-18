@@ -145,8 +145,8 @@ msgstr "size"
 msgid "responsable"
 msgstr "assignee"
 
-msgid "Cambia solo los campos que se pasan. \"\" quita description, due, tags, priority, size o assignee."
-msgstr "Changes only the fields you pass. \"\" removes description, due, tags, priority, size or assignee."
+msgid "Cambia solo los campos que se pasan. \"\" quita description, due, tags o assignee; none quita priority o size."
+msgstr "Changes only the fields you pass. \"\" removes description, due, tags or assignee; none removes priority or size."
 
 msgid "qué y por qué (el pedido)"
 msgstr "what and why (the request)"
