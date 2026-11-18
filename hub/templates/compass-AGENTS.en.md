@@ -243,6 +243,7 @@ scompass board                   # where it is: in the project, linked or submod
 scompass board move [<name>]     # moves an older board to boards/<name> with its history; compass/ becomes a link, out of the project's index
 scompass board list              # the boards in boards/ and which projects use them
 scompass board link <name>       # links a board that already exists (another project's, or one cloned on another computer into boards/<name>)
+scompass board link <name> --replace  # changes the project's board for that one (a local one leaves the project's repo; not with anything uncommitted)
 ```
 
 `board move` moves the markdown export to `compass/tareas.md` (inside the board) and leaves what wasn't committed uncommitted in the board; removing `compass/` from the project stays in its index to be committed. With the repo of all boards, the history goes in as one commit (the only one the app makes); with one repo per board, it doesn't commit anything. Don't run it while a hub or Home is serving the project.

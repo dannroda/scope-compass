@@ -405,6 +405,29 @@ func test_link_compass(a: Array) -> void:
 	if not _check(c, v.board.tasks.size() > 0, "no cargó las tareas del tablero"): return
 
 
+# Proyecto con su tablero en el repo: el botón del tablero dice dónde está y lo cambia por uno de la carpeta de
+# tableros (`scompass board link --replace`).
+func test_change_board(a: Array) -> void:
+	var c := "change_board"
+	var v := await _view(a[0])
+	v.scompass_setting = func(): return a[1]
+	await v.load_boards()
+	if not _check(c, v.board_button.visible and v.board_here.get("kind") == "local", "no dice que está en el proyecto: " + str(v.board_here)): return
+	v._fill_board_menu()
+	var menu := v.board_button.get_popup()
+	if not _check(c, menu.get_item_text(0).ends_with("(en el repo del proyecto)"), "encabezado: " + menu.get_item_text(0)): return
+	var target := ""
+	for b in v.boards:
+		if b.name == a[2]:
+			target = b.path
+	if not _check(c, target != "" and menu.get_item_index(v.BOARD_FIRST) >= 0 and menu.get_item_index(v.BOARD_OTHER) >= 0, "faltan el tablero o Otra carpeta en el menú"): return
+	if not _check(c, await v.change_board(target), "no se cambió: " + v.notice.text): return
+	if not _check(c, v.board_here.get("kind") == "linked" and v.board_here.get("target") == target, "sigue: " + str(v.board_here)): return
+	v._fill_board_menu()
+	if not _check(c, menu.is_item_checked(menu.get_item_index(v.BOARD_FIRST + v.boards.map(func(b): return b.path).find(target))), "el tablero nuevo no está tildado"): return
+	if not _check(c, v.board.tasks.size() > 0, "no cargó las tareas del tablero"): return
+
+
 # compass/ con el schema de una versión anterior: el dock lo avisa y "Actualizar" corre `scompass update`.
 func test_update_compass(a: Array) -> void:
 	var c := "update_compass"

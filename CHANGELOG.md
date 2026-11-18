@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Link a board that already exists to a project without `compass/`: another project's board, a standalone one, or one cloned from the boards repo. `scompass board list` shows the boards in the boards folder and which projects use them; Home has Add project › Link board, and the Godot dock offers the boards next to "Create compass/".
+- Change the board of a project that already has one: `scompass board link <board> --replace`, and a board button in the Godot dock that shows where the board is and switches it (stopping and restarting the dock's hub). A linked board is swapped; an in-project board leaves the project's repo and stays in its history. Nothing changes if the board has uncommitted changes.
 
 ### Changed
 

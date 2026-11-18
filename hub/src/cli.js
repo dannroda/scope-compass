@@ -29,7 +29,7 @@ import { boardStatus, docDiff, docLog, docsStatus, repoFiles } from './git.js';
 import { imageFile, repoFile } from './files-api.js';
 import { dropImage, IMAGE_EXT, importImage, insideProject, isImagePath } from './images.js';
 import { taskHistory } from './history.js';
-import { boardInfo, boardsDir, linkBoard, listBoards, moveBoard, newBoard } from './board.js';
+import { boardInfo, boardsDir, linkBoard, listBoards, moveBoard, newBoard, replaceBoard } from './board.js';
 import { promoteDecision } from './promote.js';
 import { listDevices, removeDevice } from './devices.js';
 import { forgetProject, isTempPath, loadProjects, projectsFile, projectsStatus, pruneTempProjects, recordProject, ProjectsError } from './projects.js';
@@ -93,8 +93,10 @@ const USAGE = T`Uso: scompass [--dir <proyecto>] <comando>
   board move [<nombre>]                     saca compass/ a la carpeta de tableros del usuario, con su propio git y
                                             su historial; compass/ queda como enlace y fuera del git del proyecto
   board list                                los tableros de la carpeta de tableros y qué proyectos los usan
-  board link <nombre|carpeta>               enlaza compass/ a un tablero que ya existe (de otro proyecto, uno
-                                            suelto o uno clonado en otro equipo)
+  board link <nombre|carpeta> [--replace]   enlaza compass/ a un tablero que ya existe (de otro proyecto, uno
+                                            suelto o uno clonado en otro equipo); --replace cambia el que tiene: un
+                                            enlace se cambia y uno local sale del repo del proyecto (queda en su
+                                            historial; se niega con algo sin commitear)
   home add [<carpeta>]                      anota un proyecto sin levantar su hub (por defecto, el de --dir)
   home rm [<carpeta>]                       lo quita del registro (no toca sus datos)
   list [--milestone m00] [--status doing,review] [filtros]
@@ -223,7 +225,7 @@ const OPTIONS = {
   tag: { type: 'string' }, tags: { type: 'string' }, priority: { type: 'string' }, size: { type: 'string' }, assignee: { type: 'string' },
   at: { type: 'string' }, review: { type: 'boolean' }, note: { type: 'string' },
   why: { type: 'string' }, alternatives: { type: 'string' }, ask: { type: 'boolean' }, session: { type: 'string' }, reply: { type: 'string' }, decisions: { type: 'string' },
-  pending: { type: 'boolean' }, revert: { type: 'boolean' }, 'in-project': { type: 'boolean' }, all: { type: 'boolean' }, uncovered: { type: 'boolean' }, board: { type: 'string' },
+  pending: { type: 'boolean' }, revert: { type: 'boolean' }, 'in-project': { type: 'boolean' }, replace: { type: 'boolean' }, all: { type: 'boolean' }, uncovered: { type: 'boolean' }, board: { type: 'string' },
   title: { type: 'string' }, description: { type: 'string' }, lang: { type: 'string' }, notes: { type: 'string' }, test: { type: 'string' }, text: { type: 'string' }, detail: { type: 'string' },
   help: { type: 'boolean', short: 'h' }
 };
@@ -901,8 +903,18 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
         return 0;
       }
       if (sub === 'link') {
-        const r = await linkBoard(project, need(arg, T('el nombre o la carpeta del tablero')));
-        return done(r, T`compass/ → ${r.target}${r.exclude ? T` (excluido en ${r.exclude})` : ''}`);
+        const target = need(arg, T('el nombre o la carpeta del tablero'));
+        if (!o.replace) {
+          const r = await linkBoard(project, target);
+          return done(r, T`compass/ → ${r.target}${r.exclude ? T` (excluido en ${r.exclude})` : ''}`);
+        }
+        // Como move: con un hub mirando compass/, la carpeta cambia debajo de él.
+        if (hubsOf(project).length) throw new StoreError('conflict', T('hay un hub de este proyecto corriendo: detenelo (o el Inicio) antes de cambiar el tablero'));
+        const r = await replaceBoard(project, target);
+        const lines = [T`compass/ → ${r.target}${r.exclude ? T` (excluido en ${r.exclude})` : ''}`];
+        if (r.replaced === 'linked') lines.push(T('El tablero de antes sigue donde estaba.'));
+        if (r.untracked) lines.push(T`El tablero de antes salió del repo del proyecto${r.exportRemoved ? T`, con ${r.exportRemoved}` : ''}: queda en su historial. Commiteá la baja con \`git commit\` y sin \`-- compass\` (con la ruta, git lee los archivos a través del enlace y los vuelve a agregar).`);
+        return done(r, lines.join('\n'));
       }
       throw new UsageError(T`subcomando desconocido: board ${sub} (list, move, link)`);
     },

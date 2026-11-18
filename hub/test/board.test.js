@@ -122,6 +122,56 @@ test('board move sin git en el proyecto, y board link en otro proyecto', async (
   }
 });
 
+test('board link --replace: un tablero local sale del repo del proyecto (no con algo sin commitear) y un enlace se cambia', async () => {
+  const { dir, git, cli } = await project();
+  const a = join(boardsDir(), `otro-a-${Date.now()}`);
+  const b = join(boardsDir(), `otro-b-${Date.now()}`);
+  try {
+    await cp(FIXTURE, a, { recursive: true });
+    await cp(FIXTURE, b, { recursive: true });
+    await mkdir(join(dir, 'docs'));
+    await writeFile(join(dir, 'docs', 'tareas.md'), '# viejo\n');
+    // Sin commitear, el tablero local no tiene historial: se niega.
+    let r = await cli('board', 'link', a, '--replace');
+    assert.equal(r.code, 1);
+    assert.match(r.err, /no está commiteado/);
+    git('add', '-A'); git('commit', '-qm', 'tablero local');
+    // Con algo sin commitear en compass/, se perdería: se niega y no toca nada.
+    const id = JSON.parse((await cli('list', '--json')).out).tasks[0].id;
+    assert.equal((await cli('move', id, 'doing')).code, 0);
+    r = await cli('board', 'link', a, '--replace');
+    assert.equal(r.code, 1);
+    assert.match(r.err, /sin commitear/);
+    assert.equal(boardKind(dir), 'local');
+    git('checkout', '-q', '--', 'compass', 'docs');
+    // Sin --replace, un compass/ que ya existe es un conflicto, como siempre.
+    assert.equal((await cli('board', 'link', a)).code, 1);
+
+    r = await cli('board', 'link', a, '--replace', '--json');
+    assert.equal(r.code, 0, r.err);
+    assert.deepEqual([JSON.parse(r.out).replaced, JSON.parse(r.out).untracked, JSON.parse(r.out).exportRemoved], ['local', true, 'docs/tareas.md']);
+    assert.equal(realpathSync(join(dir, 'compass')), realpathSync(a));
+    assert.equal(git('ls-files', '--', 'compass', 'docs/tareas.md'), '', 'fuera del índice');
+    assert.ok(!existsSync(join(dir, 'docs', 'tareas.md')));
+    assert.match(git('status', '--porcelain'), /^D {2}compass\/config\.json$/m, 'la baja queda para commitear');
+    assert.match(readFileSync(join(dir, '.git', 'info', 'exclude'), 'utf8'), /^\/compass$/m);
+    // El viejo sigue en el historial.
+    assert.ok(git('show', 'HEAD:compass/config.json').includes('"project"'));
+
+    // Un enlace se cambia por otro y el tablero de antes no se toca; el mismo es un conflicto.
+    assert.equal((await cli('board', 'link', a, '--replace')).code, 1, 'ya usa ese tablero');
+    r = await cli('board', 'link', b, '--replace', '--json');
+    assert.equal(r.code, 0, r.err);
+    assert.equal(JSON.parse(r.out).replaced, 'linked');
+    assert.equal(realpathSync(join(dir, 'compass')), realpathSync(b));
+    assert.ok(existsSync(join(a, 'config.json')));
+    assert.equal((await cli('board', 'link', join(dir, 'main.gd'), '--replace')).code, 1, 'no es un tablero');
+    assert.equal(realpathSync(join(dir, 'compass')), realpathSync(b), 'si falla, el enlace queda');
+  } finally {
+    for (const d of [dir, a, b]) await rm(d, { recursive: true, force: true });
+  }
+});
+
 test('tablero enlazado en el hub: estado de git del tablero, capturas, watcher y rutas', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'scompass-board-'));
   const board = await mkdtemp(join(tmpdir(), 'scompass-board-target-'));

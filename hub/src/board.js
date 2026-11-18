@@ -9,7 +9,7 @@
 // Lo que cambia según el tipo es qué git se usa para el estado y el historial del tablero (git -C compass, ver
 // git.js e history.js) y que las rutas dentro de un tablero enlazado cuentan como del proyecto (paths.js).
 import { execFile, spawn } from 'node:child_process';
-import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { appendFile, readFile } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { canonical } from './store/canonical.js';
@@ -172,16 +172,65 @@ export function listBoards(projects = []) {
  * tiene que existir: un tablero creado antes (en este equipo, por otro proyecto o solo) o el que se clonó en otro equipo.
  */
 export async function linkBoard(projectDir, target) {
-  const dir = isAbsolute(target) || target.includes('/') || target.includes('\\') ? resolve(target) : join(boardsDir(), target);
-  if (!existsSync(join(dir, 'config.json'))) throw new StoreError('not_found', T`${dir} no es un tablero (no tiene config.json)`);
+  const dir = boardTarget(projectDir, target);
   const compass = join(projectDir, 'compass');
   // lstat y no existsSync: un enlace roto también ocupa el lugar.
   if ((() => { try { lstatSync(compass); return true; } catch { return false; } })()) throw new StoreError('conflict', T`ya existe ${compass}`);
+  makeLink(dir, compass);
+  const exclude = await excludeBoard(projectDir);
+  return { path: compass, target: dir, exclude };
+}
+
+/** La carpeta real del tablero de target (una ruta, o un nombre dentro de boardsDir()): tiene que ser un tablero y estar fuera del proyecto. */
+function boardTarget(projectDir, target) {
+  const dir = isAbsolute(target) || target.includes('/') || target.includes('\\') ? resolve(target) : join(boardsDir(), target);
+  if (!existsSync(join(dir, 'config.json'))) throw new StoreError('not_found', T`${dir} no es un tablero (no tiene config.json)`);
   const rel = relative(realOr(projectDir), realOr(dir));
   if (!rel || (!rel.startsWith('..') && !isAbsolute(rel))) throw new StoreError('invalid_argument', T`el tablero tiene que estar fuera del proyecto: ${dir}`);
-  makeLink(realOr(dir), compass);
+  return realOr(dir);
+}
+
+/**
+ * Cambia el tablero de un proyecto por otro que ya existe (`board link --replace`). Sin tablero, es board link. Un
+ * enlace se cambia por el nuevo (el tablero viejo no se toca). Un tablero local (en el repo del proyecto) sale del
+ * índice y del disco, con el export markdown de afuera de compass/ (es una copia del tablero), como en board move:
+ * queda en el historial del proyecto y el cambio queda para commitear. Se niega si tiene algo sin commitear, porque
+ * eso se perdería; un submódulo (compass/.git) se cambia con git.
+ */
+export async function replaceBoard(projectDir, target) {
+  const kind = boardKind(projectDir);
+  const compass = join(projectDir, 'compass');
+  if (kind === 'none' && !existsSync(compass)) return { ...(await linkBoard(projectDir, target)), replaced: null };
+  if (kind === 'none') throw new StoreError('conflict', T`ya existe ${compass} y no es un tablero: sacalo a mano`);
+  if (kind === 'repo') throw new StoreError('conflict', T('compass/ es un repo propio (un submódulo): cambialo con git'));
+  const dir = boardTarget(projectDir, target);
+  if (realOr(compass) === dir) throw new StoreError('conflict', T`el proyecto ya usa ese tablero: ${dir}`);
+  const removed = { replaced: kind, untracked: false, exportRemoved: null };
+  if (kind === 'linked') {
+    unlinkSync(compass);
+  } else {
+    let exp = null;
+    try { exp = JSON.parse(readFileSync(join(compass, 'config.json'), 'utf8')).export_md ?? 'docs/tareas.md'; } catch { /* sin export que sacar */ }
+    if (exp?.startsWith('compass/')) exp = null;
+    const top = await git(projectDir, ['rev-parse', '--show-toplevel']);
+    // Sin git (o ignorado) no queda ningún historial del tablero viejo: borrarlo sería perderlo.
+    const tracked = top.ok && (await git(projectDir, ['ls-files', '--', 'compass/config.json'])).out !== '';
+    if (!tracked) throw new StoreError('conflict', T('compass/ no está commiteado en un repo de git y se perdería: sacalo con scompass board move o movelo a mano'));
+    // Lo sin commitear no está en ningún historial.
+    const dirty = await gitOk(projectDir, ['status', '--porcelain', '--', 'compass']);
+    if (dirty) throw new StoreError('conflict', T`compass/ tiene cambios sin commitear (${dirty.split('\n').length}): commitealos o descartalos antes de cambiar el tablero, o se pierden`);
+    await gitOk(projectDir, ['rm', '-r', '-q', '-f', '--cached', '--', 'compass']);
+    removed.untracked = true;
+    if (exp) await git(projectDir, ['rm', '-q', '--cached', '--ignore-unmatch', '--', exp]);
+    rmSync(compass, { recursive: true, force: true });
+    if (exp && existsSync(join(projectDir, exp))) {
+      rmSync(join(projectDir, exp), { force: true });
+      removed.exportRemoved = exp;
+    }
+  }
+  makeLink(dir, compass);
   const exclude = await excludeBoard(projectDir);
-  return { path: compass, target: realOr(dir), exclude };
+  return { path: compass, target: dir, exclude, ...removed };
 }
 
 /**

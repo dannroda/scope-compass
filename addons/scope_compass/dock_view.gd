@@ -57,6 +57,11 @@ var template_select: OptionButton
 var boards: Array = []
 var board_select: OptionButton
 var link_button: Button
+## Dónde está el tablero de este proyecto (`scompass board --json`: kind, target) y el menú para cambiarlo.
+var board_here: Dictionary = {}
+var board_button: MenuButton
+const BOARD_OTHER := 1
+const BOARD_FIRST := 100
 static var TEMPLATES := [["juego", I18n.t("Juego")], ["personal", I18n.t("Personal")], ["vacio", I18n.t("Vacío")]]
 var start_button: Button
 var open_tasks_button: Button
@@ -521,14 +526,21 @@ func init_compass() -> bool:
 	return true
 
 
-## Los tableros que se pueden vincular (`scompass board list --json`); sin scompass, ninguno.
+## Los tableros que se pueden vincular (`scompass board list --json`) y dónde está el de este proyecto
+## (`scompass board --json`); sin scompass, ninguno.
 func load_boards() -> void:
 	boards = []
+	board_here = {}
 	if not scompass_command().is_empty():
 		var r: Array = await _scompass(["board", "list", "--json"])
 		var data = HubClient.parse_json(r[1]) if r[0] == 0 else null
 		if data is Dictionary and data.get("boards") is Array:
 			boards = data.boards
+		if has_compass():
+			r = await _scompass(["board", "--json"])
+			data = HubClient.parse_json(r[1]) if r[0] == 0 else null
+			if data is Dictionary:
+				board_here = data
 	board_select.clear()
 	for b in boards:
 		var label := str(b.name)
@@ -557,6 +569,97 @@ func link_compass() -> bool:
 	return true
 
 
+# --- Cambiar el tablero -------------------------------------------------------------------------
+
+## El menú del botón del tablero: dónde está, los tableros de la carpeta de tableros (el actual tildado) y otra carpeta.
+func _fill_board_menu() -> void:
+	var menu := board_button.get_popup()
+	menu.clear()
+	var here := str(board_here.get("target", ""))
+	var kind := str(board_here.get("kind", ""))
+	menu.add_item(I18n.t("Tablero: %s") % (here if here != "" else I18n.t("(sin scompass no se sabe)")) + \
+		(I18n.t(" (en el repo del proyecto)") if kind == "local" else ""), 0)
+	menu.set_item_disabled(0, true)
+	menu.add_separator()
+	for i in boards.size():
+		var b: Dictionary = boards[i]
+		var label := str(b.name) if not (b.get("project") is String) or b.project == b.name else "%s (%s)" % [b.project, b.name]
+		menu.add_radio_check_item(label, BOARD_FIRST + i)
+		menu.set_item_checked(menu.get_item_index(BOARD_FIRST + i), str(b.path) == here)
+	if not boards.is_empty():
+		menu.add_separator()
+	menu.add_item(I18n.t("Otra carpeta…"), BOARD_OTHER)
+
+
+func _on_board_menu(id: int) -> void:
+	if id >= BOARD_FIRST:
+		var b: Dictionary = boards[id - BOARD_FIRST]
+		if str(b.path) != str(board_here.get("target", "")):
+			_confirm_change_board(str(b.path))
+	elif id == BOARD_OTHER:
+		var dialog := FileDialog.new()
+		dialog.file_mode = FileDialog.FILE_MODE_OPEN_DIR
+		dialog.access = FileDialog.ACCESS_FILESYSTEM
+		dialog.title = I18n.t("La carpeta del tablero (la que tiene config.json)")
+		var start := str(board_here.get("target", ""))
+		if start != "":
+			dialog.current_dir = start.get_base_dir()
+		dialog.dir_selected.connect(_confirm_change_board)
+		dialog.visibility_changed.connect(func():
+			if not dialog.visible:
+				dialog.queue_free())
+		add_child(dialog)
+		dialog.popup_centered_ratio(0.6)
+
+
+func _confirm_change_board(target: String) -> void:
+	var confirm := ConfirmationDialog.new()
+	confirm.title = I18n.t("Cambiar el tablero")
+	var text := I18n.t("compass/ pasa a ser un enlace a %s.") % target
+	if str(board_here.get("kind", "")) == "local":
+		text += " " + I18n.t("El tablero de ahora está en el repo del proyecto: sale de él y del disco (queda en su historial) y la baja queda para commitear. Si tiene algo sin commitear, no se cambia.")
+	else:
+		text += " " + I18n.t("El tablero de ahora no se toca.")
+	if hub.pid > 0:
+		text += " " + I18n.t("El hub se detiene y se vuelve a iniciar.")
+	confirm.dialog_text = text
+	confirm.dialog_autowrap = true
+	confirm.min_size = Vector2i(480, 0)
+	confirm.ok_button_text = I18n.t("Cambiar")
+	confirm.cancel_button_text = I18n.t("Cancelar")
+	confirm.confirmed.connect(func(): change_board(target))
+	confirm.visibility_changed.connect(func():
+		if not confirm.visible:
+			confirm.queue_free())
+	add_child(confirm)
+	confirm.popup_centered()
+
+
+## Corre `scompass board link <target> --replace`. Con el hub de este dock corriendo, lo detiene antes (la CLI no
+## cambia el tablero debajo de un hub) y lo vuelve a iniciar después; con uno de afuera (el Inicio, una terminal), avisa.
+func change_board(target: String) -> bool:
+	if online and hub.pid <= 0:
+		show_notice(I18n.t("El hub de este proyecto no es de este dock (lo sirve el Inicio u otra terminal): detenelo antes de cambiar el tablero."))
+		return false
+	var restart := hub.pid > 0
+	if restart:
+		stop_hub(true)
+		var t0 := Time.get_ticks_msec()
+		while online and Time.get_ticks_msec() - t0 < 5000:
+			await get_tree().process_frame
+	var r: Array = await _scompass(["board", "link", target, "--replace"])
+	var ok: bool = r[0] == 0
+	if ok:
+		show_notice(I18n.t("Tablero cambiado: %s") % str(r[1]).strip_edges())
+	else:
+		show_notice(I18n.t("No se pudo cambiar el tablero: %s") % (str(r[1]).strip_edges() if str(r[1]) != "" else I18n.t("sin salida de scompass")))
+	await reload()
+	await check_compass()
+	if restart:
+		await start_hub()
+	return ok
+
+
 ## Corre scompass en el proyecto, en otro hilo (hub_process.gd): [código, salida]; código -1 si no se encontró.
 func _scompass(args: Array) -> Array:
 	return await hub.run(scompass_command(), args)
@@ -566,8 +669,7 @@ func _scompass(args: Array) -> Array:
 ## Se mira al abrir el dock; sin scompass a mano no se puede saber y no se avisa nada.
 func check_compass() -> void:
 	outdated = []
-	if not has_compass():
-		await load_boards()
+	await load_boards()
 	if has_compass():
 		var r: Array = await _scompass(["update", "--check", "--json"])
 		var data = HubClient.parse_json(r[1]) if r[0] == 1 else null
@@ -704,6 +806,7 @@ const ICONS := {
 	"browser": preload("assets/node/arrow_up_right.svg"),
 	"start": preload("assets/node/play.svg"),
 	"folder": preload("assets/node/folder_open.svg"),
+	"board": preload("assets/node/board.svg"),
 }
 
 
@@ -859,6 +962,13 @@ func _build() -> void:
 	files_button = icon_button("folder", I18n.t("Ver los archivos del repo y su estado de git en el navegador"))
 	files_button.pressed.connect(func(): OS.shell_open(web_url("#files")))
 	head.add_child(files_button)
+	board_button = MenuButton.new()
+	board_button.icon = ICONS.board
+	board_button.flat = true
+	board_button.tooltip_text = I18n.t("Dónde está el tablero, y cambiarlo por otro que ya existe")
+	board_button.about_to_popup.connect(_fill_board_menu)
+	board_button.get_popup().id_pressed.connect(_on_board_menu)
+	head.add_child(board_button)
 
 	new_row = HBoxContainer.new()
 	add_child(new_row)
@@ -1017,6 +1127,7 @@ func _render() -> void:
 		banner_text.text = I18n.t("Ahí se guardan las tareas y los hitos del proyecto. Creala para empezar a usar el tablero.") if boards.is_empty() \
 			else I18n.t("Ahí se guardan las tareas y los hitos del proyecto. Creala o vinculá un tablero que ya existe.")
 	init_button.visible = not compass
+	board_button.visible = compass
 	template_select.visible = not compass
 	board_select.visible = not compass and not boards.is_empty()
 	link_button.visible = board_select.visible

@@ -304,6 +304,23 @@ test('proyecto sin compass/ y un tablero en la carpeta de tableros: "Vincular ta
   }
 });
 
+test('tablero en el repo del proyecto: el botón del tablero lo cambia por uno de la carpeta de tableros (board link --replace)', { skip }, async () => {
+  const board = join(ISOLATED, 'data', 'boards', 'nuevo');
+  await cp(join(dir, 'compass'), board, { recursive: true });
+  const git = (...a) => execFileSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { encoding: 'utf8' });
+  git('init', '-q'); git('add', '-A'); git('commit', '-qm', 'tablero local');
+  try {
+    const r = await godotLive(['change_board', dir, join(REPO, 'hub', 'bin', 'scompass.js'), 'nuevo']);
+    expectOk(r, 'change_board');
+    assert.doesNotMatch(r.out, /ERROR/);
+    assert.equal(realpathSync(join(dir, 'compass')), realpathSync(board));
+    assert.equal(git('ls-files', '--', 'compass'), '', 'el tablero viejo salió del índice');
+  } finally {
+    await rm(join(dir, 'compass'), { force: true }).catch(() => {});
+    await rm(board, { recursive: true, force: true, maxRetries: 10 });
+  }
+});
+
 test('compass/ con el schema viejo: el dock avisa y "Actualizar" corre scompass update', { skip }, async () => {
   const schema = join(dir, 'compass', 'schema', 'task.schema.json');
   await writeFile(schema, '{}\n');

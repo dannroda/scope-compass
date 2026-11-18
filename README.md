@@ -97,7 +97,7 @@ The link is excluded through the project's `.git/info/exclude`, so the project's
 
 - `scompass init --in-project` keeps the board inside the project, in the project's repository.
 - `git submodule add <url> compass` shares a board with other people.
-- `scompass board move` takes an existing in-project board out to the boards folder, keeping its history; `scompass board link <name>` links a board that already exists (another project's, a standalone one, or one you cloned on another machine) and `scompass board list` shows them. Home (Add project › Link board) and the Godot dock do the same.
+- `scompass board move` takes an existing in-project board out to the boards folder, keeping its history; `scompass board link <name>` links a board that already exists (another project's, a standalone one, or one you cloned on another machine) and `scompass board list` shows them. Home (Add project › Link board) and the Godot dock do the same. To change the board of a project that already has one (for example, an old in-project board for the one in your boards repo), use `scompass board link <name> --replace` or the board button in the dock.
 
 ## Documentation
 

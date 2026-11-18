@@ -230,6 +230,7 @@ npx scompass serve [--dir <proyecto>] [--port 4711] [--open] [--lan]
 - `--lan` (también en `scompass home`) escucha además en la red, para abrirlo desde el teléfono en casa. No hay login, así que es solo para una red de confianza. Los pedidos con el `Origin` de otra página dan 403, también en local (D36).
 - `--open` abre el navegador por defecto.
 - Si `compass/` no existe, ofrece crearla (`scompass init`) o, si hay tableros en la carpeta de tableros, vincular uno (`scompass board link`, §36).
+- El botón del tablero (al lado de "Ver los archivos") dice dónde está el tablero y lo cambia por uno de la carpeta de tableros u otra carpeta (`scompass board link --replace`, §36), después de confirmar qué pasa con el de ahora. Si el hub es del dock, lo detiene antes y lo vuelve a iniciar; si es de afuera (el Inicio, una terminal), avisa que hay que detenerlo.
 
 ### 5.2 API REST
 <!-- id: api-rest -->
@@ -1448,6 +1449,7 @@ Comandos:
 - `scompass board move [<nombre>]`: saca un tablero local a `<datos>/boards/<nombre>` (por defecto, el `project` de `config.json`). Si `compass/` está en el repo del proyecto, su historial se parte con `git subtree split` (con `compass/` como raíz). Con un repo por tablero, se clona como el repo nuevo. Con el repo de todos los tableros, se reescribe commit por commit con `<nombre>/` adelante (mismos autores, fechas y mensajes; si no, `git log -- <nombre>/tasks/x.json` se corta, como pasa con `git subtree add`) y entra en un commit con dos padres, armado con un índice aparte para no pedir el árbol limpio: en ese repo casi siempre hay algo sin commitear de otro tablero. Es el único commit que hace la app. Lo de disco, también lo sin commitear, se copia encima y queda sin commitear. `compass/` se saca del índice del proyecto (queda para commitear), se reemplaza por el enlace y se excluye. Un export markdown fuera de `compass/` pasa a `compass/tareas.md` y el viejo se borra del disco y del índice. Fuera de ese commit no commitea nada (§4.5), y se niega con un hub o el Inicio sirviendo el proyecto.
 - `scompass board list`: los tableros de la carpeta de tableros (las subcarpetas con `config.json`), con el `project` de cada uno y los proyectos del Inicio que lo usan.
 - `scompass board link <nombre|carpeta>`: crea el enlace a un tablero que ya existe y lo excluye: el de otro proyecto (un tablero se puede vincular a varios), uno creado solo (un proyecto del Inicio en la carpeta de datos, D28) o el que se clonó en otro equipo. Lo mismo desde el Inicio (Agregar proyecto › Vincular tablero) y desde el dock de un proyecto sin `compass/`.
+- `scompass board link <nombre|carpeta> --replace`: cambia el tablero de un proyecto que ya tiene uno. Un enlace se cambia por el nuevo y el tablero de antes no se toca. Un tablero local (en el repo del proyecto) sale del índice y del disco, con el export markdown de afuera de `compass/` (es una copia), como en `board move`: queda en el historial del proyecto y la baja queda para commitear. Se niega si `compass/` tiene algo sin commitear o no está commiteado (se perdería), si es un submódulo (se cambia con git), si ya usa ese tablero y con un hub del proyecto corriendo. Desde el dock, con el botón del tablero.
 
 ### Criterios de aceptación
 
@@ -1455,6 +1457,7 @@ Comandos:
 - [x] Con el tablero enlazado andan escribir, el export (adentro del tablero), el historial, el estado de git, las capturas y el watcher.
 - [x] `board link` en otro proyecto ve el mismo tablero.
 - [x] `board list`, el Inicio y el dock listan los tableros de la carpeta de tableros con quién los usa, y vinculan uno a un proyecto sin `compass/`.
+- [x] `board link --replace` y el botón del tablero del dock cambian un tablero local (sale del índice, queda en el historial) o un enlace por otro, y no tocan nada si hay algo sin commitear.
 - [x] Con el repo de todos los tableros, `board move` trae el historial (el de cada tarea también) sin tocar lo sin commitear de otros tableros, e `init` crea una subcarpeta sin `.git`.
 - [ ] Probado en Windows (junction).
 

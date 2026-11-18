@@ -52,6 +52,21 @@ msgstr "{0} is not a board (it has no config.json)"
 msgid "el tablero tiene que estar fuera del proyecto: {0}"
 msgstr "the board must be outside the project: {0}"
 
+msgid "ya existe {0} y no es un tablero: sacalo a mano"
+msgstr "{0} already exists and is not a board: remove it by hand"
+
+msgid "compass/ es un repo propio (un submódulo): cambialo con git"
+msgstr "compass/ is a repo of its own (a submodule): change it with git"
+
+msgid "el proyecto ya usa ese tablero: {0}"
+msgstr "the project already uses that board: {0}"
+
+msgid "compass/ no está commiteado en un repo de git y se perdería: sacalo con scompass board move o movelo a mano"
+msgstr "compass/ isn't committed in a git repo and would be lost: take it out with scompass board move or move it by hand"
+
+msgid "compass/ tiene cambios sin commitear ({0}): commitealos o descartalos antes de cambiar el tablero, o se pierden"
+msgstr "compass/ has uncommitted changes ({0}): commit or discard them before changing the board, or they are lost"
+
 msgid "no hay {0}"
 msgstr "{0} not found"
 

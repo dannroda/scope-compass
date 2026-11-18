@@ -181,6 +181,48 @@ msgstr "Couldn't link the board: %s"
 msgid "compass/ vinculada al tablero %s. Ya podés iniciar el hub."
 msgstr "compass/ linked to the board %s. You can start the hub now."
 
+msgid "Tablero: %s"
+msgstr "Board: %s"
+
+msgid "(sin scompass no se sabe)"
+msgstr "(unknown without scompass)"
+
+msgid " (en el repo del proyecto)"
+msgstr " (in the project's repo)"
+
+msgid "Otra carpeta…"
+msgstr "Another folder…"
+
+msgid "La carpeta del tablero (la que tiene config.json)"
+msgstr "The board folder (the one with config.json)"
+
+msgid "Cambiar el tablero"
+msgstr "Change the board"
+
+msgid "compass/ pasa a ser un enlace a %s."
+msgstr "compass/ becomes a link to %s."
+
+msgid "El tablero de ahora está en el repo del proyecto: sale de él y del disco (queda en su historial) y la baja queda para commitear. Si tiene algo sin commitear, no se cambia."
+msgstr "The current board is in the project's repo: it leaves the repo and the disk (it stays in the history) and the removal is left to commit. If it has anything uncommitted, nothing changes."
+
+msgid "El tablero de ahora no se toca."
+msgstr "The current board isn't touched."
+
+msgid "El hub se detiene y se vuelve a iniciar."
+msgstr "The hub stops and starts again."
+
+msgid "Cambiar"
+msgstr "Change"
+
+msgid "El hub de este proyecto no es de este dock (lo sirve el Inicio u otra terminal): detenelo antes de cambiar el tablero."
+msgstr "This project's hub isn't this dock's (Home or another terminal serves it): stop it before changing the board."
+
+msgid "Tablero cambiado: %s"
+msgstr "Board changed: %s"
+
+msgid "No se pudo cambiar el tablero: %s"
+msgstr "Couldn't change the board: %s"
+
 msgid "No se pudo actualizar compass/: %s"
 msgstr "Couldn't update compass/: %s"
 
@@ -273,6 +315,9 @@ msgstr "Open the board in the browser"
 
 msgid "Ver los archivos del repo y su estado de git en el navegador"
 msgstr "See the repo's files and their git status in the browser"
+
+msgid "Dónde está el tablero, y cambiarlo por otro que ya existe"
+msgstr "Where the board is, and change it for another one that already exists"
 
 msgid "Nueva tarea en este hito"
 msgstr "New task in this milestone"
