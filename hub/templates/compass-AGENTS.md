@@ -241,7 +241,8 @@ Para la CLI, el MCP, la web y el dock da lo mismo: siempre es `<proyecto>/compas
 ```sh
 scompass board                   # dónde está: en el proyecto, enlazado o submódulo, con su rama y su origin (--json)
 scompass board move [<nombre>]   # saca un tablero de los de antes a boards/<nombre> con su historial; compass/ queda como enlace y fuera del índice del proyecto
-scompass board link <nombre>     # en otro equipo, después de clonar el repo del tablero en boards/<nombre>: crea el enlace
+scompass board list               # los tableros de boards/ y qué proyectos los usan
+scompass board link <nombre>     # enlaza un tablero que ya existe (de otro proyecto, o el clonado en otro equipo en boards/<nombre>)
 ```
 
 `board move` pasa el export markdown a `compass/tareas.md` (adentro del tablero) y deja lo que no estaba commiteado sin commitear en el tablero; la baja de `compass/` en el proyecto queda en su índice para commitear. Con el repo de todos los tableros, el historial entra en un commit (el único que hace la app); con un repo por tablero, no commitea nada. No lo corras con un hub o el Inicio sirviendo el proyecto.
