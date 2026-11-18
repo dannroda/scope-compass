@@ -4,8 +4,12 @@ import { execFile } from 'node:child_process';
 import { realpathSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 
+// --no-optional-locks: `git status` refresca el índice y para eso toma index.lock. El hub lo corre cada pocos segundos
+// (gitPollMs), y con el lock tomado un `git commit` del usuario en ese momento fallaba con «index.lock exists».
+const GIT = ['--no-optional-locks'];
+
 const status = (dir, paths) => new Promise((done) => {
-  execFile('git', ['-C', dir, 'status', '--porcelain', '--untracked-files=all', '--', ...paths], { timeout: 5000, windowsHide: true }, (err, stdout) => {
+  execFile('git', [...GIT, '-C', dir, 'status', '--porcelain', '--untracked-files=all', '--', ...paths], { timeout: 5000, windowsHide: true }, (err, stdout) => {
     done(err ? null : stdout.split('\n').filter(Boolean).map((l) => l.slice(3).replace(/^"|"$/g, '')));
   });
 });
@@ -32,7 +36,7 @@ export async function boardStatus(projectDir, config) {
 // Estado de git de los documentos (12.3). Solo lectura, como todo lo de acá. `git` falla (sin git, fuera de un repo,
 // repo sin commits) → null.
 const git = (projectDir, args) => new Promise((done) => {
-  execFile('git', ['-C', projectDir, ...args], { timeout: 5000, windowsHide: true, maxBuffer: 32 << 20 }, (err, stdout) => done(err ? null : stdout));
+  execFile('git', [...GIT, '-C', projectDir, ...args], { timeout: 5000, windowsHide: true, maxBuffer: 32 << 20 }, (err, stdout) => done(err ? null : stdout));
 });
 
 // Primera letra del par XY de `git status --porcelain` que cuenta, en el orden en que se informa.
