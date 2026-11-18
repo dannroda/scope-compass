@@ -1,6 +1,7 @@
-// Cada archivo de test lo importa primero: con `node --test test/x.test.js` (sin `npm test`) el registro de hubs,
-// projects.json y la carpeta de datos son temporales, y un tablero de prueba no queda anotado en el Inicio del
-// usuario. Con `npm test` ya vienen puestos (scripts/run-tests.js) y no se tocan.
+// Cada archivo de test lo importa primero: el registro de hubs, la config (projects.json, settings.json) y la carpeta
+// de datos son temporales y de ese archivo, y un tablero de prueba no queda anotado en el Inicio del usuario. Son de
+// cada archivo también con `npm test`, que corre cada uno en su proceso y a la vez: compartiendo los de
+// scripts/run-tests.js, un test que elegía el agente del chat en settings.json (§47) le cambiaba lo que veía otro.
 import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -16,10 +17,8 @@ delete process.env.SCOMPASS_CHAT_SESSION;
 // del chat con agy ponen el falso (fake-agy.js).
 process.env.SCOMPASS_AGY ??= join(tmpdir(), 'scompass-no-agy', 'agy.js');
 
-if (!process.env.SCOMPASS_CONFIG) {
-  const dir = mkdtempSync(join(tmpdir(), 'scompass-test-'));
-  process.env.SCOMPASS_REGISTRY ??= join(dir, 'registry');
-  process.env.SCOMPASS_CONFIG = join(dir, 'config');
-  process.env.SCOMPASS_DATA ??= join(dir, 'data');
-  process.on('exit', () => rmSync(dir, { recursive: true, force: true }));
-}
+const dir = mkdtempSync(join(tmpdir(), 'scompass-test-'));
+process.env.SCOMPASS_REGISTRY = join(dir, 'registry');
+process.env.SCOMPASS_CONFIG = join(dir, 'config');
+process.env.SCOMPASS_DATA = join(dir, 'data');
+process.on('exit', () => rmSync(dir, { recursive: true, force: true }));

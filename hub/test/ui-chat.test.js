@@ -74,7 +74,8 @@ test('conversar: el panel se abre, la respuesta llega en vivo, queda en la lista
   assert.equal(await page.textContent('#chat .chat-head h2'), 'hola');
   // Herramientas: plegadas, con su nombre y si anduvieron.
   await send(page, 'herramienta');
-  await page.waitForSelector('#chat .msg.bot .msg-text:text-is("listo")');
+  // Fuera del turno en vivo: mientras corre, las herramientas se ven abiertas.
+  await page.waitForSelector('#chat .msg.bot:not(.live) .msg-text:text-is("listo")');
   const tools = '#chat .msg.bot:last-child .chat-tools';
   assert.equal(await page.textContent(`${tools} summary`), '1 herramienta');
   assert.equal(await page.$eval(tools, (d) => d.open), false);

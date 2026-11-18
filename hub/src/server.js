@@ -54,6 +54,7 @@ const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, inva
 // token: si se pasa, cada request tiene que traer `Authorization: Bearer <token>` (hosting, §12). En local no se usa.
 // watch: mira compass/ y publica los cambios externos (necesita validators).
 // exportMd: regenera el export markdown tras cada cambio (D13); app.events emite 'exported' con la ruta.
+// exportDebounceMs: cuánto espera ese export a que termine una ráfaga (por defecto 200 ms; los tests la agrandan).
 // app.events emite 'event' con los mensajes del protocolo WebSocket (§5.5): upsert, delete, warning.
 // webDir: carpeta de la UI (por defecto web/ del repo).
 // onRestart: si se pasa, POST /api/restart lo llama (serve cierra y se vuelve a lanzar).
@@ -61,7 +62,7 @@ const HTTP_STATUS = { invalid_argument: 400, not_found: 404, conflict: 409, inva
 // todas las plataformas: en Windows no hay SIGTERM y `kill` lo mata en seco, sin darse de baja (§18).
 // chatEnv: el entorno con que se lanza claude en el chat (§32; los tests ponen SCOMPASS_CLAUDE).
 // chatAllow(req): quién puede usar el chat; por defecto solo este equipo (el Inicio suma los vinculados, §49).
-export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null, gitPollMs = 3000, chatEnv = process.env, chatAllow }) {
+export function createServer({ projectDir, store, validators, watch = false, exportMd = false, token = null, logger = false, webDir = WEB_DIR, onRestart = null, onShutdown = null, gitPollMs = 3000, chatEnv = process.env, chatAllow, exportDebounceMs }) {
   // Al cerrar se cortan todas las conexiones: con la UI abierta (que reintenta cada 0,5 s) el cierre
   // podía quedar esperando una conexión nueva o el cierre educado de un WebSocket.
   const app = Fastify({ logger, forceCloseConnections: true });
@@ -95,7 +96,7 @@ export function createServer({ projectDir, store, validators, watch = false, exp
     app.addHook('onClose', async () => { docWatcher?.close(); docWatcher = null; });
   }
   if (exportMd) {
-    const auto = createAutoExport({ projectDir, store, emit, onExported: (path) => app.events.emit('exported', path) });
+    const auto = createAutoExport({ projectDir, store, emit, onExported: (path) => app.events.emit('exported', path), debounceMs: exportDebounceMs });
     app.events.on('event', (e) => { if (e.type === 'upsert' || e.type === 'delete') auto.schedule(); });
     app.addHook('onClose', () => auto.flush());
   }

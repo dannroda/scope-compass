@@ -15,7 +15,7 @@ import { run } from '../src/cli.js';
 const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', 'compass');
 const V = loadValidators();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-let dir, compass, md, exports;
+let dir, compass, md, exports, apps;
 
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'scompass-'));
@@ -23,18 +23,24 @@ beforeEach(async () => {
   md = join(dir, 'docs', 'tareas.md');
   await cp(FIXTURE, compass, { recursive: true });
   exports = 0;
+  apps = [];
 });
-afterEach(() => rm(dir, { recursive: true, force: true, maxRetries: 10 }));
+// Si un assert falla antes de app.close(), el hub (con su watcher) dejaba el proceso del test abierto para siempre.
+afterEach(async () => {
+  for (const app of apps) await app.close().catch(() => {});
+  await rm(dir, { recursive: true, force: true, maxRetries: 10 });
+});
 
 async function hub(opts = {}) {
   const app = createServer({ projectDir: dir, store: createJsonFilesStore(compass, { validators: V }), validators: V, watch: true, exportMd: true, ...opts });
   app.events.on('exported', () => { exports++; });
+  apps.push(app);
   await app.ready();
   return app;
 }
 const patch = (app, id, body) => app.inject({ method: 'PATCH', url: `/api/tasks/${id}`, payload: body });
 async function waitExports(n) {
-  for (let i = 0; i < 100 && exports < n; i++) await sleep(10);
+  for (let i = 0; i < 300 && exports < n; i++) await sleep(10);
   await sleep(300);
 }
 async function setConfig(changes) {
@@ -52,7 +58,8 @@ test('mover una tarjeta por la API actualiza docs/tareas.md', async () => {
 });
 
 test('una ráfaga de cambios da un solo export', async () => {
-  const app = await hub();
+  // Ventana de 1 s y no los 200 ms de siempre: con la suite entera en Windows, entre dos PATCH pasaban más de 200 ms.
+  const app = await hub({ exportDebounceMs: 1000 });
   for (const s of ['todo', 'doing', 'review', 'done', 'doing']) await patch(app, 'm1-07', { status: s });
   await waitExports(1);
   assert.equal(exports, 1);
