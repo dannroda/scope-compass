@@ -421,8 +421,8 @@ msgstr "couldn't find Claude Code (claude); register it by hand:\n  claude {0}"
 msgid "claude terminó con {0}; si ya estaba registrado, sacalo con `claude mcp remove --scope user scompass` y probá de nuevo"
 msgstr "claude exited with {0}; if it was already registered, remove it with `claude mcp remove --scope user scompass` and try again"
 
-msgid "MCP scompass registrado en Claude Code: {0} mcp"
-msgstr "scompass MCP registered in Claude Code: {0} mcp"
+msgid "MCP scompass registrado en Claude Code: {0}"
+msgstr "scompass MCP registered in Claude Code: {0}"
 
 msgid "no hay un hub de este proyecto en el puerto {0}"
 msgstr "there's no hub for this project on port {0}"

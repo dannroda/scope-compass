@@ -802,7 +802,7 @@ export async function run(argv, { cwd = process.cwd(), out = process.stdout, err
           p.on('close', res);
         });
         if (code !== 0) warn(T`claude terminó con ${code}; si ya estaba registrado, sacalo con \`claude mcp remove --scope user scompass\` y probá de nuevo`);
-        else print(T`MCP scompass registrado en Claude Code: ${[command, ...args].map(quote).join(' ')} mcp`);
+        else print(T`MCP scompass registrado en Claude Code: ${[command, ...args].map(quote).join(' ')}`);
         return code === 0 ? 0 : 1;
       }
       const found = o.dir || existsSync(join(project, 'compass', 'config.json'));
