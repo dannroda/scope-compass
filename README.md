@@ -1,4 +1,4 @@
-# Scope Compass
+![Scope Compass: a project organizer for video games that keeps its data in git](docs/images/en/banner.png)
 
 **English** · [Español](README.es.md)
 
